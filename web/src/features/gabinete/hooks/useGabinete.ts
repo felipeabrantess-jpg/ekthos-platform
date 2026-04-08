@@ -43,6 +43,7 @@ export function useAddCabinetMember() {
     mutationFn: async (input: AddCabinetMemberInput) => {
       const { data, error } = await supabase
         .from('pastoral_cabinet')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert({
           church_id: input.church_id,
           person_id: input.person_id,
@@ -51,7 +52,7 @@ export function useAddCabinetMember() {
           photo_url: input.photo_url ?? null,
           order_index: input.order_index ?? 0,
           is_active: true,
-        })
+        } as any)
         .select()
         .single()
 
@@ -80,7 +81,8 @@ export function useUpdateCabinetMember() {
     mutationFn: async ({ id, church_id, ...updates }: UpdateCabinetMemberInput) => {
       const { data, error } = await supabase
         .from('pastoral_cabinet')
-        .update(updates)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(updates as any)
         .eq('id', id)
         .eq('church_id', church_id)
         .select()
@@ -102,7 +104,8 @@ export function useRemoveCabinetMember() {
     mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
       const { error } = await supabase
         .from('pastoral_cabinet')
-        .update({ is_active: false })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ is_active: false } as any)
         .eq('id', id)
         .eq('church_id', churchId)
 

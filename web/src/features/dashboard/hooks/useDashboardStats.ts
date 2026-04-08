@@ -87,7 +87,8 @@ export function useDashboardStats(churchId: string) {
 
       // Agrega pipeline por stage
       const stageCounts: Record<string, { name: string; slug: string; count: number; order_index: number }> = {}
-      for (const row of pipelineResult.data ?? []) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const row of (pipelineResult.data ?? []) as any[]) {
         const stage = row.pipeline_stages as { name: string; slug: string; order_index: number } | null
         if (!stage || !row.stage_id) continue
         if (!stageCounts[row.stage_id]) {
@@ -106,8 +107,9 @@ export function useDashboardStats(churchId: string) {
         }))
 
       // Soma doações do mês
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const monthlyDonations = (donationsResult.data ?? []).reduce(
-        (sum, d) => sum + (d.amount ?? 0),
+        (sum, d: any) => sum + (d.amount ?? 0),
         0
       )
 

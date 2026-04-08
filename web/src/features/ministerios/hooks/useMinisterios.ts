@@ -70,13 +70,14 @@ export function useCreateMinistry() {
       if (leaderPersonId) {
         const { data: leaderData, error: leaderError } = await supabase
           .from('leaders')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .insert({
             church_id: input.church_id,
             person_id: leaderPersonId,
             role: 'lider',
             ministry_id: null,
             is_active: true,
-          })
+          } as any)
           .select('id')
           .single()
         if (leaderError) throw new Error(leaderError.message)
@@ -85,7 +86,8 @@ export function useCreateMinistry() {
 
       const { data: ministry, error } = await supabase
         .from('ministries')
-        .insert({ ...input, leader_id: leaderId, is_active: true })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({ ...input, leader_id: leaderId, is_active: true } as any)
         .select()
         .single()
 
@@ -95,7 +97,8 @@ export function useCreateMinistry() {
       if (leaderId && ministry) {
         await supabase
           .from('leaders')
-          .update({ ministry_id: ministry.id })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .update({ ministry_id: ministry.id } as any)
           .eq('id', leaderId)
       }
 
@@ -128,13 +131,14 @@ export function useUpdateMinistry() {
           // Create new leader record or find existing
           const { data: leaderData, error: leaderError } = await supabase
             .from('leaders')
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .insert({
               church_id,
               person_id: leaderPersonId,
               role: 'lider',
               ministry_id: id,
               is_active: true,
-            })
+            } as any)
             .select('id')
             .single()
           if (leaderError) throw new Error(leaderError.message)
@@ -146,7 +150,8 @@ export function useUpdateMinistry() {
 
       const { data, error } = await supabase
         .from('ministries')
-        .update({ ...updates, ...extraUpdates })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ ...updates, ...extraUpdates } as any)
         .eq('id', id)
         .eq('church_id', church_id)
         .select()
@@ -168,7 +173,8 @@ export function useDeactivateMinistry() {
     mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
       const { error } = await supabase
         .from('ministries')
-        .update({ is_active: false })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ is_active: false } as any)
         .eq('id', id)
         .eq('church_id', churchId)
 

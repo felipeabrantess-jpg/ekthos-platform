@@ -148,6 +148,7 @@ export function useCreateDonation() {
     mutationFn: async (input: CreateDonationInput) => {
       const { data, error } = await supabase
         .from('donations')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert({
           church_id: input.church_id,
           person_id: input.person_id ?? null,
@@ -159,7 +160,7 @@ export function useCreateDonation() {
           status: input.status ?? 'pending',
           campaign_id: input.campaign_id ?? null,
           receipt_sent: false,
-        })
+        } as any)
         .select()
         .single()
 
@@ -180,10 +181,11 @@ export function useConfirmDonation() {
     mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
       const { error } = await supabase
         .from('donations')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({
           status: 'confirmed',
           confirmed_at: new Date().toISOString(),
-        })
+        } as any)
         .eq('id', id)
         .eq('church_id', churchId)
 
