@@ -283,21 +283,21 @@ export interface ScheduleWithAssignments extends ServiceSchedule {
 export interface Database {
   public: {
     Tables: {
-      churches: { Row: Church; Insert: Omit<Church, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Church> }
-      church_settings: { Row: ChurchSettings; Insert: Omit<ChurchSettings, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ChurchSettings> }
-      people: { Row: Person; Insert: Omit<Person, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Person> }
-      pipeline_stages: { Row: PipelineStage; Insert: Omit<PipelineStage, 'id' | 'created_at'>; Update: Partial<PipelineStage> }
-      person_pipeline: { Row: PersonPipeline; Insert: Omit<PersonPipeline, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PersonPipeline> }
-      interactions: { Row: Interaction; Insert: Omit<Interaction, 'id' | 'created_at'>; Update: Partial<Interaction> }
-      leaders: { Row: Leader; Insert: Omit<Leader, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Leader> }
-      ministries: { Row: Ministry; Insert: Omit<Ministry, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Ministry> }
-      volunteers: { Row: Volunteer; Insert: Omit<Volunteer, 'id' | 'joined_at' | 'created_at' | 'updated_at'>; Update: Partial<Volunteer> }
-      service_schedules: { Row: ServiceSchedule; Insert: Omit<ServiceSchedule, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ServiceSchedule> }
-      service_schedule_assignments: { Row: ServiceScheduleAssignment; Insert: Omit<ServiceScheduleAssignment, 'id' | 'created_at'>; Update: Partial<ServiceScheduleAssignment> }
-      church_events: { Row: ChurchEvent; Insert: Omit<ChurchEvent, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ChurchEvent> }
-      pastoral_cabinet: { Row: PastoralCabinet; Insert: Omit<PastoralCabinet, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PastoralCabinet> }
-      donations: { Row: Donation; Insert: Omit<Donation, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Donation> }
-      financial_campaigns: { Row: FinancialCampaign; Insert: Omit<FinancialCampaign, 'id' | 'created_at' | 'updated_at'>; Update: Partial<FinancialCampaign> }
+      churches: { Row: Church; Insert: Omit<Church, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Church>; Relationships: [] }
+      church_settings: { Row: ChurchSettings; Insert: Omit<ChurchSettings, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ChurchSettings>; Relationships: [] }
+      people: { Row: Person; Insert: Omit<Person, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Person>; Relationships: [] }
+      pipeline_stages: { Row: PipelineStage; Insert: Omit<PipelineStage, 'id' | 'created_at'>; Update: Partial<PipelineStage>; Relationships: [] }
+      person_pipeline: { Row: PersonPipeline; Insert: Omit<PersonPipeline, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PersonPipeline>; Relationships: [] }
+      interactions: { Row: Interaction; Insert: Omit<Interaction, 'id' | 'created_at'>; Update: Partial<Interaction>; Relationships: [] }
+      leaders: { Row: Leader; Insert: Omit<Leader, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Leader>; Relationships: [] }
+      ministries: { Row: Ministry; Insert: Omit<Ministry, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Ministry>; Relationships: [] }
+      volunteers: { Row: Volunteer; Insert: Omit<Volunteer, 'id' | 'joined_at' | 'created_at' | 'updated_at'>; Update: Partial<Volunteer>; Relationships: [] }
+      service_schedules: { Row: ServiceSchedule; Insert: Omit<ServiceSchedule, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ServiceSchedule>; Relationships: [] }
+      service_schedule_assignments: { Row: ServiceScheduleAssignment; Insert: Omit<ServiceScheduleAssignment, 'id' | 'created_at'>; Update: Partial<ServiceScheduleAssignment>; Relationships: [] }
+      church_events: { Row: ChurchEvent; Insert: Omit<ChurchEvent, 'id' | 'created_at' | 'updated_at'>; Update: Partial<ChurchEvent>; Relationships: [] }
+      pastoral_cabinet: { Row: PastoralCabinet; Insert: Omit<PastoralCabinet, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PastoralCabinet>; Relationships: [] }
+      donations: { Row: Donation; Insert: Omit<Donation, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Donation>; Relationships: [] }
+      financial_campaigns: { Row: FinancialCampaign; Insert: Omit<FinancialCampaign, 'id' | 'created_at' | 'updated_at'>; Update: Partial<FinancialCampaign>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
