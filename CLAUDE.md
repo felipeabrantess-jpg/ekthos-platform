@@ -974,6 +974,394 @@ Se STATUS = APROVADO → implementação pode avançar seguindo PRÓXIMOS_PASSOS
 
 ---
 
+## SEÇÃO 14 — MÓDULOS OPERACIONAIS: MAPA COMPLETO
+
+Esta seção mapeia os 15 módulos funcionais da Ekthos Platform para igrejas,
+classificando cada um por status de implementação e responsável técnico.
+
+### Mapa de Módulos
+
+| # | Módulo | Status | Responsável técnico | LLM usado |
+|---|---|---|---|---|
+| 1 | Dashboard operacional | Planejado | Frontend + Supabase views | Não |
+| 2 | Pessoas (members, visitors) | ✅ Implementado | people + pipeline_stages | Não |
+| 3 | Pipeline espiritual (kanban) | ✅ Implementado | person_pipeline | Não |
+| 4 | Líderes | ✅ Migration | leaders table | Não |
+| 5 | Células | ✅ Migration | cells + cell_members | Não |
+| 6 | Relatórios de célula | ✅ Migration | cell_reports | Não |
+| 7 | Ministérios | ✅ Migration | ministries table | Não |
+| 8 | Voluntários por ministério | ✅ Migration | volunteers table | Não |
+| 9 | Escalas de serviço | ✅ Migration | service_schedules + assignments | Haiku (notificações) |
+| 10 | Agenda da igreja | ✅ Migration | church_events table | Não |
+| 11 | Gabinete pastoral | ✅ Migration | pastoral_cabinet table | Não |
+| 12 | Financeiro | ✅ Migration | donations + financial_campaigns | Não |
+| 13 | Agentes de IA | ✅ Implementado | .claude/agents/ (10 agentes) | Haiku-first |
+| 14 | Onboarding por IA | ✅ Implementado | church-onboarding-agent | Sonnet |
+| 15 | Multi-tenant | ✅ Implementado | church_id + RLS em toda tabela | Não |
+
+### Princípio de LLM por Módulo
+
+A maioria dos módulos NÃO usa LLM. LLM é reservado para:
+- Interações de linguagem natural (agentes WhatsApp, Instagram)
+- Onboarding estratégico (church-onboarding-agent com Sonnet)
+- Classificação de intenção ambígua (demand-router fallback com Haiku)
+- Notificações personalizadas de escalas (communication-agent com Haiku)
+
+Tudo que pode ser resolvido com dados estruturados e templates → sem LLM.
+
+### Integração entre Módulos
+
+```
+people ←→ leaders         (líder é uma pessoa)
+people ←→ cell_members    (membro de célula é uma pessoa)
+people ←→ volunteers      (voluntário é uma pessoa)
+people ←→ pastoral_cabinet (membro do gabinete é uma pessoa)
+people ←→ donations        (doador é uma pessoa — pode ser anônimo)
+people ←→ person_pipeline  (toda pessoa tem posição no pipeline)
+
+leaders ←→ cells           (líder responsável pela célula)
+leaders ←→ ministries      (líder responsável pelo ministério)
+
+ministries ←→ volunteers   (voluntário pertence a ministério)
+ministries ←→ service_schedules (escala é de um ministério)
+
+service_schedules ←→ service_schedule_assignments (atribuições da escala)
+service_schedule_assignments ←→ volunteers (quem está escalado)
+
+church_events ←→ service_schedules (evento gera escala no ministério)
+
+donations ←→ financial_campaigns (doação pode pertencer a campanha)
+donations ←→ people               (doador identificado ou anônimo)
+```
+
+---
+
+## SEÇÃO 15 — MÓDULO: VOLUNTÁRIOS POR MINISTÉRIO
+
+### Problema que Resolve
+
+Igrejas perdem voluntários por falta de organização. Não há visibilidade de
+quem está disponível, quais habilidades cada pessoa tem e qual ministério
+precisa de reforço. Líderes gerenciam isso em cadernos ou grupos de WhatsApp.
+
+### Schema
+
+Tabelas: `ministries`, `volunteers`
+
+Relações:
+```
+person → volunteers (person_id) — voluntário é uma person
+ministry → volunteers (ministry_id) — voluntário pertence ao ministério
+leader → ministry (leader_id) — ministério tem líder
+```
+
+Campos críticos de `volunteers`:
+- `role`: função específica (ex: "sonoplasta", "recepcionista", "líder de louvor")
+- `skills`: array de habilidades (ex: ["violão", "teclado", "câmera"])
+- `availability`: JSONB com dias e período disponíveis
+
+### Responsabilidades
+
+| Ação | Responsável | LLM |
+|---|---|---|
+| Cadastrar voluntário | Backend/Frontend (form) | Não |
+| Listar disponíveis por ministério | Supabase query | Não |
+| Sugerir voluntário para escala | crm-operator (lógica de tags) | Haiku |
+| Notificar voluntário escalado | communication-agent | Template |
+| Confirmar disponibilidade | followup-agent via WhatsApp | Template |
+| Relatório de frequência | Supabase view | Não |
+
+### Automações
+
+```
+Novo voluntário cadastrado
+  → tag "voluntario:{ministerio}" adicionada em people.tags
+  → notification para líder do ministério (communication-agent)
+
+Voluntário sem escala há 60 dias
+  → sinaliza para lider (sem LLM — threshold configurável)
+
+Voluntário declina escala
+  → service_schedule_assignments.status = 'declined'
+  → n8n aciona busca por substituto no mesmo ministério com mesma disponibilidade
+```
+
+### Fases de Implementação
+
+**MVP**: Cadastro de voluntários, listagem por ministério, sem automação
+**Expansão**: Sugestão de escala automática, notificação via WhatsApp
+**Avançado**: Matching inteligente por habilidade + disponibilidade (Haiku)
+
+### Regras
+
+```
+VOL-01: volunteer SEMPRE tem church_id e ministry_id — nunca orphan
+VOL-02: Uma pessoa pode ser voluntária em múltiplos ministérios (linhas separadas)
+VOL-03: Desativação de voluntário (is_active=false) não apaga histórico de escalas
+VOL-04: Voluntário com optout=true em people não recebe notificações automáticas
+VOL-05: Habilidades (skills[]) são texto livre — não enum — para flexibilidade por tenant
+```
+
+---
+
+## SEÇÃO 16 — MÓDULO: ESCALAS DE SERVIÇO
+
+### Problema que Resolve
+
+Líderes de ministério criam escalas manualmente, enviam por WhatsApp e perdem
+o controle de quem confirmou. Há conflitos de agenda, voluntários escalados que
+não aparecem e substituições de última hora sem rastreio.
+
+### Schema
+
+Tabelas: `service_schedules`, `service_schedule_assignments`
+
+Fluxo de status da escala:
+```
+draft → published → confirmed → [realizado]
+                              → cancelled
+```
+
+Fluxo de status da atribuição:
+```
+pending → confirmed
+        → declined → [substituto buscado]
+        → replaced
+```
+
+### Responsabilidades
+
+| Ação | Responsável | LLM |
+|---|---|---|
+| Criar escala | Backend/Frontend (form) | Não |
+| Publicar escala | Backend (status: published) | Não |
+| Notificar escalados | communication-agent | Template |
+| Coletar confirmações | whatsapp-attendant (intent: CONFIRMAR_ESCALA) | Template |
+| Buscar substituto | crm-operator + n8n | Haiku (sugestão) |
+| Relatório de confirmações | Supabase view | Não |
+
+### Fluxo Operacional
+
+```
+Admin/Líder cria service_schedule (status: draft)
+  ↓
+Adiciona volunteers → service_schedule_assignments (status: pending)
+  ↓
+Publica escala (status: published)
+  ↓
+communication-agent notifica cada voluntário via WhatsApp
+  Template: "Olá {nome}! Você está escalado para {evento} no dia {data}.
+             Pode confirmar? Responda SIM ou NÃO."
+  ↓
+whatsapp-attendant detecta resposta:
+  SIM → assignment.status = 'confirmed', responded_at = NOW()
+  NÃO → assignment.status = 'declined', responded_at = NOW()
+         → n8n aciona busca por substituto no mesmo ministério
+  ↓
+Quando todos confirmados → schedule.status = 'confirmed'
+  ↓ [dia do evento]
+Relatório pós-evento (presentes vs escalados)
+```
+
+### Integração com Agenda
+
+```
+church_event criado com ministério envolvido
+  → n8n sugere criação de service_schedule para o evento
+  → Líder confirma, sistema gera atribuições sugeridas baseadas em disponibilidade
+```
+
+### Fases de Implementação
+
+**MVP**: Criação manual de escalas, notificação básica por WhatsApp
+**Expansão**: Confirmação automática via chat, substituição semiautomática
+**Avançado**: Geração automática de escala por IA (Haiku) baseada em histórico
+
+### Regras
+
+```
+ESC-01: Escala SEMPRE tem church_id e ministry_id — nunca orphan
+ESC-02: Publicar escala (draft→published) exige pelo menos 1 atribuição
+ESC-03: Notificação de escala respeita optout e horário de church_settings
+ESC-04: Substituição automática só ocorre após volunteer.status = 'declined' confirmado
+ESC-05: Histórico de atribuições é imutável — declined/replaced são registrados, não deletados
+ESC-06: Relatório de frequência: confirmed_count / total_assigned por período
+```
+
+---
+
+## SEÇÃO 17 — MÓDULO: FINANCEIRO
+
+### Problema que Resolve
+
+Igrejas não têm visibilidade financeira organizada. Dízimos chegam por PIX sem
+identificação. Ofertas não são categorizadas. Campanhas não têm meta e progresso.
+O tesoureiro trabalha em planilhas desconectadas do resto do sistema.
+
+### Schema
+
+Tabelas: `donations`, `financial_campaigns`
+
+O módulo financeiro é propositalmente simples no backend:
+- Sem gateway próprio (integra com Stripe, PagSeguro, Mercado Pago via Vault)
+- Sem lógica contábil complexa (escopo: recebimentos da igreja)
+- Com rastreabilidade completa (audit_logs para toda alteração)
+
+### Tipos de Doação
+
+| type | Descrição | Identificação do doador |
+|---|---|---|
+| `dizimo` | Dízimo mensal do membro | Obrigatório (person_id) |
+| `oferta` | Oferta de culto ou online | Opcional (pode ser anônimo) |
+| `campanha` | Vinculado a financial_campaigns | Opcional |
+| `missoes` | Destinado a missões | Opcional |
+| `construcao` | Fundo de construção | Opcional |
+
+### Fluxo de Doação Online
+
+```
+Membro acessa link de doação (por canal: WhatsApp, Instagram, site)
+  ↓
+donation-agent envia link configurado em church_settings
+  ↓
+Membro paga via gateway (PIX, cartão)
+  ↓
+Gateway dispara webhook → Edge Function valida HMAC
+  ↓
+UPDATE donations SET status='confirmed', confirmed_at=NOW()
+  ↓
+receipt_sent = false → n8n envia comprovante via WhatsApp (template, sem LLM)
+  ↓
+INSERT audit_logs (action: 'DONATION_CONFIRMED')
+```
+
+### Fluxo de Doação Manual (dinheiro/culto)
+
+```
+Tesoureiro registra no painel (backend/frontend)
+  → INSERT donations (gateway='manual', status='confirmed')
+  → Associa a person_id se identificado
+  → INSERT audit_logs
+```
+
+### Campanhas Financeiras
+
+```
+financial_campaigns define: nome, meta, início, fim
+  ↓
+donations com campaign_id acumulam no progresso
+  ↓
+Supabase view `campaign_progress`:
+  SELECT campaign_id, SUM(amount) as raised, goal_amount,
+         ROUND(SUM(amount)/goal_amount*100, 1) as percent
+  FROM donations WHERE status='confirmed' AND campaign_id IS NOT NULL
+  GROUP BY campaign_id
+```
+
+### Visão Financeira (sem LLM)
+
+Supabase views para dashboard:
+```sql
+-- Receita por tipo no mês
+SELECT type, SUM(amount), COUNT(*) FROM donations
+WHERE church_id = $1 AND status = 'confirmed'
+AND DATE_TRUNC('month', confirmed_at) = DATE_TRUNC('month', NOW())
+GROUP BY type;
+
+-- Histórico mensal dos últimos 12 meses
+SELECT DATE_TRUNC('month', confirmed_at) as mes, SUM(amount)
+FROM donations WHERE church_id = $1 AND status = 'confirmed'
+GROUP BY mes ORDER BY mes;
+```
+
+### Responsabilidades por Componente
+
+| Ação | Responsável | LLM |
+|---|---|---|
+| Enviar link de doação | donation-agent | Template |
+| Confirmar pagamento | Edge Function (webhook gateway) | Não |
+| Enviar comprovante | n8n + communication-agent | Template |
+| Registrar doação manual | Backend/Frontend | Não |
+| Visão financeira | Supabase views | Não |
+| Progresso de campanha | Supabase view | Não |
+| Relatório mensal | n8n schedule → template | Não |
+| Alerta de meta atingida | n8n → communication-agent | Template |
+
+### Regras
+
+```
+FIN-01: donations SEMPRE tem church_id — multi-tenant inviolável
+FIN-02: amount NUNCA é alterado após status='confirmed' — apenas audit_log
+FIN-03: gateway_transaction_id é UNIQUE por gateway — previne duplicata de webhook
+FIN-04: Doação anônima: person_id = NULL é válido — não forçar identificação
+FIN-05: Reembolso: status='refunded', amount não alterado — registrar em audit_logs
+FIN-06: O sistema NUNCA processa pagamento diretamente — apenas registra e redireciona
+FIN-07: Chaves de gateway ficam no Vault — config em integrations tem apenas vault_key
+FIN-08: Comprovante enviado somente após status='confirmed' — nunca em 'pending'
+```
+
+### Fases de Implementação
+
+**MVP**: Registro manual de doações, link externo de PIX, histórico básico
+**Expansão**: Webhook de gateway (Stripe ou PagSeguro), comprovante automático, campanhas
+**Avançado**: Visão financeira completa, relatório mensal automático, metas de campanha
+
+---
+
+## SEÇÃO 18 — ROADMAP ATUALIZADO: FASES POR MÓDULO
+
+### Fase MVP — Fluxo WhatsApp Ponta a Ponta (✅ Implementado)
+- [x] Schema multi-tenant base (churches, people, interactions, pipeline)
+- [x] RLS em todas as tabelas base
+- [x] whatsapp-webhook → demand-router → whatsapp-attendant
+- [x] Classificação de intenção (regras + Haiku fallback)
+- [x] Upsert de pessoas e registro de interações
+- [x] Pipeline espiritual (stages padrão por tenant)
+- [x] n8n workflow: follow-up-visitante
+- [x] 10 agentes documentados e especificados
+
+### Fase 1 — Módulos Estruturais (schema pronto, frontend pendente)
+- [x] Migration 00006: leaders, cells, ministries, volunteers, escalas, agenda, financeiro
+- [ ] Ativar RLS para novas tabelas
+- [ ] Criar Supabase views para dashboard
+- [ ] Frontend: tela de Pessoas e Pipeline
+- [ ] Frontend: tela de Células e Líderes
+- [ ] Frontend: tela de Ministérios e Voluntários
+
+### Fase 2 — Escalas e Agenda
+- [ ] Criação e publicação de escalas via painel
+- [ ] Notificação automática de escalados via WhatsApp (communication-agent)
+- [ ] Confirmação de escala via WhatsApp (whatsapp-attendant)
+- [ ] Substituição semiautomática via n8n
+- [ ] Agenda da igreja com recorrência
+- [ ] Integração agenda → service_schedules
+
+### Fase 3 — Financeiro Operacional
+- [ ] Webhook de gateway (PagSeguro PIX ou Stripe)
+- [ ] Comprovante automático via communication-agent
+- [ ] Campanhas financeiras com progresso
+- [ ] Visão financeira no dashboard
+- [ ] Relatório mensal automatizado via n8n
+
+### Fase 4 — Onboarding Autônomo
+- [ ] church-onboarding-agent funcional ponta a ponta
+- [ ] Geração automática de context/tenants/{slug}.md
+- [ ] Ativação automática de módulos por plano contratado
+- [ ] Criação de tenant completo em < 30 minutos
+
+### Fase 5 — Frontend Multi-Tenant
+- [ ] App web com identidade dinâmica por tenant
+- [ ] Dashboard com KPIs por módulo
+- [ ] Painel de conversas e interações
+- [ ] Configurações de módulos self-service
+
+### Fase 6 — Expansão de Setor
+- [ ] Adaptação do schema para clínicas
+- [ ] Adaptação do schema para empresas SMB
+- [ ] Marketplace de skills de terceiros
+
+---
+
 > **O Ekthos não é um software que as igrejas usam.**
 > **É um sistema que opera junto com elas.**
 >
