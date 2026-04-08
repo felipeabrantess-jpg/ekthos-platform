@@ -28,6 +28,78 @@ Status : Ativo — produção
 
 ---
 
+## SEÇÃO 0.5 — MANDATO ARQUITETURAL
+
+### O Arquiteto-Chefe
+
+O sistema possui um componente de inteligência central chamado `ekthos-chief-architect`.
+Ele é um **gate obrigatório** — não uma sugestão.
+
+REGRA ABSOLUTA:
+  Nenhuma funcionalidade, integração, agente ou automação pode ser
+  implementada sem antes passar pelo ekthos-chief-architect.
+
+Isso inclui:
+  - Novos endpoints ou Edge Functions
+  - Novos agentes ou skills
+  - Novas integrações (APIs, webhooks, gateways)
+  - Novos workflows n8n
+  - Alterações em schema do banco
+  - Novas regras de RLS
+
+### Como o Gate Funciona
+
+Antes de qualquer implementação, o arquiteto-chefe é invocado:
+
+  /architect MODO=EVALUATE "descrição da necessidade"
+
+O output é obrigatório antes de prosseguir. Se o output indicar BLOQUEIO, a implementação não acontece.
+
+### Framework de Decisão do Arquiteto
+
+Toda decisão arquitetural segue 5 perguntas nesta ordem exata:
+
+  P1: É dado (estado/histórico) ou é lógica (processamento)?
+      → dado          : Supabase (PostgreSQL + RLS)
+      → lógica sync   : Edge Function + Skill
+      → lógica async  : n8n Workflow
+
+  P2: É interação (humano↔sistema) ou automação (sistema↔sistema)?
+      → interação     : Agente (WhatsApp, Instagram, Suporte)
+      → automação     : n8n + Webhook
+
+  P3: É nativo ou requer integração externa?
+      → nativo        : Supabase direto (auth, storage, db)
+      → externo       : Edge Function com credencial no Vault
+
+  P4: O dado tem dono definido?
+      → Ekthos        : Supabase + church_id obrigatório
+      → Externo       : Integração com mapeamento para schema interno
+
+  P5: Escala com custo linear ou exponencial?
+      → linear        : aprovado
+      → exponencial   : redesenho obrigatório antes de implementar
+
+### Onboarding como Núcleo
+
+O onboarding por IA não é uma feature. É o núcleo do sistema.
+Toda a operação de um tenant depende do onboarding ter sido concluído.
+Sem onboarding completo:
+  - Nenhum agente é ativado
+  - Nenhuma automação é disparada
+  - Nenhuma integração é configurada
+
+O onboarding gera automaticamente:
+  1. Registro validado na tabela churches
+  2. church_settings com módulos, labels e cores
+  3. context/tenants/{slug}.md com terminologia e tom
+  4. Integrações configuradas (tokens no Vault)
+  5. Workflows n8n ativados para o tenant
+  6. Agentes em standby com contexto carregado
+  7. Audit log de criação do tenant
+
+---
+
 ## SEÇÃO 0 — O QUE É O EKTHOS
 
 O Ekthos Platform é um **sistema operacional de inteligência artificial** construído para igrejas.
@@ -864,29 +936,41 @@ ekthos-platform/
 
 ---
 
-## SEÇÃO 13 — DECISÃO DE ARQUITETURA
+## SEÇÃO 13 — INVOCAÇÃO DO ARQUITETO-CHEFE
 
-Antes de qualquer decisão técnica, faça as perguntas nesta ordem:
+### Quando invocar
 
-```
-1. "Isso isola corretamente os dados do tenant?"
-   → Se não → não implementa
+SEMPRE antes de:
+  - Criar novo arquivo de skill, agente ou rule
+  - Propor nova tabela ou alterar schema existente
+  - Integrar API ou serviço externo
+  - Criar workflow n8n
+  - Modificar lógica de RLS
+  - Definir novo webhook (entrada ou saída)
 
-2. "Isso fica no banco ou no contexto?"
-   → Dados operacionais → banco (Supabase)
-   → Linguagem, tom, terminologia → contexto (.md)
+### Como invocar
 
-3. "Isso é função de agente ou de skill?"
-   → Canal específico, 24/7, interativo → agente
-   → Competência reutilizável, sem canal → skill
+  MODO EVALUATE  → /architect MODO=EVALUATE "o que precisa ser feito"
+  MODO DESIGN    → /architect MODO=DESIGN "fluxo a modelar"
+  MODO REVIEW    → /architect MODO=REVIEW "implementação para revisar"
+  MODO INTEGRATE → /architect MODO=INTEGRATE "sistema externo a integrar"
+  MODO TROUBLESHOOT → /architect MODO=TROUBLESHOOT "problema a diagnosticar"
 
-4. "Isso precisa de intervenção humana?"
-   → Operação financeira, decisão pastoral, incerteza alta → sim
-   → Triagem, resposta, registro → não
+### Output obrigatório do arquiteto
 
-5. "O pastor vai entender o resultado?"
-   → Se não → simplifica o output ou o fluxo
-```
+O arquiteto-chefe SEMPRE retorna:
+
+  STATUS: APROVADO | BLOQUEADO | REVISÃO_NECESSÁRIA
+  COMPONENTE_PRIMÁRIO: [qual componente resolve]
+  COMPONENTE_SECUNDÁRIO: [se necessário]
+  JUSTIFICATIVA: [por que essa escolha]
+  RISCOS: [o que pode dar errado]
+  PRÓXIMOS_PASSOS: [em ordem de execução]
+  VIOLAÇÕES_DETECTADAS: [se houver]
+
+Se STATUS = BLOQUEADO → implementação não prossegue até resolução.
+Se STATUS = REVISÃO_NECESSÁRIA → arquiteto detalha o que precisa mudar.
+Se STATUS = APROVADO → implementação pode avançar seguindo PRÓXIMOS_PASSOS.
 
 ---
 
