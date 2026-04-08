@@ -46,16 +46,16 @@ export function useCreateVolunteer() {
     mutationFn: async (input: CreateVolunteerInput) => {
       const { data, error } = await supabase
         .from('volunteers')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .insert({
           church_id: input.church_id,
           person_id: input.person_id,
           ministry_id: input.ministry_id,
           role: input.role ?? null,
           skills: input.skills ?? [],
-          availability: input.availability ?? { days: [], period: '' },
+          availability: input.availability ?? { days: [], period: 'any' },
           is_active: true,
-          joined_at: new Date().toISOString(),
-        })
+        } as any)
         .select()
         .single()
 
@@ -84,7 +84,8 @@ export function useUpdateVolunteer() {
     mutationFn: async ({ id, church_id, ...updates }: UpdateVolunteerInput) => {
       const { data, error } = await supabase
         .from('volunteers')
-        .update(updates)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(updates as any)
         .eq('id', id)
         .eq('church_id', church_id)
         .select()
@@ -106,7 +107,8 @@ export function useDeactivateVolunteer() {
     mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
       const { error } = await supabase
         .from('volunteers')
-        .update({ is_active: false })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ is_active: false } as any)
         .eq('id', id)
         .eq('church_id', churchId)
 

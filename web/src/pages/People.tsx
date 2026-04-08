@@ -125,7 +125,7 @@ export default function People() {
     if (!confirm(`Remover ${person.name ?? 'esta pessoa'}? Esta ação pode ser revertida.`)) return
     setDeletingId(person.id)
     try {
-      await deletePerson.mutateAsync({ id: person.id, churchId })
+      await deletePerson.mutateAsync({ id: person.id, churchId: churchId! })
     } finally {
       setDeletingId(null)
     }

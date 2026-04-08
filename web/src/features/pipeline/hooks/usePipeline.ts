@@ -84,10 +84,8 @@ export function useMovePersonToStage() {
       if (existing) {
         const { error } = await supabase
           .from('person_pipeline')
-          .update({
-            stage_id: newStageId,
-            last_activity_at: new Date().toISOString(),
-          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .update({ stage_id: newStageId, last_activity_at: new Date().toISOString() } as any)
           .eq('person_id', personId)
           .eq('church_id', churchId)
 
@@ -95,13 +93,8 @@ export function useMovePersonToStage() {
       } else {
         const { error } = await supabase
           .from('person_pipeline')
-          .insert({
-            church_id: churchId,
-            person_id: personId,
-            stage_id: newStageId,
-            entered_at: new Date().toISOString(),
-            last_activity_at: new Date().toISOString(),
-          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert({ church_id: churchId, person_id: personId, stage_id: newStageId, entered_at: new Date().toISOString(), last_activity_at: new Date().toISOString(), notes: null } as any)
 
         if (error) throw new Error(error.message)
       }

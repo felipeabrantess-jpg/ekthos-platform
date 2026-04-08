@@ -81,7 +81,8 @@ export function useCreatePerson() {
     mutationFn: async (input: CreatePersonInput) => {
       const { data, error } = await supabase
         .from('people')
-        .insert(input)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(input as any)
         .select()
         .single()
 
@@ -89,6 +90,7 @@ export function useCreatePerson() {
       return data
     },
     onSuccess: (data) => {
+      if (!data) return
       void queryClient.invalidateQueries({ queryKey: ['people', data.church_id] })
       void queryClient.invalidateQueries({ queryKey: ['people-count', data.church_id] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', data.church_id] })
@@ -113,7 +115,8 @@ export function useUpdatePerson() {
     mutationFn: async ({ id, church_id, ...updates }: UpdatePersonInput) => {
       const { data, error } = await supabase
         .from('people')
-        .update(updates)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(updates as any)
         .eq('id', id)
         .eq('church_id', church_id) // segurança multi-tenant
         .select()
@@ -123,6 +126,7 @@ export function useUpdatePerson() {
       return data
     },
     onSuccess: (data) => {
+      if (!data) return
       void queryClient.invalidateQueries({ queryKey: ['people', data.church_id] })
     },
   })
@@ -136,7 +140,8 @@ export function useDeletePerson() {
     mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
       const { error } = await supabase
         .from('people')
-        .update({ deleted_at: new Date().toISOString() })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ deleted_at: new Date().toISOString() } as any)
         .eq('id', id)
         .eq('church_id', churchId) // segurança multi-tenant
       if (error) throw new Error(error.message)
