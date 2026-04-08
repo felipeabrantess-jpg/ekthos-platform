@@ -4,6 +4,13 @@ import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import People from '@/pages/People'
+import Pipeline from '@/pages/Pipeline'
+import Ministerios from '@/pages/Ministerios'
+import Voluntarios from '@/pages/Voluntarios'
+import Escalas from '@/pages/Escalas'
+import Financeiro from '@/pages/Financeiro'
+import Agenda from '@/pages/Agenda'
+import Gabinete from '@/pages/Gabinete'
 import Spinner from '@/components/ui/Spinner'
 
 // Rota protegida — redireciona para /login se não autenticado
@@ -41,28 +48,15 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="pessoas" element={<People />} />
-          {/* Rotas futuras — adicionar sem reescrever */}
-          <Route path="pipeline" element={<PlaceholderPage title="Pipeline" />} />
-          <Route path="ministerios" element={<PlaceholderPage title="Ministérios" />} />
-          <Route path="voluntarios" element={<PlaceholderPage title="Voluntários" />} />
-          <Route path="escalas" element={<PlaceholderPage title="Escalas" />} />
-          <Route path="financeiro" element={<PlaceholderPage title="Financeiro" />} />
-          <Route path="agenda" element={<PlaceholderPage title="Agenda" />} />
-          <Route path="gabinete" element={<PlaceholderPage title="Gabinete Pastoral" />} />
+          <Route path="pipeline" element={<Pipeline />} />
+          <Route path="ministerios" element={<Ministerios />} />
+          <Route path="voluntarios" element={<Voluntarios />} />
+          <Route path="escalas" element={<Escalas />} />
+          <Route path="financeiro" element={<Financeiro />} />
+          <Route path="agenda" element={<Agenda />} />
+          <Route path="gabinete" element={<Gabinete />} />
         </Route>
       </Routes>
     </BrowserRouter>
-  )
-}
-
-// Placeholder para rotas ainda não implementadas
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-center">
-        <p className="text-2xl font-semibold text-gray-400">{title}</p>
-        <p className="text-sm text-gray-400 mt-1">Em construção</p>
-      </div>
-    </div>
   )
 }
