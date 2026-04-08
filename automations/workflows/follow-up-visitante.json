@@ -1,0 +1,193 @@
+{
+  "name": "follow-up-visitante",
+  "description": "Detecta novo visitante registrado no Supabase e agenda follow-up automático após 24h",
+  "version": "1.0.0",
+  "tenant_safe": true,
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Recebe Novo Visitante",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "path": "ekthos-follow-up-visitante",
+        "method": "POST",
+        "responseMode": "onReceived",
+        "responseData": "allEntries"
+      },
+      "notes": "Recebe: {churchId, personId, churchName, triggeredAt}"
+    },
+    {
+      "id": "validate-payload",
+      "name": "Valida Payload",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.churchId }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json.personId }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "notes": "Garante que church_id e person_id estão presentes antes de prosseguir"
+    },
+    {
+      "id": "wait-24h",
+      "name": "Aguarda 24 horas",
+      "type": "n8n-nodes-base.wait",
+      "parameters": {
+        "amount": 24,
+        "unit": "hours"
+      },
+      "notes": "Período de espera configurável. Produção: 24h. Staging: 5min para testes."
+    },
+    {
+      "id": "check-still-visitor",
+      "name": "Verifica Stage Atual",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/check_person_stage",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headers": {
+          "apikey": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Authorization": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "p_church_id": "={{ $json.churchId }}",
+          "p_person_id": "={{ $json.personId }}",
+          "p_stage_slug": "visitante"
+        }
+      },
+      "notes": "Chama função RPC que retorna true se pessoa ainda está no stage visitante e optout=false"
+    },
+    {
+      "id": "check-optout",
+      "name": "Ainda Visitante e Sem Optout?",
+      "type": "n8n-nodes-base.if",
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.result }}",
+              "value2": true,
+              "operation": "equal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-followup",
+      "name": "Envia Follow-up via WhatsApp Attendant",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/functions/v1/send-followup-message",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "headers": {
+          "Authorization": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "churchId": "={{ $('webhook-trigger').item.json.churchId }}",
+          "personId": "={{ $('webhook-trigger').item.json.personId }}",
+          "messageType": "follow_up_visitante",
+          "delayHours": 24
+        }
+      },
+      "notes": "Chama Edge Function que gera mensagem de follow-up com template (sem LLM) e envia via WhatsApp API"
+    },
+    {
+      "id": "log-followup-sent",
+      "name": "Registra Follow-up em Audit Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/audit_logs",
+        "headers": {
+          "apikey": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Authorization": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        "body": {
+          "church_id": "={{ $('webhook-trigger').item.json.churchId }}",
+          "entity_type": "interaction",
+          "entity_id": "={{ $('webhook-trigger').item.json.personId }}",
+          "action": "FOLLOWUP_SENT",
+          "actor_type": "system",
+          "actor_id": "n8n:follow-up-visitante",
+          "payload": {
+            "workflow": "follow-up-visitante",
+            "delay_hours": 24,
+            "triggered_at": "={{ $('webhook-trigger').item.json.triggeredAt }}"
+          },
+          "model_used": "template",
+          "tokens_used": 0
+        }
+      }
+    },
+    {
+      "id": "log-skipped",
+      "name": "Registra Pulo (Optout ou Stage Mudou)",
+      "type": "n8n-nodes-base.httpRequest",
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/audit_logs",
+        "headers": {
+          "apikey": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Authorization": "Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}",
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        "body": {
+          "church_id": "={{ $('webhook-trigger').item.json.churchId }}",
+          "entity_type": "interaction",
+          "entity_id": "={{ $('webhook-trigger').item.json.personId }}",
+          "action": "FOLLOWUP_SKIPPED",
+          "actor_type": "system",
+          "actor_id": "n8n:follow-up-visitante",
+          "payload": {
+            "reason": "person_not_visitor_or_optout",
+            "checked_after_hours": 24
+          },
+          "model_used": null,
+          "tokens_used": 0
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook-trigger": { "main": [["validate-payload"]] },
+    "validate-payload": {
+      "main": [["wait-24h"], []],
+      "notes": "true → aguarda | false → descarta sem log"
+    },
+    "wait-24h": { "main": [["check-still-visitor"]] },
+    "check-still-visitor": { "main": [["check-optout"]] },
+    "check-optout": {
+      "main": [["send-followup"], ["log-skipped"]],
+      "notes": "true → envia | false → registra pulo"
+    },
+    "send-followup": { "main": [["log-followup-sent"]] }
+  },
+  "settings": {
+    "errorWorkflow": "ekthos-error-handler",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "America/Sao_Paulo"
+  },
+  "variables": {
+    "SUPABASE_URL": "{{ $env.SUPABASE_URL }}",
+    "SUPABASE_SERVICE_ROLE_KEY": "{{ $env.SUPABASE_SERVICE_ROLE_KEY }}"
+  }
+}
