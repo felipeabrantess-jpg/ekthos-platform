@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      addons: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          name: string
+          price_cents: number
+          slug: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          name: string
+          price_cents: number
+          slug: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          name?: string
+          price_cents?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      agents_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          features: Json
+          full_description: string | null
+          id: string
+          name: string
+          pain_solved: string | null
+          price_cents: number
+          pricing_tier: Database["public"]["Enums"]["agent_pricing_tier"]
+          short_description: string
+          slug: string
+          without_me: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          features?: Json
+          full_description?: string | null
+          id?: string
+          name: string
+          pain_solved?: string | null
+          price_cents?: number
+          pricing_tier?: Database["public"]["Enums"]["agent_pricing_tier"]
+          short_description: string
+          slug: string
+          without_me?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          features?: Json
+          full_description?: string | null
+          id?: string
+          name?: string
+          pain_solved?: string | null
+          price_cents?: number
+          pricing_tier?: Database["public"]["Enums"]["agent_pricing_tier"]
+          short_description?: string
+          slug?: string
+          without_me?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -60,6 +132,60 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_logs: {
+        Row: {
+          action_taken: string | null
+          automation_name: string
+          church_id: string
+          created_at: string
+          error: string | null
+          id: string
+          payload: Json
+          person_id: string | null
+          result: string
+          trigger_type: string
+        }
+        Insert: {
+          action_taken?: string | null
+          automation_name: string
+          church_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          payload?: Json
+          person_id?: string | null
+          result?: string
+          trigger_type: string
+        }
+        Update: {
+          action_taken?: string | null
+          automation_name?: string
+          church_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          payload?: Json
+          person_id?: string | null
+          result?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_logs_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -883,6 +1009,53 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount_cents: number
+          church_id: string
+          created_at: string
+          description: string | null
+          hosted_invoice_url: string | null
+          id: string
+          paid_at: string | null
+          pdf_url: string | null
+          status: string
+          stripe_invoice_id: string | null
+        }
+        Insert: {
+          amount_cents?: number
+          church_id: string
+          created_at?: string
+          description?: string | null
+          hosted_invoice_url?: string | null
+          id?: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          church_id?: string
+          created_at?: string
+          description?: string | null
+          hosted_invoice_url?: string | null
+          id?: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          status?: string
+          stripe_invoice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leaders: {
         Row: {
           church_id: string
@@ -1092,6 +1265,104 @@ export type Database = {
           },
         ]
       }
+      n8n_webhooks: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          people_url: string | null
+          pipeline_url: string | null
+          secret_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          people_url?: string | null
+          pipeline_url?: string | null
+          secret_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          people_url?: string | null
+          pipeline_url?: string | null
+          secret_token?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "n8n_webhooks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          automation_name: string | null
+          body: string | null
+          church_id: string
+          created_at: string
+          id: string
+          link: string | null
+          person_id: string | null
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          automation_name?: string | null
+          body?: string | null
+          church_id: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          person_id?: string | null
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          automation_name?: string | null
+          body?: string | null
+          church_id?: string
+          created_at?: string
+          id?: string
+          link?: string | null
+          person_id?: string | null
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pastoral_cabinet: {
         Row: {
           bio: string | null
@@ -1154,8 +1425,10 @@ export type Database = {
           avatar_url: string | null
           baptism_date: string | null
           baptized: boolean | null
+          batismo_status: string | null
           birth_date: string | null
           calling: string | null
+          celula_id: string | null
           children_count: number | null
           children_info: string | null
           church_id: string
@@ -1163,6 +1436,7 @@ export type Database = {
             | Database["public"]["Enums"]["church_relationship"]
             | null
           city: string | null
+          como_conheceu: string | null
           consolidation_school: boolean | null
           conversion_date: string | null
           cpf: string | null
@@ -1170,6 +1444,7 @@ export type Database = {
           deleted_at: string | null
           email: string | null
           encounter_with_god: boolean | null
+          experiencia_lideranca: string | null
           first_name: string | null
           first_visit_date: string | null
           has_cell: boolean | null
@@ -1178,6 +1453,7 @@ export type Database = {
           instagram_handle: string | null
           interested_in_cell: boolean | null
           invited_by: string | null
+          is_dizimista: boolean | null
           last_contact_at: string | null
           last_name: string | null
           latitude: number | null
@@ -1190,6 +1466,7 @@ export type Database = {
           name: string | null
           neighborhood: string | null
           network: string | null
+          observacoes_pastorais: string | null
           optout: boolean
           optout_at: string | null
           origin_church_name: string | null
@@ -1217,8 +1494,10 @@ export type Database = {
           avatar_url?: string | null
           baptism_date?: string | null
           baptized?: boolean | null
+          batismo_status?: string | null
           birth_date?: string | null
           calling?: string | null
+          celula_id?: string | null
           children_count?: number | null
           children_info?: string | null
           church_id: string
@@ -1226,6 +1505,7 @@ export type Database = {
             | Database["public"]["Enums"]["church_relationship"]
             | null
           city?: string | null
+          como_conheceu?: string | null
           consolidation_school?: boolean | null
           conversion_date?: string | null
           cpf?: string | null
@@ -1233,6 +1513,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           encounter_with_god?: boolean | null
+          experiencia_lideranca?: string | null
           first_name?: string | null
           first_visit_date?: string | null
           has_cell?: boolean | null
@@ -1241,6 +1522,7 @@ export type Database = {
           instagram_handle?: string | null
           interested_in_cell?: boolean | null
           invited_by?: string | null
+          is_dizimista?: boolean | null
           last_contact_at?: string | null
           last_name?: string | null
           latitude?: number | null
@@ -1253,6 +1535,7 @@ export type Database = {
           name?: string | null
           neighborhood?: string | null
           network?: string | null
+          observacoes_pastorais?: string | null
           optout?: boolean
           optout_at?: string | null
           origin_church_name?: string | null
@@ -1280,8 +1563,10 @@ export type Database = {
           avatar_url?: string | null
           baptism_date?: string | null
           baptized?: boolean | null
+          batismo_status?: string | null
           birth_date?: string | null
           calling?: string | null
+          celula_id?: string | null
           children_count?: number | null
           children_info?: string | null
           church_id?: string
@@ -1289,6 +1574,7 @@ export type Database = {
             | Database["public"]["Enums"]["church_relationship"]
             | null
           city?: string | null
+          como_conheceu?: string | null
           consolidation_school?: boolean | null
           conversion_date?: string | null
           cpf?: string | null
@@ -1296,6 +1582,7 @@ export type Database = {
           deleted_at?: string | null
           email?: string | null
           encounter_with_god?: boolean | null
+          experiencia_lideranca?: string | null
           first_name?: string | null
           first_visit_date?: string | null
           has_cell?: boolean | null
@@ -1304,6 +1591,7 @@ export type Database = {
           instagram_handle?: string | null
           interested_in_cell?: boolean | null
           invited_by?: string | null
+          is_dizimista?: boolean | null
           last_contact_at?: string | null
           last_name?: string | null
           latitude?: number | null
@@ -1316,6 +1604,7 @@ export type Database = {
           name?: string | null
           neighborhood?: string | null
           network?: string | null
+          observacoes_pastorais?: string | null
           optout?: boolean
           optout_at?: string | null
           origin_church_name?: string | null
@@ -1337,6 +1626,13 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "people_celula_id_fkey"
+            columns: ["celula_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "people_church_id_fkey"
             columns: ["church_id"]
@@ -1692,6 +1988,39 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          included_agents: number
+          max_users: number
+          name: string
+          price_cents: number
+          slug: string
+          stripe_price_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          included_agents?: number
+          max_users?: number
+          name: string
+          price_cents: number
+          slug: string
+          stripe_price_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          included_agents?: number
+          max_users?: number
+          name?: string
+          price_cents?: number
+          slug?: string
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1873,6 +2202,149 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ministries"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_tokens: {
+        Row: {
+          church_id: string
+          created_at: string
+          device_info: Json | null
+          id: string
+          last_active_at: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          last_active_at?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          last_active_at?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_agents: {
+        Row: {
+          active: boolean
+          agent_slug: string
+          created_at: string
+          id: string
+          subscription_id: string
+        }
+        Insert: {
+          active?: boolean
+          agent_slug: string
+          created_at?: string
+          id?: string
+          subscription_id: string
+        }
+        Update: {
+          active?: boolean
+          agent_slug?: string
+          created_at?: string
+          id?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_agents_agent_slug_fkey"
+            columns: ["agent_slug"]
+            isOneToOne: false
+            referencedRelation: "agents_catalog"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "subscription_agents_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          church_id: string
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          extra_agents: number
+          extra_users: number
+          id: string
+          plan_slug: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_end: string
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          church_id: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          extra_agents?: number
+          extra_users?: number
+          id?: string
+          plan_slug: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          church_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          extra_agents?: number
+          extra_users?: number
+          id?: string
+          plan_slug?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_slug_fkey"
+            columns: ["plan_slug"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -2110,8 +2582,11 @@ export type Database = {
         Args: { p_church_id: string }
         Returns: undefined
       }
+      upsert_session_token: { Args: { p_church_id: string }; Returns: string }
+      validate_session_token: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {
+      agent_pricing_tier: "free" | "always_paid" | "eligible"
       app_role:
         | "admin"
         | "admin_departments"
@@ -2261,6 +2736,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agent_pricing_tier: ["free", "always_paid", "eligible"],
       app_role: [
         "admin",
         "admin_departments",
@@ -2289,116 +2765,4 @@ export const Constants = {
     },
   },
 } as const
-
-// ──────────────────────────────────────────────────────────────────────
-// Aliases de Row type (backward compatibility com hooks existentes)
-// ──────────────────────────────────────────────────────────────────────
-export type Church = Database['public']['Tables']['churches']['Row']
-export type ChurchSettings = Database['public']['Tables']['church_settings']['Row']
-export type Person = Database['public']['Tables']['people']['Row']
-export type PipelineStage = Database['public']['Tables']['pipeline_stages']['Row']
-export type PersonPipeline = Database['public']['Tables']['person_pipeline']['Row']
-export type PipelineHistory = Database['public']['Tables']['pipeline_history']['Row']
-export type Interaction = Database['public']['Tables']['interactions']['Row']
-export type Leader = Database['public']['Tables']['leaders']['Row']
-export type Ministry = Database['public']['Tables']['ministries']['Row']
-export type Volunteer = Database['public']['Tables']['volunteers']['Row']
-export type ServiceSchedule = Database['public']['Tables']['service_schedules']['Row']
-export type ServiceScheduleAssignment = Database['public']['Tables']['service_schedule_assignments']['Row']
-export type ChurchEvent = Database['public']['Tables']['church_events']['Row']
-export type PastoralCabinet = Database['public']['Tables']['pastoral_cabinet']['Row']
-export type Donation = Database['public']['Tables']['donations']['Row']
-export type FinancialCampaign = Database['public']['Tables']['financial_campaigns']['Row']
-export type Pipeline = Database['public']['Tables']['pipelines']['Row']
-export type Group = Database['public']['Tables']['groups']['Row']
-export type CellMeeting = Database['public']['Tables']['cell_meetings']['Row']
-export type CellMember = Database['public']['Tables']['cell_members']['Row']
-export type CellAttendance = Database['public']['Tables']['cell_attendance']['Row']
-export type CellReport = Database['public']['Tables']['cell_reports']['Row']
-export type CellReportPerson = Database['public']['Tables']['cell_report_people']['Row']
-export type Tag = Database['public']['Tables']['tags']['Row']
-export type PersonTag = Database['public']['Tables']['person_tags']['Row']
-export type MinistryMember = Database['public']['Tables']['ministry_members']['Row']
-export type MemberProfile = Database['public']['Tables']['member_profiles']['Row']
-export type Task = Database['public']['Tables']['tasks']['Row']
-export type Integration = Database['public']['Tables']['integrations']['Row']
-export type Profile = Database['public']['Tables']['profiles']['Row']
-export type Role = Database['public']['Tables']['roles']['Row']
-export type PersonRole = Database['public']['Tables']['person_roles']['Row']
-export type PersonEvent = Database['public']['Tables']['person_events']['Row']
-export type EventTemplate = Database['public']['Tables']['event_templates']['Row']
-export type Contribution = Database['public']['Tables']['contributions']['Row']
-
-// ──────────────────────────────────────────────────────────────────────
-// Enums / string literal unions (não mapeados como DB enums)
-// ──────────────────────────────────────────────────────────────────────
-export type PersonSource = 'whatsapp' | 'instagram' | 'manual' | 'import' | 'onboarding'
-export type InteractionType = 'whatsapp' | 'instagram' | 'system' | 'manual' | 'n8n'
-export type InteractionDirection = 'inbound' | 'outbound'
-export type ModelUsed = 'haiku' | 'sonnet' | 'template' | 'rule' | 'human' | 'none'
-export type DonationType = 'dizimo' | 'oferta' | 'campanha' | 'missoes' | 'construcao'
-export type DonationStatus = 'pending' | 'confirmed' | 'failed' | 'refunded' | 'cancelled'
-export type PaymentMethod = 'pix' | 'cartao_credito' | 'cartao_debito' | 'boleto' | 'dinheiro' | 'transferencia'
-export type Gateway = 'stripe' | 'pagseguro' | 'mercadopago' | 'manual'
-export type ScheduleStatus = 'draft' | 'published' | 'confirmed' | 'cancelled'
-export type AssignmentStatus = 'pending' | 'confirmed' | 'declined' | 'replaced'
-export type CellMemberRole = 'membro' | 'lider' | 'hospedeiro' | 'aprendiz'
-export type EventType = 'culto' | 'reuniao' | 'celula' | 'retiro' | 'conferencia' | 'treinamento' | 'outro'
-export type OnboardingStatus = 'in_progress' | 'completed' | 'abandoned'
-export type CellRole = Database['public']['Enums']['cell_role']
-export type MinistryRole = Database['public']['Enums']['ministry_role']
-export type ChurchRelationship = Database['public']['Enums']['church_relationship']
-export type PersonStage = Database['public']['Enums']['person_stage']
-
-// ──────────────────────────────────────────────────────────────────────
-// Tipos compostos (queries com joins)
-// ──────────────────────────────────────────────────────────────────────
-export interface PersonWithStage extends Person {
-  person_pipeline: Array<{
-    stage_id: string
-    entered_at: string
-    last_activity_at: string
-    loss_reason: string | null
-    pipeline_stages: Pick<PipelineStage, 'id' | 'name' | 'slug' | 'order_index' | 'sla_hours'> | null
-  }>
-}
-
-export interface LeaderWithPerson extends Leader {
-  people: Pick<Person, 'id' | 'name' | 'phone' | 'email'> | null
-}
-
-export interface MinistryWithLeader extends Ministry {
-  leaders: LeaderWithPerson | null
-  volunteer_count?: number
-}
-
-export interface VolunteerWithPerson extends Volunteer {
-  people: Pick<Person, 'id' | 'name' | 'phone'> | null
-}
-
-export interface ScheduleWithAssignments extends ServiceSchedule {
-  ministries: Pick<Ministry, 'id' | 'name'> | null
-  service_schedule_assignments: Array<
-    ServiceScheduleAssignment & {
-      volunteers: VolunteerWithPerson | null
-    }
-  >
-}
-
-export interface GroupWithDetails extends Group {
-  cell_members: Array<CellMember & { people: Pick<Person, 'id' | 'name' | 'phone'> | null }>
-  leader: Pick<Person, 'id' | 'name' | 'phone'> | null
-}
-
-// ──────────────────────────────────────────────────────────────────────
-// Aliases para tabelas de roles (migration 00008)
-// ──────────────────────────────────────────────────────────────────────
-export type UserRole = Database['public']['Tables']['user_roles']['Row']
-export type SupervisorArea = Database['public']['Tables']['supervisor_areas']['Row']
-export type CellLeaderAssignment = Database['public']['Tables']['cell_leader_assignments']['Row']
-
-// Re-export do enum app_role como AppRole para uso no frontend
-// Mantemos AppRole definido em useRole.ts como source of truth;
-// aqui apenas para quem importar de database.types diretamente.
-export type AppRoleDB = Database['public']['Enums']['app_role']
 
