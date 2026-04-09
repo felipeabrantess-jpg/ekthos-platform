@@ -147,6 +147,7 @@ export interface PipelineStage {
   name: string
   slug: string
   order_index: number
+  sla_hours: number | null
   days_until_followup: number
   auto_followup: boolean
   is_active: boolean
@@ -161,9 +162,22 @@ export interface PersonPipeline {
   stage_id: string
   entered_at: string
   last_activity_at: string
+  loss_reason: string | null
   notes: string | null
   created_at: string
   updated_at: string
+}
+
+export interface PipelineHistory {
+  id: string
+  church_id: string
+  person_id: string
+  from_stage_id: string | null
+  to_stage_id: string
+  moved_at: string
+  moved_by: string | null
+  loss_reason: string | null
+  notes: string | null
 }
 
 export interface Interaction {
@@ -505,8 +519,10 @@ export interface Contribution {
 export interface PersonWithStage extends Person {
   person_pipeline: Array<{
     stage_id: string
+    entered_at: string
     last_activity_at: string
-    pipeline_stages: Pick<PipelineStage, 'id' | 'name' | 'slug' | 'order_index'> | null
+    loss_reason: string | null
+    pipeline_stages: Pick<PipelineStage, 'id' | 'name' | 'slug' | 'order_index' | 'sla_hours'> | null
   }>
 }
 
@@ -548,6 +564,7 @@ export interface Database {
       people: { Row: Person; Insert: Omit<Person, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Person>; Relationships: [] }
       pipeline_stages: { Row: PipelineStage; Insert: Omit<PipelineStage, 'id' | 'created_at'>; Update: Partial<PipelineStage>; Relationships: [] }
       person_pipeline: { Row: PersonPipeline; Insert: Omit<PersonPipeline, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PersonPipeline>; Relationships: [] }
+      pipeline_history: { Row: PipelineHistory; Insert: Omit<PipelineHistory, 'id'>; Update: Partial<PipelineHistory>; Relationships: [] }
       interactions: { Row: Interaction; Insert: Omit<Interaction, 'id' | 'created_at'>; Update: Partial<Interaction>; Relationships: [] }
       leaders: { Row: Leader; Insert: Omit<Leader, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Leader>; Relationships: [] }
       ministries: { Row: Ministry; Insert: Omit<Ministry, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Ministry>; Relationships: [] }

@@ -5,12 +5,32 @@ import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 import type { PersonWithStage, PipelineStage } from '@/lib/database.types'
 
+// ──────────────────────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────────────────────
+
 function daysAgo(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
   if (days === 0) return 'Hoje'
   if (days === 1) return 'Ontem'
   return `Há ${days} dias`
 }
+
+function hoursElapsed(dateStr: string): number {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 3600000)
+}
+
+function slaStatus(enteredAt: string | undefined, slaHours: number | null | undefined): 'ok' | 'warning' | 'breach' {
+  if (!slaHours || !enteredAt) return 'ok'
+  const elapsed = hoursElapsed(enteredAt)
+  if (elapsed >= slaHours) return 'breach'
+  if (elapsed >= slaHours * 0.75) return 'warning'
+  return 'ok'
+}
+
+// ──────────────────────────────────────────────────────────────
+// PersonCard
+// ──────────────────────────────────────────────────────────────
 
 interface PersonCardProps {
   person: PersonWithStage
@@ -21,6 +41,7 @@ interface PersonCardProps {
 function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
   const pipeline = person.person_pipeline?.[0]
   const lastActivity = pipeline?.last_activity_at
+  const status = slaStatus(pipeline?.entered_at, pipeline?.pipeline_stages?.sla_hours)
 
   return (
     <div
@@ -33,7 +54,19 @@ function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
       onClick={() => onClick(person)}
       className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow select-none"
     >
-      <p className="text-sm font-medium text-gray-900 truncate">{person.name ?? '—'}</p>
+      <div className="flex items-start justify-between gap-1">
+        <p className="text-sm font-medium text-gray-900 truncate">{person.name ?? '—'}</p>
+        {status === 'breach' && (
+          <span className="shrink-0 text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 leading-none">
+            SLA
+          </span>
+        )}
+        {status === 'warning' && (
+          <span className="shrink-0 text-xs font-semibold text-white bg-amber-400 rounded-full px-1.5 py-0.5 leading-none">
+            SLA
+          </span>
+        )}
+      </div>
       {person.phone && (
         <p className="text-xs text-gray-500 mt-0.5">{person.phone}</p>
       )}
@@ -44,12 +77,21 @@ function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
   )
 }
 
+// ──────────────────────────────────────────────────────────────
+// DetailPanel
+// ──────────────────────────────────────────────────────────────
+
 interface DetailPanelProps {
   person: PersonWithStage
   onClose: () => void
 }
 
 function DetailPanel({ person, onClose }: DetailPanelProps) {
+  const pipeline = person.person_pipeline?.[0]
+  const status = slaStatus(pipeline?.entered_at, pipeline?.pipeline_stages?.sla_hours)
+  const slaHours = pipeline?.pipeline_stages?.sla_hours
+  const elapsed = pipeline?.entered_at ? hoursElapsed(pipeline.entered_at) : null
+
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30" />
@@ -65,18 +107,42 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
             </svg>
           </button>
         </div>
+
         <div className="space-y-2 text-sm">
           <div className="flex gap-2">
-            <span className="text-gray-500 w-16 shrink-0">E-mail</span>
+            <span className="text-gray-500 w-20 shrink-0">E-mail</span>
             <span className="text-gray-900">{person.email ?? '—'}</span>
           </div>
           <div className="flex gap-2">
-            <span className="text-gray-500 w-16 shrink-0">Telefone</span>
+            <span className="text-gray-500 w-20 shrink-0">Telefone</span>
             <span className="text-gray-900">{person.phone ?? '—'}</span>
           </div>
+
+          {pipeline?.entered_at && (
+            <div className="flex gap-2">
+              <span className="text-gray-500 w-20 shrink-0">Nesta etapa</span>
+              <span className="text-gray-900">{daysAgo(pipeline.entered_at)}</span>
+            </div>
+          )}
+
+          {slaHours && elapsed !== null && (
+            <div className="flex gap-2">
+              <span className="text-gray-500 w-20 shrink-0">SLA</span>
+              <span className={
+                status === 'breach'  ? 'font-semibold text-red-600' :
+                status === 'warning' ? 'font-semibold text-amber-600' :
+                'text-gray-900'
+              }>
+                {elapsed}h / {slaHours}h
+                {status === 'breach'  && ' — Prazo estourado'}
+                {status === 'warning' && ' — Atenção'}
+              </span>
+            </div>
+          )}
+
           {person.tags.length > 0 && (
             <div className="flex gap-2">
-              <span className="text-gray-500 w-16 shrink-0">Tags</span>
+              <span className="text-gray-500 w-20 shrink-0">Tags</span>
               <div className="flex flex-wrap gap-1">
                 {person.tags.map((tag) => (
                   <span key={tag} className="text-xs bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">{tag}</span>
@@ -90,6 +156,10 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
   )
 }
 
+// ──────────────────────────────────────────────────────────────
+// KanbanColumn
+// ──────────────────────────────────────────────────────────────
+
 interface KanbanColumnProps {
   stage: PipelineStage
   people: PersonWithStage[]
@@ -101,6 +171,12 @@ interface KanbanColumnProps {
 function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const dragCounter = useRef(0)
+
+  // Count cards with active SLA breach for column header alert
+  const breachCount = people.filter((p) => {
+    const pipeline = p.person_pipeline?.[0]
+    return slaStatus(pipeline?.entered_at, stage.sla_hours) === 'breach'
+  }).length
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault()
@@ -136,10 +212,22 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
     >
       {/* Column header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-700 truncate">{stage.name}</h3>
-        <span className="ml-2 text-xs font-medium text-gray-500 bg-gray-200 rounded-full px-2 py-0.5 shrink-0">
-          {people.length}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <h3 className="text-sm font-semibold text-gray-700 truncate">{stage.name}</h3>
+          {stage.sla_hours && (
+            <span className="text-xs text-gray-400 shrink-0">{stage.sla_hours}h</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1 shrink-0 ml-1">
+          {breachCount > 0 && (
+            <span className="text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 leading-none">
+              {breachCount}
+            </span>
+          )}
+          <span className="text-xs font-medium text-gray-500 bg-gray-200 rounded-full px-2 py-0.5">
+            {people.length}
+          </span>
+        </div>
       </div>
 
       {/* Cards */}
@@ -162,6 +250,10 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
     </div>
   )
 }
+
+// ──────────────────────────────────────────────────────────────
+// Pipeline page
+// ──────────────────────────────────────────────────────────────
 
 export default function Pipeline() {
   const { churchId } = useAuth()
@@ -215,13 +307,34 @@ export default function Pipeline() {
   const displayedStages = stages ?? []
   const displayedBoard = board ?? {}
 
+  // Total de pessoas com SLA estourado em todo o board
+  const totalBreaches = displayedStages.reduce((acc, stage) => {
+    const people = displayedBoard[stage.id] ?? []
+    return acc + people.filter((p) => {
+      const pipeline = p.person_pipeline?.[0]
+      return slaStatus(pipeline?.entered_at, stage.sla_hours) === 'breach'
+    }).length
+  }, 0)
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Pipeline</h1>
-        <p className="text-sm text-gray-500 mt-1">Acompanhe a jornada das pessoas</p>
+        <h1 className="text-2xl font-bold text-gray-900">Caminho de discipulado</h1>
+        <p className="text-sm text-gray-500 mt-1">Acompanhe a jornada de cada pessoa</p>
       </div>
+
+      {/* SLA alert banner */}
+      {totalBreaches > 0 && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 text-sm text-red-700">
+          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span>
+            <strong>{totalBreaches} {totalBreaches === 1 ? 'pessoa' : 'pessoas'}</strong> com prazo de contato estourado
+          </span>
+        </div>
+      )}
 
       {/* Kanban Board */}
       <div className="overflow-x-auto pb-4">
@@ -238,7 +351,7 @@ export default function Pipeline() {
           ))}
           {displayedStages.length === 0 && (
             <div className="flex items-center justify-center w-full py-16 text-gray-400">
-              <p className="text-sm">Nenhum estágio configurado ainda.</p>
+              <p className="text-sm">Nenhuma etapa configurada ainda.</p>
             </div>
           )}
         </div>
