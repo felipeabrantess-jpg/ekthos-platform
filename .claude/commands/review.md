@@ -25,6 +25,18 @@ Aciona: supabase-rls-guard (checklist de query)
 - onSuccess invalida todas as queryKeys afetadas
 - cast as any com eslint-disable em inserts/updates
 
+### Para hooks de CRM (pipeline, interactions, people, stages)
+Acionar adicionalmente: crm-flow-validator
+Aplica-se quando o arquivo contém referência a:
+  usePipeline · useInteractions · usePeople · person_pipeline
+  pipeline_stages · interactions · stage · channel · direction
+Checklist extra:
+- Transições de stage com duplo filtro (person_id + church_id)
+- Stage resolvido via person_pipeline[0].pipeline_stages
+- Inserção em interactions com church_id + person_id + channel + direction
+- direction: 'inbound' | 'outbound' — nunca valor fora do enum
+- onSuccess invalida ['people', churchId] e ['dashboard-stats', churchId]
+
 ### Para arquivos em supabase/migrations/
 Aciona: migration-auditor + supabase-rls-guard
 - 6 elementos obrigatórios por tabela
