@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { canAccess, defaultRoute, type AppRole } from '@/hooks/useRole'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
@@ -14,20 +15,38 @@ import Gabinete from '@/pages/Gabinete'
 import Celulas from '@/pages/Celulas'
 import Spinner from '@/components/ui/Spinner'
 
+// Spinner de tela cheia reutilizado durante carregamento de auth
+function FullScreenSpinner() {
+  return (
+    <div className="h-screen flex items-center justify-center">
+      <Spinner size="lg" />
+    </div>
+  )
+}
+
 // Rota protegida — redireciona para /login se não autenticado
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
+  if (loading) return <FullScreenSpinner />
+  if (!user) return <Navigate to="/login" replace />
 
-  if (!user) {
-    return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+// Rota protegida por role — redireciona para rota padrão do role se sem permissão
+function RoleRoute({
+  children,
+  path,
+}: {
+  children: React.ReactNode
+  path: string
+}) {
+  const { role, loading } = useAuth()
+
+  if (loading) return <FullScreenSpinner />
+  if (!canAccess(role as AppRole | null, `/${path}`)) {
+    return <Navigate to={defaultRoute(role as AppRole | null)} replace />
   }
 
   return <>{children}</>
@@ -46,19 +65,31 @@ export default function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          {/* Redirect raiz para rota padrão do role */}
+          <Route index element={<RootRedirect />} />
+
+          {/* Rotas sem restrição de role além de estar autenticado */}
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="pessoas" element={<People />} />
-          <Route path="pipeline" element={<Pipeline />} />
-          <Route path="ministerios" element={<Ministerios />} />
-          <Route path="voluntarios" element={<Voluntarios />} />
-          <Route path="escalas" element={<Escalas />} />
-          <Route path="financeiro" element={<Financeiro />} />
-          <Route path="agenda" element={<Agenda />} />
-          <Route path="gabinete" element={<Gabinete />} />
-          <Route path="celulas" element={<Celulas />} />
+          <Route path="agenda"    element={<Agenda />} />
+
+          {/* Rotas com restrição de role */}
+          <Route path="pessoas"    element={<RoleRoute path="pessoas"><People /></RoleRoute>} />
+          <Route path="pipeline"   element={<RoleRoute path="pipeline"><Pipeline /></RoleRoute>} />
+          <Route path="celulas"    element={<RoleRoute path="celulas"><Celulas /></RoleRoute>} />
+          <Route path="ministerios" element={<RoleRoute path="ministerios"><Ministerios /></RoleRoute>} />
+          <Route path="voluntarios" element={<RoleRoute path="voluntarios"><Voluntarios /></RoleRoute>} />
+          <Route path="escalas"    element={<RoleRoute path="escalas"><Escalas /></RoleRoute>} />
+          <Route path="financeiro" element={<RoleRoute path="financeiro"><Financeiro /></RoleRoute>} />
+          <Route path="gabinete"   element={<RoleRoute path="gabinete"><Gabinete /></RoleRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>
   )
+}
+
+// Redireciona para a rota padrão do role do usuário
+function RootRedirect() {
+  const { role, loading } = useAuth()
+  if (loading) return <FullScreenSpinner />
+  return <Navigate to={defaultRoute(role as AppRole | null)} replace />
 }

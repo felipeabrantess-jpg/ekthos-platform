@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth, useLogout } from '@/hooks/useAuth'
+import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
+import NotificationBell from '@/features/notifications/components/NotificationBell'
 
 interface NavItem {
   path: string
@@ -7,7 +9,7 @@ interface NavItem {
   icon: React.ReactNode
 }
 
-const navItems: NavItem[] = [
+const ALL_NAV_ITEMS: NavItem[] = [
   {
     path: '/dashboard',
     label: 'Dashboard',
@@ -35,6 +37,16 @@ const navItems: NavItem[] = [
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
           d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+      </svg>
+    ),
+  },
+  {
+    path: '/celulas',
+    label: 'Células',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
@@ -98,32 +110,30 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
-  {
-    path: '/celulas',
-    label: 'Células',
-    icon: (
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-  },
 ]
 
 export default function Sidebar() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const logout = useLogout()
+
+  // Filtra itens de nav baseado no role do usuário
+  const visibleItems = ALL_NAV_ITEMS.filter((item) => {
+    if (!role) return false
+    const allowed = ROUTE_PERMISSIONS[item.path]
+    return allowed?.includes(role) ?? true
+  })
 
   return (
     <aside className="w-60 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-100">
+      {/* Header: logo + sino de notificações */}
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <span className="text-lg font-bold text-brand-700 tracking-tight">Ekthos</span>
+        <NotificationBell />
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
@@ -151,6 +161,9 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-gray-900 truncate">{user?.email ?? ''}</p>
+            {role && (
+              <p className="text-xs text-gray-400 truncate">{ROLE_LABELS[role]}</p>
+            )}
           </div>
           <button
             onClick={logout}
