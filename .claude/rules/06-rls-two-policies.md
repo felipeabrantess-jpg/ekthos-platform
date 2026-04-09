@@ -16,10 +16,18 @@ Sem o policy _service_all, a função whatsapp-webhook não consegue
 inserir em tabelas novas — o erro é silencioso e difícil de diagnosticar.
 
 ## Ordem obrigatória na migration
-1. CREATE TABLE
-2. ALTER TABLE <nome> ENABLE ROW LEVEL SECURITY
-3. CREATE POLICY <nome>_tenant_select
-4. CREATE POLICY <nome>_service_all
-5. CREATE INDEX idx_<nome>_church_id
+Padrão confirmado em 00006_modules_expansion.sql (12 tabelas):
 
-Nunca alterar a ordem. Nunca omitir o passo 2 antes dos policies.
+1. CREATE TABLE
+2. CREATE TRIGGER set_updated_at (somente se a tabela tiver coluna updated_at)
+3. CREATE INDEX idx_<nome>_church_id (e demais índices de performance)
+4. ALTER TABLE <nome> ENABLE ROW LEVEL SECURITY
+5. CREATE POLICY "<nome>_tenant_select"
+6. CREATE POLICY "<nome>_service_all"
+
+Regra crítica: o passo 4 (ENABLE ROW LEVEL SECURITY) deve sempre
+preceder os passos 5 e 6. Essa é a única restrição funcional do Postgres.
+A posição dos índices (passo 3) antes do RLS é intencional e consistente
+com o padrão real do projeto.
+
+Nunca omitir o passo 4 antes dos policies.
