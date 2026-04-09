@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
+import NotificationBell from '@/features/notifications/components/NotificationBell'
 
 interface NavItem {
   path: string
@@ -124,9 +125,10 @@ export default function Sidebar() {
 
   return (
     <aside className="w-60 bg-white border-r border-gray-100 flex flex-col h-screen sticky top-0">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-100">
+      {/* Header: logo + sino de notificações */}
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <span className="text-lg font-bold text-brand-700 tracking-tight">Ekthos</span>
+        <NotificationBell />
       </div>
 
       {/* Nav */}
