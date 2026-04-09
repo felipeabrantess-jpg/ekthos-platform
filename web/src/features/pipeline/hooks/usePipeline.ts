@@ -78,38 +78,39 @@ export function useMovePersonToStage() {
       const now = new Date().toISOString()
 
       // Get current stage for history record
-      const { data: existing } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing } = await (supabase as any)
         .from('person_pipeline')
         .select('id, stage_id')
         .eq('person_id', personId)
         .eq('church_id', churchId)
-        .maybeSingle()
+        .maybeSingle() as { data: { id: string; stage_id: string } | null }
 
       if (existing) {
         // Update position — reset entered_at so SLA counts from this move
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('person_pipeline')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .update({ stage_id: newStageId, entered_at: now, last_activity_at: now } as any)
+          .update({ stage_id: newStageId, entered_at: now, last_activity_at: now })
           .eq('person_id', personId)
           .eq('church_id', churchId)
 
-        if (error) throw new Error(error.message)
+        if (error) throw new Error((error as Error).message)
       } else {
         // First time entering pipeline
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('person_pipeline')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .insert({ church_id: churchId, person_id: personId, stage_id: newStageId, entered_at: now, last_activity_at: now, notes: null } as any)
+          .insert({ church_id: churchId, person_id: personId, stage_id: newStageId, entered_at: now, last_activity_at: now, notes: null })
 
-        if (error) throw new Error(error.message)
+        if (error) throw new Error((error as Error).message)
       }
 
       // Record history (fire-and-forget — não bloqueia a UI se falhar)
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('pipeline_history')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert({ church_id: churchId, person_id: personId, from_stage_id: existing?.stage_id ?? null, to_stage_id: newStageId, moved_at: now } as any)
+        .insert({ church_id: churchId, person_id: personId, from_stage_id: existing?.stage_id ?? null, to_stage_id: newStageId, moved_at: now })
     },
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board', churchId] })
