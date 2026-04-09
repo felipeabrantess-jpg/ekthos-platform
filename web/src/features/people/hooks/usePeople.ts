@@ -7,6 +7,7 @@ interface PeopleFilters {
   stageSlug?: string
   tag?: string
   optout?: boolean
+  celulaId?: string
 }
 
 // Lista pessoas com stage atual
@@ -39,6 +40,11 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         query = query.eq('optout', filters.optout)
       }
 
+      if (filters.celulaId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).eq('celula_id', filters.celulaId)
+      }
+
       const { data, error } = await query
 
       if (error) throw new Error(error.message)
@@ -65,12 +71,40 @@ export function usePeopleCount(churchId: string) {
   })
 }
 
-// Cria nova pessoa
-interface CreatePersonInput {
+// ──────────────────────────────────────────────────────────────────────
+// Tipos de input expandidos com os 17 campos de membro (migration 00009)
+// ──────────────────────────────────────────────────────────────────────
+
+interface PersonFields {
+  // Identificação básica
+  name?: string
+  phone?: string | null
+  email?: string | null
+  tags?: string[]
+  // Pessoal
+  birth_date?: string | null
+  marital_status?: string | null
+  neighborhood?: string | null
+  como_conheceu?: string | null
+  // Eclesiástico
+  celula_id?: string | null
+  conversion_date?: string | null
+  batismo_status?: string | null
+  baptism_date?: string | null
+  calling?: string | null          // dons e talentos (texto livre)
+  ministry_interest?: string[]     // departamentos (multi-select)
+  // Formação
+  consolidation_school?: boolean | null   // curso teológico
+  experiencia_lideranca?: string | null
+  // Financeiro — apenas admin/treasurer (visibilidade no frontend)
+  is_dizimista?: boolean | null
+  // Acompanhamento — apenas admin (visibilidade no frontend)
+  observacoes_pastorais?: string | null
+}
+
+interface CreatePersonInput extends PersonFields {
   church_id: string
   name: string
-  phone?: string
-  email?: string
   source: Person['source']
 }
 
@@ -98,14 +132,9 @@ export function useCreatePerson() {
   })
 }
 
-// Atualiza pessoa
-interface UpdatePersonInput {
+interface UpdatePersonInput extends PersonFields {
   id: string
   church_id: string
-  name?: string
-  phone?: string
-  email?: string
-  tags?: string[]
 }
 
 export function useUpdatePerson() {
@@ -118,7 +147,7 @@ export function useUpdatePerson() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update(updates as any)
         .eq('id', id)
-        .eq('church_id', church_id) // segurança multi-tenant
+        .eq('church_id', church_id)
         .select()
         .single()
 
@@ -143,7 +172,7 @@ export function useDeletePerson() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({ deleted_at: new Date().toISOString() } as any)
         .eq('id', id)
-        .eq('church_id', churchId) // segurança multi-tenant
+        .eq('church_id', churchId)
       if (error) throw new Error(error.message)
     },
     onSuccess: (_data, { churchId }) => {
