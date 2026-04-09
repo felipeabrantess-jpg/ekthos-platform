@@ -97,6 +97,42 @@ export type Database = {
           },
         ]
       }
+      cell_leader_assignments: {
+        Row: {
+          church_id: string
+          created_at: string
+          group_id: string
+          user_id: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          group_id: string
+          user_id: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          group_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_leader_assignments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_leader_assignments_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cell_meetings: {
         Row: {
           church_id: string
@@ -1840,6 +1876,45 @@ export type Database = {
           },
         ]
       }
+      supervisor_areas: {
+        Row: {
+          church_id: string
+          created_at: string
+          group_id: string
+          id: string
+          supervisor_user_id: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          group_id: string
+          id?: string
+          supervisor_user_id: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          supervisor_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisor_areas_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervisor_areas_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           church_id: string
@@ -1923,6 +1998,38 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteers: {
         Row: {
           availability: Json
@@ -1992,13 +2099,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auth_can_all_people: { Args: never; Returns: boolean }
+      auth_can_financial: { Args: never; Returns: boolean }
       auth_church_id: { Args: never; Returns: string }
+      auth_user_role: {
+        Args: never
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       create_default_pipeline_stages: {
         Args: { p_church_id: string }
         Returns: undefined
       }
     }
     Enums: {
+      app_role:
+        | "admin"
+        | "admin_departments"
+        | "pastor_celulas"
+        | "supervisor"
+        | "cell_leader"
+        | "secretary"
+        | "treasurer"
       cell_role: "participante" | "lider" | "hospedeiro" | "aprendiz"
       church_relationship:
         | "visitante"
@@ -2140,6 +2261,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: [
+        "admin",
+        "admin_departments",
+        "pastor_celulas",
+        "supervisor",
+        "cell_leader",
+        "secretary",
+        "treasurer",
+      ],
       cell_role: ["participante", "lider", "hospedeiro", "aprendiz"],
       church_relationship: [
         "visitante",
@@ -2159,7 +2289,6 @@ export const Constants = {
     },
   },
 } as const
-
 
 // ──────────────────────────────────────────────────────────────────────
 // Aliases de Row type (backward compatibility com hooks existentes)
@@ -2260,4 +2389,16 @@ export interface GroupWithDetails extends Group {
   cell_members: Array<CellMember & { people: Pick<Person, 'id' | 'name' | 'phone'> | null }>
   leader: Pick<Person, 'id' | 'name' | 'phone'> | null
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Aliases para tabelas de roles (migration 00008)
+// ──────────────────────────────────────────────────────────────────────
+export type UserRole = Database['public']['Tables']['user_roles']['Row']
+export type SupervisorArea = Database['public']['Tables']['supervisor_areas']['Row']
+export type CellLeaderAssignment = Database['public']['Tables']['cell_leader_assignments']['Row']
+
+// Re-export do enum app_role como AppRole para uso no frontend
+// Mantemos AppRole definido em useRole.ts como source of truth;
+// aqui apenas para quem importar de database.types diretamente.
+export type AppRoleDB = Database['public']['Enums']['app_role']
 
