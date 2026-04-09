@@ -11,6 +11,7 @@ import Escalas from '@/pages/Escalas'
 import Financeiro from '@/pages/Financeiro'
 import Agenda from '@/pages/Agenda'
 import Gabinete from '@/pages/Gabinete'
+import Celulas from '@/pages/Celulas'
 import Spinner from '@/components/ui/Spinner'
 
 // Rota protegida — redireciona para /login se não autenticado
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="financeiro" element={<Financeiro />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="gabinete" element={<Gabinete />} />
+          <Route path="celulas" element={<Celulas />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -19,6 +19,11 @@ export type AssignmentStatus = 'pending' | 'confirmed' | 'declined' | 'replaced'
 export type CellMemberRole = 'membro' | 'lider' | 'hospedeiro' | 'aprendiz'
 export type EventType = 'culto' | 'reuniao' | 'celula' | 'retiro' | 'conferencia' | 'treinamento' | 'outro'
 export type OnboardingStatus = 'in_progress' | 'completed' | 'abandoned'
+// Novos enums do merge ekthos-crm
+export type CellRole = 'participante' | 'lider' | 'hospedeiro' | 'aprendiz'
+export type MinistryRole = 'membro' | 'lider' | 'coordenador'
+export type ChurchRelationship = 'visitante' | 'frequentador' | 'membro' | 'transferido'
+export type PersonStage = 'visitante' | 'contato' | 'frequentador' | 'consolidado' | 'discipulo' | 'lider'
 
 // ──────────────────────────────────────────────────────────────────────
 // Tabelas base
@@ -28,6 +33,10 @@ export interface Church {
   name: string
   slug: string
   is_active: boolean
+  logo_url: string | null
+  primary_color: string | null
+  secondary_color: string | null
+  subscription_plan: string
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -67,14 +76,66 @@ export interface Person {
   id: string
   church_id: string
   name: string | null
+  first_name: string | null
+  last_name: string | null
   phone: string | null
+  phone_secondary: string | null
   email: string | null
   instagram_handle: string | null
+  avatar_url: string | null
+  birth_date: string | null
+  marital_status: string | null
+  cpf: string | null
+  // Endereço
+  zip_code: string | null
+  street: string | null
+  street_number: string | null
+  address_complement: string | null
+  neighborhood: string | null
+  city: string | null
+  state: string | null
+  latitude: number | null
+  longitude: number | null
+  // Jornada espiritual
+  church_relationship: ChurchRelationship | null
+  person_stage: PersonStage | null
+  first_visit_date: string | null
+  conversion_date: string | null
+  baptism_date: string | null
+  baptized: boolean
+  in_discipleship: boolean
+  has_cell: boolean
+  interested_in_cell: boolean
+  serves_ministry: boolean
+  consolidation_school: boolean
+  encounter_with_god: boolean
+  // Família
+  invited_by: string | null
+  responsible_id: string | null
+  spouse_name: string | null
+  children_count: number
+  children_info: string | null
+  // Igreja anterior
+  previous_church: string | null
+  origin_church_name: string | null
+  origin_pastor_name: string | null
+  // Ministério / Habilidades
+  calling: string | null
+  skills_text: string | null
+  available_days: string | null
+  available_periods: string | null
+  ministry_interest: string[] | null
+  network: string | null
+  // Membership
+  membership_status: string | null
+  membership_date: string | null
+  // Campos originais
   tags: string[]
   last_contact_at: string | null
   optout: boolean
   optout_at: string | null
   source: PersonSource
+  lgpd_consent: boolean
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -89,6 +150,7 @@ export interface PipelineStage {
   days_until_followup: number
   auto_followup: boolean
   is_active: boolean
+  pipeline_id: string | null
   created_at: string
 }
 
@@ -245,6 +307,199 @@ export interface FinancialCampaign {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// Novas tabelas (merge ekthos-crm)
+// ──────────────────────────────────────────────────────────────────────
+export interface Pipeline {
+  id: string
+  church_id: string
+  name: string
+  created_at: string
+}
+
+export interface Group {
+  id: string
+  church_id: string
+  name: string
+  description: string | null
+  leader_id: string | null
+  co_leader_id: string | null
+  meeting_day: string | null
+  meeting_time: string | null
+  location: string | null
+  status: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CellMeeting {
+  id: string
+  church_id: string
+  group_id: string
+  meeting_date: string
+  theme: string | null
+  visitors_count: number
+  consolidated_count: number
+  offering_amount: number | null
+  notes: string | null
+  created_at: string
+}
+
+export interface CellMember {
+  id: string
+  church_id: string
+  group_id: string
+  person_id: string
+  role: CellRole
+  created_at: string
+}
+
+export interface CellAttendance {
+  id: string
+  meeting_id: string
+  person_id: string
+}
+
+export interface CellReport {
+  id: string
+  church_id: string | null
+  leader_id: string | null
+  cell_id: string | null
+  meeting_date: string | null
+  total_present: number | null
+  visitors_count: number | null
+  new_converts: number | null
+  notes: string | null
+  created_at: string | null
+}
+
+export interface CellReportPerson {
+  id: string
+  report_id: string | null
+  person_id: string | null
+  present: boolean | null
+  first_time: boolean | null
+  became_convert: boolean | null
+}
+
+export interface Tag {
+  id: string
+  church_id: string
+  name: string
+  created_at: string
+}
+
+export interface PersonTag {
+  id: string
+  person_id: string
+  tag_id: string
+  church_id: string
+  created_at: string
+}
+
+export interface MinistryMember {
+  id: string
+  church_id: string
+  ministry_id: string
+  person_id: string
+  role: MinistryRole
+  created_at: string
+}
+
+export interface MemberProfile {
+  id: string
+  person_id: string
+  church_id: string
+  conversion_date: string | null
+  baptized: boolean
+  encounter_with_god: boolean
+  consolidation_school: boolean
+  previous_church: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Task {
+  id: string
+  church_id: string
+  person_id: string
+  assigned_to: string | null
+  title: string
+  description: string | null
+  due_date: string | null
+  status: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Integration {
+  id: string
+  church_id: string
+  name: string
+  api_token: string
+  active: boolean
+  created_at: string
+}
+
+export interface Profile {
+  id: string
+  user_id: string
+  church_id: string
+  name: string | null
+  display_name: string | null
+  avatar_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Role {
+  id: string
+  name: string
+  description: string | null
+}
+
+export interface PersonRole {
+  id: string
+  person_id: string
+  role_id: string
+  church_id: string
+  created_at: string
+}
+
+export interface PersonEvent {
+  id: string
+  church_id: string
+  person_id: string
+  event_type: string
+  data: Json
+  created_at: string
+}
+
+export interface EventTemplate {
+  id: string
+  church_id: string | null
+  name: string
+  type: string | null
+  category: string | null
+  day_of_week: string | null
+  default_time: string | null
+  responsible: string | null
+  created_at: string | null
+}
+
+export interface Contribution {
+  id: string
+  church_id: string
+  person_id: string | null
+  amount: number
+  currency: string | null
+  category: string | null
+  notes: string | null
+  contributed_at: string
+  created_at: string
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // Tipos compostos (queries com joins)
 // ──────────────────────────────────────────────────────────────────────
 export interface PersonWithStage extends Person {
@@ -277,6 +532,11 @@ export interface ScheduleWithAssignments extends ServiceSchedule {
   >
 }
 
+export interface GroupWithDetails extends Group {
+  cell_members: Array<CellMember & { people: Pick<Person, 'id' | 'name' | 'phone'> | null }>
+  leader: Pick<Person, 'id' | 'name' | 'phone'> | null
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Tipo Database (para o cliente Supabase tipado)
 // ──────────────────────────────────────────────────────────────────────
@@ -298,6 +558,26 @@ export interface Database {
       pastoral_cabinet: { Row: PastoralCabinet; Insert: Omit<PastoralCabinet, 'id' | 'created_at' | 'updated_at'>; Update: Partial<PastoralCabinet>; Relationships: [] }
       donations: { Row: Donation; Insert: Omit<Donation, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Donation>; Relationships: [] }
       financial_campaigns: { Row: FinancialCampaign; Insert: Omit<FinancialCampaign, 'id' | 'created_at' | 'updated_at'>; Update: Partial<FinancialCampaign>; Relationships: [] }
+      // Novas tabelas (merge ekthos-crm)
+      pipelines: { Row: Pipeline; Insert: Omit<Pipeline, 'id' | 'created_at'>; Update: Partial<Pipeline>; Relationships: [] }
+      groups: { Row: Group; Insert: Omit<Group, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Group>; Relationships: [] }
+      cell_meetings: { Row: CellMeeting; Insert: Omit<CellMeeting, 'id' | 'created_at'>; Update: Partial<CellMeeting>; Relationships: [] }
+      cell_members: { Row: CellMember; Insert: Omit<CellMember, 'id' | 'created_at'>; Update: Partial<CellMember>; Relationships: [] }
+      cell_attendance: { Row: CellAttendance; Insert: Omit<CellAttendance, 'id'>; Update: Partial<CellAttendance>; Relationships: [] }
+      cell_reports: { Row: CellReport; Insert: Omit<CellReport, 'id'>; Update: Partial<CellReport>; Relationships: [] }
+      cell_report_people: { Row: CellReportPerson; Insert: Omit<CellReportPerson, 'id'>; Update: Partial<CellReportPerson>; Relationships: [] }
+      tags: { Row: Tag; Insert: Omit<Tag, 'id' | 'created_at'>; Update: Partial<Tag>; Relationships: [] }
+      person_tags: { Row: PersonTag; Insert: Omit<PersonTag, 'id' | 'created_at'>; Update: Partial<PersonTag>; Relationships: [] }
+      ministry_members: { Row: MinistryMember; Insert: Omit<MinistryMember, 'id' | 'created_at'>; Update: Partial<MinistryMember>; Relationships: [] }
+      member_profiles: { Row: MemberProfile; Insert: Omit<MemberProfile, 'id' | 'created_at' | 'updated_at'>; Update: Partial<MemberProfile>; Relationships: [] }
+      tasks: { Row: Task; Insert: Omit<Task, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Task>; Relationships: [] }
+      integrations: { Row: Integration; Insert: Omit<Integration, 'id' | 'created_at'>; Update: Partial<Integration>; Relationships: [] }
+      profiles: { Row: Profile; Insert: Omit<Profile, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Profile>; Relationships: [] }
+      roles: { Row: Role; Insert: Omit<Role, 'id'>; Update: Partial<Role>; Relationships: [] }
+      person_roles: { Row: PersonRole; Insert: Omit<PersonRole, 'id' | 'created_at'>; Update: Partial<PersonRole>; Relationships: [] }
+      person_events: { Row: PersonEvent; Insert: Omit<PersonEvent, 'id' | 'created_at'>; Update: Partial<PersonEvent>; Relationships: [] }
+      event_templates: { Row: EventTemplate; Insert: Omit<EventTemplate, 'id'>; Update: Partial<EventTemplate>; Relationships: [] }
+      contributions: { Row: Contribution; Insert: Omit<Contribution, 'id' | 'created_at'>; Update: Partial<Contribution>; Relationships: [] }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
