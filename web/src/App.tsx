@@ -14,6 +14,10 @@ import Agenda from '@/pages/Agenda'
 import Gabinete from '@/pages/Gabinete'
 import Celulas from '@/pages/Celulas'
 import Spinner from '@/components/ui/Spinner'
+import { SettingsLayout } from '@/pages/settings/Layout'
+import { Billing } from '@/pages/settings/Billing'
+import { Users } from '@/pages/settings/Users'
+import { Agents } from '@/pages/Agents'
 
 // Spinner de tela cheia reutilizado durante carregamento de auth
 function FullScreenSpinner() {
@@ -81,6 +85,16 @@ export default function App() {
           <Route path="escalas"    element={<RoleRoute path="escalas"><Escalas /></RoleRoute>} />
           <Route path="financeiro" element={<RoleRoute path="financeiro"><Financeiro /></RoleRoute>} />
           <Route path="gabinete"   element={<RoleRoute path="gabinete"><Gabinete /></RoleRoute>} />
+
+          {/* Agentes IA */}
+          <Route path="agents" element={<Agents />} />
+
+          {/* Configurações */}
+          <Route path="settings" element={<SettingsLayout />}>
+            <Route index element={<Navigate to="billing" replace />} />
+            <Route path="billing" element={<Billing />} />
+            <Route path="users" element={<Users />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
