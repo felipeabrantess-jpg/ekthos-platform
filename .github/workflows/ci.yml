@@ -1,5 +1,9 @@
 # CI — roda em todo PR aberto contra main ou staging
 # Valida typecheck + build antes de qualquer merge
+#
+# Nota: sem cache de npm enquanto package-lock.json não estiver commitado.
+# Para reativar: rodar `npm install` localmente, commitar package-lock.json
+# e restaurar `cache: npm` + `cache-dependency-path: web/package-lock.json`.
 
 name: CI
 
@@ -25,11 +29,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Typecheck
         run: npm run typecheck
