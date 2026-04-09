@@ -1,0 +1,60 @@
+# Deploy Staging — roda a cada push direto na branch staging
+# Publica no ambiente de preview da Vercel (não afeta produção)
+#
+# Secrets necessários (configurar em: Settings → Secrets → Actions):
+#   VERCEL_TOKEN         → token da Vercel (vercel.com → Settings → Tokens)
+#   VERCEL_ORG_ID        → id da org/conta (vercel.com → Settings → General)
+#   VERCEL_PROJECT_ID    → id do projeto (vercel.com → projeto → Settings → General)
+#   VITE_SUPABASE_URL    → URL do projeto Supabase de staging (ou produção por ora)
+#   VITE_SUPABASE_ANON_KEY → anon key correspondente
+
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    name: Deploy to Vercel (Preview)
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ steps.deploy.outputs.preview-url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: web
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Deploy to Vercel (Preview)
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: web
+          # sem --prod → gera URL de preview, não substitui produção
