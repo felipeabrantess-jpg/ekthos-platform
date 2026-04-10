@@ -1,15 +1,71 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 
-export default function Layout() {
+interface ImpersonatingState {
+  church_id:   string
+  church_name: string
+}
+
+function ImpersonateBanner({ state, onExit }: {
+  state: ImpersonatingState
+  onExit: () => void
+}) {
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-6 py-8 page-content">
-          <Outlet />
-        </div>
-      </main>
+    <div
+      className="w-full flex items-center justify-between px-6 py-2 shrink-0 z-50"
+      style={{ background: '#670000' }}
+    >
+      <div className="flex items-center gap-2 text-xs text-white/80">
+        <Eye size={13} strokeWidth={2} />
+        <span>Visualizando como:</span>
+        <span className="font-semibold text-white">{state.church_name}</span>
+      </div>
+      <button
+        onClick={onExit}
+        className="text-xs text-white/70 hover:text-white underline transition-colors"
+      >
+        Sair da visualização
+      </button>
+    </div>
+  )
+}
+
+export default function Layout() {
+  const navigate = useNavigate()
+  const [impersonating, setImpersonating] = useState<ImpersonatingState | null>(null)
+
+  useEffect(() => {
+    const raw = localStorage.getItem('impersonating')
+    if (raw) {
+      try {
+        setImpersonating(JSON.parse(raw) as ImpersonatingState)
+      } catch {
+        localStorage.removeItem('impersonating')
+      }
+    }
+  }, [])
+
+  function exitImpersonate() {
+    localStorage.removeItem('impersonating')
+    navigate('/admin/churches')
+    window.location.reload()
+  }
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
+      {impersonating && (
+        <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
+      )}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto" style={{ background: '#f9eedc' }}>
+          <div className="max-w-7xl mx-auto px-6 py-8 page-content">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
