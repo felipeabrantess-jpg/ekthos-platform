@@ -18,7 +18,7 @@ import { SettingsLayout } from '@/pages/settings/Layout'
 import { Billing } from '@/pages/settings/Billing'
 import { Users } from '@/pages/settings/Users'
 import { Agents } from '@/pages/Agents'
-// Onboarding
+// Onboarding self-service
 import Signup from '@/pages/Signup'
 import ChoosePlan from '@/pages/ChoosePlan'
 import Onboarding from '@/pages/Onboarding'
@@ -30,7 +30,7 @@ import AdminChurches from '@/pages/admin/Churches'
 import AdminChurch from '@/pages/admin/Church'
 import AdminRevenue from '@/pages/admin/Revenue'
 
-// ── Spinners e guards ──────────────────────────────────────
+// ── Guards ─────────────────────────────────────────────────
 
 function FullScreenSpinner() {
   return (
@@ -47,7 +47,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function RoleRoute({ children, path }: { children: React.ReactNode; path: string }) {
+// Rota protegida por role — redireciona para rota padrão do role se sem permissão
+function RoleRoute({
+  children,
+  path,
+}: {
+  children: React.ReactNode
+  path: string
+}) {
   const { role, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
   if (!canAccess(role as AppRole | null, `/${path}`)) {
@@ -90,9 +97,14 @@ export default function App() {
             </ProtectedRoute>
           }
         >
+          {/* Redirect raiz para rota padrão do role */}
           <Route index element={<RootRedirect />} />
+
+          {/* Rotas sem restrição de role além de estar autenticado */}
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="agenda"    element={<Agenda />} />
+
+          {/* Rotas com restrição de role */}
           <Route path="pessoas"    element={<RoleRoute path="pessoas"><People /></RoleRoute>} />
           <Route path="pipeline"   element={<RoleRoute path="pipeline"><Pipeline /></RoleRoute>} />
           <Route path="celulas"    element={<RoleRoute path="celulas"><Celulas /></RoleRoute>} />
@@ -101,15 +113,19 @@ export default function App() {
           <Route path="escalas"    element={<RoleRoute path="escalas"><Escalas /></RoleRoute>} />
           <Route path="financeiro" element={<RoleRoute path="financeiro"><Financeiro /></RoleRoute>} />
           <Route path="gabinete"   element={<RoleRoute path="gabinete"><Gabinete /></RoleRoute>} />
-          <Route path="agents"     element={<Agents />} />
-          <Route path="settings"   element={<SettingsLayout />}>
+
+          {/* Agentes IA */}
+          <Route path="agents" element={<Agents />} />
+
+          {/* Configurações */}
+          <Route path="settings" element={<SettingsLayout />}>
             <Route index element={<Navigate to="billing" replace />} />
             <Route path="billing" element={<Billing />} />
             <Route path="users"   element={<Users />} />
           </Route>
         </Route>
 
-        {/* Cockpit Admin (/admin/*) — layout próprio, banner vermelho */}
+        {/* Cockpit Admin (/admin/*) — layout próprio, banner vinho */}
         <Route
           path="/admin"
           element={
@@ -119,16 +135,17 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="cockpit" replace />} />
-          <Route path="cockpit"           element={<AdminCockpit />} />
-          <Route path="churches"          element={<AdminChurches />} />
-          <Route path="churches/:id"      element={<AdminChurch />} />
-          <Route path="revenue"           element={<AdminRevenue />} />
+          <Route path="cockpit"      element={<AdminCockpit />} />
+          <Route path="churches"     element={<AdminChurches />} />
+          <Route path="churches/:id" element={<AdminChurch />} />
+          <Route path="revenue"      element={<AdminRevenue />} />
         </Route>
       </Routes>
     </BrowserRouter>
   )
 }
 
+// Redireciona para a rota padrão do role do usuário
 function RootRedirect() {
   const { role, loading } = useAuth()
   if (loading) return <FullScreenSpinner />

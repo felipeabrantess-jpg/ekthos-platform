@@ -28,40 +28,26 @@
     --text-tertiary:      #8A8A8A;
   }
 
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  html,
-  body,
-  #root {
-    height: 100%;
-    background-color: #f9eedc;
-  }
-
   body {
     font-family: 'DM Sans', system-ui, sans-serif;
-    background-color: #f9eedc;
-    color: #161616;
+    background-color: var(--ekthos-cream);
+    color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    margin: 0;
-    padding: 0;
   }
 
-  h1,
-  h2 {
+  h1, h2 {
     font-family: 'Playfair Display', Georgia, serif;
   }
 }
 
 @layer components {
+  /* Page animation wrapper */
   .page-content {
     animation: fadeInUp 0.3s ease-out both;
   }
 
+  /* Skeleton shimmer */
   .skeleton {
     background: linear-gradient(
       90deg,
@@ -74,8 +60,9 @@
     border-radius: 8px;
   }
 
+  /* Card base */
   .ekthos-card {
-    background: #ffffff;
+    background: #FFFFFF;
     border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 16px;
     padding: 1.5rem;
@@ -89,6 +76,6 @@
 }
 
 @layer utilities {
-  .font-display     { font-family: 'Playfair Display', Georgia, serif; }
+  .font-display { font-family: 'Playfair Display', Georgia, serif; }
   .font-mono-ekthos { font-family: 'JetBrains Mono', monospace; }
 }

@@ -13,7 +13,6 @@ import { usePastoralDashboard } from '@/features/dashboard/hooks/usePastoralDash
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
-// Paleta Ekthos para graficos
 const BRAND   = '#e13500'
 const BRAND_L = '#F9A890'
 const SUCCESS = '#2D7A4F'
@@ -266,7 +265,7 @@ export default function Dashboard() {
         <p className="text-sm text-gray-400 mt-1 capitalize">{now}</p>
       </div>
 
-      {/* Alerta critico — visitantes sem consolidação */}
+      {/* Alerta critico */}
       <AlertaCritico items={data.visitantesSemConsolidacao} />
 
       {/* Saúde pastoral — linha 1: 3 cards */}
