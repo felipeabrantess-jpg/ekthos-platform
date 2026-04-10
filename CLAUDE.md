@@ -120,3 +120,27 @@ Não replicar estes comportamentos em código novo:
 - useDashboardStats: activeInteractions conta as últimas 8, não interações reais
 - useDashboardStats: pipeline summary não filtra pessoas com deleted_at
 - UpdatePersonInput em usePeople.ts não expõe os 35+ campos novos do merge
+
+## [HOOKS]
+Sistema automatizado de 29 verificações em 7 camadas.
+Configurado em .claude/settings.json — executa automaticamente.
+
+### Quando dispara
+- PreToolUse(Bash): intercepta git commit — verifica arquivos staged
+- PreToolUse(Write): intercepta escrita em .sql — verifica migration
+- PostToolUse(Write|Edit): após escrita — verifica design e performance
+
+### Camadas
+| Camada | Escopo | Ação |
+|--------|--------|------|
+| 1 — Código | encoding, emoji, console, any, imports, naming | BLOQUEIA |
+| 2 — Vocabulário | termos pastorais, i18n | avisa |
+| 3 — Design | cores, tipografia, espaçamento, ícones, responsive | avisa |
+| 4 — Banco | RLS, church_id, indexes, naming, dados sensíveis | BLOQUEIA |
+| 5 — Segurança | secrets, service_role, .env | BLOQUEIA |
+| 6 — Performance | bundle, queries, imagens | avisa |
+| 7 — Negócio | preços, tiers de agente, roles, suporte grátis, sessão | BLOQUEIA |
+
+### Scripts
+- .claude/hooks/pre-bash.js — pré-commit (Layers 1,2,4,5,7)
+- .claude/hooks/post-write.js — pós-escrita (Layers 3,6)
