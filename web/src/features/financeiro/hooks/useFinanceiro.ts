@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Donation, DonationType, DonationStatus, FinancialCampaign, PaymentMethod } from '@/lib/database.types'
+import type { Donation, DonationType, DonationStatus, FinancialCampaign, PaymentMethod } from '@/lib/types/joins'
 
 interface FinanceiroStats {
   totalConfirmedAllTime: number

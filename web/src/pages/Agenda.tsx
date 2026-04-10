@@ -8,7 +8,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import type { EventType, ChurchEvent } from '@/lib/database.types'
+import type { EventType, ChurchEvent } from '@/lib/types/joins'
 
 type BadgeVariant = 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple'
 
@@ -19,7 +19,10 @@ function eventTypeBadgeVariant(type: EventType): BadgeVariant {
     celula: 'green',
     retiro: 'purple',
     conferencia: 'yellow',
+    batismo: 'blue',
+    casamento: 'purple',
     treinamento: 'green',
+    social: 'yellow',
     outro: 'gray',
   }
   return map[type]
@@ -32,7 +35,10 @@ function eventTypeLabel(type: EventType): string {
     celula: 'Célula',
     retiro: 'Retiro',
     conferencia: 'Conferência',
+    batismo: 'Batismo',
+    casamento: 'Casamento',
     treinamento: 'Treinamento',
+    social: 'Social',
     outro: 'Outro',
   }
   return map[type]
@@ -106,7 +112,7 @@ function EventItem({ event, onDelete }: EventItemProps) {
           {today && (
             <span className="text-xs font-medium text-white bg-green-500 rounded-full px-2 py-0.5">Hoje</span>
           )}
-          <Badge label={eventTypeLabel(event.event_type)} variant={eventTypeBadgeVariant(event.event_type)} />
+          <Badge label={eventTypeLabel(event.event_type as EventType)} variant={eventTypeBadgeVariant(event.event_type as EventType)} />
           {!event.is_public && (
             <Badge label="Privado" variant="gray" />
           )}

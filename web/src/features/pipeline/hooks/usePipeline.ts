@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { PipelineStage, PersonWithStage } from '@/lib/database.types'
+import type { PipelineStage, PersonWithStage } from '@/lib/types/joins'
 
 // Returns stages ordered by order_index
 export function usePipelineStages(churchId: string) {

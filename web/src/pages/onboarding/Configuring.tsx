@@ -111,7 +111,7 @@ export default function OnboardingConfiguring() {
   const [steps,       setSteps]       = useState<Step[]>([])
   const [started,     setStarted]     = useState(false)
   const [isDone,      setIsDone]      = useState(false)
-  const [churchId,    setChurchId]    = useState<string | null>(null)
+  const [_churchId,   setChurchId]    = useState<string | null>(null)
   const [engineError, setEngineError] = useState('')
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 

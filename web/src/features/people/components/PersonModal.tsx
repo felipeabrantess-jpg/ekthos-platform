@@ -7,7 +7,7 @@ import { useCreatePerson, useUpdatePerson } from '../hooks/usePeople'
 import { useGroups } from '@/features/celulas/hooks/useGroups'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
-import type { Person, AppRoleDB } from '@/lib/database.types'
+import type { Person, AppRoleDB } from '@/lib/types/joins'
 
 // ──────────────────────────────────────────────────────────────────────
 // Tipos

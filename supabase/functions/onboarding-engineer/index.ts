@@ -21,7 +21,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const STRIPE_SECRET_KEY        = Deno.env.get('STRIPE_SECRET_KEY')
 const N8N_API_KEY              = Deno.env.get('N8N_API_KEY')
 const N8N_BASE_URL             = 'https://ekthosai.app.n8n.cloud/api/v1'
-const ALLOWED_ORIGIN           = Deno.env.get('ALLOWED_ORIGIN') ?? '*'
+const ALLOWED_ORIGIN           = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 if (!SUPABASE_URL) throw new Error('[onboarding-engineer] SUPABASE_URL not set')
 if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('[onboarding-engineer] SUPABASE_SERVICE_ROLE_KEY not set')

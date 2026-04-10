@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { VolunteerWithPerson } from '@/lib/database.types'
+import type { VolunteerWithPerson } from '@/lib/types/joins'
 
 export function useVoluntarios(churchId: string, ministryId?: string) {
   return useQuery({
