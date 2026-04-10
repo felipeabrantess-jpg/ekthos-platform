@@ -1,0 +1,84 @@
+{
+  "nav": {
+    "dashboard":    "Dashboard",
+    "pessoas":      "People",
+    "pipeline":     "Pipeline",
+    "celulas":      "Groups",
+    "ministerios":  "Ministries",
+    "voluntarios":  "Volunteers",
+    "escalas":      "Schedules",
+    "financeiro":   "Financial",
+    "agenda":       "Agenda",
+    "gabinete":     "Cabinet",
+    "agentes":      "AI Agents",
+    "configuracoes":"Settings"
+  },
+  "dashboard": {
+    "title":          "Pastoral Dashboard",
+    "saude":          "Pastoral Health",
+    "saude_sub":      "Key indicators for the week",
+    "tendencias":     "Trends and Growth",
+    "alertas":        "Operational Alerts",
+    "alertas_sub":    "Require pastoral attention",
+    "consolidacao":   "Consolidation Rate",
+    "visitantes":     "Visitors this Week",
+    "membros":        "Active Members",
+    "celulas":        "Active Groups",
+    "batismos":       "Baptisms this Quarter",
+    "escola":         "School of Faith",
+    "dizimos":        "Tithes and Offerings",
+    "ausentes":       "Absent Members",
+    "ausentes_sub":   "No contact record for more than 14 days",
+    "celulas_alerta": "Groups in Alert",
+    "celulas_alerta_sub": "Groups with fewer than 3 registered members"
+  },
+  "login": {
+    "title":     "Sign In",
+    "email":     "Email",
+    "senha":     "Password",
+    "btn":       "Sign In",
+    "erro":      "Incorrect email or password.",
+    "subtitulo": "Operational platform for churches"
+  },
+  "common": {
+    "carregando":  "Loading...",
+    "erro":        "Failed to load",
+    "tentar":      "Try again",
+    "nenhum":      "No records",
+    "sair":        "Sign out",
+    "notificacoes":"Notifications",
+    "hoje":        "Today",
+    "ontem":       "Yesterday",
+    "dias_atras":  "days ago",
+    "nunca":       "Never"
+  },
+  "stages": {
+    "visitante":    "Visitor",
+    "contato":      "Contact",
+    "frequentador": "Regular",
+    "consolidado":  "Consolidated",
+    "discipulo":    "Disciple",
+    "lider":        "Leader"
+  },
+  "billing": {
+    "title":        "Your subscription",
+    "plano_atual":  "Current plan",
+    "upgrade":      "Upgrade",
+    "faturas":      "Invoice history",
+    "usuarios":     "Users",
+    "agentes":      "Agents"
+  },
+  "agents": {
+    "title":   "Artificial Intelligence Agents",
+    "sub":     "Empower your pastoral operation with AI",
+    "ativar":  "Activate",
+    "trial":   "7-day free trial",
+    "gratis":  "Free in your plan"
+  },
+  "settings": {
+    "idioma": "Language",
+    "pt_br":  "Portuguese (Brazil)",
+    "en":     "English",
+    "es":     "Spanish"
+  }
+}
