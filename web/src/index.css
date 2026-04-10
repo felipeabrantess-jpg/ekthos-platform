@@ -3,7 +3,79 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+  :root {
+    --ekthos-cream:       #f9eedc;
+    --ekthos-cream-light: #FDF6EB;
+    --ekthos-cream-dark:  #EDE0CC;
+    --ekthos-red:         #e13500;
+    --ekthos-red-light:   #FF4D1A;
+    --ekthos-red-dark:    #C42E00;
+    --ekthos-red-bg:      #FDE8E0;
+    --ekthos-wine:        #670000;
+    --ekthos-wine-light:  #8B1A1A;
+    --ekthos-wine-bg:     #F5E0E0;
+    --ekthos-black:       #161616;
+    --ekthos-black-light: #2A2A2A;
+    --surface-primary:    #FFFFFF;
+    --surface-secondary:  #f9eedc;
+    --surface-tertiary:   #F5E8D4;
+    --success:            #2D7A4F;
+    --success-bg:         #E8F5E9;
+    --warning:            #C4841D;
+    --warning-bg:         #FFF3E0;
+    --text-primary:       #161616;
+    --text-secondary:     #5A5A5A;
+    --text-tertiary:      #8A8A8A;
   }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background-color: var(--ekthos-cream);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+}
+
+@layer components {
+  /* Page animation wrapper */
+  .page-content {
+    animation: fadeInUp 0.3s ease-out both;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--surface-secondary) 25%,
+      var(--surface-tertiary) 50%,
+      var(--surface-secondary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: 8px;
+  }
+
+  /* Card base */
+  .ekthos-card {
+    background: #FFFFFF;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .ekthos-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+@layer utilities {
+  .font-display { font-family: 'Playfair Display', Georgia, serif; }
+  .font-mono-ekthos { font-family: 'JetBrains Mono', monospace; }
 }
