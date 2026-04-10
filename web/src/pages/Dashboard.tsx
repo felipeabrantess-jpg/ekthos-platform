@@ -1,15 +1,11 @@
-﻿import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Cell,
+import {
+  BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from 'recharts'
+import {
+  UserCheck, UserPlus, Users, Network, Droplets,
+  GraduationCap, Wallet, AlertTriangle, CheckCircle,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, canManageDepartments } from '@/hooks/useRole'
 import type { AppRole } from '@/hooks/useRole'
@@ -17,193 +13,26 @@ import { usePastoralDashboard } from '@/features/dashboard/hooks/usePastoralDash
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
-// â”€â”€â”€ Paleta de cores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const BRAND   = '#6366f1'
-const BRAND_L = '#a5b4fc'
-const SUCCESS = '#22c55e'
-const WARN    = '#f59e0b'
+// Paleta Ekthos para graficos
+const BRAND   = '#e13500'
+const BRAND_L = '#F9A890'
+const SUCCESS = '#2D7A4F'
+const WARN    = '#C4841D'
 
 const STAGE_COLORS = [
-  '#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe',
-  '#4ade80', '#86efac', '#fbbf24', '#f87171',
-  '#34d399', '#2dd4bf', '#60a5fa',
+  '#e13500', '#F25830', '#F9A890', '#FCCFBF',
+  '#2D7A4F', '#4DA070', '#C4841D', '#D9A84F',
+  '#670000', '#8B1A1A', '#B85C00',
 ]
 
-// â”€â”€â”€ Componentes base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function SectionTitle({ title, sub }: { title: string; sub?: string }) {
-  return (
-    <div className="mb-4">
-      <h2 className="text-base font-semibold text-gray-800">{title}</h2>
-      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-    </div>
-  )
-}
-
-function MetricCard({
-  label,
-  value,
-  sub,
-  meta,
-  alert,
-  color = 'default',
-  icon,
-}: {
-  label: string
-  value: string | number
-  sub?: string
-  meta?: string
-  alert?: boolean
-  color?: 'default' | 'green' | 'yellow' | 'red' | 'purple' | 'blue'
-  icon?: string
-}) {
-  const colorMap = {
-    default: 'border-gray-100',
-    green:   'border-green-200 bg-green-50/40',
-    yellow:  'border-yellow-200 bg-yellow-50/40',
-    red:     'border-red-200 bg-red-50/40',
-    purple:  'border-purple-200 bg-purple-50/40',
-    blue:    'border-blue-200 bg-blue-50/40',
-  }
-  const valueColor = {
-    default: 'text-gray-900',
-    green:   'text-green-700',
-    yellow:  'text-yellow-700',
-    red:     'text-red-700',
-    purple:  'text-purple-700',
-    blue:    'text-blue-700',
-  }
-
-  return (
-    <div className={`bg-white rounded-xl border p-5 shadow-sm ${colorMap[alert ? 'red' : color]}`}>
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide leading-tight">{label}</p>
-        {icon && <span className="text-lg">{icon}</span>}
-      </div>
-      <p className={`text-3xl font-bold mt-2 ${valueColor[alert ? 'red' : color]}`}>{value}</p>
-      <div className="mt-2 flex items-center gap-2 flex-wrap">
-        {sub && <span className="text-xs text-gray-400">{sub}</span>}
-        {meta && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-            alert
-              ? 'bg-red-100 text-red-700'
-              : 'bg-indigo-50 text-indigo-700'
-          }`}>
-            {meta}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// â”€â”€â”€ Alerta crÃ­tico (W13) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function AlertaCritico({ items }: {
-  items: Array<{ id: string; nome: string; created_at: string }>
-}) {
-  if (items.length === 0) return null
-  const formatDate = (iso: string) =>
-    new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
-
-  return (
-    <div className="rounded-xl border-2 border-red-300 bg-red-50 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-red-600 text-lg">âš ï¸</span>
-        <div>
-          <p className="text-sm font-bold text-red-800">
-            {items.length} visitante{items.length > 1 ? 's' : ''} sem consolidaÃ§Ã£o
-          </p>
-          <p className="text-xs text-red-600">Entraram hÃ¡ mais de 24h e ainda nÃ£o foram acompanhados</p>
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {items.slice(0, 8).map(p => (
-          <span key={p.id} className="inline-flex items-center gap-1 bg-red-100 text-red-800 text-xs font-medium px-2.5 py-1 rounded-full">
-            {p.nome}
-            <span className="text-red-500">Â· {formatDate(p.created_at)}</span>
-          </span>
-        ))}
-        {items.length > 8 && (
-          <span className="text-xs text-red-600 font-medium self-center">+{items.length - 8} outros</span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// â”€â”€â”€ Tabela de alerta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function AlertaTable<T extends Record<string, unknown>>({
-  title,
-  sub,
-  columns,
-  data,
-  empty,
-}: {
-  title: string
-  sub?: string
-  columns: Array<{ label: string; key: keyof T; render?: (v: T[keyof T], row: T) => React.ReactNode }>
-  data: T[]
-  empty?: string
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-        {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-      </div>
-      {data.length === 0 ? (
-        <p className="px-5 py-8 text-sm text-gray-400 text-center">{empty ?? 'Nenhum registro'}</p>
-      ) : (
-        <div className="divide-y divide-gray-50">
-          {data.map((row, i) => (
-            <div key={i} className="px-5 py-3 flex items-center gap-3">
-              {columns.map(col => (
-                <div key={String(col.key)} className="flex-1 min-w-0">
-                  {col.render ? col.render(row[col.key], row) : (
-                    <span className="text-sm text-gray-700 truncate block">{String(row[col.key] ?? 'â€”')}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// â”€â”€â”€ Widget container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-function ChartCard({ title, sub, children, height = 220 }: {
-  title: string
-  sub?: string
-  children: React.ReactNode
-  height?: number
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-        {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-      </div>
-      <div className="p-4" style={{ height }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// â”€â”€â”€ Helpers de formataÃ§Ã£o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
+// Labels de estagio
 const STAGE_LABELS: Record<string, string> = {
   visitante:    'Visitante',
   contato:      'Contato',
   frequentador: 'Frequentador',
   consolidado:  'Consolidado',
-  discipulo:    'DiscÃ­pulo',
-  lider:        'LÃ­der',
+  discipulo:    'Discipulo',
+  lider:        'Lider',
 }
 
 const formatCurrency = (v: number) =>
@@ -215,17 +44,190 @@ function relativeDate(iso: string | null): string {
   const days = Math.floor(diff / 86400000)
   if (days === 0) return 'Hoje'
   if (days === 1) return 'Ontem'
-  return `${days} dias atrÃ¡s`
+  return `${days} dias atras`
 }
 
-// â”€â”€â”€ PÃ¡gina principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Titulo de secao
+function SectionTitle({ title, sub }: { title: string; sub?: string }) {
+  return (
+    <div className="mb-4">
+      <h2 className="font-display text-xl font-semibold text-ekthos-black">{title}</h2>
+      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
 
+// Metric card com design Ekthos
+function MetricCard({
+  label, value, sub, meta, alert, color = 'default', icon,
+}: {
+  label: string
+  value: string | number
+  sub?: string
+  meta?: string
+  alert?: boolean
+  color?: 'default' | 'green' | 'yellow' | 'red' | 'purple' | 'blue'
+  icon?: React.ReactNode
+}) {
+  const borderMap = {
+    default: 'border-black/5',
+    green:   'border-success/20',
+    yellow:  'border-warning/20',
+    red:     'border-brand-200',
+    purple:  'border-purple-200',
+    blue:    'border-blue-200',
+  }
+  const valueColorMap = {
+    default: 'text-ekthos-black',
+    green:   'text-success',
+    yellow:  'text-warning',
+    red:     'text-brand-600',
+    purple:  'text-purple-700',
+    blue:    'text-blue-700',
+  }
+
+  const borderClass = borderMap[alert ? 'red' : color]
+  const valueClass  = valueColorMap[alert ? 'red' : color]
+
+  return (
+    <div className={`bg-white rounded-2xl border p-5 shadow-sm relative overflow-hidden ${borderClass}`}>
+      {/* Decoracao de fundo */}
+      <div
+        className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-5"
+        style={{ background: '#f9eedc', transform: 'translate(30%, -30%)' }}
+      />
+      <div className="flex items-start justify-between relative">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest leading-tight">
+          {label}
+        </p>
+        {icon && (
+          <span className={`${alert ? 'text-brand-600' : 'text-gray-300'}`}>
+            {icon}
+          </span>
+        )}
+      </div>
+      <p className={`font-mono-ekthos text-3xl font-bold mt-2 relative ${valueClass}`}>
+        {value}
+      </p>
+      <div className="mt-2 flex items-center gap-2 flex-wrap relative">
+        {sub && <span className="text-xs text-gray-400">{sub}</span>}
+        {meta && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+            alert ? 'bg-brand-50 text-brand-600' : 'bg-cream text-ekthos-black'
+          }`}>
+            {meta}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Alerta critico de visitantes
+function AlertaCritico({ items }: {
+  items: Array<{ id: string; nome: string; created_at: string }>
+}) {
+  if (items.length === 0) return null
+  const formatDate = (iso: string) =>
+    new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
+
+  return (
+    <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-5">
+      <div className="flex items-center gap-2.5 mb-3">
+        <AlertTriangle size={18} strokeWidth={1.75} className="text-brand-600 shrink-0" />
+        <div>
+          <p className="text-sm font-bold text-brand-700">
+            {items.length} visitante{items.length > 1 ? 's' : ''} sem consolidacao
+          </p>
+          <p className="text-xs text-brand-600/80">
+            Entraram ha mais de 24h e ainda nao foram acompanhados
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {items.slice(0, 8).map(p => (
+          <span key={p.id} className="inline-flex items-center gap-1 bg-white text-brand-700 text-xs font-medium px-2.5 py-1 rounded-full border border-brand-100">
+            {p.nome}
+            <span className="text-brand-400">· {formatDate(p.created_at)}</span>
+          </span>
+        ))}
+        {items.length > 8 && (
+          <span className="text-xs text-brand-600 font-semibold self-center">
+            +{items.length - 8} outros
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Tabela de alerta operacional
+function AlertaTable<T extends Record<string, unknown>>({
+  title, sub, columns, data, empty,
+}: {
+  title: string
+  sub?: string
+  columns: Array<{ label: string; key: keyof T; render?: (v: T[keyof T], row: T) => React.ReactNode }>
+  data: T[]
+  empty?: string
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-black/5 shadow-sm">
+      <div className="px-5 py-4 border-b border-black/5">
+        <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
+        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      </div>
+      {data.length === 0 ? (
+        <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-gray-400">
+          <CheckCircle size={16} strokeWidth={1.75} className="text-success shrink-0" />
+          {empty ?? 'Nenhum registro'}
+        </div>
+      ) : (
+        <div className="divide-y divide-black/[0.03]">
+          {data.map((row, i) => (
+            <div key={i} className="px-5 py-3 flex items-center gap-3">
+              {columns.map(col => (
+                <div key={String(col.key)} className="flex-1 min-w-0">
+                  {col.render ? col.render(row[col.key], row) : (
+                    <span className="text-sm text-gray-700 truncate block">{String(row[col.key] ?? '-')}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Card de grafico
+function ChartCard({ title, sub, children, height = 220 }: {
+  title: string
+  sub?: string
+  children: React.ReactNode
+  height?: number
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-black/5 shadow-sm">
+      <div className="px-5 py-4 border-b border-black/5">
+        <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
+        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      </div>
+      <div className="p-4" style={{ height }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// Pagina principal
 export default function Dashboard() {
   const { churchId, role } = useAuth()
   const { data, isLoading, isError, refetch } = usePastoralDashboard(churchId ?? '')
 
   if (!churchId) {
-    return <ErrorState message="Igreja nÃ£o identificada. FaÃ§a login novamente." />
+    return <ErrorState message="Igreja nao identificada. Faca login novamente." />
   }
 
   if (isLoading) {
@@ -245,131 +247,113 @@ export default function Dashboard() {
   const showDepartments = canManageDepartments(appRole)
 
   const metaConsolidacao = data.taxaConsolidacao >= 80
-    ? `âœ“ Meta atingida (80%)`
+    ? 'Meta atingida (80%)'
     : data.taxaConsolidacao >= 50
-      ? `Meta: 80%`
-      : `âš  Abaixo de 50%`
+      ? 'Meta: 80%'
+      : 'Abaixo de 50%'
 
   const now = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date())
 
   return (
     <div className="space-y-8 pb-8">
 
-      {/* â”€â”€ Header â”€â”€ */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Pastoral</h1>
-          <p className="text-sm text-gray-500 mt-1 capitalize">{now}</p>
-        </div>
+      {/* Header */}
+      <div>
+        <h1 className="font-display text-3xl font-bold text-ekthos-black">
+          Dashboard Pastoral
+        </h1>
+        <p className="text-sm text-gray-400 mt-1 capitalize">{now}</p>
       </div>
 
-      {/* â”€â”€ W13: Alerta crÃ­tico â€” Visitantes sem consolidaÃ§Ã£o â”€â”€ */}
+      {/* Alerta critico — visitantes sem consolidacao */}
       <AlertaCritico items={data.visitantesSemConsolidacao} />
 
-      {/* â”€â”€ MÃ©tricas de saÃºde pastoral (W1, W2, W3, W4, W9) â”€â”€ */}
+      {/* Saude pastoral */}
       <section>
-        <SectionTitle title="SaÃºde Pastoral" sub="Indicadores principais da semana" />
+        <SectionTitle title="Saude Pastoral" sub="Indicadores principais da semana" />
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <MetricCard
-            label="Taxa de ConsolidaÃ§Ã£o"
+            label="Taxa de Consolidacao"
             value={`${data.taxaConsolidacao}%`}
             meta={metaConsolidacao}
             alert={data.taxaConsolidacaoAlert}
             color={data.taxaConsolidacao >= 80 ? 'green' : data.taxaConsolidacaoAlert ? 'red' : 'yellow'}
-            icon="ðŸ“ˆ"
+            icon={<UserCheck size={18} strokeWidth={1.75} />}
           />
           <MetricCard
             label="Visitantes esta Semana"
             value={data.visitantesSemana}
             sub="novos esta semana"
             color="blue"
-            icon="ðŸ™‹"
+            icon={<UserPlus size={18} strokeWidth={1.75} />}
           />
           <MetricCard
             label="Membros Ativos"
             value={data.membrosAtivos}
             sub="frequentadores ou acima"
             color="purple"
-            icon="ðŸ‘¥"
+            icon={<Users size={18} strokeWidth={1.75} />}
           />
           <MetricCard
-            label="CÃ©lulas Ativas"
+            label="Celulas Ativas"
             value={data.celulasAtivas}
             sub={`de ${data.totalCelulas} cadastradas`}
-            meta={`Meta: 45`}
+            meta="Meta: 45"
             color={data.celulasAtivas >= 45 ? 'green' : 'default'}
-            icon="ðŸ¡"
+            icon={<Network size={18} strokeWidth={1.75} />}
           />
           <MetricCard
             label="Batismos no Trimestre"
             value={data.batismosTrimestre}
             meta="Meta: 15/tri"
             color={data.batismosTrimestre >= 15 ? 'green' : 'default'}
-            icon="âœï¸"
+            icon={<Droplets size={18} strokeWidth={1.75} />}
           />
         </div>
       </section>
 
-      {/* â”€â”€ MÃ©tricas secundÃ¡rias (W15 + W10 financeiro) â”€â”€ */}
+      {/* Metricas secundarias */}
       <section>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <MetricCard
-            label="Escola da FÃ©"
+            label="Escola da Fe"
             value={data.alunosEscolaDaFe}
             sub="alunos ativos no pipeline"
             meta="Meta: 30/turma"
             color={data.alunosEscolaDaFe >= 30 ? 'green' : 'default'}
-            icon="ðŸ“š"
+            icon={<GraduationCap size={18} strokeWidth={1.75} />}
           />
           {showFinancial && (
             <MetricCard
-              label="DÃ­zimos e Ofertas"
+              label="Dizimos e Ofertas"
               value={formatCurrency(data.dizimosOfertasMes)}
-              sub="mÃªs atual (confirmados)"
+              sub="mes atual (confirmados)"
               color="green"
-              icon="ðŸ’°"
+              icon={<Wallet size={18} strokeWidth={1.75} />}
             />
           )}
         </div>
       </section>
 
-      {/* â”€â”€ Charts: Caminho de Discipulado (W5) + EvoluÃ§Ã£o de Membros (W14) â”€â”€ */}
+      {/* Charts: Caminho de Discipulado + Evolucao de Membros */}
       <section>
-        <SectionTitle title="TendÃªncias e Crescimento" />
+        <SectionTitle title="Tendencias e Crescimento" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* W5: Caminho de Discipulado â€” BarChart horizontal */}
-          <ChartCard
-            title="Caminho de Discipulado"
-            sub="Pessoas por etapa do pipeline"
-            height={280}
-          >
+          <ChartCard title="Caminho de Discipulado" sub="Pessoas por etapa do pipeline" height={280}>
             {data.caminhoDiscipulado.length === 0 ? (
               <div className="flex items-center justify-center h-full text-sm text-gray-400">
                 Nenhum dado de pipeline
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={data.caminhoDiscipulado}
-                  layout="vertical"
-                  margin={{ top: 0, right: 24, left: 8, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={120}
-                  />
+                <BarChart data={data.caminhoDiscipulado} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+                  <XAxis type="number" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={120} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <Tooltip                    formatter={(v: any) => [v, 'Pessoas']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={20}>
+                  <Tooltip formatter={(v: any) => [v, 'Pessoas']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
                     {data.caminhoDiscipulado.map((_, i) => (
                       <Cell key={i} fill={STAGE_COLORS[i % STAGE_COLORS.length]} />
                     ))}
@@ -379,37 +363,20 @@ export default function Dashboard() {
             )}
           </ChartCard>
 
-          {/* W14: EvoluÃ§Ã£o de Membros â€” LineChart */}
-          <ChartCard
-            title="EvoluÃ§Ã£o de Membros"
-            sub="Crescimento acumulado â€” Ãºltimos 12 meses"
-            height={280}
-          >
+          <ChartCard title="Evolucao de Membros" sub="Crescimento acumulado - ultimos 12 meses" height={280}>
             {data.evolucaoMembros.every(m => m.total === 0) ? (
               <div className="flex items-center justify-center h-full text-sm text-gray-400">
                 Nenhum dado de crescimento
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={data.evolucaoMembros}
-                  margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <LineChart data={data.evolucaoMembros} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
                   <XAxis dataKey="mes" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={36} />
+                  <YAxis tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={36} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <Tooltip                    formatter={(v: any) => [v, 'Membros']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="total"
-                    stroke={BRAND}
-                    strokeWidth={2.5}
-                    dot={{ fill: BRAND, r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
+                  <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Line type="monotone" dataKey="total" stroke={BRAND} strokeWidth={2.5} dot={{ fill: BRAND, r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -417,103 +384,57 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* â”€â”€ Charts: Crescimento de CÃ©lulas (W7) + VoluntÃ¡rios por Dept (W8) â”€â”€ */}
+      {/* Charts: Celulas + Voluntarios/Top Celulas */}
       <section>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* W7: Crescimento de CÃ©lulas */}
-          <ChartCard
-            title="Crescimento de CÃ©lulas"
-            sub="Novas cÃ©lulas por trimestre (meta: +10%/tri)"
-            height={240}
-          >
+          <ChartCard title="Crescimento de Celulas" sub="Novas celulas por trimestre (meta: +10%/tri)" height={240}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.crescimentoCelulas}
-                margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+              <BarChart data={data.crescimentoCelulas} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
                 <XAxis dataKey="periodo" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
+                <YAxis tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Tooltip                  formatter={(v: any) => [v, 'CÃ©lulas criadas']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Bar dataKey="celulas" fill={SUCCESS} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                <Tooltip formatter={(v: any) => [v, 'Celulas criadas']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="celulas" fill={SUCCESS} radius={[6, 6, 0, 0]} maxBarSize={48} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
 
-          {/* W8: VoluntÃ¡rios por Departamento â€” apenas admin/admin_departments */}
           {showDepartments ? (
-            <ChartCard
-              title="VoluntÃ¡rios por Departamento"
-              sub="Total de voluntÃ¡rios ativos por ministÃ©rio"
-              height={240}
-            >
+            <ChartCard title="Voluntarios por Departamento" sub="Total de voluntarios ativos por ministerio" height={240}>
               {data.voluntariosPorDept.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-sm text-gray-400">
-                  Nenhum voluntÃ¡rio cadastrado
+                  Nenhum voluntario cadastrado
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={data.voluntariosPorDept}
-                    layout="vertical"
-                    margin={{ top: 0, right: 24, left: 8, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <BarChart data={data.voluntariosPorDept} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={110}
-                    />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Tooltip                      formatter={(v: any) => [v, 'VoluntÃ¡rios']}
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    />
-                    <Bar dataKey="total" fill={WARN} radius={[0, 4, 4, 0]} maxBarSize={20} />
+                    <Tooltip formatter={(v: any) => [v, 'Voluntarios']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Bar dataKey="total" fill={WARN} radius={[0, 6, 6, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
             </ChartCard>
           ) : (
-            /* W6: Top CÃ©lulas por Membros (para roles sem acesso a departamentos) */
-            <ChartCard
-              title="CÃ©lulas com Mais Membros"
-              sub="Top cÃ©lulas por nÃºmero de membros cadastrados"
-              height={240}
-            >
+            <ChartCard title="Celulas com Mais Membros" sub="Top celulas por numero de membros cadastrados" height={240}>
               {data.topCelulas.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-sm text-gray-400">
-                  Nenhum membro com cÃ©lula cadastrada
+                  Nenhum membro com celula cadastrada
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={data.topCelulas}
-                    layout="vertical"
-                    margin={{ top: 0, right: 24, left: 8, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                  <BarChart data={data.topCelulas} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      tick={{ fontSize: 11 }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={110}
-                    />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Tooltip                      formatter={(v: any) => [v, 'Membros']}
-                      contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                    />
-                    <Bar dataKey="membros" fill={BRAND_L} radius={[0, 4, 4, 0]} maxBarSize={20} />
+                    <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                    <Bar dataKey="membros" fill={BRAND_L} radius={[0, 6, 6, 0]} maxBarSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -522,72 +443,53 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* W6: Top CÃ©lulas (se showDepartments, mostra aqui tambÃ©m) */}
       {showDepartments && data.topCelulas.length > 0 && (
         <section>
-          <ChartCard
-            title="CÃ©lulas com Mais Membros"
-            sub="Top cÃ©lulas por nÃºmero de membros cadastrados"
-            height={220}
-          >
+          <ChartCard title="Celulas com Mais Membros" sub="Top celulas por numero de membros cadastrados" height={220}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.topCelulas}
-                layout="vertical"
-                margin={{ top: 0, right: 24, left: 8, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+              <BarChart data={data.topCelulas} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
                 <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  tick={{ fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={110}
-                />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Tooltip                  formatter={(v: any) => [v, 'Membros']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Bar dataKey="membros" fill={BRAND_L} radius={[0, 4, 4, 0]} maxBarSize={20} />
+                <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                <Bar dataKey="membros" fill={BRAND_L} radius={[0, 6, 6, 0]} maxBarSize={20} />
               </BarChart>
             </ResponsiveContainer>
           </ChartCard>
         </section>
       )}
 
-      {/* â”€â”€ Alertas Operacionais (W11 + W12) â”€â”€ */}
+      {/* Alertas operacionais */}
       <section>
-        <SectionTitle title="Alertas Operacionais" sub="Requerem atenÃ§Ã£o pastoral" />
+        <SectionTitle title="Alertas Operacionais" sub="Requerem atencao pastoral" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          {/* W11: Membros ausentes > 14 dias */}
           <AlertaTable
             title="Membros Ausentes"
-            sub="Sem registro de contato hÃ¡ mais de 14 dias"
-            empty="âœ“ Nenhum membro ausente detectado"
+            sub="Sem registro de contato ha mais de 14 dias"
+            empty="Nenhum membro ausente detectado"
             data={data.membrosAusentes}
             columns={[
               {
                 label: 'Nome',
                 key: 'nome',
-                render: (v) => <span className="text-sm font-medium text-gray-800">{String(v)}</span>,
+                render: (v) => <span className="text-sm font-medium text-ekthos-black">{String(v)}</span>,
               },
               {
-                label: 'EstÃ¡gio',
+                label: 'Estagio',
                 key: 'person_stage',
                 render: (v) => (
-                  <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                  <span className="text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full font-medium">
                     {STAGE_LABELS[String(v)] ?? String(v)}
                   </span>
                 ),
               },
               {
-                label: 'Ãšltimo Contato',
+                label: 'Ultimo Contato',
                 key: 'last_contact_at',
                 render: (v) => (
-                  <span className="text-xs text-red-600 font-medium text-right block">
+                  <span className="text-xs text-brand-600 font-semibold text-right block">
                     {relativeDate(v as string | null)}
                   </span>
                 ),
@@ -595,17 +497,16 @@ export default function Dashboard() {
             ]}
           />
 
-          {/* W12: CÃ©lulas com poucos membros */}
           <AlertaTable
-            title="CÃ©lulas em Alerta"
-            sub="CÃ©lulas com menos de 3 membros cadastrados"
-            empty="âœ“ Todas as cÃ©lulas estÃ£o com bom nÃºmero de membros"
+            title="Celulas em Alerta"
+            sub="Celulas com menos de 3 membros cadastrados"
+            empty="Todas as celulas estao com bom numero de membros"
             data={data.celulasEmAlerta}
             columns={[
               {
-                label: 'CÃ©lula',
+                label: 'Celula',
                 key: 'name',
-                render: (v) => <span className="text-sm font-medium text-gray-800">{String(v)}</span>,
+                render: (v) => <span className="text-sm font-medium text-ekthos-black">{String(v)}</span>,
               },
               {
                 label: 'Membros',
@@ -614,9 +515,7 @@ export default function Dashboard() {
                   const n = v as number
                   return (
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      n === 0
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-yellow-100 text-yellow-700'
+                      n === 0 ? 'bg-brand-50 text-brand-600' : 'bg-warning-bg text-warning'
                     }`}>
                       {n === 0 ? 'Vazia' : `${n} membro${n > 1 ? 's' : ''}`}
                     </span>

@@ -1,0 +1,84 @@
+{
+  "nav": {
+    "dashboard":    "Dashboard",
+    "pessoas":      "Pessoas",
+    "pipeline":     "Pipeline",
+    "celulas":      "Celulas",
+    "ministerios":  "Ministerios",
+    "voluntarios":  "Voluntarios",
+    "escalas":      "Escalas",
+    "financeiro":   "Financeiro",
+    "agenda":       "Agenda",
+    "gabinete":     "Gabinete",
+    "agentes":      "Agentes IA",
+    "configuracoes":"Configuracoes"
+  },
+  "dashboard": {
+    "title":          "Dashboard Pastoral",
+    "saude":          "Saude Pastoral",
+    "saude_sub":      "Indicadores principais da semana",
+    "tendencias":     "Tendencias e Crescimento",
+    "alertas":        "Alertas Operacionais",
+    "alertas_sub":    "Requerem atencao pastoral",
+    "consolidacao":   "Taxa de Consolidacao",
+    "visitantes":     "Visitantes esta Semana",
+    "membros":        "Membros Ativos",
+    "celulas":        "Celulas Ativas",
+    "batismos":       "Batismos no Trimestre",
+    "escola":         "Escola da Fe",
+    "dizimos":        "Dizimos e Ofertas",
+    "ausentes":       "Membros Ausentes",
+    "ausentes_sub":   "Sem registro de contato ha mais de 14 dias",
+    "celulas_alerta": "Celulas em Alerta",
+    "celulas_alerta_sub": "Celulas com menos de 3 membros cadastrados"
+  },
+  "login": {
+    "title":       "Entrar",
+    "email":       "E-mail",
+    "senha":       "Senha",
+    "btn":         "Entrar",
+    "erro":        "E-mail ou senha incorretos.",
+    "subtitulo":   "Plataforma operacional para igrejas"
+  },
+  "common": {
+    "carregando":  "Carregando...",
+    "erro":        "Erro ao carregar",
+    "tentar":      "Tentar novamente",
+    "nenhum":      "Nenhum registro",
+    "sair":        "Sair",
+    "notificacoes":"Notificacoes",
+    "hoje":        "Hoje",
+    "ontem":       "Ontem",
+    "dias_atras":  "dias atras",
+    "nunca":       "Nunca"
+  },
+  "stages": {
+    "visitante":    "Visitante",
+    "contato":      "Contato",
+    "frequentador": "Frequentador",
+    "consolidado":  "Consolidado",
+    "discipulo":    "Discipulo",
+    "lider":        "Lider"
+  },
+  "billing": {
+    "title":        "Sua assinatura",
+    "plano_atual":  "Plano atual",
+    "upgrade":      "Fazer upgrade",
+    "faturas":      "Historico de faturas",
+    "usuarios":     "Usuarios",
+    "agentes":      "Agentes"
+  },
+  "agents": {
+    "title":   "Agentes de Inteligencia Artificial",
+    "sub":     "Potencialize sua operacao pastoral com IA",
+    "ativar":  "Ativar",
+    "trial":   "Trial 7 dias gratis",
+    "gratis":  "Gratis no seu plano"
+  },
+  "settings": {
+    "idioma":   "Idioma",
+    "pt_br":    "Portugues (Brasil)",
+    "en":       "Ingles",
+    "es":       "Espanhol"
+  }
+}

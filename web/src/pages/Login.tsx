@@ -26,20 +26,25 @@ export default function Login() {
       setError('E-mail ou senha incorretos.')
       setSubmitting(false)
     }
-    // Sucesso: onAuthStateChange redireciona automaticamente via useAuth
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+      <div className="w-full max-w-sm animate-fade-in-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-brand-700">Ekthos</h1>
-          <p className="text-sm text-gray-500 mt-1">Plataforma operacional para igrejas</p>
+          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>
+            Ekthos
+          </h1>
+          <p className="text-sm text-gray-500 mt-2 font-body">
+            Plataforma operacional para igrejas
+          </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">Entrar</h2>
+        <div className="bg-white rounded-2xl shadow-sm border border-black/5 p-8">
+          <h2 className="font-display text-xl font-semibold text-ekthos-black mb-6">
+            Entrar
+          </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -62,10 +67,12 @@ export default function Login() {
             />
 
             {error && (
-              <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-sm text-brand-600 bg-brand-50 rounded-xl px-3 py-2 font-medium">
+                {error}
+              </p>
             )}
 
-            <Button type="submit" loading={submitting} className="w-full">
+            <Button type="submit" loading={submitting} className="w-full mt-2">
               Entrar
             </Button>
           </form>
