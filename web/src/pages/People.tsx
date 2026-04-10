@@ -8,7 +8,7 @@ import ErrorState from '@/components/ui/ErrorState'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
-import type { Person, PersonWithStage } from '@/lib/database.types'
+import type { Person, PersonWithStage } from '@/lib/types/joins'
 
 type BadgeVariant = 'blue' | 'green' | 'yellow' | 'gray' | 'red' | 'purple'
 

@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Users, GitBranch, Network, Building2,
   Heart, CalendarRange, Wallet, Calendar, Lock, Bot,
-  Settings, LogOut, Bell,
+  Settings, LogOut,
 } from 'lucide-react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'

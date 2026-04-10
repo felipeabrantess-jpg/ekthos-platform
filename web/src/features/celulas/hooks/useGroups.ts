@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Group, CellMember, CellMeeting } from '@/lib/database.types'
+import type { Group, CellMember, CellMeeting } from '@/lib/types/joins'
 
 // ──────────────────────────────────────────────────────────────────────
 // Grupos / Células

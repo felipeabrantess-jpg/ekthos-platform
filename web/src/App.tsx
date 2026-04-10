@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { canAccess, defaultRoute, type AppRole } from '@/hooks/useRole'
+import ErrorBoundary from '@/components/ErrorBoundary'
 import Layout from '@/components/Layout'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
@@ -82,46 +83,48 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Rotas públicas (sem sidebar) */}
-        <Route path="/login"        element={<Login />} />
-        <Route path="/signup"       element={<Signup />} />
-        <Route path="/choose-plan"  element={<ChoosePlan />} />
-        <Route path="/onboarding"   element={<Onboarding />} />
-        <Route path="/onboarding/configuring" element={<OnboardingConfiguring />} />
+        <Route path="/login"        element={<ErrorBoundary><Login /></ErrorBoundary>} />
+        <Route path="/signup"       element={<ErrorBoundary><Signup /></ErrorBoundary>} />
+        <Route path="/choose-plan"  element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
+        <Route path="/onboarding"   element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
+        <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
 
         {/* CRM — rotas protegidas com Layout + sidebar */}
         <Route
           path="/"
           element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            </ErrorBoundary>
           }
         >
           {/* Redirect raiz para rota padrão do role */}
           <Route index element={<RootRedirect />} />
 
           {/* Rotas sem restrição de role além de estar autenticado */}
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="agenda"    element={<Agenda />} />
+          <Route path="dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+          <Route path="agenda"    element={<ErrorBoundary><Agenda /></ErrorBoundary>} />
 
           {/* Rotas com restrição de role */}
-          <Route path="pessoas"    element={<RoleRoute path="pessoas"><People /></RoleRoute>} />
-          <Route path="pipeline"   element={<RoleRoute path="pipeline"><Pipeline /></RoleRoute>} />
-          <Route path="celulas"    element={<RoleRoute path="celulas"><Celulas /></RoleRoute>} />
-          <Route path="ministerios" element={<RoleRoute path="ministerios"><Ministerios /></RoleRoute>} />
-          <Route path="voluntarios" element={<RoleRoute path="voluntarios"><Voluntarios /></RoleRoute>} />
-          <Route path="escalas"    element={<RoleRoute path="escalas"><Escalas /></RoleRoute>} />
-          <Route path="financeiro" element={<RoleRoute path="financeiro"><Financeiro /></RoleRoute>} />
-          <Route path="gabinete"   element={<RoleRoute path="gabinete"><Gabinete /></RoleRoute>} />
+          <Route path="pessoas"    element={<ErrorBoundary><RoleRoute path="pessoas"><People /></RoleRoute></ErrorBoundary>} />
+          <Route path="pipeline"   element={<ErrorBoundary><RoleRoute path="pipeline"><Pipeline /></RoleRoute></ErrorBoundary>} />
+          <Route path="celulas"    element={<ErrorBoundary><RoleRoute path="celulas"><Celulas /></RoleRoute></ErrorBoundary>} />
+          <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Ministerios /></RoleRoute></ErrorBoundary>} />
+          <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><Voluntarios /></RoleRoute></ErrorBoundary>} />
+          <Route path="escalas"    element={<ErrorBoundary><RoleRoute path="escalas"><Escalas /></RoleRoute></ErrorBoundary>} />
+          <Route path="financeiro" element={<ErrorBoundary><RoleRoute path="financeiro"><Financeiro /></RoleRoute></ErrorBoundary>} />
+          <Route path="gabinete"   element={<ErrorBoundary><RoleRoute path="gabinete"><Gabinete /></RoleRoute></ErrorBoundary>} />
 
           {/* Agentes IA */}
-          <Route path="agents" element={<Agents />} />
+          <Route path="agents" element={<ErrorBoundary><Agents /></ErrorBoundary>} />
 
           {/* Configurações */}
-          <Route path="settings" element={<SettingsLayout />}>
+          <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>
             <Route index element={<Navigate to="billing" replace />} />
-            <Route path="billing" element={<Billing />} />
-            <Route path="users"   element={<Users />} />
+            <Route path="billing" element={<ErrorBoundary><Billing /></ErrorBoundary>} />
+            <Route path="users"   element={<ErrorBoundary><Users /></ErrorBoundary>} />
           </Route>
         </Route>
 
@@ -129,16 +132,18 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
+            <ErrorBoundary>
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            </ErrorBoundary>
           }
         >
           <Route index element={<Navigate to="cockpit" replace />} />
-          <Route path="cockpit"      element={<AdminCockpit />} />
-          <Route path="churches"     element={<AdminChurches />} />
-          <Route path="churches/:id" element={<AdminChurch />} />
-          <Route path="revenue"      element={<AdminRevenue />} />
+          <Route path="cockpit"      element={<ErrorBoundary><AdminCockpit /></ErrorBoundary>} />
+          <Route path="churches"     element={<ErrorBoundary><AdminChurches /></ErrorBoundary>} />
+          <Route path="churches/:id" element={<ErrorBoundary><AdminChurch /></ErrorBoundary>} />
+          <Route path="revenue"      element={<ErrorBoundary><AdminRevenue /></ErrorBoundary>} />
         </Route>
       </Routes>
     </BrowserRouter>

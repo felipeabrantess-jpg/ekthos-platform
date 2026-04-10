@@ -13,7 +13,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import type { DonationType, DonationStatus, PaymentMethod, FinancialCampaign } from '@/lib/database.types'
+import type { DonationType, DonationStatus, PaymentMethod, FinancialCampaign } from '@/lib/types/joins'
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
@@ -383,10 +383,10 @@ export default function Financeiro() {
                     <td className="px-4 py-3 text-sm text-gray-900">
                       {(d as typeof d & { people?: { name: string | null } | null }).people?.name ?? 'Anônimo'}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{typeLabel(d.type)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{typeLabel(d.type as DonationType)}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{BRL.format(d.amount)}</td>
                     <td className="px-4 py-3">
-                      <Badge label={statusLabel(d.status)} variant={statusBadgeVariant(d.status)} />
+                      <Badge label={statusLabel(d.status as DonationStatus)} variant={statusBadgeVariant(d.status as DonationStatus)} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {new Date(d.created_at).toLocaleDateString('pt-BR')}

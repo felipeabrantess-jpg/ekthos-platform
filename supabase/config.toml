@@ -1,0 +1,29 @@
+# Supabase project configuration
+# Reference: https://supabase.com/docs/guides/local-development/cli/config
+
+[project]
+# id = "your-project-ref"   # set via CLI: supabase link --project-ref <ref>
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Edge Function settings
+# verify_jwt = true  (default) — require a valid Supabase JWT
+# verify_jwt = false — function validates auth itself, or is public (webhooks)
+# ──────────────────────────────────────────────────────────────────────────────
+
+[functions.stripe-checkout]
+verify_jwt = false   # JWT validated manually inside the function
+
+[functions.stripe-webhook]
+verify_jwt = false   # Public endpoint — secured by Stripe webhook signature
+
+[functions.demand-router]
+verify_jwt = false
+
+[functions.whatsapp-attendant]
+verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.n8n-workflows]
+verify_jwt = false

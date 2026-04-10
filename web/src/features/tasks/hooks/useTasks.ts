@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { Task } from '@/lib/database.types'
+import type { Task } from '@/lib/types/joins'
 
 export function useTasks(churchId: string, personId?: string) {
   return useQuery({
