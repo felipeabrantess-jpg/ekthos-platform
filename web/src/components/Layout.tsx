@@ -5,7 +5,7 @@ export default function Layout() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
       <Sidebar />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto" style={{ background: '#f9eedc' }}>
         <div className="max-w-7xl mx-auto px-6 py-8 page-content">
           <Outlet />
         </div>
