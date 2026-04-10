@@ -18,15 +18,15 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/dashboard',        label: 'Dashboard',    icon: <LayoutDashboard size={20} strokeWidth={1.75} /> },
   { path: '/pessoas',          label: 'Pessoas',      icon: <Users          size={20} strokeWidth={1.75} /> },
   { path: '/pipeline',         label: 'Pipeline',     icon: <GitBranch      size={20} strokeWidth={1.75} /> },
-  { path: '/celulas',          label: 'Celulas',      icon: <Network        size={20} strokeWidth={1.75} /> },
-  { path: '/ministerios',      label: 'Ministerios',  icon: <Building2      size={20} strokeWidth={1.75} /> },
-  { path: '/voluntarios',      label: 'Voluntarios',  icon: <Heart          size={20} strokeWidth={1.75} /> },
-  { path: '/escalas',          label: 'Escalas',      icon: <CalendarRange  size={20} strokeWidth={1.75} /> },
-  { path: '/financeiro',       label: 'Financeiro',   icon: <Wallet         size={20} strokeWidth={1.75} /> },
-  { path: '/agenda',           label: 'Agenda',       icon: <Calendar       size={20} strokeWidth={1.75} /> },
-  { path: '/gabinete',         label: 'Gabinete',     icon: <Lock           size={20} strokeWidth={1.75} /> },
-  { path: '/agents',           label: 'Agentes IA',   icon: <Bot            size={20} strokeWidth={1.75} /> },
-  { path: '/settings/billing', label: 'Configuracoes',icon: <Settings       size={20} strokeWidth={1.75} /> },
+  { path: '/celulas',          label: 'Células',       icon: <Network        size={20} strokeWidth={1.75} /> },
+  { path: '/ministerios',      label: 'Ministérios',   icon: <Building2      size={20} strokeWidth={1.75} /> },
+  { path: '/voluntarios',      label: 'Voluntários',   icon: <Heart          size={20} strokeWidth={1.75} /> },
+  { path: '/escalas',          label: 'Escalas',       icon: <CalendarRange  size={20} strokeWidth={1.75} /> },
+  { path: '/financeiro',       label: 'Financeiro',    icon: <Wallet         size={20} strokeWidth={1.75} /> },
+  { path: '/agenda',           label: 'Agenda',        icon: <Calendar       size={20} strokeWidth={1.75} /> },
+  { path: '/gabinete',         label: 'Gabinete',      icon: <Lock           size={20} strokeWidth={1.75} /> },
+  { path: '/agents',           label: 'Agentes IA',    icon: <Bot            size={20} strokeWidth={1.75} /> },
+  { path: '/settings/billing', label: 'Configurações', icon: <Settings       size={20} strokeWidth={1.75} /> },
 ]
 
 export default function Sidebar() {
@@ -39,7 +39,11 @@ export default function Sidebar() {
     return allowed?.includes(role) ?? true
   })
 
-  const initial = user?.email?.charAt(0).toUpperCase() ?? 'U'
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ??
+    (user?.user_metadata?.name as string | undefined) ??
+    user?.email?.split('@')[0] ?? 'Usuário'
+  const initial = displayName.charAt(0).toUpperCase()
 
   return (
     <aside className="w-64 flex flex-col h-screen sticky top-0 shrink-0" style={{ background: '#161616' }}>
@@ -81,9 +85,9 @@ export default function Sidebar() {
             {initial}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-white/80 truncate">{user?.email ?? ''}</p>
+            <p className="text-xs font-medium truncate" style={{ color: 'rgba(249,238,220,0.9)' }}>{displayName}</p>
             {role && (
-              <p className="text-xs text-white/40 truncate">{ROLE_LABELS[role]}</p>
+              <p className="text-xs truncate" style={{ color: 'rgba(249,238,220,0.4)' }}>{ROLE_LABELS[role]}</p>
             )}
           </div>
           <button
