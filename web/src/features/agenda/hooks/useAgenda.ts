@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { ChurchEvent, EventType } from '@/lib/database.types'
+import type { ChurchEvent, EventType } from '@/lib/types/joins'
 
 interface AgendaFilters {
   type?: EventType

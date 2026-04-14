@@ -47,16 +47,19 @@ COMMENT ON COLUMN health_scores.components IS 'JSON com breakdown: consolidacao,
 ALTER TABLE health_scores ENABLE ROW LEVEL SECURITY;
 
 -- Tenant vê o próprio score
+DROP POLICY IF EXISTS "health_scores_tenant_select" ON health_scores;
 CREATE POLICY "health_scores_tenant_select"
   ON health_scores FOR SELECT
   USING (church_id = auth_church_id());
 
 -- Admin vê todos
+DROP POLICY IF EXISTS "health_scores_admin_select" ON health_scores;
 CREATE POLICY "health_scores_admin_select"
   ON health_scores FOR SELECT
   USING (is_ekthos_admin());
 
 -- Service role: acesso total
+DROP POLICY IF EXISTS "health_scores_service_all" ON health_scores;
 CREATE POLICY "health_scores_service_all"
   ON health_scores FOR ALL
   USING (auth.role() = 'service_role');
@@ -82,10 +85,12 @@ COMMENT ON TABLE impersonate_sessions IS 'Auditoria de sessões de impersonaçã
 
 ALTER TABLE impersonate_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "impersonate_sessions_admin_all" ON impersonate_sessions;
 CREATE POLICY "impersonate_sessions_admin_all"
   ON impersonate_sessions FOR ALL
   USING (is_ekthos_admin());
 
+DROP POLICY IF EXISTS "impersonate_sessions_service_all" ON impersonate_sessions;
 CREATE POLICY "impersonate_sessions_service_all"
   ON impersonate_sessions FOR ALL
   USING (auth.role() = 'service_role');
@@ -95,6 +100,7 @@ CREATE POLICY "impersonate_sessions_service_all"
 -- Admin da Ekthos pode ler dados de TODAS as igrejas.
 -- ============================================================
 
+DROP POLICY IF EXISTS "churches_admin_select" ON churches;
 CREATE POLICY "churches_admin_select"
   ON churches FOR SELECT
   USING (is_ekthos_admin());

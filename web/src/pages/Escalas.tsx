@@ -16,7 +16,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import type { ScheduleWithAssignments, ScheduleStatus } from '@/lib/database.types'
+import type { ScheduleWithAssignments, ScheduleStatus } from '@/lib/types/joins'
 
 type BadgeVariant = 'gray' | 'blue' | 'green' | 'red'
 
@@ -26,6 +26,7 @@ function statusBadgeVariant(status: ScheduleStatus): BadgeVariant {
     published: 'blue',
     confirmed: 'green',
     cancelled: 'red',
+    completed: 'green',
   }
   return map[status]
 }
@@ -36,6 +37,7 @@ function statusLabel(status: ScheduleStatus): string {
     published: 'Publicado',
     confirmed: 'Confirmado',
     cancelled: 'Cancelado',
+    completed: 'Concluído',
   }
   return map[status]
 }
@@ -352,7 +354,7 @@ export default function Escalas() {
                         {s.event_time && <span className="text-gray-400"> {s.event_time.slice(0, 5)}</span>}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge label={statusLabel(s.status)} variant={statusBadgeVariant(s.status)} />
+                        <Badge label={statusLabel(s.status as ScheduleStatus)} variant={statusBadgeVariant(s.status as ScheduleStatus)} />
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {s.service_schedule_assignments?.length ?? 0}

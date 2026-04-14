@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { PersonWithStage, Person } from '@/lib/database.types'
+import type { PersonWithStage, Person } from '@/lib/types/joins'
 
 interface PeopleFilters {
   search?: string

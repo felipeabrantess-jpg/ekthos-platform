@@ -19,7 +19,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const ANTHROPIC_API_KEY       = Deno.env.get('ANTHROPIC_API_KEY')
 const SUPABASE_URL            = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-const ALLOWED_ORIGIN          = Deno.env.get('ALLOWED_ORIGIN') ?? '*'
+const ALLOWED_ORIGIN          = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 if (!ANTHROPIC_API_KEY) throw new Error('[onboarding-consultant] ANTHROPIC_API_KEY not set')
 if (!SUPABASE_URL) throw new Error('[onboarding-consultant] SUPABASE_URL not set')

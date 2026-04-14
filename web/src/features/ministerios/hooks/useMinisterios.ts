@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { MinistryWithLeader } from '@/lib/database.types'
+import type { MinistryWithLeader } from '@/lib/types/joins'
 
 export function useMinisterios(churchId: string) {
   return useQuery({

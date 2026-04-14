@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
-import type { PersonWithStage, PipelineStage } from '@/lib/database.types'
+import type { PersonWithStage, PipelineStage } from '@/lib/types/joins'
 
 // ──────────────────────────────────────────────────────────────
 // Helpers
@@ -41,7 +41,7 @@ interface PersonCardProps {
 function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
   const pipeline = person.person_pipeline?.[0]
   const lastActivity = pipeline?.last_activity_at
-  const status = slaStatus(pipeline?.entered_at, pipeline?.pipeline_stages?.sla_hours)
+  const status = slaStatus(pipeline?.entered_at ?? undefined, pipeline?.pipeline_stages?.sla_hours)
 
   return (
     <div
@@ -88,7 +88,7 @@ interface DetailPanelProps {
 
 function DetailPanel({ person, onClose }: DetailPanelProps) {
   const pipeline = person.person_pipeline?.[0]
-  const status = slaStatus(pipeline?.entered_at, pipeline?.pipeline_stages?.sla_hours)
+  const status = slaStatus(pipeline?.entered_at ?? undefined, pipeline?.pipeline_stages?.sla_hours)
   const slaHours = pipeline?.pipeline_stages?.sla_hours
   const elapsed = pipeline?.entered_at ? hoursElapsed(pipeline.entered_at) : null
 
@@ -118,10 +118,10 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
             <span className="text-gray-900">{person.phone ?? '—'}</span>
           </div>
 
-          {pipeline?.entered_at && (
+          {pipeline?.entered_at != null && (
             <div className="flex gap-2">
               <span className="text-gray-500 w-20 shrink-0">Nesta etapa</span>
-              <span className="text-gray-900">{daysAgo(pipeline.entered_at)}</span>
+              <span className="text-gray-900">{daysAgo(pipeline.entered_at ?? '')}</span>
             </div>
           )}
 
@@ -175,7 +175,7 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
   // Count cards with active SLA breach for column header alert
   const breachCount = people.filter((p) => {
     const pipeline = p.person_pipeline?.[0]
-    return slaStatus(pipeline?.entered_at, stage.sla_hours) === 'breach'
+    return slaStatus(pipeline?.entered_at ?? undefined, stage.sla_hours) === 'breach'
   }).length
 
   function handleDragOver(e: React.DragEvent) {
@@ -312,7 +312,7 @@ export default function Pipeline() {
     const people = displayedBoard[stage.id] ?? []
     return acc + people.filter((p) => {
       const pipeline = p.person_pipeline?.[0]
-      return slaStatus(pipeline?.entered_at, stage.sla_hours) === 'breach'
+      return slaStatus(pipeline?.entered_at ?? undefined, stage.sla_hours) === 'breach'
     }).length
   }, 0)
 

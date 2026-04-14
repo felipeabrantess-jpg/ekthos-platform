@@ -12,7 +12,7 @@ import ErrorState from '@/components/ui/ErrorState'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import type { VolunteerWithPerson, MinistryWithLeader } from '@/lib/database.types'
+import type { VolunteerWithPerson, MinistryWithLeader } from '@/lib/types/joins'
 
 const WEEKDAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
 
@@ -205,8 +205,8 @@ function VolunteerRow({ volunteer, onDeactivate }: VolunteerRowProps) {
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-gray-600">
-        {volunteer.availability?.days?.length > 0
-          ? volunteer.availability.days.join(', ')
+        {((volunteer.availability as { days: string[] } | null)?.days?.length ?? 0) > 0
+          ? (volunteer.availability as { days: string[] }).days.join(', ')
           : '—'}
       </td>
       <td className="px-4 py-3">

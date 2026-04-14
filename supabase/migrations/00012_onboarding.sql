@@ -61,10 +61,12 @@ COMMENT ON COLUMN onboarding_sessions.block_index IS 'Bloco atual da conversa (1
 -- RLS: usuário vê apenas a própria sessão
 ALTER TABLE onboarding_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "onboarding_sessions_owner" ON onboarding_sessions;
 CREATE POLICY "onboarding_sessions_owner"
   ON onboarding_sessions FOR SELECT
   USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "onboarding_sessions_service_all" ON onboarding_sessions;
 CREATE POLICY "onboarding_sessions_service_all"
   ON onboarding_sessions FOR ALL
   USING (auth.role() = 'service_role');
@@ -103,6 +105,7 @@ COMMENT ON TABLE onboarding_steps IS 'Cada linha é um step de configuração do
 -- RLS: usuário vê steps da própria sessão
 ALTER TABLE onboarding_steps ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "onboarding_steps_owner" ON onboarding_steps;
 CREATE POLICY "onboarding_steps_owner"
   ON onboarding_steps FOR SELECT
   USING (
@@ -111,6 +114,7 @@ CREATE POLICY "onboarding_steps_owner"
     )
   );
 
+DROP POLICY IF EXISTS "onboarding_steps_service_all" ON onboarding_steps;
 CREATE POLICY "onboarding_steps_service_all"
   ON onboarding_steps FOR ALL
   USING (auth.role() = 'service_role');
@@ -135,10 +139,12 @@ CREATE INDEX IF NOT EXISTS idx_church_sites_church_id ON church_sites (church_id
 
 ALTER TABLE church_sites ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "church_sites_tenant_select" ON church_sites;
 CREATE POLICY "church_sites_tenant_select"
   ON church_sites FOR SELECT
   USING (church_id = auth_church_id());
 
+DROP POLICY IF EXISTS "church_sites_service_all" ON church_sites;
 CREATE POLICY "church_sites_service_all"
   ON church_sites FOR ALL
   USING (auth.role() = 'service_role');
@@ -163,10 +169,12 @@ CREATE INDEX IF NOT EXISTS idx_pastoral_goals_church_id ON pastoral_goals (churc
 
 ALTER TABLE pastoral_goals ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "pastoral_goals_tenant_select" ON pastoral_goals;
 CREATE POLICY "pastoral_goals_tenant_select"
   ON pastoral_goals FOR SELECT
   USING (church_id = auth_church_id());
 
+DROP POLICY IF EXISTS "pastoral_goals_service_all" ON pastoral_goals;
 CREATE POLICY "pastoral_goals_service_all"
   ON pastoral_goals FOR ALL
   USING (auth.role() = 'service_role');
@@ -189,10 +197,12 @@ CREATE INDEX IF NOT EXISTS idx_message_templates_church_id ON message_templates 
 
 ALTER TABLE message_templates ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "message_templates_tenant_select" ON message_templates;
 CREATE POLICY "message_templates_tenant_select"
   ON message_templates FOR SELECT
   USING (church_id = auth_church_id());
 
+DROP POLICY IF EXISTS "message_templates_service_all" ON message_templates;
 CREATE POLICY "message_templates_service_all"
   ON message_templates FOR ALL
   USING (auth.role() = 'service_role');

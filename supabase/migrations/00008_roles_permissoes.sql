@@ -44,10 +44,12 @@ COMMENT ON TABLE user_roles IS
 ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 
 -- Usuário lê apenas o próprio role (sem chamar auth_user_role para evitar recursão)
+DROP POLICY IF EXISTS "user_roles_own_select" ON user_roles;
 CREATE POLICY "user_roles_own_select" ON user_roles
   FOR SELECT USING (user_id = auth.uid());
 
 -- Service role tem acesso total (Edge Functions, admin dashboard)
+DROP POLICY IF EXISTS "user_roles_service_all" ON user_roles;
 CREATE POLICY "user_roles_service_all" ON user_roles
   FOR ALL USING (auth.role() = 'service_role');
 
@@ -71,12 +73,14 @@ COMMENT ON TABLE supervisor_areas IS
 ALTER TABLE supervisor_areas ENABLE ROW LEVEL SECURITY;
 
 -- Supervisor lê apenas suas áreas; admin/service via service_role
+DROP POLICY IF EXISTS "supervisor_areas_own_select" ON supervisor_areas;
 CREATE POLICY "supervisor_areas_own_select" ON supervisor_areas
   FOR SELECT USING (
     supervisor_user_id = auth.uid()
     AND church_id = auth_church_id()
   );
 
+DROP POLICY IF EXISTS "supervisor_areas_service_all" ON supervisor_areas;
 CREATE POLICY "supervisor_areas_service_all" ON supervisor_areas
   FOR ALL USING (auth.role() = 'service_role');
 
@@ -99,12 +103,14 @@ COMMENT ON TABLE cell_leader_assignments IS
 ALTER TABLE cell_leader_assignments ENABLE ROW LEVEL SECURITY;
 
 -- Líder lê apenas sua própria atribuição
+DROP POLICY IF EXISTS "cell_leader_assignments_own_select" ON cell_leader_assignments;
 CREATE POLICY "cell_leader_assignments_own_select" ON cell_leader_assignments
   FOR SELECT USING (
     user_id = auth.uid()
     AND church_id = auth_church_id()
   );
 
+DROP POLICY IF EXISTS "cell_leader_assignments_service_all" ON cell_leader_assignments;
 CREATE POLICY "cell_leader_assignments_service_all" ON cell_leader_assignments
   FOR ALL USING (auth.role() = 'service_role');
 
@@ -149,10 +155,12 @@ $$;
 -- Resultado: mesmo que tenant_select passe, o acesso financeiro
 -- só é concedido se auth_can_financial() = true OU service_role.
 
+DROP POLICY IF EXISTS "donations_financial_role_restrict" ON donations;
 CREATE POLICY "donations_financial_role_restrict" ON donations
   AS RESTRICTIVE FOR ALL
   USING (auth_can_financial() OR auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "financial_campaigns_role_restrict" ON financial_campaigns;
 CREATE POLICY "financial_campaigns_role_restrict" ON financial_campaigns
   AS RESTRICTIVE FOR ALL
   USING (auth_can_financial() OR auth.role() = 'service_role');

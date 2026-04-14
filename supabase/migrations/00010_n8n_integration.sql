@@ -32,13 +32,16 @@ COMMENT ON TABLE notifications IS
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "notifications_own_select" ON notifications;
 CREATE POLICY "notifications_own_select" ON notifications
   FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "notifications_own_update" ON notifications;
 CREATE POLICY "notifications_own_update" ON notifications
   FOR UPDATE USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "notifications_service_all" ON notifications;
 CREATE POLICY "notifications_service_all" ON notifications
   FOR ALL USING (auth.role() = 'service_role');
 
@@ -68,9 +71,11 @@ COMMENT ON TABLE automation_logs IS
 
 ALTER TABLE automation_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "automation_logs_admin_select" ON automation_logs;
 CREATE POLICY "automation_logs_admin_select" ON automation_logs
   FOR SELECT USING (auth_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "automation_logs_service_all" ON automation_logs;
 CREATE POLICY "automation_logs_service_all" ON automation_logs
   FOR ALL USING (auth.role() = 'service_role');
 
@@ -92,9 +97,11 @@ COMMENT ON TABLE n8n_webhooks IS
 
 ALTER TABLE n8n_webhooks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "n8n_webhooks_admin_all" ON n8n_webhooks;
 CREATE POLICY "n8n_webhooks_admin_all" ON n8n_webhooks
   FOR ALL USING (auth_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "n8n_webhooks_service_all" ON n8n_webhooks;
 CREATE POLICY "n8n_webhooks_service_all" ON n8n_webhooks
   FOR ALL USING (auth.role() = 'service_role');
 
