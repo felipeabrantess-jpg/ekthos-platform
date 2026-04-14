@@ -154,10 +154,10 @@ Deno.serve(async (req: Request) => {
     await supabase.from('churches').update({ status: 'configured' }).eq('id', churchId)
   }
 
-  // Atualiza user_metadata com church_id
+  // Atualiza app_metadata com church_id (server-side only — seguro contra adulteração)
   if (churchId) {
     await supabase.auth.admin.updateUserById(user.id, {
-      user_metadata: { ...user.user_metadata, church_id: churchId },
+      app_metadata: { church_id: churchId },
     })
   }
 

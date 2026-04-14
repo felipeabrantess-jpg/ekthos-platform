@@ -161,7 +161,23 @@ export default function AdminChurches() {
 
   useEffect(() => { void load() }, [])
 
-  function startImpersonate(church: ChurchRow) {
+  async function startImpersonate(church: ChurchRow) {
+    // Registra sessão de impersonação na tabela de auditoria
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('impersonate_sessions').insert({
+          admin_user_id: session.user.id,
+          church_id:     church.id,
+          notes:         `Impersonação iniciada via cockpit admin — ${church.name}`,
+        })
+      }
+    } catch (err) {
+      // Falha silenciosa — não bloqueia o fluxo de impersonação
+      console.error('[impersonate] failed to log session:', err)
+    }
+
     localStorage.setItem('impersonating', JSON.stringify({
       church_id:   church.id,
       church_name: church.name,
