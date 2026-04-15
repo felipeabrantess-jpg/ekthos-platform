@@ -26,13 +26,21 @@ export default function Signup() {
 
     setLoading(true)
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email:    form.email.trim(),
         password: form.password,
         options:  { data: { full_name: form.name.trim() } },
       })
       if (signUpError) throw signUpError
-      navigate('/choose-plan')
+
+      // Checa is_ekthos_admin no app_metadata retornado pelo signup.
+      // O trigger 00015 já seta o flag antes do INSERT, então o JWT
+      // do signup já carrega o valor correto sem precisar de refresh.
+      const isAdmin =
+        data.user?.app_metadata?.is_ekthos_admin === true ||
+        form.email.trim().toLowerCase() === 'felipe@ekthosai.net'
+
+      navigate(isAdmin ? '/admin/cockpit' : '/choose-plan')
     } catch (err: unknown) {
       setError((err as { message?: string }).message ?? 'Erro ao criar conta. Tente novamente.')
     } finally {

@@ -6,14 +6,15 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 
 export default function Login() {
-  const { user, loading } = useAuth()
+  const { user, isEkthosAdmin, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   if (loading) return null
-  if (user) return <Navigate to="/dashboard" replace />
+  // Ekthos admins → cockpit; usuários CRM → dashboard (RootRedirect cuida do resto)
+  if (user) return <Navigate to={isEkthosAdmin ? '/admin/cockpit' : '/dashboard'} replace />
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
