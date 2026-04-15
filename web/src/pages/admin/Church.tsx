@@ -388,8 +388,22 @@ export default function AdminChurch() {
 
   useEffect(() => { void load() }, [id])
 
-  function startImpersonate() {
+  async function startImpersonate() {
     if (!data) return
+    // Registra sessão de impersonação na tabela de auditoria
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('impersonate_sessions').insert({
+          admin_user_id: session.user.id,
+          church_id:     data.id,
+          notes:         `Impersonação iniciada via detalhe da igreja — ${data.name}`,
+        })
+      }
+    } catch (err) {
+      console.error('[impersonate] failed to log session:', err)
+    }
     localStorage.setItem('impersonating', JSON.stringify({
       church_id:   data.id,
       church_name: data.name,
