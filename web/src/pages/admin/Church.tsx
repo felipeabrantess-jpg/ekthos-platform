@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Building2, CreditCard, Users, Activity,
   Heart, DollarSign, FileText, Bot, UserCheck,
+  Loader, StickyNote, Save, Trash2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
@@ -37,6 +38,21 @@ interface ChurchDetail {
   agents: Array<{ id: string; name: string; status: string; calls_30d: number }>
   // Logs
   logs: Array<{ id: string; action: string; created_at: string; metadata?: Record<string, unknown> }>
+  // Precificação customizada
+  subscription_id:          string | null
+  custom_plan_price_cents:  number | null
+  custom_user_price_cents:  number | null
+  custom_agent_price_cents: number | null
+  price_notes:              string | null
+  // Notas internas
+  notes: Array<{
+    id:            string
+    body:          string
+    pinned:        boolean
+    admin_user_id: string
+    created_at:    string
+    updated_at:    string
+  }>
 }
 
 // ── Helpers ────────────────────────────────────────────────
@@ -60,6 +76,8 @@ const TABS = [
   { id: 'operacao',    label: 'Operação',         icon: <Activity     size={14} strokeWidth={1.75} /> },
   { id: 'saude',       label: 'Saúde',            icon: <Heart        size={14} strokeWidth={1.75} /> },
   { id: 'financeiro',  label: 'Financeiro',       icon: <DollarSign   size={14} strokeWidth={1.75} /> },
+  { id: 'pricing',     label: 'Precificação',      icon: <DollarSign   size={14} strokeWidth={1.75} /> },
+  { id: 'notas',       label: 'Notas Internas',   icon: <FileText     size={14} strokeWidth={1.75} /> },
   { id: 'logs',        label: 'Logs e Ações',     icon: <FileText     size={14} strokeWidth={1.75} /> },
 ]
 
@@ -346,6 +364,301 @@ function TabLogs({ data, onImpersonate }: { data: ChurchDetail; onImpersonate: (
   )
 }
 
+function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId: string; onSaved: () => void }) {
+  const fmtCents = (c: number | null) =>
+    c === null ? '' : (c / 100).toFixed(2).replace('.', ',')
+  const parseCents = (s: string): number | null => {
+    const n = parseFloat(s.replace(',', '.').replace(/\s/g, ''))
+    return isNaN(n) ? null : Math.round(n * 100)
+  }
+
+  const [planVal,  setPlanVal]  = useState(fmtCents(data.custom_plan_price_cents))
+  const [userVal,  setUserVal]  = useState(fmtCents(data.custom_user_price_cents))
+  const [agentVal, setAgentVal] = useState(fmtCents(data.custom_agent_price_cents))
+  const [notes,    setNotes]    = useState(data.price_notes ?? '')
+  const [saving,   setSaving]   = useState(false)
+  const [saved,    setSaved]    = useState(false)
+
+  async function save() {
+    setSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-church-pricing`, {
+        method:  'PATCH',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          church_id:                churchId,
+          custom_plan_price_cents:  parseCents(planVal),
+          custom_user_price_cents:  parseCents(userVal),
+          custom_agent_price_cents: parseCents(agentVal),
+          price_notes:              notes.trim() || null,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+      onSaved()
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const fmt = (v: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-1">Precificação Customizada</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          Deixe em branco para usar o preço padrão do plano.
+          Campos preenchidos substituem o preço tabela para esta conta.
+        </p>
+
+        <div className="space-y-4">
+          {/* Plano */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">
+              Preço do plano (R$) — substitui preço tabela
+            </label>
+            <input
+              type="text"
+              value={planVal}
+              onChange={e => setPlanVal(e.target.value)}
+              placeholder="Ex: 299,00  (vazio = usa tabela)"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono-ekthos focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Usuário */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">
+              Preço por usuário extra (R$)
+            </label>
+            <input
+              type="text"
+              value={userVal}
+              onChange={e => setUserVal(e.target.value)}
+              placeholder="Ex: 19,90  (vazio = usa tabela)"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono-ekthos focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Agente */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">
+              Preço por agente extra (R$)
+            </label>
+            <input
+              type="text"
+              value={agentVal}
+              onChange={e => setAgentVal(e.target.value)}
+              placeholder="Ex: 39,90  (vazio = usa tabela)"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono-ekthos focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            />
+          </div>
+
+          {/* Motivo */}
+          <div>
+            <label className="text-xs font-medium text-gray-600 block mb-1">
+              Motivo do desconto / condição comercial
+            </label>
+            <textarea
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Ex: Desconto parceiro estratégico — aprovado por Felipe em 15/04/2026"
+              rows={2}
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none"
+              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-black/[0.04]">
+          <button
+            onClick={() => void save()}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+            style={{ background: '#e13500' }}
+          >
+            {saving
+              ? <Loader size={14} strokeWidth={2} className="animate-spin" />
+              : <Save size={14} strokeWidth={2} />
+            }
+            {saving ? 'Salvando...' : 'Salvar preços'}
+          </button>
+          {saved && (
+            <span className="text-xs font-medium text-emerald-600">✓ Salvo com sucesso</span>
+          )}
+        </div>
+      </div>
+
+      {/* Preview do MRR com preços customizados */}
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3">MRR atual desta conta</h3>
+        <div className="text-center py-4">
+          <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#e13500' }}>
+            {fmt(data.mrr)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">
+            {data.custom_plan_price_cents !== null
+              ? 'Com preço customizado ativo'
+              : 'Preço padrão do plano'
+            }
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: string; onSaved: () => void }) {
+  const [notes,     setNotes]     = useState(data.notes)
+  const [newBody,   setNewBody]   = useState('')
+  const [newPinned, setNewPinned] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [deleting,   setDeleting]   = useState<string | null>(null)
+
+  async function addNote() {
+    if (!newBody.trim()) return
+    setSubmitting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-notes-crud`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ church_id: churchId, body: newBody.trim(), pinned: newPinned }),
+      })
+      if (!res.ok) throw new Error()
+      const note = await res.json() as typeof notes[0]
+      setNotes(prev => [note, ...prev])
+      setNewBody('')
+      setNewPinned(false)
+      onSaved()
+    } catch {
+      // ignore
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function deleteNote(id: string) {
+    setDeleting(id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      await fetch(`${SUPABASE_URL}/functions/v1/admin-notes-crud`, {
+        method:  'DELETE',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      setNotes(prev => prev.filter(n => n.id !== id))
+      onSaved()
+    } catch {
+      // ignore
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Formulário de nova nota */}
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-3">Nova nota interna</h3>
+        <textarea
+          value={newBody}
+          onChange={e => setNewBody(e.target.value)}
+          placeholder="Escreva sua observação sobre esta conta..."
+          rows={3}
+          className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none"
+          style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+        />
+        <div className="flex items-center justify-between mt-3">
+          <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={newPinned}
+              onChange={e => setNewPinned(e.target.checked)}
+              className="rounded"
+            />
+            Fixar nota no topo
+          </label>
+          <button
+            onClick={() => void addNote()}
+            disabled={submitting || !newBody.trim()}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
+            style={{ background: '#e13500' }}
+          >
+            {submitting && <Loader size={13} strokeWidth={2} className="animate-spin" />}
+            <StickyNote size={13} strokeWidth={2} />
+            Adicionar nota
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de notas */}
+      {notes.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-10 text-center">
+          <StickyNote size={36} strokeWidth={1.5} className="mx-auto text-gray-300 mb-2" />
+          <p className="text-sm text-gray-400">Nenhuma nota registrada para esta conta</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {notes.map(note => (
+            <div
+              key={note.id}
+              className="bg-white rounded-2xl border shadow-sm p-4"
+              style={{ borderColor: note.pinned ? '#e1350030' : 'rgba(0,0,0,0.05)' }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  {note.pinned && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider mb-1 block"
+                      style={{ color: '#e13500' }}>
+                      📌 Fixada
+                    </span>
+                  )}
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.body}</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {new Intl.DateTimeFormat('pt-BR', {
+                      day: '2-digit', month: '2-digit', year: '2-digit',
+                      hour: '2-digit', minute: '2-digit',
+                    }).format(new Date(note.created_at))}
+                  </p>
+                </div>
+                <button
+                  onClick={() => void deleteNote(note.id)}
+                  disabled={deleting === note.id}
+                  className="shrink-0 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
+                >
+                  {deleting === note.id
+                    ? <Loader size={14} strokeWidth={2} className="animate-spin" />
+                    : <Trash2 size={14} strokeWidth={1.75} />
+                  }
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Página principal ───────────────────────────────────────
 
 const EMPTY_DETAIL: ChurchDetail = {
@@ -355,6 +668,8 @@ const EMPTY_DETAIL: ChurchDetail = {
   members_count: 0, cells_count: 0, ministries_count: 0, pipeline_stages: 0,
   health_score: null, health_components: {},
   users: [], agents: [], logs: [],
+  subscription_id: null, custom_plan_price_cents: null, custom_user_price_cents: null,
+  custom_agent_price_cents: null, price_notes: null, notes: [],
 }
 
 export default function AdminChurch() {
@@ -388,8 +703,22 @@ export default function AdminChurch() {
 
   useEffect(() => { void load() }, [id])
 
-  function startImpersonate() {
+  async function startImpersonate() {
     if (!data) return
+    // Registra sessão de impersonação na tabela de auditoria
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('impersonate_sessions').insert({
+          admin_user_id: session.user.id,
+          church_id:     data.id,
+          notes:         `Impersonação iniciada via detalhe da igreja — ${data.name}`,
+        })
+      }
+    } catch (err) {
+      console.error('[impersonate] failed to log session:', err)
+    }
     localStorage.setItem('impersonating', JSON.stringify({
       church_id:   data.id,
       church_name: data.name,
@@ -472,6 +801,8 @@ export default function AdminChurch() {
       {tab === 'operacao'   && <TabOperacao    data={data} />}
       {tab === 'saude'      && <TabSaude       data={data} />}
       {tab === 'financeiro' && <TabFinanceiro  data={data} />}
+      {tab === 'pricing'    && <TabPricing data={data} churchId={id ?? ''} onSaved={load} />}
+      {tab === 'notas'      && <TabNotas   data={data} churchId={id ?? ''} onSaved={load} />}
       {tab === 'logs'       && <TabLogs        data={data} onImpersonate={startImpersonate} />}
     </div>
   )
