@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Filter, Eye, MoreVertical, Building2 } from 'lucide-react'
+import { Search, Filter, Eye, MoreVertical, Building2, Plus, Loader, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
@@ -133,6 +133,53 @@ export default function AdminChurches() {
   const [status,  setStatus]  = useState<FilterStatus>('all')
   const [plan,    setPlan]    = useState<FilterPlan>('all')
 
+  const [showModal,   setShowModal]   = useState(false)
+  const [creating,    setCreating]    = useState(false)
+  const [createError, setCreateError] = useState('')
+  const [form, setForm] = useState({
+    name:        '',
+    admin_email: '',
+    city:        '',
+    state:       '',
+    plan_slug:   'chamado',
+    timezone:    'America/Sao_Paulo',
+  })
+
+  async function createChurch() {
+    if (!form.name.trim())        return setCreateError('Nome é obrigatório.')
+    if (!form.admin_email.trim()) return setCreateError('Email do pastor é obrigatório.')
+    setCreating(true)
+    setCreateError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-church-create`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name:        form.name.trim(),
+          admin_email: form.admin_email.trim(),
+          city:        form.city.trim()  || undefined,
+          state:       form.state.trim() || undefined,
+          plan_slug:   form.plan_slug,
+          timezone:    form.timezone,
+        }),
+      })
+      const json = await res.json() as { error?: string; church_id?: string }
+      if (!res.ok) throw new Error(json.error ?? 'Erro ao criar igreja')
+
+      setShowModal(false)
+      setForm({ name: '', admin_email: '', city: '', state: '', plan_slug: 'chamado', timezone: 'America/Sao_Paulo' })
+      void load() // recarrega a lista
+    } catch (err: unknown) {
+      setCreateError((err as { message?: string }).message ?? 'Erro ao criar igreja. Tente novamente.')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   async function load() {
     setLoading(true)
     try {
@@ -203,11 +250,21 @@ export default function AdminChurches() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div>
-        <h1 className="font-display text-3xl font-bold text-gray-900">Igrejas</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          {rows.length} igrejas cadastradas
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-gray-900">Igrejas</h1>
+          <p className="text-sm text-gray-400 mt-1">
+            {rows.length} igrejas cadastradas
+          </p>
+        </div>
+        <button
+          onClick={() => { setShowModal(true); setCreateError('') }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+          style={{ background: '#e13500' }}
+        >
+          <Plus size={15} strokeWidth={2} />
+          Nova Igreja
+        </button>
       </div>
 
       {/* Filtros */}
@@ -377,6 +434,126 @@ export default function AdminChurches() {
           </div>
         )}
       </div>
+
+      {/* Modal: Nova Igreja */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
+          />
+          {/* Card */}
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border border-black/5 p-6 z-10">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="font-display text-xl font-semibold text-gray-900">Nova Igreja</h2>
+                <p className="text-xs text-gray-400 mt-0.5">A conta entra em trial de 7 dias. Stripe não é necessário.</p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
+              >
+                <X size={16} strokeWidth={1.75} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Nome da igreja */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Nome da igreja *</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="Igreja Batista da Graça"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                />
+              </div>
+
+              {/* Email do pastor */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Email do pastor admin *</label>
+                <input
+                  type="email"
+                  value={form.admin_email}
+                  onChange={e => setForm(f => ({ ...f, admin_email: e.target.value }))}
+                  placeholder="pastor@igrejagrace.com.br"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Um convite será enviado para este email.</p>
+              </div>
+
+              {/* Cidade e Estado */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Cidade</label>
+                  <input
+                    type="text"
+                    value={form.city}
+                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                    placeholder="São Paulo"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">Estado</label>
+                  <input
+                    type="text"
+                    value={form.state}
+                    onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+                    placeholder="SP"
+                    maxLength={2}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                  />
+                </div>
+              </div>
+
+              {/* Plano */}
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Plano inicial</label>
+                <select
+                  value={form.plan_slug}
+                  onChange={e => setForm(f => ({ ...f, plan_slug: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none bg-white"
+                >
+                  <option value="chamado">Chamado</option>
+                  <option value="missao">Missão</option>
+                  <option value="avivamento">Avivamento</option>
+                </select>
+              </div>
+
+              {createError && (
+                <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-100 text-sm text-red-700">
+                  {createError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 mt-6 pt-5 border-t border-black/[0.04]">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void createChurch()}
+                disabled={creating}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all"
+                style={{ background: '#e13500' }}
+              >
+                {creating && <Loader size={14} strokeWidth={2} className="animate-spin" />}
+                {creating ? 'Criando...' : 'Criar Igreja'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

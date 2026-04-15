@@ -45,7 +45,9 @@ const UsersPage = lazy(() =>
 const AdminCockpit  = lazy(() => import('@/pages/admin/Cockpit'))
 const AdminChurches = lazy(() => import('@/pages/admin/Churches'))
 const AdminChurch   = lazy(() => import('@/pages/admin/Church'))
-const AdminRevenue  = lazy(() => import('@/pages/admin/Revenue'))
+const AdminRevenue     = lazy(() => import('@/pages/admin/Revenue'))
+const AdminOnboardings = lazy(() => import('@/pages/admin/Onboardings'))
+const AdminTasks       = lazy(() => import('@/pages/admin/Tasks'))
 
 // ── Loaders ────────────────────────────────────────────────
 
@@ -193,6 +195,8 @@ export default function App() {
             <Route path="cockpit"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminCockpit /></Suspense></ErrorBoundary>} />
             <Route path="churches"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurches /></Suspense></ErrorBoundary>} />
             <Route path="churches/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurch /></Suspense></ErrorBoundary>} />
+            <Route path="onboardings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminOnboardings /></Suspense></ErrorBoundary>} />
+            <Route path="tasks"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminTasks /></Suspense></ErrorBoundary>} />
             <Route path="revenue"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminRevenue /></Suspense></ErrorBoundary>} />
           </Route>
         </Routes>

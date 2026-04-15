@@ -27,6 +27,7 @@ interface CockpitData {
     low_health:          number
     onboarding_stuck:    number
     agent_errors:        number
+    tasks_pending:       number
   }
 }
 
@@ -137,7 +138,7 @@ export default function AdminCockpit() {
         ticket_medio:        0,
         new_this_month:      0,
         mrr_series:          [],
-        alerts: { late_payments: 0, low_health: 0, onboarding_stuck: 0, agent_errors: 0 },
+        alerts: { late_payments: 0, low_health: 0, onboarding_stuck: 0, agent_errors: 0, tasks_pending: 0 },
       })
       void err
     } finally {
@@ -272,7 +273,7 @@ export default function AdminCockpit() {
           {/* Alertas rápidos */}
           <section>
             <h2 className="font-display text-lg font-semibold text-gray-800 mb-3">Alertas Operacionais</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <AlertCard
                 label="Pagamentos atrasados"
                 count={data.alerts.late_payments}
@@ -291,6 +292,11 @@ export default function AdminCockpit() {
               <AlertCard
                 label="Erros de agente"
                 count={data.alerts.agent_errors}
+                severity="info"
+              />
+              <AlertCard
+                label="Tarefas pendentes"
+                count={data.alerts.tasks_pending}
                 severity="info"
               />
             </div>
