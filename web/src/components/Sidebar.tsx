@@ -7,6 +7,7 @@ import {
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
+import { AgentChatButton } from './AgentChatWidget'
 
 interface NavItem {
   path: string
@@ -74,6 +75,15 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      {/* Agentes IA — acesso rápido */}
+      <div className="px-3 pb-2 border-t border-white/5 pt-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5" style={{ color: 'rgba(249,238,220,0.3)' }}>
+          Assistentes
+        </p>
+        <AgentChatButton agentSlug="agent-suporte"    agentName="Suporte 24h" />
+        <AgentChatButton agentSlug="agent-onboarding" agentName="Guia de Uso" />
+      </div>
 
       {/* Rodape de usuario */}
       <div className="px-3 py-4 border-t border-white/5">
