@@ -10,47 +10,20 @@ export default defineConfig({
     },
   },
   build: {
-    // Target browsers com suporte a módulos ES modernos
     target: 'esnext',
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor: React core
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-            return 'vendor-react'
-          }
-          // Vendor: React Router
-          if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run')) {
-            return 'vendor-router'
-          }
-          // Vendor: TanStack Query
-          if (id.includes('node_modules/@tanstack/')) {
-            return 'vendor-query'
-          }
-          // Vendor: Supabase
-          if (id.includes('node_modules/@supabase/')) {
-            return 'vendor-supabase'
-          }
-          // Vendor: Lucide icons (pesado)
-          if (id.includes('node_modules/lucide-react')) {
-            return 'vendor-icons'
-          }
-          // Vendor: restante de node_modules
-          if (id.includes('node_modules/')) {
-            return 'vendor-misc'
-          }
-          // Admin cockpit em chunk separado (carregado só por admins)
-          if (id.includes('/pages/admin/')) {
-            return 'chunk-admin'
-          }
-          // Onboarding em chunk separado
-          if (id.includes('/pages/onboarding') || id.includes('/pages/Onboarding') || id.includes('/pages/Signup') || id.includes('/pages/ChoosePlan')) {
-            return 'chunk-onboarding'
-          }
+        // Mapa simples — Rollup resolve dependências internas sem criar
+        // ciclos. Evita o "Circular chunk: vendor-misc -> vendor-react" que
+        // causava TypeError: Cannot read properties of undefined (reading 'useState').
+        manualChunks: {
+          'vendor-react':    ['react', 'react-dom'],
+          'vendor-router':   ['react-router-dom'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+          'vendor-charts':   ['recharts'],
         },
       },
     },
-    // Avisa se algum chunk ultrapassar 400 KB
-    chunkSizeWarningLimit: 400,
+    chunkSizeWarningLimit: 500,
   },
 })
