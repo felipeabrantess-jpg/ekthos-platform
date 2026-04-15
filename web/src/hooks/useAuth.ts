@@ -1,6 +1,7 @@
-// Hook de autenticação — retorna user, churchId, churchStatus, role e loading
+// Hook de autenticação — retorna user, churchId, churchStatus, role, isEkthosAdmin e loading
 // churchId: app_metadata tem prioridade sobre user_metadata (segurança)
-// Impersonação: só disponível para is_ekthos_admin, lida de localStorage
+// isEkthosAdmin: lido de app_metadata OU user_metadata (fallback enquanto JWT não refresca)
+// Impersonação: só disponível para isEkthosAdmin, lida de localStorage
 // Session token: upsertado após login (fire-and-forget)
 
 import { useEffect, useState } from 'react'
@@ -15,6 +16,7 @@ export interface AuthState {
   churchId: string | null
   churchStatus: string | null
   role: AppRole | null
+  isEkthosAdmin: boolean
   loading: boolean
 }
 
@@ -35,19 +37,20 @@ async function fetchRole(userId: string, churchId: string): Promise<AppRole | nu
 }
 
 // Resolve todo o estado de auth a partir de um User do Supabase.
-// Aplica prioridade app_metadata > user_metadata para church_id.
-// Impersonação gated por is_ekthos_admin.
+// Lê is_ekthos_admin de app_metadata (server-side) com fallback para user_metadata.
 async function resolveAuthFromUser(user: User): Promise<AuthState> {
-  const isAdmin =
+  // is_ekthos_admin: tenta app_metadata primeiro, depois user_metadata
+  // (user_metadata como fallback cobre o período entre o UPDATE SQL e o refresh do JWT)
+  const isEkthosAdmin =
     user.app_metadata?.is_ekthos_admin === true ||
     user.user_metadata?.is_ekthos_admin === true
 
   const rawChurchId =
     ((user.app_metadata?.church_id ?? user.user_metadata?.church_id) as string | undefined) ?? null
 
-  // Impersonação: apenas admins Ekthos podem ler
+  // Impersonação: apenas Ekthos admins podem usar
   let impersonatedChurchId: string | null = null
-  if (isAdmin) {
+  if (isEkthosAdmin) {
     try {
       const raw = localStorage.getItem('impersonating')
       if (raw) {
@@ -88,7 +91,7 @@ async function resolveAuthFromUser(user: User): Promise<AuthState> {
       )
   }
 
-  return { user, churchId, churchStatus, role, loading: false }
+  return { user, churchId, churchStatus, role, isEkthosAdmin, loading: false }
 }
 
 export function useAuth(): AuthState {
@@ -97,17 +100,27 @@ export function useAuth(): AuthState {
     churchId: null,
     churchStatus: null,
     role: null,
+    isEkthosAdmin: false,
     loading: true,
   })
 
   useEffect(() => {
-    // Verifica sessão atual
-    void supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Verifica sessão atual.
+    // refreshSession() força o Supabase a buscar um JWT novo, garantindo que
+    // raw_app_meta_data atualizado via SQL já apareça no app_metadata do user.
+    void supabase.auth.refreshSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const resolved = await resolveAuthFromUser(session.user)
         setState(resolved)
       } else {
-        setState({ user: null, churchId: null, churchStatus: null, role: null, loading: false })
+        // Sem sessão ativa — tenta getSession como fallback (offline, etc.)
+        const { data: { session: fallback } } = await supabase.auth.getSession()
+        if (fallback?.user) {
+          const resolved = await resolveAuthFromUser(fallback.user)
+          setState(resolved)
+        } else {
+          setState({ user: null, churchId: null, churchStatus: null, role: null, isEkthosAdmin: false, loading: false })
+        }
       }
     })
 
@@ -116,7 +129,7 @@ export function useAuth(): AuthState {
       if (session?.user) {
         void resolveAuthFromUser(session.user).then(setState)
       } else {
-        setState({ user: null, churchId: null, churchStatus: null, role: null, loading: false })
+        setState({ user: null, churchId: null, churchStatus: null, role: null, isEkthosAdmin: false, loading: false })
       }
     })
 
