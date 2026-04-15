@@ -95,13 +95,10 @@ function RoleRoute({ children, path }: { children: React.ReactNode; path: string
 
 // Guard para rotas do cockpit admin
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, isEkthosAdmin, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
   if (!user) return <Navigate to="/login" replace />
-  const isAdmin =
-    user.user_metadata?.is_ekthos_admin === true ||
-    user.app_metadata?.is_ekthos_admin === true
-  if (!isAdmin) return <Navigate to="/dashboard" replace />
+  if (!isEkthosAdmin) return <Navigate to="/dashboard" replace />
   return <>{children}</>
 }
 
@@ -205,7 +202,9 @@ export default function App() {
 }
 
 function RootRedirect() {
-  const { role, loading } = useAuth()
+  const { role, isEkthosAdmin, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
+  // Ekthos admins sempre vão para o cockpit, independente do role CRM
+  if (isEkthosAdmin) return <Navigate to="/admin/cockpit" replace />
   return <Navigate to={defaultRoute(role as AppRole | null)} replace />
 }
