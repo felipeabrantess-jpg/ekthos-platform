@@ -26,6 +26,19 @@ interface Addon {
   updated_at:  string | null
 }
 
+interface Agent {
+  slug:              string
+  name:              string
+  short_description: string
+  category:          string | null
+  price_cents:       number
+  sort_order:        number
+  active:            boolean
+  updated_at:        string | null
+}
+
+const AGENT_CATEGORIES = ['Operacional', 'Comunicação', 'Formação', 'Vendas', 'Suporte']
+
 // ── Helpers ─────────────────────────────────────────────────
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
@@ -621,6 +634,249 @@ function AddonsTab({ toast }: { toast: (msg: string, type: 'success' | 'error') 
   )
 }
 
+// ── Agent Edit Modal ─────────────────────────────────────────
+
+interface AgentModalProps {
+  agent: Agent
+  onClose: () => void
+  onSaved: (msg: string, priceRotated: boolean) => void
+}
+
+function AgentModal({ agent, onClose, onSaved }: AgentModalProps) {
+  const [name,             setName]             = useState(agent.name)
+  const [shortDescription, setShortDescription] = useState(agent.short_description)
+  const [category,         setCategory]         = useState(agent.category ?? '')
+  const [priceCents,       setPriceCents]       = useState(agent.price_cents)
+  const [active,           setActive]           = useState(agent.active)
+  const [saving,           setSaving]           = useState(false)
+  const [error,            setError]            = useState<string | null>(null)
+
+  const priceChanged = priceCents !== agent.price_cents
+
+  async function save() {
+    setSaving(true)
+    setError(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada')
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/agents-catalog-update`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug:              agent.slug,
+          name,
+          short_description: shortDescription,
+          category:          category || null,
+          price_cents:       priceCents,
+          active,
+        }),
+      })
+      const json = await res.json() as { error?: string; stripe_price_rotated?: boolean }
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
+      onSaved('Agente atualizado com sucesso.', json.stripe_price_rotated ?? false)
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-900">
+            Editar agente <span className="font-mono text-sm text-gray-400 ml-1">{agent.slug}</span>
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X size={18} strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <FieldLabel>Nome do agente</FieldLabel>
+            <TextInput value={name} onChange={setName} />
+          </div>
+          <div>
+            <FieldLabel>Descrição curta</FieldLabel>
+            <TextInput value={shortDescription} onChange={setShortDescription} placeholder="Exibida no marketplace…" />
+          </div>
+          <div>
+            <FieldLabel>Categoria</FieldLabel>
+            <select
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              className="w-full border border-black/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition bg-white"
+            >
+              <option value="">— Sem categoria —</option>
+              {AGENT_CATEGORIES.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Preço mensal</FieldLabel>
+            <PriceInput valueCents={priceCents} onChange={setPriceCents} />
+            {priceChanged && (
+              <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                Um novo Stripe Price será criado. Igrejas existentes mantêm o valor anterior até a próxima renovação.
+              </p>
+            )}
+          </div>
+          <div className="pt-1">
+            <Toggle
+              checked={active}
+              onChange={setActive}
+              label={active ? 'Agente ativo no marketplace' : 'Agente inativo (oculto)'}
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-xl px-4 py-3 text-xs text-red-700 bg-red-50 border border-red-100">
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-black/5 flex items-center justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 border border-black/5 transition-all"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => void save()}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+            style={{ background: '#e13500' }}
+          >
+            {saving
+              ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
+              : 'Salvar alterações'
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Tab: Agentes ─────────────────────────────────────────────
+
+function AgentsTab({ toast }: { toast: (msg: string, type: 'success' | 'error') => void }) {
+  const [agents,  setAgents]  = useState<Agent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<Agent | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('agents_catalog')
+      .select('slug, name, short_description, category, price_cents, sort_order, active, updated_at')
+      .order('sort_order')
+      .order('name')
+    if (error) console.error('[AgentsTab] supabase error:', error)
+    setAgents((data as Agent[]) ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { void load() }, [load])
+
+  function handleSaved(msg: string, priceRotated: boolean) {
+    setEditing(null)
+    toast(msg, 'success')
+    if (priceRotated) {
+      setTimeout(() => {
+        toast('Novo Stripe Price criado. Igrejas existentes mantêm o preço anterior até a próxima renovação.', 'success')
+      }, 600)
+    }
+    void load()
+  }
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Spinner size="lg" />
+    </div>
+  )
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-gray-50 text-left">
+              <th className="px-5 py-3 text-xs font-semibold text-gray-500">Agente</th>
+              <th className="px-5 py-3 text-xs font-semibold text-gray-500">Categoria</th>
+              <th className="px-5 py-3 text-xs font-semibold text-gray-500">Preço/mês</th>
+              <th className="px-5 py-3 text-xs font-semibold text-gray-500">Status</th>
+              <th className="px-5 py-3 text-xs font-semibold text-gray-500" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/[0.04]">
+            {agents.map(a => (
+              <tr key={a.slug} className="hover:bg-gray-50/60 transition-colors">
+                <td className="px-5 py-3.5">
+                  <p className="font-semibold text-gray-800">{a.name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{a.short_description}</p>
+                </td>
+                <td className="px-5 py-3.5">
+                  {a.category
+                    ? <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-gray-100 text-gray-600">{a.category}</span>
+                    : <span className="text-xs text-gray-300">—</span>
+                  }
+                </td>
+                <td className="px-5 py-3.5 font-mono-ekthos font-bold text-gray-800">
+                  {fmtBRL(a.price_cents)}
+                </td>
+                <td className="px-5 py-3.5">
+                  <span
+                    className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                    style={a.active
+                      ? { background: '#2D7A4F18', color: '#2D7A4F' }
+                      : { background: '#00000010', color: '#8A8A8A' }
+                    }
+                  >
+                    {a.active ? 'Ativo' : 'Inativo'}
+                  </span>
+                </td>
+                <td className="px-5 py-3.5 text-right">
+                  <button
+                    onClick={() => setEditing(a)}
+                    className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all ml-auto"
+                  >
+                    <Edit2 size={13} strokeWidth={2} />
+                    Editar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {agents.length === 0 && (
+          <div className="py-12 text-center text-sm text-gray-400">
+            Nenhum agente encontrado.
+          </div>
+        )}
+      </div>
+
+      {editing && (
+        <AgentModal
+          agent={editing}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
+        />
+      )}
+    </>
+  )
+}
+
 // ── Tab: Promoções (placeholder) ─────────────────────────────
 
 function PromotionsTab() {
@@ -660,10 +916,11 @@ function PromotionsTab() {
 
 // ── Página principal ─────────────────────────────────────────
 
-type Tab = 'planos' | 'addons' | 'promocoes'
+type Tab = 'planos' | 'agentes' | 'addons' | 'promocoes'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'planos',    label: 'Planos' },
+  { id: 'agentes',   label: 'Agentes' },
   { id: 'addons',    label: 'Add-ons' },
   { id: 'promocoes', label: 'Promoções' },
 ]
@@ -688,7 +945,7 @@ export default function AdminPricing() {
             Pricing
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Catálogo de planos e add-ons. Alterações de preço criam novo Stripe Price automaticamente.
+            Catálogo de planos, agentes e add-ons. Alterações de preço criam novo Stripe Price automaticamente.
           </p>
         </div>
       </div>
@@ -719,6 +976,7 @@ export default function AdminPricing() {
 
       {/* Content */}
       {tab === 'planos'    && <PlansTab  toast={showToast} />}
+      {tab === 'agentes'   && <AgentsTab toast={showToast} />}
       {tab === 'addons'    && <AddonsTab toast={showToast} />}
       {tab === 'promocoes' && <PromotionsTab />}
 
