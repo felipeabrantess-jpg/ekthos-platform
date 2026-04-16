@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare } from 'lucide-react'
+import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag } from 'lucide-react'
 
 const NAV = [
   { to: '/admin/cockpit',      label: 'Cockpit',      icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
@@ -7,6 +7,7 @@ const NAV = [
   { to: '/admin/onboardings',  label: 'Onboardings',  icon: <UserPlus        size={16} strokeWidth={1.75} /> },
   { to: '/admin/tasks',        label: 'Tarefas',      icon: <CheckSquare     size={16} strokeWidth={1.75} /> },
   { to: '/admin/revenue',      label: 'Receita',      icon: <TrendingUp      size={16} strokeWidth={1.75} /> },
+  { to: '/admin/pricing',      label: 'Pricing',      icon: <Tag             size={16} strokeWidth={1.75} /> },
 ]
 
 export default function AdminLayout() {
