@@ -24,7 +24,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
-const MODEL = 'claude-3-5-haiku-20241022'
+const MODEL = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS = 1024
 const HISTORY_LIMIT = 16  // últimas 8 trocas (user+assistant)
 
