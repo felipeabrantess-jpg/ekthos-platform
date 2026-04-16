@@ -50,6 +50,7 @@ const AdminChurch   = lazy(() => import('@/pages/admin/Church'))
 const AdminRevenue     = lazy(() => import('@/pages/admin/Revenue'))
 const AdminOnboardings = lazy(() => import('@/pages/admin/Onboardings'))
 const AdminTasks       = lazy(() => import('@/pages/admin/Tasks'))
+const AdminPricing     = lazy(() => import('@/pages/admin/Pricing'))
 
 // ── Loaders ────────────────────────────────────────────────
 
@@ -214,6 +215,7 @@ export default function App() {
             <Route path="onboardings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminOnboardings /></Suspense></ErrorBoundary>} />
             <Route path="tasks"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminTasks /></Suspense></ErrorBoundary>} />
             <Route path="revenue"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminRevenue /></Suspense></ErrorBoundary>} />
+            <Route path="pricing"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminPricing /></Suspense></ErrorBoundary>} />
           </Route>
         </Routes>
       </Suspense>
