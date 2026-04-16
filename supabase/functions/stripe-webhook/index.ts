@@ -1,11 +1,15 @@
 // ============================================================
-// Edge Function: stripe-webhook
+// Edge Function: stripe-webhook  v7
 // Processa eventos do Stripe para ciclo de vida da assinatura.
 //
 // checkout.session.completed → churches.status = 'onboarding'
+//                            → recordAffiliateConversion()
 // invoice.paid               → subscription active + grava invoice
+//                            → recordAffiliateCommission()
 // invoice.payment_failed     → subscription past_due
 // customer.subscription.*    → sync status/período
+// customer.subscription.deleted → markConversionsChurned()
+// charge.refunded            → markConversionsRefunded()
 //
 // verify_jwt: false — endpoint público, seguro por assinatura Stripe
 // ============================================================
@@ -97,6 +101,178 @@ async function updateSubscription(
   if (error) throw new Error(`DB update failed for church ${churchId}: ${error.message}`)
 }
 
+// ── Affiliate helpers (non-fatal) ────────────────────────────
+
+async function recordAffiliateConversion(
+  session: Stripe.Checkout.Session,
+  churchId: string,
+): Promise<void> {
+  try {
+    if (!session.discounts?.length) return
+
+    for (const discount of session.discounts) {
+      const promoCodeId = typeof discount.promotion_code === 'string'
+        ? discount.promotion_code
+        : (discount.promotion_code as Stripe.PromotionCode | null)?.id ?? null
+
+      if (!promoCodeId) continue
+
+      const { data: coupon } = await supabase
+        .from('affiliate_coupons')
+        .select('id, affiliate_id, discount_kind, discount_value')
+        .eq('stripe_promotion_code_id', promoCodeId)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!coupon) continue
+
+      // Insert conversion
+      await supabase.from('affiliate_conversions').insert({
+        affiliate_id:   coupon.affiliate_id,
+        coupon_id:      coupon.id,
+        church_id:      churchId,
+        status:         'active',
+        converted_at:   new Date().toISOString(),
+      })
+
+      // Increment redemption counter
+      await supabase.rpc('increment_coupon_redemptions', { coupon_id: coupon.id })
+        .then(({ error }) => {
+          if (error) console.warn('[stripe-webhook] increment_coupon_redemptions:', error.message)
+        })
+    }
+  } catch (e) {
+    console.warn('[stripe-webhook] recordAffiliateConversion failed:', (e as Error).message)
+  }
+}
+
+async function recordAffiliateCommission(
+  invoice: Stripe.Invoice,
+  churchId: string,
+): Promise<void> {
+  try {
+    // Find active conversion for this church
+    const { data: conversion } = await supabase
+      .from('affiliate_conversions')
+      .select(`
+        id,
+        affiliate_id,
+        coupon_id,
+        converted_at,
+        status,
+        affiliate_coupons (
+          commission_kind,
+          commission_value,
+          commission_duration_months
+        )
+      `)
+      .eq('church_id', churchId)
+      .eq('status', 'active')
+      .maybeSingle()
+
+    if (!conversion) return
+
+    const coupon = conversion.affiliate_coupons as {
+      commission_kind: string
+      commission_value: number
+      commission_duration_months: number | null
+    } | null
+    if (!coupon) return
+
+    const { commission_kind, commission_value, commission_duration_months } = coupon
+
+    // Check if commission duration has elapsed
+    if (commission_duration_months && commission_duration_months > 0) {
+      const convertedAt = new Date(conversion.converted_at)
+      const monthsElapsed = (Date.now() - convertedAt.getTime()) / (1000 * 60 * 60 * 24 * 30)
+      if (monthsElapsed >= commission_duration_months) {
+        // Mark conversion as matured
+        await supabase
+          .from('affiliate_conversions')
+          .update({ status: 'matured' })
+          .eq('id', conversion.id)
+        return
+      }
+    }
+
+    // For first-only commission types, check if already paid once
+    if (commission_kind === 'percent_first' || commission_kind === 'fixed_per_sale') {
+      const { count } = await supabase
+        .from('affiliate_commissions')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversion_id', conversion.id)
+        .not('status', 'eq', 'cancelled')
+      if ((count ?? 0) > 0) return
+    }
+
+    // Calculate amount
+    let amountCents = 0
+    const invoiceAmountCents = invoice.amount_paid ?? 0
+
+    if (commission_kind === 'percent_first' || commission_kind === 'percent_recurring') {
+      amountCents = Math.round((invoiceAmountCents * commission_value) / 100)
+    } else {
+      // fixed_per_sale
+      amountCents = commission_value
+    }
+
+    if (amountCents <= 0) return
+
+    const now = new Date()
+    const referenceMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+    // Chargeback gate: 7 days
+    const approvesAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+
+    await supabase.from('affiliate_commissions').insert({
+      affiliate_id:    conversion.affiliate_id,
+      conversion_id:   conversion.id,
+      coupon_id:       conversion.coupon_id,
+      church_id:       churchId,
+      stripe_invoice_id: invoice.id,
+      amount_cents:    amountCents,
+      commission_kind,
+      reference_month: referenceMonth,
+      status:          'pending',
+      approves_at:     approvesAt,
+    })
+  } catch (e) {
+    console.warn('[stripe-webhook] recordAffiliateCommission failed:', (e as Error).message)
+  }
+}
+
+async function markConversionsChurned(churchId: string): Promise<void> {
+  try {
+    await supabase
+      .from('affiliate_conversions')
+      .update({ status: 'churned' })
+      .eq('church_id', churchId)
+      .eq('status', 'active')
+
+    // Cancel pending/approved commissions
+    await supabase
+      .from('affiliate_commissions')
+      .update({ status: 'cancelled' })
+      .eq('church_id', churchId)
+      .in('status', ['pending', 'approved'])
+  } catch (e) {
+    console.warn('[stripe-webhook] markConversionsChurned failed:', (e as Error).message)
+  }
+}
+
+async function markConversionsRefunded(churchId: string, invoiceId: string): Promise<void> {
+  try {
+    // Cancel pending commissions for this invoice
+    await supabase
+      .from('affiliate_commissions')
+      .update({ status: 'cancelled' })
+      .eq('church_id', churchId)
+      .eq('stripe_invoice_id', invoiceId)
+      .eq('status', 'pending')
+  } catch (e) {
+    console.warn('[stripe-webhook] markConversionsRefunded failed:', (e as Error).message)
+  }
+}
+
 // ── Handlers ────────────────────────────────────────────────
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
@@ -137,6 +313,9 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
   } else {
     console.log(`[stripe-webhook] church ${churchId} → onboarding`)
   }
+
+  // Affiliate conversion (non-fatal)
+  await recordAffiliateConversion(session, churchId)
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
@@ -169,6 +348,9 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     invoice_pdf: invoice.invoice_pdf ?? null,
     status: invoice.status ?? 'paid', created_at: new Date().toISOString(),
   }).then(({ error }) => { if (error) console.error('[stripe-webhook] invoice insert:', error.message) })
+
+  // Affiliate commission (non-fatal)
+  await recordAffiliateCommission(invoice, churchId)
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
@@ -203,6 +385,21 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription): Promise<void
   // Suspende a church
   await supabase.from('churches').update({ status: 'suspended' }).eq('id', churchId)
     .then(({ error }) => { if (error) console.error('[stripe-webhook] church suspend:', error.message) })
+
+  // Mark affiliate conversions as churned (non-fatal)
+  await markConversionsChurned(churchId)
+}
+
+async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
+  const customerId = typeof charge.customer === 'string' ? charge.customer : charge.customer?.id ?? null
+  const churchId = await resolveChurchId(charge.metadata as Record<string, string> | null, customerId)
+  if (!churchId) return
+
+  const invoiceId = typeof charge.invoice === 'string' ? charge.invoice : (charge.invoice as Stripe.Invoice | null)?.id ?? null
+  if (!invoiceId) return
+
+  // Cancel pending commissions for this refunded invoice (non-fatal)
+  await markConversionsRefunded(churchId, invoiceId)
 }
 
 // ── Main ────────────────────────────────────────────────────
@@ -240,6 +437,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
         break
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription)
+        break
+      case 'charge.refunded':
+        await handleChargeRefunded(event.data.object as Stripe.Charge)
         break
       default:
         console.log(`[stripe-webhook] evento ignorado: ${event.type}`)
