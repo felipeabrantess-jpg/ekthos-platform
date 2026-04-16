@@ -1,19 +1,9 @@
 // ============================================================
 // Edge Function: admin-church-create
-// Cria uma nova igreja no cockpit admin.
-//
-// Fluxo (Payment Gate):
-//   1. Cria church com status = 'pending_payment'
-//   2. Cria subscription com campos stripe NULL
-//   3. Aplica preços customizados se enviados (custom_*_price_cents)
-//   4. Convida o pastor via Supabase invite
-//   5. Gera Stripe Checkout URL e retorna ao cockpit
-//
-// POST /admin-church-create
-// Body: { name, admin_email, city?, state?, timezone?, plan_slug?,
-//         custom_plan_price_cents?, custom_user_price_cents?, custom_agent_price_cents?,
-//         price_notes? }
-// Headers: Authorization: Bearer <ekthos-admin-jwt>
+// Cria uma nova igreja. Status inicial: 'pending_payment'.
+// Aceita custom_*_price_cents para preços negociados.
+// Gera Stripe Checkout URL e retorna ao cockpit.
+// verify_jwt: false — valida manualmente (admin only)
 // ============================================================
 
 import Stripe from 'npm:stripe'
@@ -45,20 +35,6 @@ function json(data: unknown, status = 200) {
   })
 }
 
-interface CreateChurchBody {
-  name:        string
-  admin_email: string
-  city?:       string
-  state?:      string
-  timezone?:   string
-  plan_slug?:  string
-  // Preços customizados (opcionais — se NULL usa catálogo stripe_prices)
-  custom_plan_price_cents?:  number | null
-  custom_user_price_cents?:  number | null
-  custom_agent_price_cents?: number | null
-  price_notes?:              string | null
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST')   return json({ error: 'Method Not Allowed' }, 405)
@@ -76,12 +52,24 @@ Deno.serve(async (req: Request) => {
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Parse body ────────────────────────────────────────────
-  let body: CreateChurchBody
-  try { body = await req.json() as CreateChurchBody }
+  let body: {
+    name?: string
+    admin_email?: string
+    city?: string
+    state?: string
+    timezone?: string
+    plan_slug?: string
+    custom_plan_price_cents?:  number | null
+    custom_user_price_cents?:  number | null
+    custom_agent_price_cents?: number | null
+    price_notes?:              string | null
+  }
+  try { body = await req.json() }
   catch { return json({ error: 'Body inválido' }, 400) }
 
   const {
-    name, admin_email, city, state, timezone, plan_slug,
+    name, admin_email, city, state, timezone,
+    plan_slug,
     custom_plan_price_cents  = null,
     custom_user_price_cents  = null,
     custom_agent_price_cents = null,
@@ -94,10 +82,10 @@ Deno.serve(async (req: Request) => {
   const tz       = timezone ?? 'America/Sao_Paulo'
   const planSlug = plan_slug ?? 'chamado'
 
-  // ── 1. Busca o plano ──────────────────────────────────────
+  // ── 1. Busca o plano (colunas reais: slug, name — sem id) ─
   const { data: plan, error: planErr } = await supabase
     .from('plans')
-    .select('id, slug, name')
+    .select('slug, name')
     .eq('slug', planSlug)
     .maybeSingle()
 
@@ -143,7 +131,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Erro ao criar assinatura' }, 500)
   }
 
-  // ── 4. Cria Stripe customer já vinculado à church ─────────
+  // ── 4. Stripe customer + Checkout URL ─────────────────────
   let stripeCheckoutUrl: string | null = null
   try {
     const customer = await stripe.customers.create({
@@ -156,7 +144,7 @@ Deno.serve(async (req: Request) => {
       .update({ stripe_customer_id: customer.id })
       .eq('church_id', church.id)
 
-    // ── 5. Resolve preço (custom ou catálogo) ─────────────────
+    // Resolve price: custom ad-hoc ou catálogo stripe_prices
     let lineItem: Stripe.Checkout.SessionCreateParams.LineItem
 
     if (custom_plan_price_cents !== null && custom_plan_price_cents > 0) {
@@ -181,12 +169,9 @@ Deno.serve(async (req: Request) => {
         .eq('active', true)
         .maybeSingle()
 
-      if (sp?.stripe_price_id) {
-        lineItem = { quantity: 1, price: sp.stripe_price_id }
-      } else {
-        // Sem price no catálogo — sem checkout (admin pode gerar depois)
-        lineItem = null as unknown as Stripe.Checkout.SessionCreateParams.LineItem
-      }
+      lineItem = sp?.stripe_price_id
+        ? { quantity: 1, price: sp.stripe_price_id }
+        : null as unknown as Stripe.Checkout.SessionCreateParams.LineItem
     }
 
     if (lineItem) {
@@ -199,7 +184,6 @@ Deno.serve(async (req: Request) => {
         metadata: {
           church_id:    church.id,
           plan_slug:    planSlug,
-          plan_id:      plan.id,
           initiated_by: user.id,
         },
         allow_promotion_codes:      true,
@@ -214,11 +198,10 @@ Deno.serve(async (req: Request) => {
       stripeCheckoutUrl = session.url
     }
   } catch (stripeError) {
-    // Stripe falhou — não é bloqueante, admin pode gerar link depois
     console.warn('[admin-church-create] stripe setup failed:', (stripeError as Error).message)
   }
 
-  // ── 6. Convida o pastor ───────────────────────────────────
+  // ── 5. Convida o pastor ───────────────────────────────────
   const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
     admin_email.trim(),
     {
@@ -226,12 +209,9 @@ Deno.serve(async (req: Request) => {
       redirectTo: `${ALLOWED_ORIGIN}/payment-pending`,
     },
   )
+  if (inviteErr) console.warn('[admin-church-create] invite failed:', inviteErr.message)
 
-  if (inviteErr) {
-    console.warn('[admin-church-create] invite failed:', inviteErr.message)
-  }
-
-  // ── 7. Registra evento ────────────────────────────────────
+  // ── 6. Registra evento ────────────────────────────────────
   await supabase.from('admin_events').insert({
     church_id:     church.id,
     admin_user_id: user.id,
@@ -248,11 +228,11 @@ Deno.serve(async (req: Request) => {
   })
 
   return json({
-    church_id:          church.id,
-    name:               church.name,
-    status:             church.status,
-    created_at:         church.created_at,
-    invite_sent:        !inviteErr,
+    church_id:           church.id,
+    name:                church.name,
+    status:              church.status,
+    created_at:          church.created_at,
+    invite_sent:         !inviteErr,
     stripe_checkout_url: stripeCheckoutUrl,
   }, 201)
 })
