@@ -1,13 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
-import { TrendingUp, RefreshCw, DollarSign, Bot, Building2 } from 'lucide-react'
+import { TrendingUp, RefreshCw, DollarSign, Bot, Building2, Zap, CheckCircle, AlertTriangle, Loader } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
 // ── Tipos ──────────────────────────────────────────────────
+
+interface StripePrice {
+  id:              string
+  plan_slug:       string
+  nickname:        string
+  stripe_price_id: string
+  amount_cents:    number
+  active:          boolean
+}
+
+interface BootstrapResult {
+  created: number
+  skipped: number
+  prices:  Array<{ plan_slug: string; nickname: string; stripe_price_id: string; action: string }>
+}
 
 interface RevenueData {
   mrr_total:        number
@@ -80,6 +95,185 @@ function DreRow({ label, value, bold, color, indent }: {
   )
 }
 
+// ── Seção Stripe Bootstrap ─────────────────────────────────
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+
+const NICKNAME_LABEL: Record<string, string> = {
+  plan_base:   'Plano base',
+  extra_user:  'Usuário extra',
+  extra_agent: 'Agente extra',
+}
+
+function StripeBootstrapCard() {
+  const [prices,      setPrices]      = useState<StripePrice[]>([])
+  const [loadingPrices, setLoadingPrices] = useState(true)
+  const [running,     setRunning]     = useState(false)
+  const [lastResult,  setLastResult]  = useState<BootstrapResult | null>(null)
+  const [error,       setError]       = useState<string | null>(null)
+  const [forceRe,     setForceRe]     = useState(false)
+
+  const loadPrices = useCallback(async () => {
+    setLoadingPrices(true)
+    try {
+      const { data } = await supabase
+        .from('stripe_prices')
+        .select('id, plan_slug, nickname, stripe_price_id, amount_cents, active')
+        .eq('active', true)
+        .order('plan_slug')
+        .order('nickname')
+      setPrices((data as StripePrice[]) ?? [])
+    } finally {
+      setLoadingPrices(false)
+    }
+  }, [])
+
+  useEffect(() => { void loadPrices() }, [loadPrices])
+
+  const bootstrapDone = prices.length > 0
+  const canRun = !bootstrapDone || forceRe
+
+  async function runBootstrap() {
+    setRunning(true)
+    setError(null)
+    setLastResult(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada')
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-bootstrap`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json() as BootstrapResult & { error?: string }
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
+      setLastResult(json)
+      setForceRe(false)
+      await loadPrices()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  const fmtCents = (c: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(c / 100)
+
+  return (
+    <div className="bg-white rounded-2xl border border-black/5 shadow-sm">
+      {/* Header do card */}
+      <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <Zap size={15} strokeWidth={1.75} style={{ color: '#e13500' }} />
+            Configuração de Pricing (Stripe Bootstrap)
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Popula <code className="bg-gray-100 px-1 rounded text-[11px]">stripe_prices</code> com produtos e prices padrão.
+            Idempotente — só cria o que não existe.
+          </p>
+        </div>
+
+        {/* Badge de status */}
+        {loadingPrices ? (
+          <Loader size={16} strokeWidth={1.75} className="animate-spin text-gray-300" />
+        ) : bootstrapDone ? (
+          <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
+            style={{ background: '#2D7A4F18', color: '#2D7A4F' }}>
+            <CheckCircle size={13} strokeWidth={2} />
+            Bootstrap executado
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
+            style={{ background: '#C4841D18', color: '#C4841D' }}>
+            <AlertTriangle size={13} strokeWidth={2} />
+            Bootstrap pendente
+          </span>
+        )}
+      </div>
+
+      <div className="p-5 space-y-4">
+        {/* Lista de prices existentes */}
+        {loadingPrices ? (
+          <div className="flex items-center justify-center py-6">
+            <Spinner size="sm" />
+          </div>
+        ) : prices.length > 0 ? (
+          <div className="rounded-xl border border-black/5 overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 text-left">
+                  <th className="px-4 py-2.5 font-medium text-gray-500">Plano</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500">Tipo</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500">Valor/mês</th>
+                  <th className="px-4 py-2.5 font-medium text-gray-500">Stripe Price ID</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/[0.04]">
+                {prices.map(p => (
+                  <tr key={p.id} className="hover:bg-gray-50/50">
+                    <td className="px-4 py-2.5 font-medium text-gray-700 capitalize">{p.plan_slug}</td>
+                    <td className="px-4 py-2.5 text-gray-500">{NICKNAME_LABEL[p.nickname] ?? p.nickname}</td>
+                    <td className="px-4 py-2.5 font-mono-ekthos font-bold text-gray-800">{fmtCents(p.amount_cents)}</td>
+                    <td className="px-4 py-2.5 text-gray-400 font-mono text-[10px]">
+                      {p.stripe_price_id.slice(0, 20)}…
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-gray-200 py-8 text-center text-sm text-gray-400">
+            Nenhum price encontrado em <code className="bg-gray-100 px-1 rounded text-[11px]">stripe_prices</code>.
+            Execute o bootstrap para popular.
+          </div>
+        )}
+
+        {/* Resultado do último run */}
+        {lastResult && (
+          <div className="rounded-xl px-4 py-3 text-xs font-medium"
+            style={{ background: '#2D7A4F10', color: '#2D7A4F' }}>
+            ✓ Bootstrap concluído — {lastResult.created} criados, {lastResult.skipped} ignorados (já existiam)
+          </div>
+        )}
+
+        {/* Erro */}
+        {error && (
+          <div className="rounded-xl px-4 py-3 text-xs text-red-700 bg-red-50 border border-red-100">
+            Erro: {error}
+          </div>
+        )}
+
+        {/* Ações */}
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={() => void runBootstrap()}
+            disabled={running || !canRun}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
+            style={{ background: '#e13500' }}
+          >
+            {running
+              ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Executando...</>
+              : <><Zap size={14} strokeWidth={2} /> Executar Bootstrap</>
+            }
+          </button>
+
+          {bootstrapDone && !forceRe && (
+            <button
+              onClick={() => setForceRe(true)}
+              className="text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2"
+            >
+              Re-executar (re-configurar preços)
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Página ─────────────────────────────────────────────────
 
 const EMPTY: RevenueData = {
@@ -132,6 +326,9 @@ export default function AdminRevenue() {
           Atualizar
         </button>
       </div>
+
+      {/* Stripe Bootstrap — sempre visível, independente do loading de métricas */}
+      <StripeBootstrapCard />
 
       {loading && (
         <div className="flex items-center justify-center h-64">
