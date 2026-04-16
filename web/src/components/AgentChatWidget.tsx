@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { X, Send, Bot, Trash2, Loader, MessageCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { usePlan } from '@/hooks/usePlan'
 
 // ── Tipos ───────────────────────────────────────────────────
 
@@ -25,7 +27,10 @@ function uid(): string {
   return Math.random().toString(36).slice(2)
 }
 
-// ── Componente ──────────────────────────────────────────────
+// ── Componente principal ────────────────────────────────────
+// Usa createPortal para renderizar direto no document.body,
+// garantindo que position: fixed funcione sem ser afetado por
+// stacking contexts da Sidebar (sticky, overflow, etc.).
 
 export default function AgentChatWidget({
   agentSlug,
@@ -42,7 +47,7 @@ export default function AgentChatWidget({
   const inputRef  = useRef<HTMLTextAreaElement>(null)
   const abortRef  = useRef<AbortController | null>(null)
 
-  // Scroll to bottom sempre que messages mudar
+  // Scroll para o final sempre que messages mudar
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -103,15 +108,12 @@ export default function AgentChatWidget({
     setInput('')
     setLoading(true)
 
-    // Adiciona mensagem do usuário
     const userMsgId = uid()
     setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: userText }])
 
-    // Adiciona placeholder do assistant (streaming)
     const assistantMsgId = uid()
     setMessages(prev => [...prev, { id: assistantMsgId, role: 'assistant', content: '', streaming: true }])
 
-    // Aborta request anterior se houver
     abortRef.current?.abort()
     const abortCtrl = new AbortController()
     abortRef.current = abortCtrl
@@ -214,17 +216,19 @@ export default function AgentChatWidget({
 
   if (!isOpen) return null
 
-  return (
+  // Portal: renderiza fora do DOM da Sidebar para evitar
+  // que stacking contexts (sticky, overflow) afetem z-index e position:fixed
+  return createPortal(
     <>
       {/* Overlay transparente para fechar ao clicar fora */}
       <div
-        className="fixed inset-0 z-40"
+        className="fixed inset-0 z-[998]"
         onClick={onClose}
       />
 
-      {/* Drawer */}
+      {/* Drawer — z-[999] garante que fica acima de qualquer card ou overlay */}
       <div
-        className="fixed right-0 top-0 h-screen w-[380px] z-50 flex flex-col shadow-2xl border-l border-black/10"
+        className="fixed right-0 top-0 h-screen w-[380px] z-[999] flex flex-col shadow-2xl border-l border-black/10"
         style={{ background: '#FFFFFF' }}
       >
         {/* Header */}
@@ -360,20 +364,28 @@ export default function AgentChatWidget({
           </p>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
 
 // ── Botão flutuante para acionar o widget ──────────────────
+// O ponto colorido indica o status do agente baseado em
+// subscription_agents.active — sem health check externo.
+//   Verde  = agente ativo na subscription
+//   Cinza  = agente inativo / não ativado
 
 interface AgentChatButtonProps {
   agentSlug:  'agent-suporte' | 'agent-onboarding'
   agentName:  string
-  hasUnread?: boolean
 }
 
-export function AgentChatButton({ agentSlug, agentName, hasUnread = false }: AgentChatButtonProps) {
+export function AgentChatButton({ agentSlug, agentName }: AgentChatButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const { hasAgent } = usePlan()
+
+  // Status vem do banco (subscription_agents), não de health check externo
+  const isConnected = hasAgent(agentSlug)
 
   return (
     <>
@@ -395,13 +407,13 @@ export function AgentChatButton({ agentSlug, agentName, hasUnread = false }: Age
         }}
       >
         <MessageCircle size={16} strokeWidth={1.75} />
-        <span>{agentName}</span>
-        {hasUnread && (
-          <span
-            className="ml-auto w-2 h-2 rounded-full shrink-0"
-            style={{ background: '#e13500' }}
-          />
-        )}
+        <span className="flex-1 text-left">{agentName}</span>
+        {/* Ponto de status: verde = conectado (ativo no banco), cinza = inativo */}
+        <span
+          className="w-1.5 h-1.5 rounded-full shrink-0 transition-colors"
+          style={{ background: isConnected ? '#4ade80' : 'rgba(255,255,255,0.2)' }}
+          title={isConnected ? 'Conectado' : 'Inativo'}
+        />
       </button>
 
       <AgentChatWidget
