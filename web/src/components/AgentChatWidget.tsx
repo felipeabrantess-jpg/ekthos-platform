@@ -15,7 +15,7 @@ interface ChatMessage {
 }
 
 interface AgentChatWidgetProps {
-  agentSlug:  'agent-suporte' | 'agent-onboarding'
+  agentSlug:  string
   agentName:  string
   isOpen:     boolean
   onClose:    () => void
@@ -87,9 +87,7 @@ export default function AgentChatWidget({
           setMessages([{
             id:      uid(),
             role:    'assistant',
-            content: agentSlug === 'agent-suporte'
-              ? 'Olá! Sou o assistente Ekthos. Pode me perguntar qualquer coisa sobre o sistema. 😊'
-              : 'Olá! Sou seu guia de onboarding. Vou te ajudar a dominar o Ekthos. Por onde quer começar?',
+            content: `Olá! Sou o agente **${agentName}**. Como posso ajudar você hoje?`,
           }])
         }
       } finally {
@@ -376,7 +374,7 @@ export default function AgentChatWidget({
 //   Cinza  = agente inativo / não ativado
 
 interface AgentChatButtonProps {
-  agentSlug:  'agent-suporte' | 'agent-onboarding'
+  agentSlug:  string
   agentName:  string
 }
 

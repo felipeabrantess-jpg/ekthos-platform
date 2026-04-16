@@ -8,6 +8,7 @@ import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
 import { AgentChatButton } from './AgentChatWidget'
+import { usePlan } from '@/hooks/usePlan'
 
 interface NavItem {
   path: string
@@ -33,6 +34,17 @@ const ALL_NAV_ITEMS: NavItem[] = [
 export default function Sidebar() {
   const { user, role } = useAuth()
   const logout = useLogout()
+  const { allAgents, hasAgent, isLoading: planLoading } = usePlan()
+
+  // Agentes ativos para esta subscription, ordenados: free primeiro, depois always_paid
+  const sidebarAgents = allAgents
+    .filter(a => hasAgent(a.slug))
+    .sort((a, b) => {
+      const tierOrder = { free: 0, always_paid: 1, eligible: 2 }
+      const tDiff = (tierOrder[a.pricing_tier] ?? 2) - (tierOrder[b.pricing_tier] ?? 2)
+      if (tDiff !== 0) return tDiff
+      return a.name.localeCompare(b.name, 'pt-BR')
+    })
 
   const visibleItems = ALL_NAV_ITEMS.filter((item) => {
     if (!role) return false
@@ -81,8 +93,25 @@ export default function Sidebar() {
         <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5" style={{ color: 'rgba(249,238,220,0.3)' }}>
           Assistentes
         </p>
-        <AgentChatButton agentSlug="agent-suporte"    agentName="Suporte 24h" />
-        <AgentChatButton agentSlug="agent-onboarding" agentName="Guia de Uso" />
+        <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+          {planLoading && (
+            <p className="text-[11px] px-3 py-1" style={{ color: 'rgba(249,238,220,0.3)' }}>
+              Carregando...
+            </p>
+          )}
+          {!planLoading && sidebarAgents.length === 0 && (
+            <p className="text-[11px] px-3 py-1" style={{ color: 'rgba(249,238,220,0.3)' }}>
+              Nenhum assistente ativo
+            </p>
+          )}
+          {!planLoading && sidebarAgents.map(agent => (
+            <AgentChatButton
+              key={agent.slug}
+              agentSlug={agent.slug}
+              agentName={agent.name}
+            />
+          ))}
+        </div>
       </div>
 
       {/* Rodape de usuario */}
