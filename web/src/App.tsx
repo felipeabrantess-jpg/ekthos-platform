@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from '@/lib/auth-context'
 import { useAuth } from '@/hooks/useAuth'
 import { canAccess, defaultRoute, type AppRole } from '@/hooks/useRole'
 import ErrorBoundary from '@/components/ErrorBoundary'
@@ -108,7 +109,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
       <Suspense fallback={<FullScreenSpinner />}>
         <Routes>
           {/* ── Rotas públicas ── */}
@@ -201,7 +203,8 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
