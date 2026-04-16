@@ -51,6 +51,8 @@ const AdminRevenue     = lazy(() => import('@/pages/admin/Revenue'))
 const AdminOnboardings = lazy(() => import('@/pages/admin/Onboardings'))
 const AdminTasks       = lazy(() => import('@/pages/admin/Tasks'))
 const AdminPricing     = lazy(() => import('@/pages/admin/Pricing'))
+const AdminAffiliates  = lazy(() => import('@/pages/admin/Affiliates'))
+const AffiliateDetail  = lazy(() => import('@/pages/admin/AffiliateDetail'))
 
 // ── Loaders ────────────────────────────────────────────────
 
@@ -216,6 +218,8 @@ export default function App() {
             <Route path="tasks"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminTasks /></Suspense></ErrorBoundary>} />
             <Route path="revenue"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminRevenue /></Suspense></ErrorBoundary>} />
             <Route path="pricing"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminPricing /></Suspense></ErrorBoundary>} />
+            <Route path="afiliados"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAffiliates /></Suspense></ErrorBoundary>} />
+            <Route path="afiliados/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AffiliateDetail /></Suspense></ErrorBoundary>} />
           </Route>
         </Routes>
       </Suspense>
