@@ -1,8 +1,8 @@
 // ============================================================
-// Edge Function: agent-conteudo v3
-// Criador de Conteúdo Pastoral — SSE streaming conversacional
+// Edge Function: agent-whatsapp v1
+// Gerador de Mensagens WhatsApp — SSE streaming conversacional
 //
-// POST /agent-conteudo
+// POST /agent-whatsapp
 // Headers: Authorization: Bearer <supabase-jwt>
 // Body: { message: string, clear_history?: boolean }
 // Returns: SSE stream com tokens da resposta
@@ -27,7 +27,7 @@ const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 const MODEL         = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS    = 2048
 const HISTORY_LIMIT = 16
-const AGENT_SLUG    = 'agent-conteudo'
+const AGENT_SLUG    = 'agent-whatsapp'
 
 // ── CORS ───────────────────────────────────────────────────
 
@@ -107,12 +107,12 @@ Deno.serve(async (req: Request) => {
   ] = await Promise.all([
     supabase
       .from('events')
-      .select('title, starts_at, description')
+      .select('title, starts_at, ends_at, location, description, type')
       .eq('church_id', churchId)
       .gte('starts_at', today.toISOString())
       .lte('starts_at', nextWeek)
       .order('starts_at', { ascending: true })
-      .limit(5),
+      .limit(7),
     supabase
       .from('churches')
       .select('name, denomination')
@@ -120,58 +120,59 @@ Deno.serve(async (req: Request) => {
       .maybeSingle(),
   ])
 
-  const denomination  = (churchRow?.denomination as string | undefined) ?? 'evangélica'
-  const churchName    = churchRow?.name ?? 'sua igreja'
-  const eventsContext = (upcomingEvents ?? []).length > 0
-    ? (upcomingEvents ?? []).map(e =>
-        `  • ${e.title as string} — ${new Date(e.starts_at as string).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}`
-      ).join('\n')
+  const churchName   = churchRow?.name ?? 'sua igreja'
+  const denomination = (churchRow?.denomination as string | undefined) ?? 'evangélica'
+  const todayLabel   = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+  const eventsCtx = (upcomingEvents ?? []).length > 0
+    ? (upcomingEvents ?? []).map(e => {
+        const start = new Date(e.starts_at as string).toLocaleDateString('pt-BR', {
+          weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+        })
+        const loc = e.location ? ` · ${e.location}` : ''
+        return `  • ${e.title} — ${start}${loc}`
+      }).join('\n')
     : '  Nenhum evento cadastrado esta semana.'
 
-  const todayLabel = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
-
-  const systemPrompt = `Você é o Criador de Conteúdo Pastoral da ${churchName} (denominação: ${denomination}).
-
-EVENTOS DESTA SEMANA:
-${eventsContext}
+  const systemPrompt = `Você é o Assistente de Mensagens WhatsApp da ${churchName} (${denomination}).
 
 HOJE: ${todayLabel}
 
-VOCÊ CRIA (sob demanda ou quando solicitado):
+EVENTOS DESTA SEMANA:
+${eventsCtx}
 
-📖 DEVOCIONAL DIÁRIO
-Formato:
-**[Título inspirador]**
-📖 *[Referência bíblica completa]*
+TIPOS DE MENSAGEM QUE VOCÊ ESCREVE:
 
-[Reflexão pastoral — 120-150 palavras, linguagem familiar e acessível]
+📢 AVISO/COMUNICADO
+Informa a congregação sobre eventos, mudanças ou notícias importantes.
+Formato: Contexto → o quê → quando → onde → como participar → encerramento caloroso
 
-💡 *Aplicação:* [Ação prática para hoje em 1-2 frases]
+📨 CONVITE
+Convida para um evento específico de forma acolhedora e motivadora.
+Formato: saudação calorosa → o evento → por que vir → quando/onde → CTA
 
-🙏 *Oração:* [3-4 linhas, 1ª pessoa do plural, termina com "Amém."]
+🤝 BOAS-VINDAS
+Mensagem para novos membros, visitantes ou pessoas que se reconciliaram.
+Formato: saudação → acolhida → próximos passos → contato
 
-📱 POST INSTAGRAM
-[Frase de abertura (sem ponto final)]
+🎂 ANIVERSÁRIO
+Mensagem pastoral para aniversariantes.
+Formato: saudação personalizada → versículo → bênção → assinatura pastoral
 
-[Corpo — 80-100 palavras inspiradores]
+📋 COMUNICADO GERAL
+Recados internos para equipes, líderes ou ministérios.
+Formato: objetivo direto → informações necessárias → ação requerida
 
-[CTA pastoral: compartilhe / comente / marque alguém]
+REGRAS ABSOLUTAS:
+- Máximo 3 emojis por mensagem (use com moderação)
+- Português brasileiro informal mas correto
+- Sem linguagem corporativa ou muito formal
+- Sem hashtags (WhatsApp não usa hashtags)
+- Tamanho ideal: 80-150 palavras (pode ser menor para aniversários)
+- Tom caloroso, fraternal, pastoral
+- Se o usuário não especificar o tipo, pergunte ou gere o tipo mais adequado ao contexto
+- Se precisar de informações adicionais (nome do aniversariante, data, etc.), peça ao usuário
 
-[8-10 hashtags relevantes]
-🖼️ *Sugestão de arte:* [descrição visual]
-
-📢 COMUNICADO WHATSAPP
-[Texto — máx 200 palavras, tom caloroso, inclui: o quê, quando, onde, como participar]
-
-REGRAS:
-- Sempre inclua referência bíblica completa
-- Respeite a denominação: ${denomination}
-- Português brasileiro coloquial mas correto
-- Nunca use jargões corporativos
-- Se o usuário pedir um tipo específico, entregue só aquele formato
-- Se pedir "tudo", entregue devocional + post + comunicado em sequência
-
-Tom: criativo, pastoral, inspirador.
 Língua: português brasileiro.`
 
   // ── Limpa histórico se solicitado ─────────────────────

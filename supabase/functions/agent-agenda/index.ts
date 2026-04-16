@@ -1,8 +1,8 @@
 // ============================================================
-// Edge Function: agent-conteudo v3
-// Criador de Conteúdo Pastoral — SSE streaming conversacional
+// Edge Function: agent-agenda v1
+// Assistente de Agenda Pastoral — SSE streaming conversacional
 //
-// POST /agent-conteudo
+// POST /agent-agenda
 // Headers: Authorization: Bearer <supabase-jwt>
 // Body: { message: string, clear_history?: boolean }
 // Returns: SSE stream com tokens da resposta
@@ -27,7 +27,7 @@ const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 const MODEL         = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS    = 2048
 const HISTORY_LIMIT = 16
-const AGENT_SLUG    = 'agent-conteudo'
+const AGENT_SLUG    = 'agent-agenda'
 
 // ── CORS ───────────────────────────────────────────────────
 
@@ -97,22 +97,31 @@ Deno.serve(async (req: Request) => {
   const message = body.message?.trim() ?? ''
   if (!message) return jsonErr('message é obrigatório', 400)
 
-  // ── Carrega contexto da church ─────────────────────────
+  // ── Carrega contexto de agenda ─────────────────────────
   const today    = new Date()
   const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
 
   const [
     { data: upcomingEvents },
+    { data: pastEvents },
     { data: churchRow },
   ] = await Promise.all([
     supabase
       .from('events')
-      .select('title, starts_at, description')
+      .select('id, title, starts_at, ends_at, location, description, type')
       .eq('church_id', churchId)
       .gte('starts_at', today.toISOString())
       .lte('starts_at', nextWeek)
       .order('starts_at', { ascending: true })
-      .limit(5),
+      .limit(10),
+    supabase
+      .from('events')
+      .select('id, title, starts_at, location')
+      .eq('church_id', churchId)
+      .lt('starts_at', today.toISOString())
+      .gte('starts_at', new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString())
+      .order('starts_at', { ascending: false })
+      .limit(3),
     supabase
       .from('churches')
       .select('name, denomination')
@@ -120,58 +129,55 @@ Deno.serve(async (req: Request) => {
       .maybeSingle(),
   ])
 
-  const denomination  = (churchRow?.denomination as string | undefined) ?? 'evangélica'
-  const churchName    = churchRow?.name ?? 'sua igreja'
-  const eventsContext = (upcomingEvents ?? []).length > 0
-    ? (upcomingEvents ?? []).map(e =>
-        `  • ${e.title as string} — ${new Date(e.starts_at as string).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}`
-      ).join('\n')
-    : '  Nenhum evento cadastrado esta semana.'
+  const churchName   = churchRow?.name ?? 'sua igreja'
+  const denomination = (churchRow?.denomination as string | undefined) ?? 'evangélica'
+  const todayLabel   = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-  const todayLabel = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  function formatEvent(e: Record<string, unknown>): string {
+    const start = new Date(e.starts_at as string).toLocaleDateString('pt-BR', {
+      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+    })
+    const end = e.ends_at
+      ? ` até ${new Date(e.ends_at as string).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+      : ''
+    const loc  = e.location ? ` · 📍 ${e.location}` : ''
+    const desc = e.description ? `\n    ${(e.description as string).slice(0, 80)}...` : ''
+    return `  • [${e.type ?? 'evento'}] ${e.title} — ${start}${end}${loc}${desc}`
+  }
 
-  const systemPrompt = `Você é o Criador de Conteúdo Pastoral da ${churchName} (denominação: ${denomination}).
+  const upcomingCtx = (upcomingEvents ?? []).length > 0
+    ? (upcomingEvents ?? []).map(e => formatEvent(e as Record<string, unknown>)).join('\n')
+    : '  Nenhum evento cadastrado para os próximos 7 dias.'
 
-EVENTOS DESTA SEMANA:
-${eventsContext}
+  const pastCtx = (pastEvents ?? []).length > 0
+    ? (pastEvents ?? []).map(e => formatEvent(e as Record<string, unknown>)).join('\n')
+    : '  Nenhum evento recente.'
+
+  const systemPrompt = `Você é o Assistente de Agenda Pastoral da ${churchName} (${denomination}).
 
 HOJE: ${todayLabel}
 
-VOCÊ CRIA (sob demanda ou quando solicitado):
+PRÓXIMOS 7 DIAS:
+${upcomingCtx}
 
-📖 DEVOCIONAL DIÁRIO
-Formato:
-**[Título inspirador]**
-📖 *[Referência bíblica completa]*
+EVENTOS RECENTES (últimas 72h):
+${pastCtx}
 
-[Reflexão pastoral — 120-150 palavras, linguagem familiar e acessível]
-
-💡 *Aplicação:* [Ação prática para hoje em 1-2 frases]
-
-🙏 *Oração:* [3-4 linhas, 1ª pessoa do plural, termina com "Amém."]
-
-📱 POST INSTAGRAM
-[Frase de abertura (sem ponto final)]
-
-[Corpo — 80-100 palavras inspiradores]
-
-[CTA pastoral: compartilhe / comente / marque alguém]
-
-[8-10 hashtags relevantes]
-🖼️ *Sugestão de arte:* [descrição visual]
-
-📢 COMUNICADO WHATSAPP
-[Texto — máx 200 palavras, tom caloroso, inclui: o quê, quando, onde, como participar]
+COMO VOCÊ AJUDA:
+- Briefing de eventos: prepare o pastor/líder para o próximo evento com o que ele precisa saber
+- Resumo da semana: visão geral de tudo que está por vir
+- Conflitos de agenda: identifique sobreposições ou eventos muito próximos
+- Lembretes: liste o que precisa ser preparado para cada evento
+- Comunicação: sugira como comunicar cada evento para a congregação
+- Relembrar histórico: resuma eventos recentes quando perguntado
 
 REGRAS:
-- Sempre inclua referência bíblica completa
-- Respeite a denominação: ${denomination}
-- Português brasileiro coloquial mas correto
-- Nunca use jargões corporativos
-- Se o usuário pedir um tipo específico, entregue só aquele formato
-- Se pedir "tudo", entregue devocional + post + comunicado em sequência
+- Use os dados acima como fonte de verdade
+- Se não houver eventos cadastrados, avise e sugira que cadastrem na seção Agenda do CRM
+- Respostas diretas e práticas — como um assessor de agenda experiente
+- Para briefings, inclua: objetivo do evento, quem provavelmente participará, o que preparar, horário e local
+- Português brasileiro, tom profissional mas pastoral
 
-Tom: criativo, pastoral, inspirador.
 Língua: português brasileiro.`
 
   // ── Limpa histórico se solicitado ─────────────────────
