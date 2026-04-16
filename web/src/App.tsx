@@ -17,6 +17,7 @@ const Onboarding            = lazy(() => import('@/pages/Onboarding'))
 const OnboardingConfiguring = lazy(() => import('@/pages/onboarding/Configuring'))
 const Blocked               = lazy(() => import('@/pages/Blocked'))
 const Cancelled             = lazy(() => import('@/pages/Cancelled'))
+const PaymentPending        = lazy(() => import('@/pages/PaymentPending'))
 
 // CRM
 const Dashboard   = lazy(() => import('@/pages/Dashboard'))
@@ -77,12 +78,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-// Redireciona para /blocked ou /cancelled conforme status da igreja
+// Redireciona conforme status da igreja
 function StatusGuard({ children }: { children: React.ReactNode }) {
   const { churchStatus, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
-  if (churchStatus === 'suspended') return <Navigate to="/blocked" replace />
-  if (churchStatus === 'cancelled') return <Navigate to="/cancelled" replace />
+  if (churchStatus === 'pending_payment') return <Navigate to="/payment-pending" replace />
+  if (churchStatus === 'suspended')       return <Navigate to="/blocked" replace />
+  if (churchStatus === 'cancelled')       return <Navigate to="/cancelled" replace />
   return <>{children}</>
 }
 
@@ -121,6 +123,18 @@ export default function App() {
           <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
 
           {/* ── Páginas de status de conta ── */}
+          <Route
+            path="/payment-pending"
+            element={
+              <ErrorBoundary>
+                <ProtectedRoute>
+                  <Suspense fallback={<FullScreenSpinner />}>
+                    <PaymentPending />
+                  </Suspense>
+                </ProtectedRoute>
+              </ErrorBoundary>
+            }
+          />
           <Route
             path="/blocked"
             element={
