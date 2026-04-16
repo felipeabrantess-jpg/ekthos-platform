@@ -420,11 +420,12 @@ function PlansTab({ toast }: { toast: (msg: string, type: 'success' | 'error') =
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('plans')
       .select('slug, name, description, price_cents, max_users, included_agents, max_agents, sort_order, active, updated_at')
       .order('sort_order')
       .order('name')
+    if (error) console.error('[PlansTab] supabase error:', error)
     setPlans((data as Plan[]) ?? [])
     setLoading(false)
   }, [])
@@ -529,10 +530,11 @@ function AddonsTab({ toast }: { toast: (msg: string, type: 'success' | 'error') 
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('addon_prices')
       .select('slug, name, price_cents, active, updated_at')
       .order('slug')
+    if (error) console.error('[AddonsTab] supabase error:', error)
     setAddons((data as Addon[]) ?? [])
     setLoading(false)
   }, [])
