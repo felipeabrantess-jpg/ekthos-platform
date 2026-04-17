@@ -1,8 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { Fragment, useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  Send, Loader, Upload, ChevronDown, CheckCircle, Bot, User,
-} from 'lucide-react'
+import { Send, Loader, Upload, Check, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ──────────────────────────────────────────────────
@@ -14,65 +12,88 @@ interface Message {
 }
 
 interface InputWidget {
-  type:        'select' | 'multiselect' | 'upload' | 'number' | 'text'
-  label:       string
-  options?:    string[]
-  placeholder?: string
+  type:     'select' | 'multiselect' | 'upload'
+  label:    string
+  options?: string[]
 }
 
 // ── Constantes ─────────────────────────────────────────────
 
 const PLAN_LABEL: Record<string, string> = {
-  chamado:    'Chamado — R$389/mês',
-  missao:     'Missão — R$698/mês',
-  avivamento: 'Avivamento — R$1.015,67/mês',
+  chamado:    'Chamado — R$689,90/mês',
+  missao:     'Missão — R$1.639,90/mês',
+  avivamento: 'Avivamento — R$2.469,90/mês',
+}
+
+const PLAN_SHORT: Record<string, string> = {
+  chamado:    'R$689,90/mês',
+  missao:     'R$1.639,90/mês',
+  avivamento: 'R$2.469,90/mês',
 }
 
 const BLOCK_LABELS = [
-  'Identidade da Igreja',
-  'Operação Pastoral',
-  'Gestão de Dados',
-  'Equipe e Permissões',
-  'Agentes de Inteligência',
-  'Canais e Integrações',
+  'Identidade',
+  'Pastoral',
+  'Dados',
+  'Equipe',
+  'Agentes',
+  'Canais',
 ]
 
-// ── Componente de mensagem ─────────────────────────────────
+// ── Avatares ───────────────────────────────────────────────
 
-function MessageBubble({ msg }: { msg: Message }) {
-  const isAssistant = msg.role === 'assistant'
+function EkthosAvatar() {
   return (
-    <div className={`flex gap-3 ${isAssistant ? '' : 'flex-row-reverse'}`}>
-      {/* Avatar */}
-      <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-          isAssistant ? 'bg-red-50' : 'bg-cream'
-        }`}
-        style={{ color: isAssistant ? '#e13500' : '#5A5A5A' }}
-      >
-        {isAssistant
-          ? <Bot  size={16} strokeWidth={1.75} />
-          : <User size={16} strokeWidth={1.75} />}
-      </div>
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-base select-none shadow-sm"
+      style={{ background: '#E13500', color: 'white' }}
+    >
+      E
+    </div>
+  )
+}
 
-      {/* Bolha */}
-      <div className={`max-w-[80%] ${isAssistant ? '' : 'text-right'}`}>
+function UserAvatar({ initial }: { initial: string }) {
+  return (
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-semibold text-sm select-none"
+      style={{ background: '#161616', color: 'white' }}
+    >
+      {initial ? initial : <User size={16} />}
+    </div>
+  )
+}
+
+// ── Mensagem ───────────────────────────────────────────────
+
+function MessageBubble({ msg, userInitial }: { msg: Message; userInitial: string }) {
+  const isBot = msg.role === 'assistant'
+  return (
+    <div className={`flex items-start gap-3 ${isBot ? '' : 'flex-row-reverse'}`}>
+      {isBot ? <EkthosAvatar /> : <UserAvatar initial={userInitial} />}
+
+      <div className={`flex flex-col ${isBot ? '' : 'items-end'} max-w-[78%]`}>
+        {isBot && (
+          <p className="text-[11px] font-bold text-gray-400 mb-1.5 ml-1 tracking-widest uppercase">
+            Consultor Ekthos
+          </p>
+        )}
         <div
-          className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-            isAssistant
-              ? 'bg-white border border-black/5 text-gray-800'
-              : 'text-white'
+          className={`px-5 py-4 text-[15px] leading-relaxed ${
+            isBot
+              ? 'bg-white border border-black/[0.07] rounded-3xl rounded-tl-xl text-gray-800'
+              : 'rounded-3xl rounded-tr-xl text-white'
           }`}
-          style={isAssistant ? {} : { background: '#e13500' }}
+          style={isBot ? {} : { background: '#E13500' }}
         >
-          {msg.content.split('\n').map((line, i) => (
+          {msg.content.split('\n').map((line, i, arr) => (
             <span key={i}>
-              {line}
-              {i < msg.content.split('\n').length - 1 && <br />}
+              {line || '\u00A0'}
+              {i < arr.length - 1 && <br />}
             </span>
           ))}
         </div>
-        <p className="text-xs text-gray-400 mt-1 px-1">
+        <p className="text-[11px] text-gray-400 mt-1.5 px-1">
           {msg.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
@@ -80,25 +101,98 @@ function MessageBubble({ msg }: { msg: Message }) {
   )
 }
 
-// ── Barra de progresso ─────────────────────────────────────
+// ── Streaming bubble ───────────────────────────────────────
 
-function ProgressBar({ blockIndex }: { blockIndex: number }) {
-  const pct = Math.round(((blockIndex - 1) / 6) * 100)
+function StreamingBubble({ content }: { content: string }) {
   return (
-    <div className="px-6 py-3 border-b border-black/5 bg-white">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-medium text-gray-500">
-          Bloco {blockIndex}/6 — {BLOCK_LABELS[blockIndex - 1] ?? ''}
-        </span>
-        <span className="text-xs font-mono-ekthos font-semibold" style={{ color: '#e13500' }}>
-          {pct}%
-        </span>
+    <div className="flex items-start gap-3">
+      <EkthosAvatar />
+      <div className="flex flex-col max-w-[78%]">
+        <p className="text-[11px] font-bold text-gray-400 mb-1.5 ml-1 tracking-widest uppercase">
+          Consultor Ekthos
+        </p>
+        <div className="px-5 py-4 text-[15px] leading-relaxed bg-white border border-black/[0.07] rounded-3xl rounded-tl-xl text-gray-800">
+          {content.split('\n').map((line, i, arr) => (
+            <span key={i}>
+              {line || '\u00A0'}
+              {i < arr.length - 1 && <br />}
+            </span>
+          ))}
+          <span
+            className="inline-block w-0.5 h-[1em] ml-0.5 align-middle animate-pulse"
+            style={{ background: '#E13500' }}
+          />
+        </div>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: '#e13500' }}
-        />
+    </div>
+  )
+}
+
+// ── Loading dots ───────────────────────────────────────────
+
+function LoadingDots() {
+  return (
+    <div className="flex items-start gap-3">
+      <EkthosAvatar />
+      <div className="bg-white border border-black/[0.07] rounded-3xl rounded-tl-xl px-5 py-4">
+        <div className="flex gap-1.5 items-center h-5">
+          {[0, 1, 2].map(i => (
+            <div
+              key={i}
+              className="w-2 h-2 rounded-full animate-bounce"
+              style={{ background: '#E13500', animationDelay: `${i * 140}ms` }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Progress dots ──────────────────────────────────────────
+
+function ProgressDots({ blockIndex }: { blockIndex: number }) {
+  return (
+    <div className="px-6 py-4 border-b border-black/[0.06] bg-white shrink-0">
+      <div className="flex items-center mb-3">
+        {BLOCK_LABELS.map((label, i) => {
+          const n         = i + 1
+          const isDone    = n < blockIndex
+          const isCurrent = n === blockIndex
+          return (
+            <Fragment key={n}>
+              <div
+                className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-500 shrink-0"
+                style={{
+                  background: isDone
+                    ? '#2D7A4F'
+                    : isCurrent
+                    ? '#E13500'
+                    : '#EBEBEB',
+                  color:      isDone || isCurrent ? 'white' : '#AAAAAA',
+                  boxShadow:  isCurrent ? '0 0 0 4px rgba(225,53,0,0.15)' : 'none',
+                  transform:  isCurrent ? 'scale(1.1)' : 'scale(1)',
+                }}
+              >
+                {isDone ? <Check size={12} strokeWidth={2.5} /> : n}
+              </div>
+              {n < 6 && (
+                <div
+                  className="flex-1 h-px mx-1.5 rounded-full transition-all duration-700"
+                  style={{ background: isDone ? '#2D7A4F' : '#EBEBEB' }}
+                />
+              )}
+            </Fragment>
+          )
+        })}
+      </div>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-gray-600">
+          {BLOCK_LABELS[blockIndex - 1]}
+        </p>
+        <p className="text-xs text-gray-400">
+          Bloco {blockIndex} de 6
+        </p>
       </div>
     </div>
   )
@@ -107,29 +201,53 @@ function ProgressBar({ blockIndex }: { blockIndex: number }) {
 // ── Preview lateral ────────────────────────────────────────
 
 interface PreviewState {
-  pipeline:   string[]
+  pipeline:    string[]
   departments: string[]
-  agents:     string[]
-  cells:      number
+  agents:      string[]
+  cells:       number
 }
 
 function OnboardingPreview({ preview }: { preview: PreviewState }) {
-  return (
-    <div className="hidden lg:flex flex-col gap-4 p-6 overflow-y-auto">
-      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-        Em configuração
-      </h3>
+  const hasContent =
+    preview.pipeline.length > 0 ||
+    preview.departments.length > 0 ||
+    preview.cells > 0 ||
+    preview.agents.length > 0
 
-      {/* Pipeline */}
+  if (!hasContent) {
+    return (
+      <div className="hidden lg:flex flex-col items-center justify-center h-full p-8 text-center">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 text-2xl"
+          style={{ background: 'rgba(225,53,0,0.08)' }}
+        >
+          ✦
+        </div>
+        <p className="text-sm font-semibold text-gray-700 mb-1">Em configuração</p>
+        <p className="text-xs text-gray-400 leading-relaxed max-w-[160px]">
+          À medida que conversamos, vou montando o perfil da sua igreja aqui.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="hidden lg:flex flex-col gap-3 p-5 overflow-y-auto">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+        Em configuração
+      </p>
+
       {preview.pipeline.length > 0 && (
-        <div className="bg-white rounded-xl border border-black/5 p-4">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Caminho de discipulado</p>
-          <div className="flex flex-wrap gap-1">
+        <div className="bg-white rounded-2xl border border-black/[0.06] p-4">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2.5">
+            Caminho de discipulado
+          </p>
+          <div className="flex flex-wrap gap-1.5">
             {preview.pipeline.map((s, i) => (
               <span
                 key={i}
-                className="text-xs px-2 py-0.5 rounded-full text-white"
-                style={{ background: `hsl(${14 + i * 20}, 80%, ${50 - i * 3}%)` }}
+                className="text-[11px] px-2.5 py-1 rounded-full text-white font-medium"
+                style={{ background: `hsl(${14 + i * 22}, 72%, ${47 - i * 2}%)` }}
               >
                 {s}
               </span>
@@ -138,36 +256,45 @@ function OnboardingPreview({ preview }: { preview: PreviewState }) {
         </div>
       )}
 
-      {/* Departamentos */}
       {preview.departments.length > 0 && (
-        <div className="bg-white rounded-xl border border-black/5 p-4">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Ministérios</p>
-          <div className="flex flex-wrap gap-1">
+        <div className="bg-white rounded-2xl border border-black/[0.06] p-4">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2.5">
+            Ministérios
+          </p>
+          <div className="flex flex-wrap gap-1.5">
             {preview.departments.map((d, i) => (
-              <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-cream text-gray-700">{d}</span>
+              <span
+                key={i}
+                className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                style={{ background: '#F9EEDC', color: '#5A5A5A' }}
+              >
+                {d}
+              </span>
             ))}
           </div>
         </div>
       )}
 
-      {/* Células */}
       {preview.cells > 0 && (
-        <div className="bg-white rounded-xl border border-black/5 p-4">
-          <p className="text-xs font-semibold text-gray-600">Células</p>
-          <p className="font-mono-ekthos text-2xl font-bold mt-1" style={{ color: '#e13500' }}>
+        <div className="bg-white rounded-2xl border border-black/[0.06] p-4">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">
+            Células
+          </p>
+          <p className="text-3xl font-bold mt-1" style={{ color: '#E13500' }}>
             {preview.cells}
           </p>
         </div>
       )}
 
-      {/* Agentes */}
       {preview.agents.length > 0 && (
-        <div className="bg-white rounded-xl border border-black/5 p-4">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Agentes selecionados</p>
+        <div className="bg-white rounded-2xl border border-black/[0.06] p-4">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2.5">
+            Agentes selecionados
+          </p>
           {preview.agents.map((a, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600 mt-1">
-              <CheckCircle size={12} strokeWidth={2} style={{ color: '#2D7A4F' }} />
-              {a}
+            <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600 mt-1.5">
+              <Check size={12} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              <span className="capitalize">{a}</span>
             </div>
           ))}
         </div>
@@ -180,8 +307,8 @@ function OnboardingPreview({ preview }: { preview: PreviewState }) {
 
 export default function Onboarding() {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
-  const planSlug = searchParams.get('plan') ?? 'chamado'
+  const navigate       = useNavigate()
+  const planSlug       = searchParams.get('plan') ?? 'chamado'
 
   const [messages,         setMessages]         = useState<Message[]>([])
   const [input,            setInput]            = useState('')
@@ -193,36 +320,41 @@ export default function Onboarding() {
   const [preview,          setPreview]          = useState<PreviewState>({ pipeline: [], departments: [], agents: [], cells: 0 })
   const [uploadLabel,      setUploadLabel]      = useState<string | null>(null)
   const [streamingContent, setStreamingContent] = useState<string | null>(null)
+  const [userInitial,      setUserInitial]      = useState('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef       = useRef<HTMLTextAreaElement>(null)
 
-  // Detecta widgets dinâmicos na última mensagem do assistente
   const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant')?.content ?? ''
-  const currentWidget = detectWidget(lastAssistantMsg)
+  const currentWidget    = detectWidget(lastAssistantMsg)
 
   // Saudação inicial
   useEffect(() => {
-    const greeting: Message = {
+    setMessages([{
       role:      'assistant',
-      content:   `Olá! Seja muito bem-vindo à Ekthos!\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja, com carinho e atenção a cada detalhe da sua operação pastoral.\n\nVocê escolheu o plano ${PLAN_LABEL[planSlug] ?? planSlug}. Perfeito!\n\nVamos começar com o básico: **qual é o nome da sua igreja?** E me conta também em qual cidade e estado vocês estão.`,
+      content:   `Olá! Seja muito bem-vindo à Ekthos! 🙏\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja com atenção a cada detalhe da sua operação pastoral.\n\nVocê escolheu o plano ${PLAN_LABEL[planSlug] ?? planSlug}. Ótima escolha!\n\nVamos começar: qual é o nome completo da sua igreja? E me conta em qual cidade e estado vocês estão.`,
       timestamp: new Date(),
-    }
-    setMessages([greeting])
+    }])
   }, [planSlug])
+
+  // Pega initial do email do usuário para o avatar
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) setUserInitial(session.user.email[0].toUpperCase())
+    })
+  }, [])
 
   // Scroll automático
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
+  }, [messages, loading, streamingContent])
 
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim()
     if (!content || loading) return
 
     setInput('')
-    const userMsg: Message = { role: 'user', content, timestamp: new Date() }
-    setMessages(prev => [...prev, userMsg])
+    setMessages(prev => [...prev, { role: 'user', content, timestamp: new Date() }])
     setLoading(true)
     setStreamingContent('')
 
@@ -240,11 +372,7 @@ export default function Onboarding() {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message:    content,
-          session_id: sessionId,
-          plan_slug:  planSlug,
-        }),
+        body: JSON.stringify({ message: content, session_id: sessionId, plan_slug: planSlug }),
       })
 
       if (!res.ok || !res.body) throw new Error('Erro na comunicação com o consultor')
@@ -256,7 +384,6 @@ export default function Onboarding() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
         buffer = lines.pop() ?? ''
@@ -273,7 +400,6 @@ export default function Onboarding() {
               config?:      unknown
               message?:     string
             }
-
             if (evt.type === 'token' && evt.content) {
               finalText += evt.content
               setStreamingContent(prev => (prev ?? '') + evt.content!)
@@ -288,11 +414,10 @@ export default function Onboarding() {
             } else if (evt.type === 'error') {
               throw new Error(evt.message ?? 'Erro desconhecido')
             }
-          } catch { /* ignore JSON parse errors on individual lines */ }
+          } catch { /* ignore JSON parse errors */ }
         }
       }
 
-      // Commita mensagem do assistente no histórico
       setMessages(prev => [
         ...prev,
         { role: 'assistant', content: finalText, timestamp: new Date() },
@@ -300,11 +425,7 @@ export default function Onboarding() {
     } catch {
       setMessages(prev => [
         ...prev,
-        {
-          role:      'assistant',
-          content:   'Desculpe, tive uma dificuldade técnica. Por favor, tente novamente.',
-          timestamp: new Date(),
-        },
+        { role: 'assistant', content: 'Desculpe, tive uma dificuldade técnica. Por favor, tente novamente.', timestamp: new Date() },
       ])
     } finally {
       setStreamingContent(null)
@@ -314,19 +435,23 @@ export default function Onboarding() {
   }
 
   function updatePreviewFromConfig(config: unknown) {
-    const c = config as Record<string, unknown>
+    const c           = config as Record<string, unknown>
     const pipeline    = ((c.pipeline as Record<string, unknown>)?.stages as Array<Record<string, unknown>>)?.map(s => String(s.name)) ?? []
-    const departments = ((c.departments as Array<Record<string, unknown>>))?.map(d => String(d.name)) ?? []
+    const departments = (c.departments as Array<Record<string, unknown>>)?.map(d => String(d.name)) ?? []
     const cells       = ((c.cell_network as Record<string, unknown>)?.total_cells as number) ?? 0
     const agentSlugs  = [
       ...((c.agents as Record<string, unknown>)?.included_in_plan as string[] ?? []),
-      ...((c.agents as Record<string, unknown>)?.purchased       as string[] ?? []),
+      ...((c.agents as Record<string, unknown>)?.purchased         as string[] ?? []),
     ]
-    const agentLabels = agentSlugs.map(s => s.replace('agent-', '').replace(/-/g, ' '))
-    setPreview({ pipeline, departments, cells, agents: agentLabels })
+    setPreview({
+      pipeline,
+      departments,
+      cells,
+      agents: agentSlugs.map(s => s.replace('agent-', '').replace(/-/g, ' ')),
+    })
   }
 
-  async function startConfiguration() {
+  function startConfiguration() {
     if (!sessionId || !configJson) return
     navigate(`/onboarding/configuring?session_id=${sessionId}`)
   }
@@ -342,76 +467,61 @@ export default function Onboarding() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadLabel(file.name)
-    // Confirma o upload na conversa
     await sendMessage(`Fiz o upload do arquivo: ${file.name}`)
   }
 
   return (
-    <div className="h-screen flex flex-col" style={{ background: '#f9eedc' }}>
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-black/5">
+    <div className="h-screen flex flex-col" style={{ background: '#F9EEDC' }}>
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-black/[0.06] shrink-0">
         <div className="flex items-center gap-3">
-          <span className="font-display text-xl font-bold" style={{ color: '#e13500' }}>Ekthos</span>
-          <span className="text-xs text-gray-400 border border-gray-200 px-2 py-0.5 rounded-full">
-            Configuração da sua igreja
-          </span>
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-sm"
+            style={{ background: '#E13500' }}
+          >
+            E
+          </div>
+          <div className="leading-none">
+            <span className="font-semibold text-gray-900 text-sm">Ekthos</span>
+            <span className="text-gray-300 text-sm"> · </span>
+            <span className="text-gray-500 text-sm">Configuração da sua igreja</span>
+          </div>
         </div>
-        <span className="text-xs text-gray-400">
-          Plano: <strong className="text-gray-600">{PLAN_LABEL[planSlug] ?? planSlug}</strong>
+        <span
+          className="text-xs font-semibold px-3 py-1.5 rounded-full"
+          style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}
+        >
+          {PLAN_SHORT[planSlug] ?? planSlug}
         </span>
       </div>
 
-      {/* Progress bar */}
-      <ProgressBar blockIndex={blockIndex} />
+      {/* ── Progress dots ── */}
+      <ProgressDots blockIndex={blockIndex} />
 
-      {/* Layout principal */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* ── Layout principal ── */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
+
         {/* Chat */}
         <div className="flex-1 flex flex-col min-w-0">
+
           {/* Mensagens */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+          <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
             {messages.map((msg, i) => (
-              <MessageBubble key={i} msg={msg} />
+              <MessageBubble key={i} msg={msg} userInitial={userInitial} />
             ))}
 
-            {/* Streaming ou loading dots */}
             {loading && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot size={16} strokeWidth={1.75} style={{ color: '#e13500' }} />
-                </div>
-                {streamingContent !== null && streamingContent.length > 0 ? (
-                  <div className="max-w-[80%]">
-                    <div className="bg-white border border-black/5 rounded-2xl px-4 py-3 text-sm leading-relaxed text-gray-800">
-                      {streamingContent.split('\n').map((line, i, arr) => (
-                        <span key={i}>
-                          {line}
-                          {i < arr.length - 1 && <br />}
-                        </span>
-                      ))}
-                      <span className="inline-block w-0.5 h-4 bg-red-400 animate-pulse ml-0.5 align-middle" />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white border border-black/5 rounded-2xl px-4 py-3">
-                    <div className="flex gap-1 items-center h-5">
-                      {[0, 1, 2].map(i => (
-                        <div
-                          key={i}
-                          className="w-1.5 h-1.5 rounded-full animate-bounce"
-                          style={{ background: '#e13500', animationDelay: `${i * 150}ms` }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              streamingContent !== null && streamingContent.length > 0
+                ? <StreamingBubble content={streamingContent} />
+                : <LoadingDots />
             )}
+
             <div ref={messagesEndRef} />
           </div>
 
           {/* Widget dinâmico */}
-          {currentWidget && !isComplete && (
+          {currentWidget && !isComplete && !loading && (
             <DynamicWidget
               widget={currentWidget}
               onSelect={v => sendMessage(v)}
@@ -422,23 +532,24 @@ export default function Onboarding() {
 
           {/* Botão de finalizar */}
           {isComplete && (
-            <div className="px-6 py-4 bg-white border-t border-black/5">
+            <div className="px-6 py-4 bg-white border-t border-black/[0.06] shrink-0">
               <button
                 onClick={startConfiguration}
-                className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-semibold text-white transition-all"
-                style={{ background: '#e13500' }}
+                className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
+                style={{ background: '#E13500' }}
               >
+                <span>✦</span>
                 Configurar meu CRM agora
               </button>
               <p className="text-xs text-gray-400 text-center mt-2">
-                Leva cerca de 30 segundos. Você vai acompanhar tudo em tempo real.
+                Leva cerca de 30 segundos · Você vai acompanhar tudo em tempo real
               </p>
             </div>
           )}
 
           {/* Input */}
           {!isComplete && (
-            <div className="px-6 py-4 bg-white border-t border-black/5">
+            <div className="px-5 py-4 bg-white border-t border-black/[0.06] shrink-0">
               <div className="flex gap-3 items-end">
                 <textarea
                   ref={inputRef}
@@ -448,17 +559,19 @@ export default function Onboarding() {
                   placeholder="Escreva sua resposta... (Enter para enviar)"
                   rows={2}
                   disabled={loading}
-                  className="flex-1 resize-none px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all disabled:opacity-60"
+                  className="flex-1 resize-none px-4 py-3 rounded-2xl border text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-200 focus:border-transparent transition-all disabled:opacity-50"
+                  style={{ borderColor: '#E8E8E8', background: '#FAFAFA' }}
                 />
                 <button
                   onClick={() => sendMessage()}
                   disabled={loading || !input.trim()}
-                  className="w-11 h-11 flex items-center justify-center rounded-xl text-white transition-all disabled:opacity-40 shrink-0"
-                  style={{ background: '#e13500' }}
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-40 shrink-0"
+                  style={{ background: '#E13500' }}
                 >
                   {loading
                     ? <Loader size={18} strokeWidth={1.75} className="animate-spin" />
-                    : <Send   size={18} strokeWidth={1.75} />}
+                    : <Send   size={18} strokeWidth={1.75} />
+                  }
                 </button>
               </div>
             </div>
@@ -467,8 +580,8 @@ export default function Onboarding() {
 
         {/* Preview lateral */}
         <div
-          className="w-72 border-l border-black/5"
-          style={{ background: '#f9eedc' }}
+          className="w-72 border-l border-black/[0.06] hidden lg:block overflow-y-auto"
+          style={{ background: '#F9EEDC' }}
         >
           <OnboardingPreview preview={preview} />
         </div>
@@ -480,25 +593,23 @@ export default function Onboarding() {
 // ── Widget dinâmico ────────────────────────────────────────
 
 interface DynamicWidgetProps {
-  widget:     InputWidget
-  onSelect:   (value: string) => void
-  onUpload:   (e: React.ChangeEvent<HTMLInputElement>) => void
+  widget:      InputWidget
+  onSelect:    (value: string) => void
+  onUpload:    (e: React.ChangeEvent<HTMLInputElement>) => void
   uploadLabel: string | null
 }
 
 function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidgetProps) {
   const [selected, setSelected] = useState<string[]>([])
-  const [open,     setOpen]     = useState(false)
 
   if (widget.type === 'upload') {
     return (
-      <div className="px-6 py-3 bg-cream border-t border-black/5">
-        <label className="flex items-center gap-3 cursor-pointer bg-white rounded-xl border border-dashed border-gray-300 px-4 py-3 hover:border-red-300 transition-colors">
-          <Upload size={18} strokeWidth={1.75} style={{ color: '#e13500' }} />
-          <span className="text-sm text-gray-600">
-            {uploadLabel ?? widget.label}
-          </span>
-          <input type="file" className="hidden" accept=".png,.jpg,.svg,.pdf,.xlsx,.csv" onChange={onUpload} />
+      <div className="px-5 py-3 bg-white border-t border-black/[0.06]">
+        <label className="flex items-center gap-3 cursor-pointer rounded-2xl border border-dashed px-4 py-3 transition-colors hover:border-[#E13500]"
+          style={{ borderColor: '#DDD', background: '#FAFAFA' }}>
+          <Upload size={18} strokeWidth={1.75} style={{ color: '#E13500' }} />
+          <span className="text-sm text-gray-600">{uploadLabel ?? widget.label}</span>
+          <input type="file" className="hidden" accept=".png,.jpg,.svg,.pdf" onChange={onUpload} />
         </label>
       </div>
     )
@@ -506,28 +617,19 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
 
   if (widget.type === 'select' && widget.options) {
     return (
-      <div className="px-6 py-3 bg-cream border-t border-black/5">
-        <div className="relative">
-          <button
-            onClick={() => setOpen(!open)}
-            className="flex items-center justify-between w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-600"
-          >
-            {widget.label}
-            <ChevronDown size={14} strokeWidth={1.75} />
-          </button>
-          {open && (
-            <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-black/5 rounded-xl shadow-lg overflow-hidden z-10">
-              {widget.options.map(opt => (
-                <button
-                  key={opt}
-                  onClick={() => { setOpen(false); onSelect(opt) }}
-                  className="w-full text-left px-4 py-2.5 text-sm hover:bg-cream transition-colors"
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
+      <div className="px-5 py-3 bg-white border-t border-black/[0.06]">
+        <p className="text-xs text-gray-400 mb-2">{widget.label}</p>
+        <div className="flex flex-wrap gap-2">
+          {widget.options.map(opt => (
+            <button
+              key={opt}
+              onClick={() => onSelect(opt)}
+              className="text-sm px-4 py-2 rounded-xl border font-medium transition-all hover:border-[#E13500] hover:text-[#E13500]"
+              style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
+            >
+              {opt}
+            </button>
+          ))}
         </div>
       </div>
     )
@@ -535,8 +637,8 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
 
   if (widget.type === 'multiselect' && widget.options) {
     return (
-      <div className="px-6 py-3 bg-cream border-t border-black/5">
-        <p className="text-xs text-gray-500 mb-2">{widget.label}</p>
+      <div className="px-5 py-3 bg-white border-t border-black/[0.06]">
+        <p className="text-xs text-gray-400 mb-2.5">{widget.label}</p>
         <div className="flex flex-wrap gap-2">
           {widget.options.map(opt => (
             <button
@@ -547,12 +649,12 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
                   : [...selected, opt]
                 setSelected(next)
               }}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                selected.includes(opt)
-                  ? 'text-white border-transparent'
-                  : 'bg-white text-gray-600 border-gray-200'
-              }`}
-              style={selected.includes(opt) ? { background: '#e13500', borderColor: '#e13500' } : {}}
+              className="text-sm px-3.5 py-1.5 rounded-full border font-medium transition-all"
+              style={{
+                background:  selected.includes(opt) ? '#E13500' : '#FAFAFA',
+                color:       selected.includes(opt) ? 'white'   : '#5A5A5A',
+                borderColor: selected.includes(opt) ? '#E13500' : '#E8E8E8',
+              }}
             >
               {opt}
             </button>
@@ -560,7 +662,7 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
           {selected.length > 0 && (
             <button
               onClick={() => { onSelect(selected.join(', ')); setSelected([]) }}
-              className="text-xs px-3 py-1.5 rounded-full text-white"
+              className="text-sm px-4 py-1.5 rounded-full font-semibold text-white"
               style={{ background: '#2D7A4F' }}
             >
               Confirmar ({selected.length})
@@ -574,32 +676,24 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
   return null
 }
 
-// ── Detecta tipo de widget na mensagem ─────────────────────
+// ── Detecta widget na última mensagem ──────────────────────
 
 function detectWidget(text: string): InputWidget | null {
   const lower = text.toLowerCase()
-
   if (lower.includes('logo') || lower.includes('logotipo') || lower.includes('upload')) {
     return { type: 'upload', label: 'Clique para enviar o logo da igreja' }
   }
   if (lower.includes('ministério') || lower.includes('departamento')) {
     return {
       type:    'multiselect',
-      label:   'Selecione os departamentos (pode escolher vários)',
+      label:   'Selecione os ministérios (pode marcar vários)',
       options: ['Louvor', 'Mídia', 'Recepção', 'Infantil', 'Jovens', 'Mulheres', 'Homens', 'EBD', 'Ação Social', 'Missionário', 'Intercessão'],
     }
   }
-  if (lower.includes('plano') && (lower.includes('chamado') || lower.includes('missão') || lower.includes('avivamento'))) {
+  if (lower.includes('relat') && lower.includes('canal')) {
     return {
       type:    'select',
-      label:   'Escolha seu plano',
-      options: ['Chamado — R$389/mês', 'Missão — R$698/mês', 'Avivamento — R$1.015,67/mês'],
-    }
-  }
-  if ((lower.includes('relat') || lower.includes('frequência')) && lower.includes('canal')) {
-    return {
-      type:    'select',
-      label:   'Canal de preferência',
+      label:   'Canal de preferência para relatórios',
       options: ['WhatsApp', 'Email', 'PDF por email', 'Todos os canais'],
     }
   }
