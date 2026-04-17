@@ -377,12 +377,20 @@ Deno.serve(async (req: Request) => {
   // ── Salva answers + block_index ANTES do stream ────────
   // (fora do ReadableStream — erro aqui retorna 500 JSON, capturado pelo frontend)
   if (!isComplete) {
+    console.log('[v9] session_id:', session_id, typeof session_id)
+    console.log('[v9] answers:', JSON.stringify(answers))
+    console.log('[v9] questionBeingAnswered:', questionBeingAnswered?.id)
+    console.log('[v9] nextQ:', nextQ?.id)
+    console.log('[v9] questionNumber:', questionNumber, 'answeredCount:', answeredCount, 'isComplete:', isComplete)
+    console.log('[v9] user.id:', user.id)
     console.log(`[consultant] pre-save: session=${session_id} answered=${questionBeingAnswered?.id} next=${nextQ?.id} answers_keys=${Object.keys(answers).join(',')}`)
     const { data: saved, error: preSaveError } = await supabase
       .from('onboarding_sessions')
       .update({ answers, block_index: questionNumber })
       .eq('id', session_id)
       .select('id, block_index')
+
+    console.log('[v9] update result:', JSON.stringify({ data: saved, error: preSaveError }))
 
     if (preSaveError) {
       console.error('[consultant] PRE-SAVE error:', preSaveError.message, preSaveError.code)
