@@ -203,8 +203,14 @@ async function runStep(
   switch (stepNum) {
     // ── 1. Cria tenant ─────────────────────────────────────
     case 1: {
-      const branding = (tenant.branding as Record<string, string>) ?? {}
-      const slug = slugify((tenant.slug as string) ?? (tenant.name as string) ?? 'igreja')
+      const slug           = slugify((tenant.slug as string) ?? (tenant.name as string) ?? 'igreja')
+      const primaryColor   = (tenant.primary_color   as string | null) ?? '#e13500'
+      const secondaryColor = (tenant.secondary_color as string | null) ?? '#670000'
+      const enabledModules = (tenant.enabled_modules as Record<string, boolean> | null) ?? {
+        pessoas: true, pipeline: true, ministerios: true, financeiro: true, agenda: true,
+        celulas: false, voluntarios: false, escalas: false, gabinete: false,
+      }
+
       const { error } = await supabase.from('churches').upsert({
         name:               tenant.name,
         slug,
@@ -213,8 +219,12 @@ async function runStep(
         city:               tenant.city,
         state:              tenant.state,
         timezone:           (tenant.timezone as string) ?? 'America/Sao_Paulo',
-        logo_url:           tenant.logo_url,
-        branding:           { primary_color: branding.primary_color ?? '#e13500', secondary_color: branding.secondary_color ?? '#670000' },
+        logo_url:           tenant.logo_url ?? null,
+        // Salva nas colunas diretas (lidas pelo useChurch) E no JSONB branding (compatibilidade)
+        primary_color:      primaryColor,
+        secondary_color:    secondaryColor,
+        branding:           { primary_color: primaryColor, secondary_color: secondaryColor },
+        enabled_modules:    enabledModules,
         onboarding_config:  config,
       }, { onConflict: 'slug' })
       if (error) throw error
