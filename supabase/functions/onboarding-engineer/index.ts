@@ -586,7 +586,34 @@ async function runStep(
     // ── 20. Finaliza ───────────────────────────────────────
     case 20: {
       if (!churchId) break
-      await supabase.from('onboarding_sessions').update({ status: 'completed' }).eq('id', sessionId)
+
+      // Determina agentes recomendados: eligible-tier não ativados ainda
+      const configAgents = (config.agents as Record<string, unknown>) ?? {}
+      const alreadyActivated = new Set<string>([
+        ...((configAgents.free             as string[]) ?? []),
+        ...((configAgents.included_in_plan as string[]) ?? []),
+        ...((configAgents.purchased        as string[]) ?? []),
+      ])
+
+      const { data: eligibleAgents } = await supabase
+        .from('agents_catalog')
+        .select('slug')
+        .eq('pricing_tier', 'eligible')
+        .eq('active', true)
+
+      const recommendedAgents = (eligibleAgents ?? [])
+        .map(a => a.slug as string)
+        .filter(slug => !alreadyActivated.has(slug))
+
+      await supabase
+        .from('onboarding_sessions')
+        .update({
+          status:              'completed',
+          completed_at:        new Date().toISOString(),
+          recommended_agents:  recommendedAgents,
+        })
+        .eq('id', sessionId)
+
       // church.status atualizado no loop principal após todos os steps
       break
     }

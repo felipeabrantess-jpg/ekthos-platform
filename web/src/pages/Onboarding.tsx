@@ -183,15 +183,16 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const planSlug = searchParams.get('plan') ?? 'chamado'
 
-  const [messages,    setMessages]    = useState<Message[]>([])
-  const [input,       setInput]       = useState('')
-  const [loading,     setLoading]     = useState(false)
-  const [sessionId,   setSessionId]   = useState<string | null>(null)
-  const [blockIndex,  setBlockIndex]  = useState(1)
-  const [isComplete,  setIsComplete]  = useState(false)
-  const [configJson,  setConfigJson]  = useState<unknown>(null)
-  const [preview,     setPreview]     = useState<PreviewState>({ pipeline: [], departments: [], agents: [], cells: 0 })
-  const [uploadLabel, setUploadLabel] = useState<string | null>(null)
+  const [messages,         setMessages]         = useState<Message[]>([])
+  const [input,            setInput]            = useState('')
+  const [loading,          setLoading]          = useState(false)
+  const [sessionId,        setSessionId]        = useState<string | null>(null)
+  const [blockIndex,       setBlockIndex]       = useState(1)
+  const [isComplete,       setIsComplete]       = useState(false)
+  const [configJson,       setConfigJson]       = useState<unknown>(null)
+  const [preview,          setPreview]          = useState<PreviewState>({ pipeline: [], departments: [], agents: [], cells: 0 })
+  const [uploadLabel,      setUploadLabel]      = useState<string | null>(null)
+  const [streamingContent, setStreamingContent] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef       = useRef<HTMLTextAreaElement>(null)
@@ -223,6 +224,9 @@ export default function Onboarding() {
     const userMsg: Message = { role: 'user', content, timestamp: new Date() }
     setMessages(prev => [...prev, userMsg])
     setLoading(true)
+    setStreamingContent('')
+
+    let finalText = ''
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -243,32 +247,57 @@ export default function Onboarding() {
         }),
       })
 
-      if (!res.ok) throw new Error('Erro na comunicação com o consultor')
+      if (!res.ok || !res.body) throw new Error('Erro na comunicação com o consultor')
 
-      const data = await res.json() as {
-        reply:       string
-        session_id:  string
-        block_index: number
-        config?:     unknown
-        is_complete: boolean
+      const reader  = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer    = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const evt = JSON.parse(line.slice(6)) as {
+              type:         string
+              content?:     string
+              session_id?:  string
+              block_index?: number
+              is_complete?: boolean
+              config?:      unknown
+              message?:     string
+            }
+
+            if (evt.type === 'token' && evt.content) {
+              finalText += evt.content
+              setStreamingContent(prev => (prev ?? '') + evt.content!)
+            } else if (evt.type === 'done') {
+              if (evt.session_id)  setSessionId(evt.session_id)
+              if (evt.block_index) setBlockIndex(evt.block_index)
+              if (evt.is_complete && evt.config) {
+                setIsComplete(true)
+                setConfigJson(evt.config)
+                updatePreviewFromConfig(evt.config)
+              }
+            } else if (evt.type === 'error') {
+              throw new Error(evt.message ?? 'Erro desconhecido')
+            }
+          } catch { /* ignore JSON parse errors on individual lines */ }
+        }
       }
 
-      setSessionId(data.session_id)
-      setBlockIndex(data.block_index)
-
-      const assistantMsg: Message = {
-        role:      'assistant',
-        content:   data.reply,
-        timestamp: new Date(),
-      }
-      setMessages(prev => [...prev, assistantMsg])
-
-      if (data.is_complete && data.config) {
-        setIsComplete(true)
-        setConfigJson(data.config)
-        updatePreviewFromConfig(data.config)
-      }
-    } catch (err) {
+      // Commita mensagem do assistente no histórico
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: finalText, timestamp: new Date() },
+      ])
+    } catch {
       setMessages(prev => [
         ...prev,
         {
@@ -278,6 +307,7 @@ export default function Onboarding() {
         },
       ])
     } finally {
+      setStreamingContent(null)
       setLoading(false)
       inputRef.current?.focus()
     }
@@ -344,23 +374,37 @@ export default function Onboarding() {
               <MessageBubble key={i} msg={msg} />
             ))}
 
-            {/* Loading */}
+            {/* Streaming ou loading dots */}
             {loading && (
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0 mt-0.5">
                   <Bot size={16} strokeWidth={1.75} style={{ color: '#e13500' }} />
                 </div>
-                <div className="bg-white border border-black/5 rounded-2xl px-4 py-3">
-                  <div className="flex gap-1 items-center h-5">
-                    {[0, 1, 2].map(i => (
-                      <div
-                        key={i}
-                        className="w-1.5 h-1.5 rounded-full animate-bounce"
-                        style={{ background: '#e13500', animationDelay: `${i * 150}ms` }}
-                      />
-                    ))}
+                {streamingContent !== null && streamingContent.length > 0 ? (
+                  <div className="max-w-[80%]">
+                    <div className="bg-white border border-black/5 rounded-2xl px-4 py-3 text-sm leading-relaxed text-gray-800">
+                      {streamingContent.split('\n').map((line, i, arr) => (
+                        <span key={i}>
+                          {line}
+                          {i < arr.length - 1 && <br />}
+                        </span>
+                      ))}
+                      <span className="inline-block w-0.5 h-4 bg-red-400 animate-pulse ml-0.5 align-middle" />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="bg-white border border-black/5 rounded-2xl px-4 py-3">
+                    <div className="flex gap-1 items-center h-5">
+                      {[0, 1, 2].map(i => (
+                        <div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full animate-bounce"
+                          style={{ background: '#e13500', animationDelay: `${i * 150}ms` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <div ref={messagesEndRef} />
