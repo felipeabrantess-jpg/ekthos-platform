@@ -343,7 +343,11 @@ export default function Onboarding() {
         body: JSON.stringify({ message: content, session_id: sessionId, plan_slug: planSlug }),
       })
 
-      if (!res.ok || !res.body) throw new Error('Erro na comunicação com o consultor')
+      if (!res.ok || !res.body) {
+        let errMsg = 'Erro na comunicação com o consultor'
+        try { const b = await res.json() as { error?: string }; if (b.error) errMsg = b.error } catch { /* ignore */ }
+        throw new Error(errMsg)
+      }
 
       const reader  = res.body.getReader()
       const decoder = new TextDecoder()
@@ -403,7 +407,10 @@ export default function Onboarding() {
             } else if (evt.type === 'error') {
               throw new Error(evt.message ?? 'Erro desconhecido')
             }
-          } catch { /* ignore JSON parse errors */ }
+          } catch (parseErr) {
+            // Só ignora erros de parse de JSON — outros erros (ex: tipo 'error' do backend) devem propagar
+            if (!(parseErr instanceof SyntaxError)) throw parseErr
+          }
         }
       }
 
