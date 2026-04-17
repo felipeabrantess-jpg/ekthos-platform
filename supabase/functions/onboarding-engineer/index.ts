@@ -7,6 +7,7 @@
 // Body: { session_id: string }
 // Returns: { success: boolean, steps_done: number, steps_failed: string[] }
 //
+// Deploy: verify_jwt=false (ES256 compat) — auth manual via auth.getUser(token)
 // Executa 20 steps sequenciais de configuração do tenant.
 // Atualiza onboarding_steps após cada step (Realtime no frontend).
 // Tempo alvo: 25-30 segundos total.
