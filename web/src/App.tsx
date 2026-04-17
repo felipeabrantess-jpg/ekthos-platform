@@ -42,6 +42,9 @@ const BillingPage = lazy(() =>
 const UsersPage = lazy(() =>
   import('@/pages/settings/Users').then(m => ({ default: m.Users }))
 )
+const BrandingPage = lazy(() =>
+  import('@/pages/settings/Branding').then(m => ({ default: m.Branding }))
+)
 
 // Admin cockpit
 const AdminCockpit  = lazy(() => import('@/pages/admin/Cockpit'))
@@ -195,8 +198,9 @@ export default function App() {
 
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><SettingsLayoutPage /></Suspense></ErrorBoundary>}>
               <Route index element={<Navigate to="billing" replace />} />
-              <Route path="billing" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BillingPage /></Suspense></ErrorBoundary>} />
-              <Route path="users"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsersPage /></Suspense></ErrorBoundary>} />
+              <Route path="billing"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BillingPage /></Suspense></ErrorBoundary>} />
+              <Route path="users"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsersPage /></Suspense></ErrorBoundary>} />
+              <Route path="branding" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BrandingPage /></Suspense></ErrorBoundary>} />
             </Route>
           </Route>
 

@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
+import { useChurch } from '@/hooks/useChurch'
 
 interface ImpersonatingState {
   church_id:   string
@@ -35,6 +36,19 @@ function ImpersonateBanner({ state, onExit }: {
 export default function Layout() {
   const navigate = useNavigate()
   const [impersonating, setImpersonating] = useState<ImpersonatingState | null>(null)
+  const { data: church } = useChurch()
+
+  // Inject church CSS variables globally so all components can use them
+  useEffect(() => {
+    const primary   = church?.primary_color   ?? '#E13500'
+    const secondary = church?.secondary_color ?? '#670000'
+    document.documentElement.style.setProperty('--church-primary',   primary)
+    document.documentElement.style.setProperty('--church-secondary', secondary)
+    return () => {
+      document.documentElement.style.removeProperty('--church-primary')
+      document.documentElement.style.removeProperty('--church-secondary')
+    }
+  }, [church?.primary_color, church?.secondary_color])
 
   useEffect(() => {
     const raw = localStorage.getItem('impersonating')
