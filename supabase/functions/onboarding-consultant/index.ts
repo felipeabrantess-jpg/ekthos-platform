@@ -368,6 +368,27 @@ Deno.serve(async (req: Request) => {
   // Adiciona mensagem do usuário ao histórico
   messages.push({ role: 'user', content: message.trim() })
 
+  // ── Salva answers + block_index ANTES do stream ────────
+  // (fora do ReadableStream — erro aqui retorna 500 JSON, capturado pelo frontend)
+  if (!isComplete) {
+    console.log(`[consultant] pre-save: session=${session_id} answered=${questionBeingAnswered?.id} next=${nextQ?.id} answers_keys=${Object.keys(answers).join(',')}`)
+    const { data: saved, error: preSaveError } = await supabase
+      .from('onboarding_sessions')
+      .update({ answers, block_index: questionNumber })
+      .eq('id', session_id)
+      .select('id, block_index')
+
+    if (preSaveError) {
+      console.error('[consultant] PRE-SAVE error:', preSaveError.message, preSaveError.code)
+      return jsonErr(`Erro ao salvar: ${preSaveError.message} [${preSaveError.code}]`, 500)
+    }
+    if (!saved || saved.length === 0) {
+      console.error('[consultant] PRE-SAVE 0 rows — session_id not found:', session_id, 'user_id:', user.id)
+      return jsonErr(`Sessão não encontrada para salvar: ${session_id}`, 500)
+    }
+    console.log(`[consultant] pre-save OK: rows=${saved.length} block_index=${saved[0]?.block_index}`)
+  }
+
   // ── SSE stream ─────────────────────────────────────────
   const readableStream = new ReadableStream({
     async start(controller) {
@@ -396,19 +417,9 @@ Deno.serve(async (req: Request) => {
           assistantText += questionChunk
           controller.enqueue(sseData({ type: 'token', content: questionChunk }))
 
-          // Salva turno no banco
+          // Atualiza messages (não-crítico — resposta já foi salva antes do stream)
           messages.push({ role: 'assistant', content: assistantText })
-          console.log(`[consultant] saving: questionAnswered=${questionBeingAnswered?.id} nextQ=${nextQ.id} answeredCount=${answeredCount} session=${session_id}`)
-          const { error: updateError } = await supabase.from('onboarding_sessions').update({
-            messages,
-            answers,
-            block_index: questionNumber,
-          }).eq('id', session_id)
-
-          if (updateError) {
-            console.error('[consultant] UPDATE failed:', updateError.message, updateError.code)
-            throw new Error(`Erro ao salvar sessão: ${updateError.message}`)
-          }
+          await supabase.from('onboarding_sessions').update({ messages }).eq('id', session_id)
 
           controller.enqueue(sseData({
             type:            'done',
