@@ -1,6 +1,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, AlertCircle, ArrowRight, Circle } from 'lucide-react'
+import {
+  CheckCircle2, AlertCircle, ArrowRight, Circle,
+  Bot, Sparkles, MapPin, Users, GitBranch, Network,
+  Building2,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ──────────────────────────────────────────────────
@@ -10,6 +14,21 @@ interface Step {
   label:       string
   status:      'pending' | 'running' | 'done' | 'failed' | 'skipped'
   error_msg?:  string | null
+}
+
+interface ConfigSummary {
+  churchName:    string
+  city:          string
+  state:         string
+  ministries:    string[]
+  cells:         number
+  pipeline:      string[]
+  primaryColor:  string
+  secondaryColor: string
+  logoUrl:       string | null
+  agentsFree:    string[]
+  agentsIncluded: string[]
+  agentsRecommended: string[]
 }
 
 // ── Labels por step ────────────────────────────────────────
@@ -37,6 +56,23 @@ const STEP_LABELS: Record<number, string> = {
   20: 'Finalizando configuração',
 }
 
+// ── Mapa slug → nome legível ───────────────────────────────
+const AGENT_NAMES: Record<string, string> = {
+  'agent-suporte':       'Suporte 24h',
+  'agent-onboarding':   'Onboarding de Líderes',
+  'agent-cadastro':     'Cadastro Inteligente',
+  'agent-conteudo':     'Conteúdo Pastoral',
+  'agent-whatsapp':     'WhatsApp Pastoral',
+  'agent-financeiro':   'Financeiro Pastoral',
+  'agent-metricas':     'Métricas Pastorais',
+  'agent-reengajamento':'Reengajamento Pastoral',
+  'agent-agenda':       'Agenda Pastoral',
+  'agent-escalas':      'Escalas',
+  'agent-relatorios':   'Relatórios',
+  'agent-cuidado':      'Cuidado Pastoral',
+  'agent-funil':        'Funil e Consolidação',
+}
+
 // ── Step row ───────────────────────────────────────────────
 
 function StepRow({ step }: { step: Step }) {
@@ -53,7 +89,6 @@ function StepRow({ step }: { step: Step }) {
         : ''
       }`}
     >
-      {/* Ícone */}
       <div className="w-6 h-6 flex items-center justify-center shrink-0">
         {isDone && (
           <span className="check-pop">
@@ -74,7 +109,6 @@ function StepRow({ step }: { step: Step }) {
         )}
       </div>
 
-      {/* Label */}
       <span
         className={`text-sm flex-1 transition-colors duration-300 ${
           isDone    ? 'text-gray-400'
@@ -97,7 +131,6 @@ function StepRow({ step }: { step: Step }) {
         )}
       </span>
 
-      {/* Número */}
       <span
         className={`text-[10px] font-bold tabular-nums transition-colors shrink-0 ${
           isDone ? 'text-emerald-400' : isPending ? 'text-gray-300' : ''
@@ -133,6 +166,188 @@ function TipRotator() {
   )
 }
 
+// ── Tela de conclusão rica ─────────────────────────────────
+
+function CompletionScreen({
+  summary,
+  onEnter,
+}: {
+  summary: ConfigSummary
+  onEnter: () => void
+}) {
+  return (
+    <div className="px-6 pb-6 pt-5 border-t border-black/[0.06] fade-slide-up space-y-5">
+
+      {/* Ícone + título */}
+      <div className="flex flex-col items-center text-center">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center mb-4 check-pop"
+          style={{ background: '#F0FDF4' }}
+        >
+          <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+        </div>
+        <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>
+          Bem-vindo à Ekthos!
+        </h3>
+        <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+          Seu CRM está configurado e personalizado para a operação pastoral da sua igreja.
+        </p>
+      </div>
+
+      {/* Identidade visual */}
+      <div
+        className="rounded-2xl p-4 flex items-center gap-4"
+        style={{ background: '#F9EEDC' }}
+      >
+        {summary.logoUrl ? (
+          <img
+            src={summary.logoUrl}
+            alt={summary.churchName}
+            className="h-10 w-auto object-contain rounded shrink-0"
+          />
+        ) : (
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-base"
+            style={{ background: summary.primaryColor }}
+          >
+            {summary.churchName.charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="font-semibold text-gray-900 text-sm truncate">{summary.churchName}</p>
+          {(summary.city || summary.state) && (
+            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <MapPin size={10} strokeWidth={2} />
+              {[summary.city, summary.state].filter(Boolean).join(', ')}
+            </p>
+          )}
+        </div>
+        {/* Paleta de cores */}
+        <div className="flex gap-1 ml-auto shrink-0">
+          <div
+            className="w-5 h-5 rounded-full border border-black/10"
+            style={{ background: summary.primaryColor }}
+            title={summary.primaryColor}
+          />
+          <div
+            className="w-5 h-5 rounded-full border border-black/10"
+            style={{ background: summary.secondaryColor }}
+            title={summary.secondaryColor}
+          />
+        </div>
+      </div>
+
+      {/* Resumo configurado */}
+      <div className="grid grid-cols-2 gap-2">
+        {summary.ministries.length > 0 && (
+          <div className="rounded-xl border border-black/[0.06] bg-white p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Building2 size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Ministérios</p>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{summary.ministries.length}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+              {summary.ministries.slice(0, 2).join(', ')}{summary.ministries.length > 2 ? '…' : ''}
+            </p>
+          </div>
+        )}
+        {summary.cells > 0 && (
+          <div className="rounded-xl border border-black/[0.06] bg-white p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Network size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Células</p>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{summary.cells}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">estruturadas</p>
+          </div>
+        )}
+        {summary.pipeline.length > 0 && (
+          <div className={`rounded-xl border border-black/[0.06] bg-white p-3 ${summary.ministries.length === 0 && summary.cells === 0 ? 'col-span-2' : ''}`}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <GitBranch size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Pipeline</p>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{summary.pipeline.length}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">etapas de discipulado</p>
+          </div>
+        )}
+        <div className="rounded-xl border border-black/[0.06] bg-white p-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Users size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Agentes</p>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">
+            {summary.agentsFree.length + summary.agentsIncluded.length}
+          </p>
+          <p className="text-[11px] text-gray-400 mt-0.5">ativos no CRM</p>
+        </div>
+      </div>
+
+      {/* Agentes ativos */}
+      {(summary.agentsFree.length > 0 || summary.agentsIncluded.length > 0) && (
+        <div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+            Agentes ativos
+          </p>
+          <div className="space-y-1.5">
+            {[...summary.agentsFree, ...summary.agentsIncluded].map(slug => (
+              <div
+                key={slug}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100"
+              >
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#E13500' }}>
+                  <Bot size={13} strokeWidth={1.75} className="text-white" />
+                </div>
+                <span className="text-sm text-gray-700 flex-1">
+                  {AGENT_NAMES[slug] ?? slug}
+                </span>
+                <CheckCircle2 size={14} strokeWidth={2} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Agentes recomendados */}
+      {summary.agentsRecommended.length > 0 && (
+        <div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+            Recomendados para você
+          </p>
+          <div className="space-y-1.5">
+            {summary.agentsRecommended.map(slug => (
+              <div
+                key={slug}
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-black/[0.07]"
+              >
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(225,53,0,0.08)' }}>
+                  <Sparkles size={12} strokeWidth={1.75} style={{ color: '#E13500' }} />
+                </div>
+                <span className="text-sm text-gray-600 flex-1">
+                  {AGENT_NAMES[slug] ?? slug}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-2 text-center">
+            Ative-os em <strong>Agentes IA</strong> após entrar no CRM.
+          </p>
+        </div>
+      )}
+
+      {/* CTA */}
+      <button
+        onClick={onEnter}
+        className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
+        style={{ background: '#E13500' }}
+      >
+        Entrar no CRM
+        <ArrowRight size={18} strokeWidth={2} />
+      </button>
+    </div>
+  )
+}
+
 // ── Página principal ───────────────────────────────────────
 
 export default function OnboardingConfiguring() {
@@ -144,6 +359,7 @@ export default function OnboardingConfiguring() {
   const [started,     setStarted]     = useState(false)
   const [isDone,      setIsDone]      = useState(false)
   const [engineError, setEngineError] = useState('')
+  const [summary,     setSummary]     = useState<ConfigSummary | null>(null)
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   // Placeholders enquanto o engineer não chegou
@@ -217,15 +433,52 @@ export default function OnboardingConfiguring() {
         throw new Error(err.error ?? 'Erro no engenheiro')
       }
 
+      // Carrega summary da sessão para a tela de conclusão
+      await loadSummary()
       setIsDone(true)
     } catch (err: unknown) {
       setEngineError((err as { message?: string }).message ?? 'Erro desconhecido')
     }
   }
 
+  async function loadSummary() {
+    if (!sessionId) return
+    try {
+      const { data } = await supabase
+        .from('onboarding_sessions')
+        .select('config_json, recommended_agents')
+        .eq('id', sessionId)
+        .single()
+
+      if (!data?.config_json) return
+      const c       = data.config_json as Record<string, unknown>
+      const tenant  = (c.tenant  as Record<string, unknown>) ?? {}
+      const agents  = (c.agents  as Record<string, unknown>) ?? {}
+      const pipeline = (c.pipeline as Record<string, unknown>) ?? {}
+      const depts    = (c.departments as Array<{ name: string }>) ?? []
+      const cells    = ((c.cell_network as Record<string, unknown>)?.total_cells as number) ?? 0
+
+      setSummary({
+        churchName:        (tenant.name  as string) ?? '',
+        city:              (tenant.city  as string) ?? '',
+        state:             (tenant.state as string) ?? '',
+        logoUrl:           (tenant.logo_url      as string | null) ?? null,
+        primaryColor:      (tenant.primary_color  as string) ?? '#E13500',
+        secondaryColor:    (tenant.secondary_color as string) ?? '#670000',
+        ministries:        depts.map(d => d.name),
+        cells,
+        pipeline:          ((pipeline.stages as Array<{ name: string }>) ?? []).map(s => s.name),
+        agentsFree:        (agents.free              as string[]) ?? [],
+        agentsIncluded:    (agents.included_in_plan  as string[]) ?? [],
+        agentsRecommended: (data.recommended_agents  as string[]) ?? [],
+      })
+    } catch {
+      // summary falha silenciosamente — botão "Entrar no CRM" ainda funciona
+    }
+  }
+
   function goToDashboard() {
-    // Hard reload para que useAuth re-inicialize com o novo churchStatus = 'configured'
-    window.location.href = '/dashboard'
+    navigate('/dashboard')
   }
 
   const doneCount   = steps.filter(s => s.status === 'done').length
@@ -234,7 +487,6 @@ export default function OnboardingConfiguring() {
 
   return (
     <>
-      {/* Animações CSS */}
       <style>{`
         @keyframes checkPop {
           0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
@@ -258,7 +510,7 @@ export default function OnboardingConfiguring() {
         className="min-h-screen flex flex-col items-center justify-start py-12 px-4"
         style={{ background: '#F9EEDC' }}
       >
-        {/* Logo / Header */}
+        {/* Header */}
         <div className="text-center mb-10">
           <div
             className="inline-flex items-center justify-center w-12 h-12 rounded-2xl font-bold text-xl text-white mb-5 shadow-sm"
@@ -318,8 +570,13 @@ export default function OnboardingConfiguring() {
             ))}
           </div>
 
-          {/* Estado de conclusão */}
-          {isDone && !engineError && (
+          {/* Conclusão rica */}
+          {isDone && !engineError && summary && (
+            <CompletionScreen summary={summary} onEnter={goToDashboard} />
+          )}
+
+          {/* Fallback: conclusão sem summary (raro) */}
+          {isDone && !engineError && !summary && (
             <div className="px-6 pb-6 pt-5 border-t border-black/[0.06] fade-slide-up">
               <div className="flex flex-col items-center text-center mb-6">
                 <div
@@ -328,10 +585,7 @@ export default function OnboardingConfiguring() {
                 >
                   <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
                 </div>
-                <h3
-                  className="text-xl font-bold text-gray-900 mb-1"
-                  style={{ fontFamily: 'Georgia, serif' }}
-                >
+                <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>
                   Bem-vindo à Ekthos!
                 </h3>
                 <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
@@ -343,7 +597,7 @@ export default function OnboardingConfiguring() {
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
                 style={{ background: '#E13500' }}
               >
-                Ir para o Dashboard
+                Entrar no CRM
                 <ArrowRight size={18} strokeWidth={2} />
               </button>
             </div>
