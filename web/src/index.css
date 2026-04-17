@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    /* Church branding — overridden at runtime via Layout.tsx useEffect */
+    --church-primary:   #E13500;
+    --church-secondary: #670000;
+
     --ekthos-cream:       #f9eedc;
     --ekthos-cream-light: #FDF6EB;
     --ekthos-cream-dark:  #EDE0CC;

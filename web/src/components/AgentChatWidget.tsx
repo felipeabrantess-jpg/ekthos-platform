@@ -1,9 +1,26 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Send, Bot, Trash2, Loader, MessageCircle } from 'lucide-react'
+import {
+  X, Send, Bot, Trash2, Loader,
+  MessageCircle, GraduationCap, UserPlus, PenTool,
+  DollarSign, MessageSquare, Heart, BarChart3, Calendar,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlan } from '@/hooks/usePlan'
+
+// ── Mapeamento slug → ícone ─────────────────────────────────
+const AGENT_ICON_MAP: Record<string, JSX.Element> = {
+  'agent-suporte':        <MessageCircle  size={16} strokeWidth={1.75} />,
+  'agent-onboarding':    <GraduationCap  size={16} strokeWidth={1.75} />,
+  'agent-cadastro':      <UserPlus       size={16} strokeWidth={1.75} />,
+  'agent-conteudo':      <PenTool        size={16} strokeWidth={1.75} />,
+  'agent-financeiro':    <DollarSign     size={16} strokeWidth={1.75} />,
+  'agent-whatsapp':      <MessageSquare  size={16} strokeWidth={1.75} />,
+  'agent-reengajamento': <Heart          size={16} strokeWidth={1.75} />,
+  'agent-metricas':      <BarChart3      size={16} strokeWidth={1.75} />,
+  'agent-agenda':        <Calendar       size={16} strokeWidth={1.75} />,
+}
 
 // ── Tipos ───────────────────────────────────────────────────
 
@@ -404,7 +421,7 @@ export function AgentChatButton({ agentSlug, agentName }: AgentChatButtonProps) 
           if (!isOpen) e.currentTarget.style.background = 'transparent'
         }}
       >
-        <MessageCircle size={16} strokeWidth={1.75} />
+        {AGENT_ICON_MAP[agentSlug] ?? <MessageCircle size={16} strokeWidth={1.75} />}
         <span className="flex-1 text-left">{agentName}</span>
         {/* Ponto de status: verde = conectado (ativo no banco), cinza = inativo */}
         <span

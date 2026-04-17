@@ -9,6 +9,7 @@ import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
 import { AgentChatButton } from './AgentChatWidget'
 import { usePlan } from '@/hooks/usePlan'
+import { useChurch } from '@/hooks/useChurch'
 
 interface NavItem {
   path: string
@@ -35,6 +36,7 @@ export default function Sidebar() {
   const { user, role } = useAuth()
   const logout = useLogout()
   const { allAgents, hasAgent, isLoading: planLoading } = usePlan()
+  const { data: church } = useChurch()
 
   // Agentes ativos para esta subscription, ordenados: free primeiro, depois always_paid
   const sidebarAgents = allAgents
@@ -62,9 +64,20 @@ export default function Sidebar() {
     <aside className="w-64 flex flex-col h-screen sticky top-0 shrink-0" style={{ background: '#161616' }}>
       {/* Logo + Notificacoes */}
       <div className="px-5 py-5 flex items-center justify-between border-b border-white/5">
-        <span className="font-display text-xl font-bold" style={{ color: '#e13500' }}>
-          Ekthos
-        </span>
+        {church?.logo_url ? (
+          <img
+            src={church.logo_url}
+            alt={church.name}
+            className="h-8 w-auto object-contain max-w-[130px]"
+          />
+        ) : (
+          <span
+            className="font-display text-xl font-bold truncate max-w-[130px]"
+            style={{ color: 'var(--church-primary, #e13500)' }}
+          >
+            {church?.name ?? 'Ekthos'}
+          </span>
+        )}
         <NotificationBell />
       </div>
 
@@ -77,9 +90,12 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 border-l-[3px] ${
                 isActive
-                  ? 'text-white border-[#e13500] bg-white/[0.06]'
+                  ? 'text-white bg-white/[0.06]'
                   : 'text-white/50 border-transparent hover:text-white/80 hover:bg-white/[0.04]'
               }`
+            }
+            style={({ isActive }) =>
+              isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}
             }
           >
             {item.icon}
@@ -119,7 +135,7 @@ export default function Sidebar() {
         <div className="flex items-center gap-3 px-3 py-2">
           <div
             className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
-            style={{ background: '#e13500', color: '#fff' }}
+            style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
           >
             {initial}
           </div>
