@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle, Clock, AlertCircle, ArrowRight } from 'lucide-react'
+import { CheckCircle2, AlertCircle, ArrowRight, Circle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ──────────────────────────────────────────────────
@@ -12,71 +12,73 @@ interface Step {
   error_msg?:  string | null
 }
 
-// ── Labels e ícones ────────────────────────────────────────
+// ── Labels por step ────────────────────────────────────────
 
-const STEP_EMOJIS: Record<number, string> = {
-  1:  'Criando sua igreja...',
-  2:  'Registrando sedes...',
-  3:  'Configurando caminho de discipulado...',
-  4:  'Criando campos personalizados...',
-  5:  'Configurando categorias...',
-  6:  'Criando ministérios...',
-  7:  'Estruturando rede de células...',
-  8:  'Cadastrando equipe...',
-  9:  'Configurando alertas...',
-  10: 'Ativando Agente Suporte (grátis)...',
-  11: 'Ativando agentes do plano...',
-  12: 'Processando agentes adicionais...',
-  13: 'Criando automações...',
-  14: 'Montando dashboard...',
-  15: 'Configurando calendário de cultos...',
-  16: 'Criando templates de mensagem...',
-  17: 'Configurando relatórios automáticos...',
-  18: 'Preparando importação de dados...',
-  19: 'Definindo metas pastorais...',
-  20: 'Finalizando configuração...',
+const STEP_LABELS: Record<number, string> = {
+  1:  'Criando sua igreja',
+  2:  'Registrando sedes',
+  3:  'Configurando caminho de discipulado',
+  4:  'Criando campos personalizados',
+  5:  'Configurando categorias',
+  6:  'Criando ministérios',
+  7:  'Estruturando rede de células',
+  8:  'Cadastrando equipe',
+  9:  'Configurando alertas',
+  10: 'Ativando Agente Suporte (grátis)',
+  11: 'Ativando agentes do plano',
+  12: 'Processando agentes adicionais',
+  13: 'Criando automações pastorais',
+  14: 'Montando dashboard',
+  15: 'Configurando calendário de cultos',
+  16: 'Criando templates de mensagem',
+  17: 'Configurando relatórios automáticos',
+  18: 'Preparando importação de dados',
+  19: 'Definindo metas pastorais',
+  20: 'Finalizando configuração',
 }
 
-// ── Componente de step ─────────────────────────────────────
+// ── Step row ───────────────────────────────────────────────
 
 function StepRow({ step }: { step: Step }) {
   const isRunning = step.status === 'running'
   const isDone    = step.status === 'done'
   const isFailed  = step.status === 'failed'
-  const isPending = step.status === 'pending'
+  const isPending = step.status === 'pending' || step.status === 'skipped'
 
   return (
     <div
-      className={`flex items-center gap-3 py-2.5 px-4 rounded-xl transition-all ${
-        isRunning ? 'bg-red-50' : isDone ? 'bg-emerald-50/50' : ''
+      className={`flex items-center gap-3.5 px-4 py-2.5 rounded-2xl transition-all duration-500 ${
+        isRunning ? 'bg-red-50'
+        : isDone  ? 'bg-emerald-50/50'
+        : ''
       }`}
     >
       {/* Ícone */}
       <div className="w-6 h-6 flex items-center justify-center shrink-0">
         {isDone && (
-          <CheckCircle size={18} strokeWidth={2} style={{ color: '#2D7A4F' }} />
+          <span className="check-pop">
+            <CheckCircle2 size={20} strokeWidth={2} style={{ color: '#2D7A4F' }} />
+          </span>
         )}
         {isFailed && (
-          <AlertCircle size={18} strokeWidth={2} style={{ color: '#e13500' }} />
+          <AlertCircle size={20} strokeWidth={2} style={{ color: '#E13500' }} />
         )}
         {isRunning && (
-          <div className="relative">
-            <div
-              className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: '#e13500', borderTopColor: 'transparent' }}
-            />
-          </div>
+          <div
+            className="w-[18px] h-[18px] rounded-full border-[2.5px] border-t-transparent animate-spin"
+            style={{ borderColor: '#E13500', borderTopColor: 'transparent' }}
+          />
         )}
         {isPending && (
-          <Clock size={16} strokeWidth={1.75} style={{ color: '#D0D0D0' }} />
+          <Circle size={16} strokeWidth={1.5} style={{ color: '#DCDCDC' }} />
         )}
       </div>
 
       {/* Label */}
       <span
-        className={`text-sm flex-1 ${
-          isDone    ? 'text-gray-500 line-through'
-          : isRunning ? 'font-semibold text-gray-800'
+        className={`text-sm flex-1 transition-colors duration-300 ${
+          isDone    ? 'text-gray-400'
+          : isRunning ? 'font-semibold text-gray-900'
           : isFailed  ? 'text-red-600'
           : 'text-gray-300'
         }`}
@@ -88,16 +90,46 @@ function StepRow({ step }: { step: Step }) {
               <span
                 key={i}
                 className="inline-block w-1 h-1 rounded-full animate-bounce"
-                style={{ background: '#e13500', animationDelay: `${i * 150}ms` }}
+                style={{ background: '#E13500', animationDelay: `${i * 120}ms` }}
               />
             ))}
           </span>
         )}
       </span>
 
-      {/* Step number */}
-      <span className="text-xs font-mono-ekthos text-gray-300">{step.step_number}/20</span>
+      {/* Número */}
+      <span
+        className={`text-[10px] font-bold tabular-nums transition-colors shrink-0 ${
+          isDone ? 'text-emerald-400' : isPending ? 'text-gray-300' : ''
+        }`}
+        style={isRunning ? { color: '#E13500' } : {}}
+      >
+        {step.step_number}/20
+      </span>
     </div>
+  )
+}
+
+// ── Tips rotativos ─────────────────────────────────────────
+
+const TIPS = [
+  'Configurando o caminho de discipulado da sua congregação...',
+  'Cada célula, cada membro — tudo sendo preparado com cuidado.',
+  'Seus agentes de IA já estão aprendendo sobre a dinâmica da sua igreja.',
+  'As automações pastorais vão economizar horas de trabalho toda semana.',
+  'Em instantes o pastor terá uma visão completa da saúde da congregação.',
+]
+
+function TipRotator() {
+  const [index, setIndex] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setIndex(i => (i + 1) % TIPS.length), 4000)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <p className="text-sm text-gray-400 italic text-center leading-relaxed max-w-xs">
+      {TIPS[index]}
+    </p>
   )
 }
 
@@ -111,21 +143,21 @@ export default function OnboardingConfiguring() {
   const [steps,       setSteps]       = useState<Step[]>([])
   const [started,     setStarted]     = useState(false)
   const [isDone,      setIsDone]      = useState(false)
-  const [_churchId,   setChurchId]    = useState<string | null>(null)
   const [engineError, setEngineError] = useState('')
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
-  // Inicializa steps placeholders enquanto o engineer não chegou
+  // Placeholders enquanto o engineer não chegou
   useEffect(() => {
-    const placeholders: Step[] = Array.from({ length: 20 }, (_, i) => ({
-      step_number: i + 1,
-      label:       STEP_EMOJIS[i + 1],
-      status:      'pending',
-    }))
-    setSteps(placeholders)
+    setSteps(
+      Array.from({ length: 20 }, (_, i) => ({
+        step_number: i + 1,
+        label:       STEP_LABELS[i + 1],
+        status:      'pending',
+      }))
+    )
   }, [])
 
-  // Subscreve ao Realtime de onboarding_steps
+  // Realtime: onboarding_steps
   useEffect(() => {
     if (!sessionId) return
 
@@ -133,39 +165,30 @@ export default function OnboardingConfiguring() {
       .channel(`onboarding-steps-${sessionId}`)
       .on(
         'postgres_changes',
-        {
-          event:  '*',
-          schema: 'public',
-          table:  'onboarding_steps',
-          filter: `session_id=eq.${sessionId}`,
-        },
-        (payload) => {
+        { event: '*', schema: 'public', table: 'onboarding_steps', filter: `session_id=eq.${sessionId}` },
+        payload => {
           const updated = payload.new as Step
-          setSteps(prev =>
-            prev.map(s => s.step_number === updated.step_number ? { ...s, ...updated } : s)
-          )
+          setSteps(prev => prev.map(s =>
+            s.step_number === updated.step_number ? { ...s, ...updated } : s
+          ))
         }
       )
       .subscribe()
 
     channelRef.current = channel
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    return () => { void supabase.removeChannel(channel) }
   }, [sessionId])
 
-  // Verifica quando todos os steps foram concluídos
+  // Detecta conclusão
   useEffect(() => {
-    if (steps.length === 0) return
-    const allTerminated = steps.every(s => s.status === 'done' || s.status === 'failed' || s.status === 'skipped')
-    const allDone = allTerminated && steps.some(s => s.status === 'done')
-    if (allDone && !isDone) {
-      setIsDone(true)
-    }
+    if (!steps.length) return
+    const allTerminated = steps.every(
+      s => s.status === 'done' || s.status === 'failed' || s.status === 'skipped'
+    )
+    if (allTerminated && steps.some(s => s.status === 'done') && !isDone) setIsDone(true)
   }, [steps, isDone])
 
-  // Dispara o Agente Engenheiro
+  // Dispara engineer uma vez
   useEffect(() => {
     if (started || !sessionId) return
     setStarted(true)
@@ -194,8 +217,6 @@ export default function OnboardingConfiguring() {
         throw new Error(err.error ?? 'Erro no engenheiro')
       }
 
-      const result = await res.json() as { success: boolean; church_id?: string }
-      setChurchId(result.church_id ?? null)
       setIsDone(true)
     } catch (err: unknown) {
       setEngineError((err as { message?: string }).message ?? 'Erro desconhecido')
@@ -203,131 +224,158 @@ export default function OnboardingConfiguring() {
   }
 
   function goToDashboard() {
-    // Força reload para que useAuth pegue o novo church_id do user_metadata
+    // Hard reload para que useAuth re-inicialize com o novo churchStatus = 'configured'
     window.location.href = '/dashboard'
   }
 
-  // Calcula progresso
-  const doneCount    = steps.filter(s => s.status === 'done').length
-  const currentStep  = steps.find(s => s.status === 'running')
-  const progressPct  = Math.round((doneCount / 20) * 100)
+  const doneCount   = steps.filter(s => s.status === 'done').length
+  const progressPct = Math.round((doneCount / 20) * 100)
+  const currentStep = steps.find(s => s.status === 'running')
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-12 px-4" style={{ background: '#f9eedc' }}>
-      {/* Logo */}
-      <div className="text-center mb-8">
-        <h1 className="font-display text-3xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
-        {isDone
-          ? <p className="text-sm text-gray-500 mt-1">Seu CRM está pronto!</p>
-          : <p className="text-sm text-gray-500 mt-1">Configurando seu CRM — aguarde cerca de 30 segundos</p>}
-      </div>
+    <>
+      {/* Animações CSS */}
+      <style>{`
+        @keyframes checkPop {
+          0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
+          65%  { transform: scale(1.18) rotate(4deg); opacity: 1; }
+          100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .check-pop {
+          display: inline-flex;
+          animation: checkPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes fadeSlideUp {
+          0%   { opacity: 0; transform: translateY(12px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .fade-slide-up {
+          animation: fadeSlideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+      `}</style>
 
-      {/* Card principal */}
-      <div className="w-full max-w-xl bg-white rounded-2xl border border-black/5 shadow-sm overflow-hidden">
-
-        {/* Barra de progresso */}
-        <div className="px-6 pt-6 pb-4 border-b border-black/5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">
-              {isDone ? 'Configuração concluída' : currentStep?.label ?? 'Iniciando...'}
-            </span>
-            <span className="font-mono-ekthos text-sm font-bold" style={{ color: '#e13500' }}>
-              {progressPct}%
-            </span>
+      <div
+        className="min-h-screen flex flex-col items-center justify-start py-12 px-4"
+        style={{ background: '#F9EEDC' }}
+      >
+        {/* Logo / Header */}
+        <div className="text-center mb-10">
+          <div
+            className="inline-flex items-center justify-center w-12 h-12 rounded-2xl font-bold text-xl text-white mb-5 shadow-sm"
+            style={{ background: '#E13500' }}
+          >
+            E
           </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{
-                width:      `${progressPct}%`,
-                background: isDone ? '#2D7A4F' : '#e13500',
-              }}
-            />
-          </div>
-          <p className="text-xs text-gray-400 mt-1.5">
-            {doneCount} de 20 etapas concluídas
+          <h1
+            className="text-2xl font-bold text-gray-900 mb-1"
+            style={{ fontFamily: 'Georgia, serif' }}
+          >
+            {isDone ? 'Seu CRM está pronto!' : 'Configurando seu CRM'}
+          </h1>
+          <p className="text-sm text-gray-400">
+            {isDone
+              ? 'Tudo preparado especialmente para a sua igreja.'
+              : 'Aguarde cerca de 30 segundos...'}
           </p>
         </div>
 
-        {/* Lista de steps */}
-        <div className="px-2 py-3 max-h-96 overflow-y-auto">
-          {steps.map(step => (
-            <StepRow key={step.step_number} step={step} />
-          ))}
+        {/* Card principal */}
+        <div className="w-full max-w-lg bg-white rounded-3xl border border-black/[0.06] shadow-sm overflow-hidden">
+
+          {/* Barra de progresso */}
+          <div className="px-6 pt-6 pb-5 border-b border-black/[0.06]">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-700 truncate mr-4">
+                {isDone
+                  ? 'Configuração concluída'
+                  : (currentStep?.label ?? 'Iniciando...')}
+              </span>
+              <span
+                className="text-sm font-bold tabular-nums shrink-0 transition-colors duration-500"
+                style={{ color: isDone ? '#2D7A4F' : '#E13500' }}
+              >
+                {progressPct}%
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F0F0F0' }}>
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width:      `${progressPct}%`,
+                  background: isDone ? '#2D7A4F' : '#E13500',
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              {doneCount} de 20 etapas concluídas
+            </p>
+          </div>
+
+          {/* Lista de steps */}
+          <div className="px-3 py-3 max-h-96 overflow-y-auto space-y-0.5">
+            {steps.map(step => (
+              <StepRow key={step.step_number} step={step} />
+            ))}
+          </div>
+
+          {/* Estado de conclusão */}
+          {isDone && !engineError && (
+            <div className="px-6 pb-6 pt-5 border-t border-black/[0.06] fade-slide-up">
+              <div className="flex flex-col items-center text-center mb-6">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center mb-4 check-pop"
+                  style={{ background: '#F0FDF4' }}
+                >
+                  <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+                </div>
+                <h3
+                  className="text-xl font-bold text-gray-900 mb-1"
+                  style={{ fontFamily: 'Georgia, serif' }}
+                >
+                  Bem-vindo à Ekthos!
+                </h3>
+                <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+                  Seu CRM está configurado e personalizado para a operação pastoral da sua igreja.
+                </p>
+              </div>
+              <button
+                onClick={goToDashboard}
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
+                style={{ background: '#E13500' }}
+              >
+                Ir para o Dashboard
+                <ArrowRight size={18} strokeWidth={2} />
+              </button>
+            </div>
+          )}
+
+          {/* Erro parcial */}
+          {engineError && (
+            <div
+              className="px-6 py-5 border-t border-black/[0.06]"
+              style={{ background: '#FFF5F2' }}
+            >
+              <div className="flex items-start gap-2.5">
+                <AlertCircle size={18} strokeWidth={2} style={{ color: '#E13500', flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p className="text-sm font-semibold text-red-700 mb-0.5">Problema parcial detectado</p>
+                  <p className="text-xs text-red-600 leading-relaxed">{engineError}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    As etapas concluídas foram salvas. Fale com o suporte para continuar.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Estado de conclusão */}
-        {isDone && !engineError && (
-          <div className="px-6 pb-6 pt-4 border-t border-black/5">
-            <div className="text-center mb-5">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle size={24} strokeWidth={2} style={{ color: '#2D7A4F' }} />
-              </div>
-              <h3 className="font-display text-xl font-semibold text-gray-900">
-                Seu CRM está pronto!
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Tudo configurado especialmente para a sua igreja.
-                <br />
-                Bem-vindo à Ekthos!
-              </p>
-            </div>
-            <button
-              onClick={goToDashboard}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all"
-              style={{ background: '#e13500' }}
-            >
-              Ir para o Dashboard
-              <ArrowRight size={18} strokeWidth={1.75} />
-            </button>
-          </div>
-        )}
-
-        {/* Erro do engenheiro */}
-        {engineError && (
-          <div className="px-6 py-4 border-t border-black/5 bg-red-50">
-            <p className="text-sm text-red-700 font-semibold mb-1">Ocorreu um problema parcial</p>
-            <p className="text-xs text-red-600">{engineError}</p>
-            <p className="text-xs text-red-600 mt-1">
-              Não se preocupe — as etapas concluídas foram salvas. Entre em contato com o suporte.
-            </p>
+        {/* Tips rotativos */}
+        {!isDone && (
+          <div className="mt-8 max-w-sm">
+            <TipRotator />
           </div>
         )}
       </div>
-
-      {/* Dicas durante o carregamento */}
-      {!isDone && (
-        <div className="mt-6 max-w-xl text-center">
-          <TipRotator />
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Dicas rotativas ────────────────────────────────────────
-
-const TIPS = [
-  'Estamos criando as etapas do caminho de discipulado da sua igreja...',
-  'Cada célula, cada membro, cada meta — tudo sendo configurado com cuidado.',
-  'Seus agentes de IA já estão aprendendo sobre a dinâmica da sua congregação.',
-  'As automações pastorais vão economizar horas de trabalho manual toda semana.',
-  'Em instantes o pastor terá uma visão completa da saúde da congregação.',
-]
-
-function TipRotator() {
-  const [index, setIndex] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex(i => (i + 1) % TIPS.length)
-    }, 4000)
-    return () => clearInterval(interval)
-  }, [])
-
-  return (
-    <p className="text-sm text-gray-400 italic transition-opacity">
-      {TIPS[index]}
-    </p>
+    </>
   )
 }
