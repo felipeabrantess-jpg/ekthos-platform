@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Send, Loader, Upload, Check, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -31,14 +31,7 @@ const PLAN_SHORT: Record<string, string> = {
   avivamento: 'R$2.469,90/mês',
 }
 
-const BLOCK_LABELS = [
-  'Identidade',
-  'Pastoral',
-  'Dados',
-  'Equipe',
-  'Agentes',
-  'Canais',
-]
+const TOTAL_QUESTIONS = 20
 
 // ── Avatares ───────────────────────────────────────────────
 
@@ -149,50 +142,25 @@ function LoadingDots() {
   )
 }
 
-// ── Progress dots ──────────────────────────────────────────
+// ── Barra de progresso linear ──────────────────────────────
 
-function ProgressDots({ blockIndex }: { blockIndex: number }) {
+function ProgressBar({ questionNumber }: { questionNumber: number }) {
+  const pct = Math.round(((questionNumber - 1) / TOTAL_QUESTIONS) * 100)
   return (
     <div className="px-6 py-4 border-b border-black/[0.06] bg-white shrink-0">
-      <div className="flex items-center mb-3">
-        {BLOCK_LABELS.map((label, i) => {
-          const n         = i + 1
-          const isDone    = n < blockIndex
-          const isCurrent = n === blockIndex
-          return (
-            <Fragment key={n}>
-              <div
-                className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold transition-all duration-500 shrink-0"
-                style={{
-                  background: isDone
-                    ? '#2D7A4F'
-                    : isCurrent
-                    ? '#E13500'
-                    : '#EBEBEB',
-                  color:      isDone || isCurrent ? 'white' : '#AAAAAA',
-                  boxShadow:  isCurrent ? '0 0 0 4px rgba(225,53,0,0.15)' : 'none',
-                  transform:  isCurrent ? 'scale(1.1)' : 'scale(1)',
-                }}
-              >
-                {isDone ? <Check size={12} strokeWidth={2.5} /> : n}
-              </div>
-              {n < 6 && (
-                <div
-                  className="flex-1 h-px mx-1.5 rounded-full transition-all duration-700"
-                  style={{ background: isDone ? '#2D7A4F' : '#EBEBEB' }}
-                />
-              )}
-            </Fragment>
-          )
-        })}
+      <div className="flex items-center justify-between mb-2.5">
+        <span className="text-xs font-semibold text-gray-700">
+          Pergunta {questionNumber} de {TOTAL_QUESTIONS}
+        </span>
+        <span className="text-xs font-bold tabular-nums" style={{ color: '#E13500' }}>
+          {pct}%
+        </span>
       </div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-gray-600">
-          {BLOCK_LABELS[blockIndex - 1]}
-        </p>
-        <p className="text-xs text-gray-400">
-          Bloco {blockIndex} de 6
-        </p>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#EBEBEB' }}>
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{ width: `${pct}%`, background: '#E13500' }}
+        />
       </div>
     </div>
   )
@@ -496,8 +464,8 @@ export default function Onboarding() {
         </span>
       </div>
 
-      {/* ── Progress dots ── */}
-      <ProgressDots blockIndex={blockIndex} />
+      {/* ── Progress bar ── */}
+      <ProgressBar questionNumber={blockIndex} />
 
       {/* ── Layout principal ── */}
       <div className="flex-1 flex overflow-hidden min-h-0">
