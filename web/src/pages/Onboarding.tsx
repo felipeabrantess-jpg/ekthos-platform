@@ -86,7 +86,7 @@ function MessageBubble({ msg, userInitial }: { msg: Message; userInitial: string
           }`}
           style={isBot ? {} : { background: '#E13500' }}
         >
-          {msg.content.split('\n').map((line, i, arr) => (
+          {stripWidgetTags(msg.content).split('\n').map((line, i, arr) => (
             <span key={i}>
               {line || '\u00A0'}
               {i < arr.length - 1 && <br />}
@@ -112,7 +112,7 @@ function StreamingBubble({ content }: { content: string }) {
           Consultor Ekthos
         </p>
         <div className="px-5 py-4 text-[15px] leading-relaxed bg-white border border-black/[0.07] rounded-3xl rounded-tl-xl text-gray-800">
-          {content.split('\n').map((line, i, arr) => (
+          {stripWidgetTags(content).split('\n').map((line, i, arr) => (
             <span key={i}>
               {line || '\u00A0'}
               {i < arr.length - 1 && <br />}
@@ -676,26 +676,40 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
   return null
 }
 
-// ── Detecta widget na última mensagem ──────────────────────
+// ── Strip widget tags do texto exibido ────────────────────
+
+function stripWidgetTags(text: string): string {
+  return text.replace(/\[WIDGET:(?:select_one|select_many)\][\s\S]*/g, '').trim()
+}
+
+// ── Detecta e parseia widgets estruturados ─────────────────
 
 function detectWidget(text: string): InputWidget | null {
+  // [WIDGET:select_one]
+  const oneMatch = /\[WIDGET:select_one\]\r?\n([\s\S]+?)(?=\[WIDGET:|$)/.exec(text)
+  if (oneMatch) {
+    const options = oneMatch[1]
+      .split('\n')
+      .map(l => l.replace(/^[-*•]\s*/, '').trim())
+      .filter(Boolean)
+    if (options.length) return { type: 'select', label: '', options }
+  }
+
+  // [WIDGET:select_many]
+  const manyMatch = /\[WIDGET:select_many\]\r?\n([\s\S]+?)(?=\[WIDGET:|$)/.exec(text)
+  if (manyMatch) {
+    const options = manyMatch[1]
+      .split('\n')
+      .map(l => l.replace(/^[-*•]\s*/, '').trim())
+      .filter(Boolean)
+    if (options.length) return { type: 'multiselect', label: '', options }
+  }
+
+  // Upload (fallback por keyword — consultor instrui a mencionar "upload")
   const lower = text.toLowerCase()
-  if (lower.includes('logo') || lower.includes('logotipo') || lower.includes('upload')) {
+  if (lower.includes('upload') || lower.includes('logotipo') && lower.includes('enviar')) {
     return { type: 'upload', label: 'Clique para enviar o logo da igreja' }
   }
-  if (lower.includes('ministério') || lower.includes('departamento')) {
-    return {
-      type:    'multiselect',
-      label:   'Selecione os ministérios (pode marcar vários)',
-      options: ['Louvor', 'Mídia', 'Recepção', 'Infantil', 'Jovens', 'Mulheres', 'Homens', 'EBD', 'Ação Social', 'Missionário', 'Intercessão'],
-    }
-  }
-  if (lower.includes('relat') && lower.includes('canal')) {
-    return {
-      type:    'select',
-      label:   'Canal de preferência para relatórios',
-      options: ['WhatsApp', 'Email', 'PDF por email', 'Todos os canais'],
-    }
-  }
+
   return null
 }
