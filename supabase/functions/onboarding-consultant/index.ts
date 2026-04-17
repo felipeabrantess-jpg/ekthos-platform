@@ -398,12 +398,17 @@ Deno.serve(async (req: Request) => {
 
           // Salva turno no banco
           messages.push({ role: 'assistant', content: assistantText })
-          await supabase.from('onboarding_sessions').update({
+          console.log(`[consultant] saving: questionAnswered=${questionBeingAnswered?.id} nextQ=${nextQ.id} answeredCount=${answeredCount} session=${session_id}`)
+          const { error: updateError } = await supabase.from('onboarding_sessions').update({
             messages,
             answers,
             block_index: questionNumber,
-            updated_at:  new Date().toISOString(),
           }).eq('id', session_id)
+
+          if (updateError) {
+            console.error('[consultant] UPDATE failed:', updateError.message, updateError.code)
+            throw new Error(`Erro ao salvar sessão: ${updateError.message}`)
+          }
 
           controller.enqueue(sseData({
             type:            'done',
@@ -426,15 +431,20 @@ Deno.serve(async (req: Request) => {
           controller.enqueue(sseData({ type: 'token', content: completionMsg }))
 
           messages.push({ role: 'assistant', content: assistantText })
-          await supabase.from('onboarding_sessions').update({
+          console.log(`[consultant] completing: answeredCount=${answeredCount} session=${session_id}`)
+          const { error: completeError } = await supabase.from('onboarding_sessions').update({
             messages,
             answers,
             block_index:  TOTAL_QUESTIONS,
             config_json:  configJson,
             status:       'completed',
             completed_at: new Date().toISOString(),
-            updated_at:   new Date().toISOString(),
           }).eq('id', session_id)
+
+          if (completeError) {
+            console.error('[consultant] COMPLETE UPDATE failed:', completeError.message, completeError.code)
+            throw new Error(`Erro ao finalizar sessão: ${completeError.message}`)
+          }
 
           controller.enqueue(sseData({
             type:            'done',
