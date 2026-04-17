@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: stripe-checkout
 // Cria uma Stripe Checkout Session para um plano.
 //
@@ -30,6 +30,10 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
@@ -51,7 +55,7 @@ function err(msg: string, status: number, details?: unknown): Response {
 async function validateJwt(authHeader: string | null): Promise<{ userId: string; churchId: string } | null> {
   if (!authHeader?.startsWith('Bearer ')) return null
   const token = authHeader.slice(7)
-  const { data, error } = await supabase.auth.getUser(token)
+  const { data, error } = await supabaseAuth.auth.getUser(token)
   if (error || !data.user) return null
   const churchId: string | undefined =
     data.user.app_metadata?.church_id ?? data.user.user_metadata?.church_id

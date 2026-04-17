@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: stripe-bootstrap
 // Cria produtos e preços no Stripe e popula stripe_prices no DB.
 // Idempotente: verifica se price já existe antes de criar.
@@ -28,6 +28,10 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
 })
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
@@ -105,7 +109,7 @@ Deno.serve(async (req: Request) => {
   // Auth — apenas ekthos admins
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return json({ error: 'Unauthorized' }, 401)
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
   const isAdmin =
     user.app_metadata?.is_ekthos_admin === true ||

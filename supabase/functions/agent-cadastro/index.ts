@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: agent-cadastro
 // Agente de Cadastro — Claude Haiku — deduplicação e ficha de visitantes
 //
@@ -18,6 +18,10 @@ const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekt
 const MODEL = 'claude-haiku-4-5-20251001'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
@@ -53,7 +57,7 @@ Deno.serve(async (req: Request) => {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return jsonErr('Unauthorized', 401)
 
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return jsonErr('Unauthorized', 401)
 
   const churchId =
