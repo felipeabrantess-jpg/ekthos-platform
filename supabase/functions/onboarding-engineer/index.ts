@@ -252,15 +252,16 @@ async function runStep(
       const stages = (pipeline.stages as Array<Record<string, unknown>>) ?? DEFAULT_STAGES
       for (let i = 0; i < stages.length; i++) {
         const s = stages[i]
+        const stageName = (s.name as string) ?? `Etapa ${i + 1}`
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('pipeline_stages').upsert({
+        const { error: stageErr } = await (supabase as any).from('pipeline_stages').upsert({
           church_id:   churchId,
-          name:        s.name,
+          name:        stageName,
+          slug:        slugify(stageName),
           order_index: i,
           sla_hours:   s.sla_hours ?? 72,
-          type:        s.type ?? 'standard',
-          description: s.description ?? '',
-        }, { onConflict: 'church_id,name' })
+        }, { onConflict: 'church_id,slug' })
+        if (stageErr) throw stageErr
       }
       break
     }
@@ -304,12 +305,15 @@ async function runStep(
       if (!churchId) break
       const depts = departments.length > 0 ? departments : DEFAULT_DEPARTMENTS
       for (const dept of depts) {
+        const deptName = (dept.name as string) ?? ''
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('ministries').upsert({
+        const { error: deptErr } = await (supabase as any).from('ministries').upsert({
           church_id:   churchId,
-          name:        dept.name,
+          name:        deptName,
+          slug:        slugify(deptName),
           description: '',
-        }, { onConflict: 'church_id, name' })
+        }, { onConflict: 'church_id,slug' })
+        if (deptErr) throw deptErr
       }
       break
     }
@@ -319,14 +323,17 @@ async function runStep(
       if (!churchId) break
       const totalCells = (cellNetwork.total_cells as number) ?? 0
       if (totalCells > 0) {
-        // Cria células placeholder — pastor preencherá depois
-        const cellsToInsert = Array.from({ length: Math.min(totalCells, 50) }, (_, i) => ({
-          church_id: churchId,
-          name:      `Célula ${i + 1}`,
-          is_active: true,
+        // Cria grupos/células placeholder — pastor preencherá depois
+        // Tabela: groups (não 'cells'). status NOT NULL, sem unique em name → insert simples
+        const groupsToInsert = Array.from({ length: Math.min(totalCells, 50) }, (_, i) => ({
+          church_id:  churchId,
+          name:       `Célula ${i + 1}`,
+          status:     'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         }))
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('cells').upsert(cellsToInsert, { onConflict: 'church_id, name' })
+        const { error: groupErr } = await supabase.from('groups').insert(groupsToInsert)
+        if (groupErr) throw groupErr
       }
       break
     }
