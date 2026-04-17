@@ -79,7 +79,7 @@ function MessageBubble({ msg, userInitial }: { msg: Message; userInitial: string
           }`}
           style={isBot ? {} : { background: '#E13500' }}
         >
-          {stripWidgetTags(msg.content).split('\n').map((line, i, arr) => (
+          {msg.content.split('\n').map((line, i, arr) => (
             <span key={i}>
               {line || '\u00A0'}
               {i < arr.length - 1 && <br />}
@@ -105,7 +105,7 @@ function StreamingBubble({ content }: { content: string }) {
           Consultor Ekthos
         </p>
         <div className="px-5 py-4 text-[15px] leading-relaxed bg-white border border-black/[0.07] rounded-3xl rounded-tl-xl text-gray-800">
-          {stripWidgetTags(content).split('\n').map((line, i, arr) => (
+          {content.split('\n').map((line, i, arr) => (
             <span key={i}>
               {line || '\u00A0'}
               {i < arr.length - 1 && <br />}
@@ -289,23 +289,22 @@ export default function Onboarding() {
   const [uploadLabel,      setUploadLabel]      = useState<string | null>(null)
   const [streamingContent, setStreamingContent] = useState<string | null>(null)
   const [userInitial,      setUserInitial]      = useState('')
+  // Widget vem do evento 'done' — não é mais parseado do texto da IA
+  const [currentWidget,    setCurrentWidget]    = useState<InputWidget | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef       = useRef<HTMLTextAreaElement>(null)
 
-  const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant')?.content ?? ''
-  const currentWidget    = detectWidget(lastAssistantMsg)
-
-  // Saudação inicial
+  // Saudação inicial — só pergunta P1
   useEffect(() => {
     setMessages([{
       role:      'assistant',
-      content:   `Olá! Seja muito bem-vindo à Ekthos! 🙏\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja com atenção a cada detalhe da sua operação pastoral.\n\nVocê escolheu o plano ${PLAN_LABEL[planSlug] ?? planSlug}. Ótima escolha!\n\nVamos começar: qual é o nome completo da sua igreja? E me conta em qual cidade e estado vocês estão.`,
+      content:   `Olá! Seja muito bem-vindo à Ekthos! 🙏\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja com atenção a cada detalhe da sua operação pastoral.\n\nVocê escolheu o plano ${PLAN_LABEL[planSlug] ?? planSlug}. Ótima escolha!\n\nVamos começar: qual é o nome completo da sua igreja?`,
       timestamp: new Date(),
     }])
   }, [planSlug])
 
-  // Pega initial do email do usuário para o avatar
+  // Initial do email para avatar
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) setUserInitial(session.user.email[0].toUpperCase())
@@ -322,6 +321,7 @@ export default function Onboarding() {
     if (!content || loading) return
 
     setInput('')
+    setCurrentWidget(null)
     setMessages(prev => [...prev, { role: 'user', content, timestamp: new Date() }])
     setLoading(true)
     setStreamingContent('')
@@ -360,25 +360,46 @@ export default function Onboarding() {
           if (!line.startsWith('data: ')) continue
           try {
             const evt = JSON.parse(line.slice(6)) as {
-              type:         string
-              content?:     string
-              session_id?:  string
-              block_index?: number
-              is_complete?: boolean
-              config?:      unknown
-              message?:     string
+              type:             string
+              content?:         string
+              session_id?:      string
+              question_number?: number
+              total_questions?: number
+              answered_count?:  number
+              is_complete?:     boolean
+              config?:          unknown
+              message?:         string
+              widget?:          { type: 'select_one' | 'select_many'; options: string[] } | null
+              question_id?:     string
             }
+
             if (evt.type === 'token' && evt.content) {
               finalText += evt.content
               setStreamingContent(prev => (prev ?? '') + evt.content!)
+
             } else if (evt.type === 'done') {
-              if (evt.session_id)  setSessionId(evt.session_id)
-              if (evt.block_index) setBlockIndex(evt.block_index)
+              if (evt.session_id)       setSessionId(evt.session_id)
+              if (evt.question_number)  setBlockIndex(evt.question_number)
+
+              // Widget vem hardcoded do backend — zero parsing de texto
+              if (evt.widget !== undefined) {
+                if (!evt.widget) {
+                  setCurrentWidget(null)
+                } else {
+                  setCurrentWidget({
+                    type:    evt.widget.type === 'select_one' ? 'select' : 'multiselect',
+                    label:   '',
+                    options: evt.widget.options,
+                  })
+                }
+              }
+
               if (evt.is_complete && evt.config) {
                 setIsComplete(true)
                 setConfigJson(evt.config)
                 updatePreviewFromConfig(evt.config)
               }
+
             } else if (evt.type === 'error') {
               throw new Error(evt.message ?? 'Erro desconhecido')
             }
@@ -488,7 +509,7 @@ export default function Onboarding() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Widget dinâmico */}
+          {/* Widget hardcoded do backend */}
           {currentWidget && !isComplete && !loading && (
             <DynamicWidget
               widget={currentWidget}
@@ -515,7 +536,7 @@ export default function Onboarding() {
             </div>
           )}
 
-          {/* Input */}
+          {/* Input de texto */}
           {!isComplete && (
             <div className="px-5 py-4 bg-white border-t border-black/[0.06] shrink-0">
               <div className="flex gap-3 items-end">
@@ -573,8 +594,10 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
   if (widget.type === 'upload') {
     return (
       <div className="px-5 py-3 bg-white border-t border-black/[0.06]">
-        <label className="flex items-center gap-3 cursor-pointer rounded-2xl border border-dashed px-4 py-3 transition-colors hover:border-[#E13500]"
-          style={{ borderColor: '#DDD', background: '#FAFAFA' }}>
+        <label
+          className="flex items-center gap-3 cursor-pointer rounded-2xl border border-dashed px-4 py-3 transition-colors hover:border-[#E13500]"
+          style={{ borderColor: '#DDD', background: '#FAFAFA' }}
+        >
           <Upload size={18} strokeWidth={1.75} style={{ color: '#E13500' }} />
           <span className="text-sm text-gray-600">{uploadLabel ?? widget.label}</span>
           <input type="file" className="hidden" accept=".png,.jpg,.svg,.pdf" onChange={onUpload} />
@@ -586,7 +609,6 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
   if (widget.type === 'select' && widget.options) {
     return (
       <div className="px-5 py-3 bg-white border-t border-black/[0.06]">
-        <p className="text-xs text-gray-400 mb-2">{widget.label}</p>
         <div className="flex flex-wrap gap-2">
           {widget.options.map(opt => (
             <button
@@ -606,7 +628,6 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
   if (widget.type === 'multiselect' && widget.options) {
     return (
       <div className="px-5 py-3 bg-white border-t border-black/[0.06]">
-        <p className="text-xs text-gray-400 mb-2.5">{widget.label}</p>
         <div className="flex flex-wrap gap-2">
           {widget.options.map(opt => (
             <button
@@ -639,44 +660,6 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel }: DynamicWidge
         </div>
       </div>
     )
-  }
-
-  return null
-}
-
-// ── Strip widget tags do texto exibido ────────────────────
-
-function stripWidgetTags(text: string): string {
-  return text.replace(/\[WIDGET:(?:select_one|select_many)\][\s\S]*/g, '').trim()
-}
-
-// ── Detecta e parseia widgets estruturados ─────────────────
-
-function detectWidget(text: string): InputWidget | null {
-  // [WIDGET:select_one]
-  const oneMatch = /\[WIDGET:select_one\]\r?\n([\s\S]+?)(?=\[WIDGET:|$)/.exec(text)
-  if (oneMatch) {
-    const options = oneMatch[1]
-      .split('\n')
-      .map(l => l.replace(/^[-*•]\s*/, '').trim())
-      .filter(Boolean)
-    if (options.length) return { type: 'select', label: '', options }
-  }
-
-  // [WIDGET:select_many]
-  const manyMatch = /\[WIDGET:select_many\]\r?\n([\s\S]+?)(?=\[WIDGET:|$)/.exec(text)
-  if (manyMatch) {
-    const options = manyMatch[1]
-      .split('\n')
-      .map(l => l.replace(/^[-*•]\s*/, '').trim())
-      .filter(Boolean)
-    if (options.length) return { type: 'multiselect', label: '', options }
-  }
-
-  // Upload (fallback por keyword — consultor instrui a mencionar "upload")
-  const lower = text.toLowerCase()
-  if (lower.includes('upload') || lower.includes('logotipo') && lower.includes('enviar')) {
-    return { type: 'upload', label: 'Clique para enviar o logo da igreja' }
   }
 
   return null
