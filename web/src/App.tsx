@@ -85,6 +85,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function StatusGuard({ children }: { children: React.ReactNode }) {
   const { churchStatus, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
+  if (churchStatus === 'onboarding')      return <Navigate to="/onboarding" replace />
   if (churchStatus === 'pending_payment') return <Navigate to="/payment-pending" replace />
   if (churchStatus === 'suspended')       return <Navigate to="/blocked" replace />
   if (churchStatus === 'cancelled')       return <Navigate to="/cancelled" replace />
