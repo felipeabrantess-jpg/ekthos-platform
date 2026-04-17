@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: agent-formacao
 // Agente de Formação Discipular — Claude Haiku
 // Acompanha turmas de formação, alunos em risco e planejamento
@@ -19,6 +19,10 @@ const ANTHROPIC_API_KEY         = Deno.env.get('ANTHROPIC_API_KEY')!
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
@@ -55,7 +59,7 @@ Deno.serve(async (req: Request) => {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return jsonErr('Unauthorized', 401)
 
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return jsonErr('Unauthorized', 401)
 
   const churchId =

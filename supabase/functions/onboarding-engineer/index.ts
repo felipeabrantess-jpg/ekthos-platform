@@ -26,7 +26,12 @@ const ALLOWED_ORIGIN           = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekth
 if (!SUPABASE_URL) throw new Error('[onboarding-engineer] SUPABASE_URL not set')
 if (!SUPABASE_SERVICE_ROLE_KEY) throw new Error('[onboarding-engineer] SUPABASE_SERVICE_ROLE_KEY not set')
 
+// DB client — nunca contaminado, sempre service_role (bypassa RLS)
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client — exclusivo para auth.getUser(token); isolado para não contaminar o cliente DB
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
@@ -73,7 +78,7 @@ Deno.serve(async (req: Request) => {
   const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
   if (!token) return json({ error: 'Unauthorized' }, 401)
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
   if (authError || !user) return json({ error: 'Unauthorized' }, 401)
 
   let body: { session_id: string }

@@ -22,7 +22,13 @@ const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
+// DB client — nunca contaminado, sempre service_role (bypassa RLS)
 const supabase  = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client — exclusivo para auth.getUser(token); isolado para não contaminar o cliente DB
+// (Supabase JS v2: auth.getUser() muda o role do cliente para 'authenticated', quebrando RLS bypass)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
@@ -304,7 +310,7 @@ Deno.serve(async (req: Request) => {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return jsonErr('Unauthorized', 401)
 
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return jsonErr('Unauthorized', 401)
 
   // ── Body ───────────────────────────────────────────────

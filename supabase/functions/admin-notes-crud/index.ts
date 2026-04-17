@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: admin-notes-crud
 // CRUD de notas internas do time sobre uma conta de igreja.
 //
@@ -17,6 +17,10 @@ const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekt
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
@@ -32,7 +36,7 @@ function json(data: unknown, status = 200) {
 }
 
 async function getAdmin(token: string) {
-  const { data: { user }, error } = await supabase.auth.getUser(token)
+  const { data: { user }, error } = await supabaseAuth.auth.getUser(token)
   if (error || !user) return null
   const isAdmin =
     user.app_metadata?.is_ekthos_admin === true ||

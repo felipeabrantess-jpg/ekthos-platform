@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: affiliate-crud
 // POST   = create affiliate
 // PATCH  = update affiliate fields
@@ -13,6 +13,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
@@ -31,7 +35,7 @@ function json(data: unknown, status = 200) {
 async function requireAdmin(req: Request) {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return null
-  const { data: { user }, error } = await supabase.auth.getUser(token)
+  const { data: { user }, error } = await supabaseAuth.auth.getUser(token)
   if (error || !user) return null
   const isAdmin =
     user.app_metadata?.is_ekthos_admin === true ||

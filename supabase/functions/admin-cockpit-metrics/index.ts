@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // Edge Function: admin-cockpit-metrics (v2)
 // Retorna métricas consolidadas no formato exato do CockpitData
 // esperado pelo frontend Cockpit.tsx.
@@ -14,6 +14,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ALLOWED_ORIGIN           = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+// Auth client - JWT validation only (prevents RLS contamination of DB client)
+const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
@@ -42,7 +46,7 @@ Deno.serve(async (req: Request) => {
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return json({ error: 'Unauthorized' }, 401)
 
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
