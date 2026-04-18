@@ -242,6 +242,31 @@ const QUESTIONS: Question[] = [
 const MIN_QUESTIONS = 21 // sem P2_CORES
 const MAX_QUESTIONS = 22 // com P2_CORES
 
+// ── Agentes por plano (fonte da verdade) ──────────────────
+const PLAN_AGENTS: Record<string, string[]> = {
+  chamado:    ['agent-suporte', 'agent-onboarding'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
+  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
+}
+
+// ── UNDO helpers ───────────────────────────────────────────
+function getLastAnsweredQuestionId(answers: Record<string, string>): string | null {
+  let lastId: string | null = null
+  for (const q of QUESTIONS) {
+    if (q.id in answers) lastId = q.id
+  }
+  return lastId
+}
+
+function clearDependents(answers: Record<string, string>, questionId: string): void {
+  for (const q of QUESTIONS) {
+    if (q.condition?.question === questionId && q.id in answers) {
+      delete answers[q.id]
+      clearDependents(answers, q.id)
+    }
+  }
+}
+
 function getTotalQuestions(answers: Record<string, string>): number {
   const logoAnswer = answers['P2_LOGO']
   if (!logoAnswer) return MAX_QUESTIONS // ainda não respondeu P2_LOGO → mostra máximo
@@ -381,14 +406,10 @@ function buildConfigFromAnswers(answers: Record<string, string>, planSlug: strin
   }
   const plan = planMeta[planSlug] ?? planMeta['chamado']
 
-  const freeAgents     = ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo']
-  const includedAgents: string[] = []
-  if (planSlug === 'missao' || planSlug === 'avivamento') {
-    includedAgents.push('agent-whatsapp', 'agent-financeiro', 'agent-reengajamento')
-  }
-  if (planSlug === 'avivamento') {
-    includedAgents.push('agent-metricas', 'agent-agenda', 'agent-relatorios')
-  }
+  // BUG 4 fix: agentes derivados do plano, não da conversa
+  const allPlanAgents  = PLAN_AGENTS[planSlug] ?? PLAN_AGENTS['chamado']
+  const freeAgents     = ['agent-suporte']
+  const includedAgents = allPlanAgents.filter(a => a !== 'agent-suporte')
 
   const recommended: string[] = []
   if ((maiorDor.includes('escalas') || automatizar.some(a => a.includes('Escalas'))) && !includedAgents.includes('agent-escalas')) {
@@ -516,9 +537,18 @@ Deno.serve(async (req: Request) => {
   const messages = [...((session.messages  as Array<{ role: string; content: string }> | null) ?? [])]
   const planSlug = (session.plan_slug as string | null) ?? plan_slug ?? 'chamado'
 
+  // BUG 1 fix: suporte a __UNDO__ — volta à pergunta anterior
+  const isUndo = message.trim() === '__UNDO__'
+
   // Qual pergunta o usuário está respondendo agora?
   const questionBeingAnswered = getNextQuestion(answers)
-  if (questionBeingAnswered) {
+  if (isUndo) {
+    const lastId = getLastAnsweredQuestionId(answers)
+    if (lastId) {
+      delete answers[lastId]
+      clearDependents(answers, lastId)
+    }
+  } else if (questionBeingAnswered) {
     answers[questionBeingAnswered.id] = message.trim()
   }
 
@@ -528,7 +558,9 @@ Deno.serve(async (req: Request) => {
   const questionNumber = nextQ ? QUESTIONS.indexOf(nextQ) + 1 : totalQ
   const answeredCount  = Object.keys(answers).length
 
-  messages.push({ role: 'user', content: message.trim() })
+  if (!isUndo) {
+    messages.push({ role: 'user', content: message.trim() })
+  }
 
   if (!isComplete) {
     const { data: saved, error: preSaveError } = await supabase
@@ -554,6 +586,12 @@ Deno.serve(async (req: Request) => {
 
       try {
         if (!isComplete && nextQ) {
+          if (isUndo) {
+            // ── UNDO: resposta simples sem Haiku ──
+            const undoPhrase = 'Entendido! Voltei para a pergunta anterior. 🔙'
+            assistantText += undoPhrase
+            controller.enqueue(sseData({ type: 'token', content: undoPhrase }))
+          } else {
           // ── 1. Haiku gera frase de acolhimento (stream) ──
           const stream = anthropic.messages.stream({
             model:      MODEL,
@@ -569,6 +607,7 @@ Deno.serve(async (req: Request) => {
               controller.enqueue(sseData({ type: 'token', content: chunk }))
             }
           }
+          } // end else (haiku)
 
           // ── 2. Injeta contexto + próxima pergunta ──
           if (nextQ.context) {

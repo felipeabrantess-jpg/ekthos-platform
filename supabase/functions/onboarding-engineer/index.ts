@@ -46,6 +46,13 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
 }
 
+// ── Agentes por plano (fonte da verdade — BUG 4) ─────────
+const PLAN_AGENTS: Record<string, string[]> = {
+  chamado:    ['agent-suporte', 'agent-onboarding'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
+  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
+}
+
 // ── Labels dos 20 steps ───────────────────────────────────
 const STEP_LABELS: Record<number, string> = {
   1:  'Criando sua igreja...',
@@ -420,10 +427,14 @@ async function runStep(
       break
     }
 
-    // ── 11. Ativa agentes inclusos no plano ────────────────
+    // ── 11. Ativa agentes inclusos no plano (BUG 4 fix) ───
     case 11: {
       if (!churchId) break
-      const includedAgents = (agents.included_in_plan as string[]) ?? []
+      // Usa PLAN_AGENTS como fonte da verdade — ignora config_json
+      const planSlug      = (subscription.plan_slug as string) ?? 'chamado'
+      const allPlanAgents = PLAN_AGENTS[planSlug] ?? PLAN_AGENTS['chamado']
+      // agent-suporte já ativado no step 10 (source='free')
+      const includedAgents = allPlanAgents.filter(a => a !== 'agent-suporte')
       if (includedAgents.length === 0) break
       const { data: sub } = await supabase
         .from('subscriptions').select('id').eq('church_id', churchId).maybeSingle()
