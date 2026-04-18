@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
+import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -38,15 +39,19 @@ function formatDate(date: string | null) {
 
 interface PersonRowProps {
   person: PersonWithStage
+  onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
   onDelete: (p: Person) => void
 }
 
-function PersonRow({ person, onEdit, onDelete }: PersonRowProps) {
+function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
   const stage = person.person_pipeline?.[0]?.pipeline_stages
 
   return (
-    <tr className="hover:bg-cream-dark/30 transition-colors">
+    <tr
+      className="hover:bg-cream-dark/30 transition-colors cursor-pointer"
+      onClick={() => onView(person)}
+    >
       <td className="px-4 py-3">
         <div>
           <p className="text-sm font-medium text-ekthos-black">{person.name ?? '—'}</p>
@@ -80,7 +85,7 @@ function PersonRow({ person, onEdit, onDelete }: PersonRowProps) {
       <td className="px-4 py-3 text-sm text-ekthos-black/50">
         {formatDate(person.created_at)}
       </td>
-      <td className="px-4 py-3">
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onEdit(person)}
@@ -108,11 +113,16 @@ export default function People() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
 
   const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', { search })
   const deletePerson = useDeletePerson()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
+
+  function handleView(person: PersonWithStage) {
+    setSelectedPerson(person)
+  }
 
   function handleEdit(person: Person) {
     setEditingPerson(person)
@@ -193,6 +203,7 @@ export default function People() {
                   <PersonRow
                     key={person.id}
                     person={person}
+                    onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
@@ -209,6 +220,16 @@ export default function People() {
         onClose={() => { setModalOpen(false); setEditingPerson(null) }}
         churchId={churchId}
         person={editingPerson}
+      />
+
+      {/* Detail Panel */}
+      <PersonDetailPanel
+        person={selectedPerson}
+        onClose={() => setSelectedPerson(null)}
+        onEdit={(p) => {
+          setSelectedPerson(null)
+          handleEdit(p)
+        }}
       />
     </div>
   )
