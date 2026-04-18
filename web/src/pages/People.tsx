@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
 import { useAuth } from '@/hooks/useAuth'
@@ -45,53 +46,55 @@ function PersonRow({ person, onEdit, onDelete }: PersonRowProps) {
   const stage = person.person_pipeline?.[0]?.pipeline_stages
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
+    <tr className="hover:bg-cream-dark/30 transition-colors">
       <td className="px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-gray-900">{person.name ?? '—'}</p>
+          <p className="text-sm font-medium text-ekthos-black">{person.name ?? '—'}</p>
           {person.email && (
-            <p className="text-xs text-gray-500">{person.email}</p>
+            <p className="text-xs text-ekthos-black/50">{person.email}</p>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-600">
+      <td className="px-4 py-3 text-sm text-ekthos-black/60">
         {formatPhone(person.phone)}
       </td>
       <td className="px-4 py-3">
         {stage ? (
           <Badge label={stage.name} variant={stageToBadgeVariant(stage.slug)} />
         ) : (
-          <span className="text-xs text-gray-400">Sem stage</span>
+          <span className="text-xs text-ekthos-black/30">Sem stage</span>
         )}
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
           {person.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="text-xs bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">
+            <span key={tag} className="text-xs bg-brand-50 text-brand-800 rounded-full px-2 py-0.5 font-medium">
               {tag}
             </span>
           ))}
           {person.tags.length > 3 && (
-            <span className="text-xs text-gray-400">+{person.tags.length - 3}</span>
+            <span className="text-xs text-ekthos-black/40">+{person.tags.length - 3}</span>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500">
+      <td className="px-4 py-3 text-sm text-ekthos-black/50">
         {formatDate(person.created_at)}
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onEdit(person)}
-            className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+            title="Editar"
+            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-brand-600 hover:bg-brand-50 transition-all"
           >
-            Editar
+            <Pencil size={14} strokeWidth={1.75} />
           </button>
           <button
             onClick={() => onDelete(person)}
-            className="text-xs text-red-500 hover:text-red-600 font-medium"
+            title="Remover"
+            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-red-600 hover:bg-red-50 transition-all"
           >
-            Remover
+            <Trash2 size={14} strokeWidth={1.75} />
           </button>
         </div>
       </td>
@@ -138,8 +141,8 @@ export default function People() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pessoas</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="font-display text-2xl font-bold text-ekthos-black">Pessoas</h1>
+          <p className="text-sm text-ekthos-black/50 mt-1">
             {people ? `${people.length} cadastradas` : 'Carregando...'}
           </p>
         </div>
@@ -159,7 +162,7 @@ export default function People() {
       </div>
 
       {/* Tabela */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size="lg" />
@@ -176,16 +179,16 @@ export default function People() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Telefone</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stage</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tags</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Cadastro</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+                <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
+                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Nome</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Telefone</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Stage</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Tags</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Cadastro</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-cream-dark/40">
                 {displayedPeople.map((person) => (
                   <PersonRow
                     key={person.id}
