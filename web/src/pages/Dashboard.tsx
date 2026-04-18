@@ -49,7 +49,7 @@ function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="mb-4">
       <h2 className="font-display text-xl font-semibold text-ekthos-black">{title}</h2>
-      {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -66,49 +66,45 @@ function MetricCard({
   icon?: React.ReactNode
 }) {
   const borderMap = {
-    default: 'border-black/5',
+    default: 'border-cream-dark/50',
     green:   'border-success/20',
     yellow:  'border-warning/20',
     red:     'border-brand-200',
-    purple:  'border-purple-200',
-    blue:    'border-blue-200',
+    purple:  'border-wine/20',
+    blue:    'border-brand-200',
   }
   const valueColorMap = {
     default: 'text-ekthos-black',
     green:   'text-success',
     yellow:  'text-warning',
     red:     'text-brand-600',
-    purple:  'text-purple-700',
-    blue:    'text-blue-700',
+    purple:  'text-wine',
+    blue:    'text-brand-600',
   }
 
   const borderClass = borderMap[alert ? 'red' : color]
   const valueClass  = valueColorMap[alert ? 'red' : color]
 
   return (
-    <div className={`bg-white rounded-2xl border p-5 shadow-sm relative overflow-hidden ${borderClass}`}>
-      <div
-        className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-5"
-        style={{ background: '#f9eedc', transform: 'translate(30%, -30%)' }}
-      />
-      <div className="flex items-start justify-between relative">
-        <p className="text-xs font-medium leading-tight" style={{ color: '#8A8A8A' }}>
+    <div className={`bg-cream-light rounded-2xl border p-5 shadow-sm ${borderClass}`}>
+      <div className="flex items-start justify-between">
+        <p className="text-xs font-medium leading-tight text-ekthos-black/50">
           {label}
         </p>
         {icon && (
-          <span className={`${alert ? 'text-brand-600' : 'text-gray-300'}`}>
+          <span className={`${alert ? 'text-brand-600' : 'text-ekthos-black/20'}`}>
             {icon}
           </span>
         )}
       </div>
-      <p className={`font-mono-ekthos text-3xl font-bold mt-2 relative ${valueClass}`}>
+      <p className={`font-mono-ekthos text-3xl font-bold mt-2 ${valueClass}`}>
         {value}
       </p>
-      <div className="mt-2 flex items-center gap-2 flex-wrap relative">
-        {sub && <span className="text-xs text-gray-400">{sub}</span>}
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        {sub && <span className="text-xs text-ekthos-black/40">{sub}</span>}
         {meta && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            alert ? 'bg-brand-50 text-brand-600' : 'bg-cream text-ekthos-black'
+            alert ? 'bg-brand-50 text-brand-600' : 'bg-cream-dark/60 text-ekthos-black/60'
           }`}>
             {meta}
           </span>
@@ -165,24 +161,24 @@ function AlertaTable<T extends Record<string, unknown>>({
   empty?: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/5 shadow-sm">
-      <div className="px-5 py-4 border-b border-black/5">
+    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm">
+      <div className="px-5 py-4 border-b border-cream-dark/50">
         <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
       </div>
       {data.length === 0 ? (
-        <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-gray-400">
+        <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-ekthos-black/40">
           <CheckCircle size={16} strokeWidth={1.75} className="text-success shrink-0" />
           {empty ?? 'Nenhum registro'}
         </div>
       ) : (
-        <div className="divide-y divide-black/[0.03]">
+        <div className="divide-y divide-cream-dark/40">
           {data.map((row, i) => (
             <div key={i} className="px-5 py-3 flex items-center gap-3">
               {columns.map(col => (
                 <div key={String(col.key)} className="flex-1 min-w-0">
                   {col.render ? col.render(row[col.key], row) : (
-                    <span className="text-sm text-gray-700 truncate block">{String(row[col.key] ?? '-')}</span>
+                    <span className="text-sm text-ekthos-black/70 truncate block">{String(row[col.key] ?? '-')}</span>
                   )}
                 </div>
               ))}
@@ -201,10 +197,10 @@ function ChartCard({ title, sub, children, height = 220 }: {
   height?: number
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/5 shadow-sm">
-      <div className="px-5 py-4 border-b border-black/5">
+    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm">
+      <div className="px-5 py-4 border-b border-cream-dark/50">
         <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
       </div>
       <div className="p-4" style={{ height }}>
         {children}
@@ -262,7 +258,7 @@ export default function Dashboard() {
         <h1 className="font-display text-3xl font-bold text-ekthos-black">
           Dashboard Pastoral
         </h1>
-        <p className="text-sm text-gray-400 mt-1 capitalize">{now}</p>
+        <p className="text-sm text-ekthos-black/40 mt-1 capitalize">{now}</p>
       </div>
 
       {/* Alerta critico */}

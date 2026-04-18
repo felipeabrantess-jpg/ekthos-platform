@@ -20,18 +20,18 @@ interface NavItem {
 
 // Chave de módulo por rota — tem que bater com EnabledModules
 const ALL_NAV_ITEMS: NavItem[] = [
-  { path: '/dashboard',        label: 'Dashboard',    icon: <LayoutDashboard size={20} strokeWidth={1.75} />, moduleKey: null },
-  { path: '/pessoas',          label: 'Pessoas',      icon: <Users          size={20} strokeWidth={1.75} />, moduleKey: 'pessoas' },
-  { path: '/pipeline',         label: 'Pipeline',     icon: <GitBranch      size={20} strokeWidth={1.75} />, moduleKey: 'pipeline' },
-  { path: '/celulas',          label: 'Células',       icon: <Network        size={20} strokeWidth={1.75} />, moduleKey: 'celulas' },
-  { path: '/ministerios',      label: 'Ministérios',   icon: <Building2      size={20} strokeWidth={1.75} />, moduleKey: 'ministerios' },
-  { path: '/voluntarios',      label: 'Voluntários',   icon: <Heart          size={20} strokeWidth={1.75} />, moduleKey: 'voluntarios' },
-  { path: '/escalas',          label: 'Escalas',       icon: <CalendarRange  size={20} strokeWidth={1.75} />, moduleKey: 'escalas' },
-  { path: '/financeiro',       label: 'Financeiro',    icon: <Wallet         size={20} strokeWidth={1.75} />, moduleKey: 'financeiro' },
-  { path: '/agenda',           label: 'Agenda',        icon: <Calendar       size={20} strokeWidth={1.75} />, moduleKey: 'agenda' },
-  { path: '/gabinete',         label: 'Gabinete',      icon: <Lock           size={20} strokeWidth={1.75} />, moduleKey: 'gabinete' },
-  { path: '/agents',           label: 'Agentes IA',    icon: <Bot            size={20} strokeWidth={1.75} />, moduleKey: null },
-  { path: '/settings/billing', label: 'Configurações', icon: <Settings       size={20} strokeWidth={1.75} />, moduleKey: null },
+  { path: '/dashboard',        label: 'Dashboard',    icon: <LayoutDashboard size={16} strokeWidth={1.75} />, moduleKey: null },
+  { path: '/pessoas',          label: 'Pessoas',      icon: <Users          size={16} strokeWidth={1.75} />, moduleKey: 'pessoas' },
+  { path: '/pipeline',         label: 'Pipeline',     icon: <GitBranch      size={16} strokeWidth={1.75} />, moduleKey: 'pipeline' },
+  { path: '/celulas',          label: 'Células',       icon: <Network        size={16} strokeWidth={1.75} />, moduleKey: 'celulas' },
+  { path: '/ministerios',      label: 'Ministérios',   icon: <Building2      size={16} strokeWidth={1.75} />, moduleKey: 'ministerios' },
+  { path: '/voluntarios',      label: 'Voluntários',   icon: <Heart          size={16} strokeWidth={1.75} />, moduleKey: 'voluntarios' },
+  { path: '/escalas',          label: 'Escalas',       icon: <CalendarRange  size={16} strokeWidth={1.75} />, moduleKey: 'escalas' },
+  { path: '/financeiro',       label: 'Financeiro',    icon: <Wallet         size={16} strokeWidth={1.75} />, moduleKey: 'financeiro' },
+  { path: '/agenda',           label: 'Agenda',        icon: <Calendar       size={16} strokeWidth={1.75} />, moduleKey: 'agenda' },
+  { path: '/gabinete',         label: 'Gabinete',      icon: <Lock           size={16} strokeWidth={1.75} />, moduleKey: 'gabinete' },
+  { path: '/agents',           label: 'Agentes IA',    icon: <Bot            size={16} strokeWidth={1.75} />, moduleKey: null },
+  { path: '/settings/billing', label: 'Configurações', icon: <Settings       size={16} strokeWidth={1.75} />, moduleKey: null },
 ]
 
 export default function Sidebar() {
@@ -101,8 +101,8 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-150 border-l-[3px] ${
                 isActive
-                  ? 'text-white bg-white/[0.06]'
-                  : 'text-white/50 border-transparent hover:text-white/80 hover:bg-white/[0.04]'
+                  ? 'text-white bg-white/[0.06] rounded-r-lg'
+                  : 'text-white/50 border-transparent hover:text-white/80 hover:bg-white/[0.04] hover:rounded-lg'
               }`
             }
             style={({ isActive }) =>
@@ -196,7 +196,7 @@ export default function Sidebar() {
           <button
             onClick={logout}
             title="Sair"
-            className="text-white/30 hover:text-white/70 transition-colors"
+            className="text-white/50 hover:text-white/80 transition-colors"
           >
             <LogOut size={16} strokeWidth={1.75} />
           </button>
