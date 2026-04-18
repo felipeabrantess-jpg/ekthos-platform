@@ -22,7 +22,7 @@ interface NavItem {
 const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/dashboard',        label: 'Dashboard',    icon: <LayoutDashboard size={16} strokeWidth={1.75} />, moduleKey: null },
   { path: '/pessoas',          label: 'Pessoas',      icon: <Users          size={16} strokeWidth={1.75} />, moduleKey: 'pessoas' },
-  { path: '/pipeline',         label: 'Pipeline',     icon: <GitBranch      size={16} strokeWidth={1.75} />, moduleKey: 'pipeline' },
+  { path: '/pipeline',         label: 'Discipulado',  icon: <GitBranch      size={16} strokeWidth={1.75} />, moduleKey: 'pipeline' },
   { path: '/celulas',          label: 'Células',       icon: <Network        size={16} strokeWidth={1.75} />, moduleKey: 'celulas' },
   { path: '/ministerios',      label: 'Ministérios',   icon: <Building2      size={16} strokeWidth={1.75} />, moduleKey: 'ministerios' },
   { path: '/voluntarios',      label: 'Voluntários',   icon: <Heart          size={16} strokeWidth={1.75} />, moduleKey: 'voluntarios' },
@@ -91,7 +91,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto sidebar-scroll">
 
         {/* Itens habilitados */}
         {enabledItems.map((item) => (
@@ -157,7 +157,7 @@ export default function Sidebar() {
         <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5" style={{ color: 'rgba(249,238,220,0.3)' }}>
           Assistentes
         </p>
-        <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+        <div className="overflow-y-auto sidebar-scroll" style={{ maxHeight: '220px' }}>
           {planLoading && (
             <p className="text-[11px] px-3 py-1" style={{ color: 'rgba(249,238,220,0.3)' }}>
               Carregando...
