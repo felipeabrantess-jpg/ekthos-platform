@@ -117,6 +117,19 @@ Deno.serve(async (req: Request) => {
 
   console.log(`[stripe-checkout] user=${userId} church=${churchId} plan=${plan_slug}`)
 
+  // Busca email e nome do pastor para o metadata da sessão Stripe
+  let pastorEmail = ''
+  let pastorName  = ''
+  try {
+    const { data: userData } = await supabase.auth.admin.getUserById(userId)
+    pastorEmail = userData?.user?.email ?? ''
+    pastorName  = (userData?.user?.user_metadata?.full_name as string | undefined)
+               ?? (userData?.user?.user_metadata?.name      as string | undefined)
+               ?? ''
+  } catch (e) {
+    console.warn('[stripe-checkout] getUserById failed:', (e as Error).message)
+  }
+
   const { data: plan } = await supabase
     .from('plans')
     .select('id, slug, name')
@@ -172,7 +185,7 @@ Deno.serve(async (req: Request) => {
       line_items: [lineItem],
       success_url: `${success_url}${sep}session_id={CHECKOUT_SESSION_ID}`,
       cancel_url,
-      metadata: { church_id: churchId, plan_slug, plan_id: plan.id, initiated_by: userId },
+      metadata: { church_id: churchId, plan_slug, plan_id: plan.id, initiated_by: userId, pastor_email: pastorEmail, pastor_name: pastorName },
       allow_promotion_codes:      true,
       billing_address_collection: 'auto',
     })

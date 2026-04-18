@@ -17,6 +17,7 @@ interface Step {
 }
 
 interface ConfigSummary {
+  planSlug:      string
   churchName:    string
   city:          string
   state:         string
@@ -55,6 +56,24 @@ const STEP_LABELS: Record<number, string> = {
   19: 'Definindo metas pastorais',
   20: 'Finalizando configuração',
 }
+
+// ── Dados de plano ─────────────────────────────────────────
+const PLAN_INFO: Record<string, { name: string; price: string }> = {
+  chamado:    { name: 'Chamado',    price: 'R$689,90/mês'   },
+  missao:     { name: 'Missão',     price: 'R$1.639,90/mês' },
+  avivamento: { name: 'Avivamento', price: 'R$2.469,90/mês' },
+}
+
+const PLAN_AGENTS: Record<string, string[]> = {
+  chamado:    ['agent-suporte', 'agent-onboarding'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
+  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
+}
+
+const ADDON_AGENTS = [
+  'agent-financeiro', 'agent-reengajamento', 'agent-agenda',
+  'agent-escalas', 'agent-relatorios',
+]
 
 // ── Mapa slug → nome legível ───────────────────────────────
 const AGENT_NAMES: Record<string, string> = {
@@ -175,6 +194,14 @@ function CompletionScreen({
   summary: ConfigSummary
   onEnter: () => void
 }) {
+  const planInfo    = PLAN_INFO[summary.planSlug] ?? PLAN_INFO['chamado']
+  const includedSet = new Set(PLAN_AGENTS[summary.planSlug] ?? PLAN_AGENTS['chamado'])
+  const activeAgents = [...summary.agentsFree, ...summary.agentsIncluded]
+
+  // Agentes disponíveis como add-on: de planos superiores + addon fixos, excluindo os já incluídos
+  const allKnown     = [...new Set([...Object.values(PLAN_AGENTS).flat(), ...ADDON_AGENTS])]
+  const premiumAgents = allKnown.filter(s => !includedSet.has(s))
+
   return (
     <div className="px-6 pb-6 pt-5 border-t border-black/[0.06] fade-slide-up space-y-5">
 
@@ -192,6 +219,23 @@ function CompletionScreen({
         <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
           Seu CRM está configurado e personalizado para a operação pastoral da sua igreja.
         </p>
+      </div>
+
+      {/* Plano atual */}
+      <div
+        className="flex items-center justify-between px-4 py-3 rounded-2xl"
+        style={{ background: '#F9EEDC' }}
+      >
+        <div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Seu plano atual</p>
+          <p className="text-sm font-bold text-gray-900">{planInfo.name}</p>
+        </div>
+        <span
+          className="text-xs font-semibold px-3 py-1.5 rounded-full"
+          style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}
+        >
+          {planInfo.price}
+        </span>
       </div>
 
       {/* Identidade visual */}
@@ -222,7 +266,6 @@ function CompletionScreen({
             </p>
           )}
         </div>
-        {/* Paleta de cores */}
         <div className="flex gap-1 ml-auto shrink-0">
           <div
             className="w-5 h-5 rounded-full border border-black/10"
@@ -276,21 +319,19 @@ function CompletionScreen({
             <Users size={13} strokeWidth={2} style={{ color: '#E13500' }} />
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Agentes</p>
           </div>
-          <p className="text-2xl font-bold text-gray-900">
-            {summary.agentsFree.length + summary.agentsIncluded.length}
-          </p>
+          <p className="text-2xl font-bold text-gray-900">{activeAgents.length}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">ativos no CRM</p>
         </div>
       </div>
 
-      {/* Agentes ativos */}
-      {(summary.agentsFree.length > 0 || summary.agentsIncluded.length > 0) && (
+      {/* Agentes incluídos no plano */}
+      {activeAgents.length > 0 && (
         <div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-            Agentes ativos
+            Incluídos no seu plano
           </p>
           <div className="space-y-1.5">
-            {[...summary.agentsFree, ...summary.agentsIncluded].map(slug => (
+            {activeAgents.map(slug => (
               <div
                 key={slug}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100"
@@ -308,14 +349,14 @@ function CompletionScreen({
         </div>
       )}
 
-      {/* Agentes recomendados */}
-      {summary.agentsRecommended.length > 0 && (
+      {/* Agentes premium disponíveis */}
+      {premiumAgents.length > 0 && (
         <div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-            Recomendados para você
+            Disponíveis como add-on
           </p>
           <div className="space-y-1.5">
-            {summary.agentsRecommended.map(slug => (
+            {premiumAgents.slice(0, 5).map(slug => (
               <div
                 key={slug}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-black/[0.07]"
@@ -326,24 +367,54 @@ function CompletionScreen({
                 <span className="text-sm text-gray-600 flex-1">
                   {AGENT_NAMES[slug] ?? slug}
                 </span>
+                <span className="text-[11px] font-semibold shrink-0" style={{ color: '#E13500' }}>
+                  R$378,90/mês
+                </span>
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 text-center">
-            Ative-os em <strong>Agentes IA</strong> após entrar no CRM.
+        </div>
+      )}
+
+      {/* Agentes recomendados para a igreja */}
+      {summary.agentsRecommended.length > 0 && (
+        <div
+          className="rounded-2xl border border-dashed p-4 space-y-2"
+          style={{ borderColor: 'rgba(225,53,0,0.25)', background: 'rgba(225,53,0,0.02)' }}
+        >
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#E13500' }}>
+            Recomendamos para sua igreja
+          </p>
+          {summary.agentsRecommended.map(slug => (
+            <div key={slug} className="flex items-center gap-2 text-sm text-gray-600">
+              <Sparkles size={12} strokeWidth={1.75} style={{ color: '#E13500', flexShrink: 0 }} />
+              {AGENT_NAMES[slug] ?? slug}
+            </div>
+          ))}
+          <p className="text-[11px] text-gray-400 pt-1">
+            Ative em <strong>Configurações → Billing</strong> após entrar no CRM.
           </p>
         </div>
       )}
 
-      {/* CTA */}
-      <button
-        onClick={onEnter}
-        className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
-        style={{ background: '#E13500' }}
-      >
-        Entrar no CRM
-        <ArrowRight size={18} strokeWidth={2} />
-      </button>
+      {/* CTAs */}
+      <div className="space-y-2 pt-1">
+        <button
+          onClick={onEnter}
+          className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
+          style={{ background: '#E13500' }}
+        >
+          Entrar no meu CRM
+          <ArrowRight size={18} strokeWidth={2} />
+        </button>
+        <a
+          href="/settings/billing"
+          className="block text-center text-sm py-2 transition-colors hover:text-gray-700"
+          style={{ color: '#9CA3AF' }}
+        >
+          Conhecer outros planos →
+        </a>
+      </div>
     </div>
   )
 }
@@ -446,19 +517,32 @@ export default function OnboardingConfiguring() {
     try {
       const { data } = await supabase
         .from('onboarding_sessions')
-        .select('config_json, recommended_agents')
+        .select('config_json, recommended_agents, church_id')
         .eq('id', sessionId)
         .single()
 
       if (!data?.config_json) return
-      const c       = data.config_json as Record<string, unknown>
-      const tenant  = (c.tenant  as Record<string, unknown>) ?? {}
-      const agents  = (c.agents  as Record<string, unknown>) ?? {}
+
+      // Busca plan_slug da subscription da igreja
+      let planSlug = 'chamado'
+      if (data.church_id) {
+        const { data: sub } = await supabase
+          .from('subscriptions')
+          .select('plan_slug')
+          .eq('church_id', data.church_id)
+          .maybeSingle()
+        planSlug = (sub?.plan_slug as string | null) ?? 'chamado'
+      }
+
+      const c        = data.config_json as Record<string, unknown>
+      const tenant   = (c.tenant  as Record<string, unknown>) ?? {}
+      const agents   = (c.agents  as Record<string, unknown>) ?? {}
       const pipeline = (c.pipeline as Record<string, unknown>) ?? {}
       const depts    = (c.departments as Array<{ name: string }>) ?? []
       const cells    = ((c.cell_network as Record<string, unknown>)?.total_cells as number) ?? 0
 
       setSummary({
+        planSlug,
         churchName:        (tenant.name  as string) ?? '',
         city:              (tenant.city  as string) ?? '',
         state:             (tenant.state as string) ?? '',

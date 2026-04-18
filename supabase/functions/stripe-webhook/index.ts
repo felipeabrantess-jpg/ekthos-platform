@@ -292,13 +292,17 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
 
   console.log(`[stripe-webhook] checkout.session.completed church=${churchId} sub=${subId}`)
 
-  // Atualiza subscription
+  // plan_slug do metadata (passado pelo stripe-checkout)
+  const planSlug = session.metadata?.plan_slug ?? null
+
+  // Atualiza subscription (inclui plan_slug)
   await updateSubscription(churchId, {
-    stripe_subscription_id:    subId ?? undefined,
-    stripe_customer_id:        customerId ?? undefined,
+    stripe_subscription_id:     subId ?? undefined,
+    stripe_customer_id:         customerId ?? undefined,
     stripe_checkout_session_id: session.id,
-    status:                    'active',
-    updated_at:                new Date().toISOString(),
+    status:                     'active',
+    ...(planSlug ? { plan_slug: planSlug } : {}),
+    updated_at:                 new Date().toISOString(),
   })
 
   // PAYMENT GATE: transiciona church de pending_payment → onboarding
@@ -312,6 +316,42 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
     console.error('[stripe-webhook] falha ao atualizar church.status:', churchErr.message)
   } else {
     console.log(`[stripe-webhook] church ${churchId} → onboarding`)
+  }
+
+  // Envia convite de acesso ao pastor (non-fatal)
+  const pastorEmail = session.metadata?.pastor_email
+                   ?? session.customer_email
+                   ?? session.customer_details?.email
+                   ?? null
+
+  if (pastorEmail) {
+    try {
+      const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
+        pastorEmail,
+        {
+          redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'}/onboarding`,
+          data: {
+            full_name: session.metadata?.pastor_name ?? '',
+          },
+        },
+      )
+
+      if (inviteErr) {
+        console.warn('[stripe-webhook] inviteUserByEmail:', inviteErr.message)
+      } else if (invited?.user) {
+        // app_metadata não pode ser setado no invite — requer updateUserById
+        const { error: metaErr } = await supabase.auth.admin.updateUserById(
+          invited.user.id,
+          { app_metadata: { church_id: churchId, role: 'admin' } },
+        )
+        if (metaErr) console.warn('[stripe-webhook] updateUserById:', metaErr.message)
+        else console.log(`[stripe-webhook] pastor ${pastorEmail} convidado → church ${churchId}`)
+      }
+    } catch (e) {
+      console.warn('[stripe-webhook] invite failed:', (e as Error).message)
+    }
+  } else {
+    console.warn('[stripe-webhook] pastor email não encontrado no session — invite não enviado')
   }
 
   // Affiliate conversion (non-fatal)
