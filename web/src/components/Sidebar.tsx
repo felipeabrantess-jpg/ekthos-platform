@@ -91,7 +91,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navegação */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto sidebar-scroll">
 
         {/* Itens habilitados */}
         {enabledItems.map((item) => (
@@ -157,7 +157,7 @@ export default function Sidebar() {
         <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-1.5" style={{ color: 'rgba(249,238,220,0.3)' }}>
           Assistentes
         </p>
-        <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+        <div className="overflow-y-auto sidebar-scroll" style={{ maxHeight: '220px' }}>
           {planLoading && (
             <p className="text-[11px] px-3 py-1" style={{ color: 'rgba(249,238,220,0.3)' }}>
               Carregando...
