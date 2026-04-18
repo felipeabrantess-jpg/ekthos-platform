@@ -46,6 +46,13 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
 }
 
+// ── Agentes por plano (fonte da verdade — BUG 4) ─────────
+const PLAN_AGENTS: Record<string, string[]> = {
+  chamado:    ['agent-suporte', 'agent-onboarding'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
+  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
+}
+
 // ── Labels dos 20 steps ───────────────────────────────────
 const STEP_LABELS: Record<number, string> = {
   1:  'Criando sua igreja...',
@@ -112,7 +119,21 @@ Deno.serve(async (req: Request) => {
   await supabase.from('onboarding_steps').insert(stepsToInsert)
 
   const stepsFailed: string[] = []
-  let churchId: string | null = null
+
+  // ── Resolve churchId do usuário ANTES do loop ──────────────
+  // Busca sempre pelo user_roles — nunca por slug (evita apontar para church errada)
+  const { data: userRoleRow } = await supabase
+    .from('user_roles')
+    .select('church_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  let churchId: string | null = userRoleRow?.church_id ?? null
+
+  // Pré-popula session e steps com o church_id correto
+  if (churchId) {
+    await supabase.from('onboarding_sessions').update({ church_id: churchId }).eq('id', session_id)
+    await supabase.from('onboarding_steps').update({ church_id: churchId }).eq('session_id', session_id)
+  }
 
   // ── Executa steps sequencialmente ─────────────────────────
   for (let stepNum = 1; stepNum <= 20; stepNum++) {
@@ -121,22 +142,6 @@ Deno.serve(async (req: Request) => {
     try {
       await runStep(stepNum, config, user.id, churchId, session_id)
       await setStep(session_id, stepNum, 'done')
-
-      // Após step 1, churchId fica disponível
-      if (stepNum === 1 && !churchId) {
-        const { data } = await supabase
-          .from('churches')
-          .select('id')
-          .eq('slug', slugify((config.tenant as { slug?: string })?.slug ?? (config.tenant as { name?: string })?.name ?? ''))
-          .maybeSingle()
-        churchId = data?.id ?? null
-
-        // Atualiza session com church_id
-        if (churchId) {
-          await supabase.from('onboarding_sessions').update({ church_id: churchId }).eq('id', session_id)
-          await supabase.from('onboarding_steps').update({ church_id: churchId }).eq('session_id', session_id)
-        }
-      }
 
       // Pausa natural entre steps (distribui 25-30s em 20 steps)
       await sleep(800 + Math.random() * 400)
@@ -201,7 +206,7 @@ async function runStep(
   const templates    = (config.message_templates as Record<string, string>) ?? {}
 
   switch (stepNum) {
-    // ── 1. Cria tenant ─────────────────────────────────────
+    // ── 1. Atualiza/cria tenant ────────────────────────────
     case 1: {
       const slug           = slugify((tenant.slug as string) ?? (tenant.name as string) ?? 'igreja')
       const primaryColor   = (tenant.primary_color   as string | null) ?? '#e13500'
@@ -211,22 +216,24 @@ async function runStep(
         celulas: false, voluntarios: false, escalas: false, gabinete: false,
       }
 
-      const { error } = await supabase.from('churches').upsert({
-        name:               tenant.name,
+      const churchPayload = {
+        name:              tenant.name,
         slug,
-        is_active:          true,
-        status:             'onboarding',
-        city:               tenant.city,
-        state:              tenant.state,
-        timezone:           (tenant.timezone as string) ?? 'America/Sao_Paulo',
-        logo_url:           tenant.logo_url ?? null,
-        // Salva nas colunas diretas (lidas pelo useChurch) E no JSONB branding (compatibilidade)
-        primary_color:      primaryColor,
-        secondary_color:    secondaryColor,
-        branding:           { primary_color: primaryColor, secondary_color: secondaryColor },
-        enabled_modules:    enabledModules,
-        onboarding_config:  config,
-      }, { onConflict: 'slug' })
+        is_active:         true,
+        city:              tenant.city,
+        state:             tenant.state,
+        timezone:          (tenant.timezone as string) ?? 'America/Sao_Paulo',
+        logo_url:          tenant.logo_url ?? null,
+        primary_color:     primaryColor,
+        secondary_color:   secondaryColor,
+        branding:          { primary_color: primaryColor, secondary_color: secondaryColor },
+        enabled_modules:   enabledModules,
+        onboarding_config: config,
+      }
+
+      if (!churchId) throw new Error('church_id não encontrado para este usuário em user_roles')
+      // UPDATE direto pelo id — nunca pelo slug (evita colidir com outra church)
+      const { error } = await supabase.from('churches').update(churchPayload).eq('id', churchId)
       if (error) throw error
       break
     }
@@ -420,10 +427,14 @@ async function runStep(
       break
     }
 
-    // ── 11. Ativa agentes inclusos no plano ────────────────
+    // ── 11. Ativa agentes inclusos no plano (BUG 4 fix) ───
     case 11: {
       if (!churchId) break
-      const includedAgents = (agents.included_in_plan as string[]) ?? []
+      // Usa PLAN_AGENTS como fonte da verdade — ignora config_json
+      const planSlug      = (subscription.plan_slug as string) ?? 'chamado'
+      const allPlanAgents = PLAN_AGENTS[planSlug] ?? PLAN_AGENTS['chamado']
+      // agent-suporte já ativado no step 10 (source='free')
+      const includedAgents = allPlanAgents.filter(a => a !== 'agent-suporte')
       if (includedAgents.length === 0) break
       const { data: sub } = await supabase
         .from('subscriptions').select('id').eq('church_id', churchId).maybeSingle()

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Send, Loader, Upload, Check, User } from 'lucide-react'
+import { Send, Loader, Upload, Check, User, ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ──────────────────────────────────────────────────
@@ -48,6 +48,50 @@ const PLAN_SHORT: Record<string, string> = {
   missao:     'R$1.639,90/mês',
   avivamento: 'R$2.469,90/mês',
 }
+
+interface PlanCard {
+  slug:        string
+  name:        string
+  price:       string
+  maxUsers:    number
+  agents:      number
+  agentsList:  string[]
+  description: string
+  highlight:   boolean
+}
+
+const PLAN_CARDS: PlanCard[] = [
+  {
+    slug:        'chamado',
+    name:        'Chamado',
+    price:       'R$689,90/mês',
+    maxUsers:    2,
+    agents:      2,
+    agentsList:  ['Suporte IA', 'Onboarding'],
+    description: 'Para igrejas iniciando a organização pastoral.',
+    highlight:   false,
+  },
+  {
+    slug:        'missao',
+    name:        'Missão',
+    price:       'R$1.639,90/mês',
+    maxUsers:    4,
+    agents:      4,
+    agentsList:  ['Suporte IA', 'Onboarding', 'Cadastro', 'WhatsApp'],
+    description: 'Para igrejas em crescimento com múltiplas frentes.',
+    highlight:   true,
+  },
+  {
+    slug:        'avivamento',
+    name:        'Avivamento',
+    price:       'R$2.469,90/mês',
+    maxUsers:    4,
+    agents:      6,
+    agentsList:  ['Suporte IA', 'Onboarding', 'Cadastro', 'Conteúdo', 'WhatsApp', 'Métricas'],
+    description: 'Para igrejas grandes com operação completa.',
+    highlight:   false,
+  },
+]
 
 const COLOR_PALETTES: ColorPaletteOption[] = [
   { label: 'Fogo e Paixão',          primary: '#E13500', secondary: '#670000', emoji: '🔥' },
@@ -545,7 +589,10 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
 export default function Onboarding() {
   const [searchParams] = useSearchParams()
   const navigate       = useNavigate()
-  const planSlug       = searchParams.get('plan') ?? 'chamado'
+  const urlPlan        = searchParams.get('plan') ?? ''
+  // BUG 3: planSlug é estado — definido pelo usuário se não vier na URL
+  const [planSlug,     setPlanSlug]     = useState(urlPlan)
+  const [planSelected, setPlanSelected] = useState(!!urlPlan)
 
   const [messages,          setMessages]          = useState<Message[]>([])
   const [input,             setInput]             = useState('')
@@ -574,6 +621,7 @@ export default function Onboarding() {
   const inputRef       = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
+    if (!planSlug) return  // aguarda seleção de plano
     setMessages([{
       role:      'assistant',
       content:   `Olá! Seja muito bem-vindo à Ekthos! 🙏\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja com atenção a cada detalhe da sua operação pastoral.\n\nVocê escolheu o plano ${PLAN_LABEL[planSlug] ?? planSlug}. Ótima escolha!\n\nVamos começar: qual é o nome completo da sua igreja?`,
@@ -595,12 +643,15 @@ export default function Onboarding() {
     const content = (text ?? input).trim()
     if (!content || loading) return
 
+    const isUndo = content === '__UNDO__'
     setInput('')
     setCurrentWidget(null)
     setCurrentQuestionId(null)
     setLogoConfirm(null)
     setShowColorOverride(false)
-    setMessages(prev => [...prev, { role: 'user', content, timestamp: new Date() }])
+    if (!isUndo) {
+      setMessages(prev => [...prev, { role: 'user', content, timestamp: new Date() }])
+    }
     setLoading(true)
     setStreamingContent('')
 
@@ -814,6 +865,82 @@ export default function Onboarding() {
   const showingColorOverride = !!logoConfirm && showColorOverride
   const showingNormalWidget  = !logoConfirm && !!currentWidget
 
+  // ── BUG 3: tela de seleção de plano ───────────────────────
+  if (!planSelected) {
+    return (
+      <div className="h-screen flex flex-col" style={{ background: '#F9EEDC' }}>
+        {/* Header */}
+        <div className="flex items-center px-6 py-4 bg-white border-b border-black/[0.06] shrink-0">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-sm"
+            style={{ background: '#E13500' }}>E</div>
+          <span className="ml-3 font-semibold text-gray-900 text-sm">Ekthos</span>
+          <span className="text-gray-300 text-sm mx-2">·</span>
+          <span className="text-gray-500 text-sm">Escolha seu plano</span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">Qual plano se encaixa na sua igreja?</h1>
+            <p className="text-sm text-gray-500">Você poderá fazer upgrade a qualquer momento</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 w-full max-w-4xl">
+            {PLAN_CARDS.map(plan => (
+              <div
+                key={plan.slug}
+                className="relative flex flex-col rounded-2xl border-2 p-6 bg-white cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] active:scale-[1.00]"
+                style={{ borderColor: plan.highlight ? '#E13500' : '#E8E8E8' }}
+                onClick={() => { setPlanSlug(plan.slug); setPlanSelected(true) }}
+              >
+                {plan.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[11px] font-bold text-white"
+                    style={{ background: '#E13500' }}>
+                    Mais popular
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h2>
+                  <p className="text-xs text-gray-500 mb-3">{plan.description}</p>
+                  <p className="text-2xl font-bold" style={{ color: '#E13500' }}>{plan.price}</p>
+                </div>
+
+                <div className="space-y-1.5 mb-6 flex-1">
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">Incluído</p>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <Check size={12} strokeWidth={2.5} style={{ color: '#2D7A4F' }} />
+                    <span>Até {plan.maxUsers} usuários</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <Check size={12} strokeWidth={2.5} style={{ color: '#2D7A4F' }} />
+                    <span>{plan.agents} agentes de IA</span>
+                  </div>
+                  {plan.agentsList.map(a => (
+                    <div key={a} className="flex items-center gap-1.5 text-xs text-gray-500 pl-4">
+                      <span className="text-gray-300">└</span>
+                      <span>{a}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  className="w-full py-3 rounded-xl font-semibold text-sm transition-all"
+                  style={{
+                    background: plan.highlight ? '#E13500' : '#F9EEDC',
+                    color:      plan.highlight ? 'white'   : '#E13500',
+                  }}
+                >
+                  Escolher {plan.name}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen flex flex-col" style={{ background: '#F9EEDC' }}>
 
@@ -901,6 +1028,16 @@ export default function Onboarding() {
           {!isComplete && !showingLogoConfirm && !showingColorOverride && (
             <div className="px-5 py-4 bg-white border-t border-black/[0.06] shrink-0">
               <div className="flex gap-3 items-end">
+                {/* BUG 1: botão voltar */}
+                <button
+                  onClick={() => sendMessage('__UNDO__')}
+                  disabled={loading || uploading || blockIndex <= 1}
+                  title="Voltar à pergunta anterior"
+                  className="w-11 h-11 flex items-center justify-center rounded-xl border transition-all hover:border-[#E13500] hover:text-[#E13500] disabled:opacity-30 shrink-0"
+                  style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
+                >
+                  <ArrowLeft size={18} strokeWidth={1.75} />
+                </button>
                 <textarea
                   ref={inputRef}
                   value={input}
