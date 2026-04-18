@@ -478,7 +478,11 @@ export default function OnboardingConfiguring() {
   }
 
   function goToDashboard() {
-    navigate('/dashboard')
+    // Hard reload — força o AuthProvider a remontar e buscar churchStatus
+    // atualizado do banco (o engineer acabou de mudar para 'configured').
+    // navigate() faria navegação client-side e o StatusGuard leria o
+    // churchStatus em cache ('onboarding') e redirecionaria de volta.
+    window.location.href = '/dashboard'
   }
 
   const doneCount   = steps.filter(s => s.status === 'done').length
