@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users } from 'lucide-react'
+import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut } from 'lucide-react'
+import { useLogout } from '@/hooks/useAuth'
 
 const NAV = [
   { to: '/admin/cockpit',      label: 'Cockpit',      icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
@@ -13,6 +14,7 @@ const NAV = [
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const logout = useLogout()
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#f9eedc' }}>
@@ -63,6 +65,17 @@ export default function AdminLayout() {
               {label}
             </NavLink>
           ))}
+
+          {/* Logout */}
+          <div className="mt-auto pt-4 border-t border-white/10">
+            <button
+              onClick={logout}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/5 transition-all w-full"
+            >
+              <LogOut size={16} strokeWidth={1.75} />
+              Sair
+            </button>
+          </div>
         </aside>
 
         {/* Conteúdo */}
