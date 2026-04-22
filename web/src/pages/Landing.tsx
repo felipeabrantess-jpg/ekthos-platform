@@ -333,7 +333,7 @@ export default function Landing() {
           {/* Hero screenshot */}
           <div className="flex-1 w-full max-w-xl lg:max-w-none">
             <ScreenshotFrame
-              src="/screenshots/painel.svg"
+              src="/screenshots/painel.png"
               alt="Dashboard Ekthos Church — painel de gestão pastoral com métricas de membros, células e convertidos"
               url="app.ekthosai.net/dashboard"
             />
@@ -482,7 +482,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full order-1 lg:order-2">
               <ScreenshotFrame
-                src="/screenshots/painel.svg"
+                src="/screenshots/painel.png"
                 alt="Painel de controle Ekthos Church com métricas de 314 membros, 146 convertidos, 36 células e 61 líderes"
                 url="app.ekthosai.net/dashboard"
               />
@@ -498,7 +498,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full">
               <ScreenshotFrame
-                src="/screenshots/pessoas.svg"
+                src="/screenshots/pessoas.png"
                 alt="Lista de pessoas do Ekthos Church com filtros Visitante, Membro e Líder, busca e registro via QR Code"
                 url="app.ekthosai.net/pessoas"
               />
@@ -558,7 +558,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full order-1 lg:order-2">
               <ScreenshotFrame
-                src="/screenshots/ministerios.svg"
+                src="/screenshots/ministerios.png"
                 alt="Grid de ministérios da Ekthos Church com cards de Louvor, Diaconal, Comunicação e outros"
                 url="app.ekthosai.net/ministerios"
               />
@@ -574,7 +574,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full">
               <ScreenshotFrame
-                src="/screenshots/agenda.svg"
+                src="/screenshots/agenda.png"
                 alt="Relatório de acompanhamento pastoral da Ekthos Church com taxa de retenção de novos convertidos"
                 url="app.ekthosai.net/agenda"
               />
