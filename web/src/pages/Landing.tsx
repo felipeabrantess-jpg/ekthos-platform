@@ -200,7 +200,7 @@ export default function Landing() {
           {/* Logo */}
           <a href="/" className="flex items-center shrink-0">
             <img
-              src="/logo/ekthos-church-200.png"
+              src="/logo/ekthos-church.svg"
               alt="Ekthos Church"
               className="h-9 w-auto object-contain"
               onError={e => {
@@ -333,7 +333,7 @@ export default function Landing() {
           {/* Hero screenshot */}
           <div className="flex-1 w-full max-w-xl lg:max-w-none">
             <ScreenshotFrame
-              src="/screenshots/painel.png"
+              src="/screenshots/painel.svg"
               alt="Dashboard Ekthos Church — painel de gestão pastoral com métricas de membros, células e convertidos"
               url="app.ekthosai.net/dashboard"
             />
@@ -482,7 +482,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full order-1 lg:order-2">
               <ScreenshotFrame
-                src="/screenshots/painel.png"
+                src="/screenshots/painel.svg"
                 alt="Painel de controle Ekthos Church com métricas de 314 membros, 146 convertidos, 36 células e 61 líderes"
                 url="app.ekthosai.net/dashboard"
               />
@@ -498,7 +498,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full">
               <ScreenshotFrame
-                src="/screenshots/pessoas.png"
+                src="/screenshots/pessoas.svg"
                 alt="Lista de pessoas do Ekthos Church com filtros Visitante, Membro e Líder, busca e registro via QR Code"
                 url="app.ekthosai.net/pessoas"
               />
@@ -558,7 +558,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full order-1 lg:order-2">
               <ScreenshotFrame
-                src="/screenshots/ministerios.png"
+                src="/screenshots/ministerios.svg"
                 alt="Grid de ministérios da Ekthos Church com cards de Louvor, Diaconal, Comunicação e outros"
                 url="app.ekthosai.net/ministerios"
               />
@@ -574,7 +574,7 @@ export default function Landing() {
             {/* Screenshot */}
             <div className="flex-1 w-full">
               <ScreenshotFrame
-                src="/screenshots/agenda.png"
+                src="/screenshots/agenda.svg"
                 alt="Relatório de acompanhamento pastoral da Ekthos Church com taxa de retenção de novos convertidos"
                 url="app.ekthosai.net/agenda"
               />
@@ -832,9 +832,10 @@ export default function Landing() {
             <div>
               <div className="mb-4">
                 <img
-                  src="/logo/ekthos-church-white.png"
+                  src="/logo/ekthos-church.svg"
                   alt="Ekthos Church"
                   className="h-10 w-auto object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
                   onError={e => {
                     const el = e.currentTarget
                     el.style.display = 'none'

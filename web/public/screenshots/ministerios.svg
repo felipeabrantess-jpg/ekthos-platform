@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="-apple-system,'Segoe UI',sans-serif">
+  <defs>
+    <filter id="shadow-card"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#00000012"/></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="720" fill="#f9eedc"/>
+
+  <!-- ── Sidebar ── -->
+  <rect width="210" height="720" fill="#161616"/>
+  <rect x="20" y="20" width="32" height="32" rx="6" fill="#e13500"/>
+  <text x="36" y="41" fill="white" font-size="16" font-weight="700" text-anchor="middle">E</text>
+  <text x="62" y="35" fill="#f9eedc" font-size="13" font-weight="700" letter-spacing="0.5">EKTHOS</text>
+  <text x="62" y="48" fill="#e13500" font-size="9" font-weight="600" letter-spacing="2">CHURCH</text>
+  <rect x="0" y="68" width="210" height="1" fill="#ffffff10"/>
+  <text x="40" y="101" fill="#ffffff60" font-size="12">Dashboard</text>
+  <text x="40" y="133" fill="#ffffff60" font-size="12">Pessoas</text>
+  <text x="40" y="165" fill="#ffffff60" font-size="12">Discipulado</text>
+  <text x="40" y="197" fill="#ffffff60" font-size="12">Células</text>
+  <!-- Ministérios (active) -->
+  <rect x="0" y="206" width="3" height="38" fill="#e13500"/>
+  <rect x="3" y="206" width="207" height="38" fill="#ffffff0a"/>
+  <text x="40" y="229" fill="white" font-size="12" font-weight="600">Ministérios</text>
+  <text x="40" y="261" fill="#ffffff60" font-size="12">Voluntários</text>
+  <text x="40" y="293" fill="#ffffff60" font-size="12">Escalas</text>
+  <text x="40" y="325" fill="#ffffff60" font-size="12">Financeiro</text>
+  <text x="40" y="357" fill="#ffffff60" font-size="12">Agenda</text>
+  <circle cx="30" cy="690" r="14" fill="#e13500"/>
+  <text x="30" y="695" fill="white" font-size="11" font-weight="700" text-anchor="middle">PC</text>
+  <text x="52" y="686" fill="#f9eedc" font-size="11" font-weight="600">Pr. Carlos</text>
+  <text x="52" y="699" fill="#f9eedc50" font-size="10">admin</text>
+
+  <!-- ── Main content ── -->
+  <rect x="210" y="0" width="990" height="60" fill="#f9eedc"/>
+  <rect x="210" y="59" width="990" height="1" fill="#00000008"/>
+  <text x="234" y="26" fill="#161616" font-size="18" font-weight="700" font-family="Georgia,'Times New Roman',serif">Ministérios</text>
+  <text x="234" y="46" fill="#8A8A8A" font-size="12">8 ministérios ativos · 247 voluntários</text>
+  <rect x="1060" y="14" width="120" height="34" rx="10" fill="#e13500"/>
+  <text x="1120" y="36" fill="white" font-size="12" font-weight="600" text-anchor="middle">+ Ministério</text>
+
+  <!-- Ministry cards — 3 columns -->
+  <!-- Card 1: Louvor -->
+  <rect x="234" y="76" width="295" height="180" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <rect x="234" y="76" width="295" height="6" rx="3" fill="#e13500"/>
+  <rect x="254" y="102" width="40" height="40" rx="20" fill="#e1350015"/>
+  <text x="274" y="127" fill="#e13500" font-size="22" text-anchor="middle">🎵</text>
+  <text x="306" y="115" fill="#161616" font-size="14" font-weight="700">Louvor e Adoração</text>
+  <text x="306" y="132" fill="#8A8A8A" font-size="11">Ldr. Daniel Ferreira</text>
+  <rect x="254" y="154" width="1" height="40" fill="#f0e0c8"/>
+  <text x="280" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">MEMBROS</text>
+  <text x="280" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">42</text>
+  <rect x="364" y="154" width="1" height="40" fill="#f0e0c8"/>
+  <text x="390" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">ESCALAS</text>
+  <text x="390" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">8</text>
+  <text x="465" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">PRÓXIMO</text>
+  <text x="465" y="180" fill="#161616" font-size="11" font-weight="700" text-anchor="middle">Domingo</text>
+  <text x="465" y="192" fill="#8A8A8A" font-size="9" text-anchor="middle">27/04</text>
+  <rect x="254" y="228" width="110" height="24" rx="8" fill="#e13500"/>
+  <text x="309" y="244" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ver ministério</text>
+  <rect x="370" y="228" width="110" height="24" rx="8" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="425" y="244" fill="#5A5A5A" font-size="11" text-anchor="middle">Escala mensal</text>
+
+  <!-- Card 2: Infantil -->
+  <rect x="549" y="76" width="295" height="180" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <rect x="549" y="76" width="295" height="6" rx="3" fill="#2D7A4F"/>
+  <rect x="569" y="102" width="40" height="40" rx="20" fill="#2D7A4F15"/>
+  <text x="589" y="127" fill="#2D7A4F" font-size="22" text-anchor="middle">👶</text>
+  <text x="621" y="115" fill="#161616" font-size="14" font-weight="700">Ministério Infantil</text>
+  <text x="621" y="132" fill="#8A8A8A" font-size="11">Ldr. Patrícia Rocha</text>
+  <rect x="569" y="154" width="1" height="40" fill="#f0e0c8"/>
+  <text x="595" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">MEMBROS</text>
+  <text x="595" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">28</text>
+  <rect x="679" y="154" width="1" height="40" fill="#f0e0c8"/>
+  <text x="705" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">TURMAS</text>
+  <text x="705" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">4</text>
+  <text x="780" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">CRIANÇAS</text>
+  <text x="780" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">86</text>
+  <rect x="569" y="228" width="110" height="24" rx="8" fill="#e13500"/>
+  <text x="624" y="244" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ver ministério</text>
+  <rect x="685" y="228" width="110" height="24" rx="8" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="740" y="244" fill="#5A5A5A" font-size="11" text-anchor="middle">Ver turmas</text>
+
+  <!-- Card 3: Missões -->
+  <rect x="864" y="76" width="296" height="180" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <rect x="864" y="76" width="296" height="6" rx="3" fill="#670000"/>
+  <rect x="884" y="102" width="40" height="40" rx="20" fill="#67000015"/>
+  <text x="904" y="127" fill="#670000" font-size="22" text-anchor="middle">🌍</text>
+  <text x="936" y="115" fill="#161616" font-size="14" font-weight="700">Missões e Evangelismo</text>
+  <text x="936" y="132" fill="#8A8A8A" font-size="11">Ldr. Marcos Leite</text>
+  <rect x="884" y="154" width="1" height="40" fill="#f0e0c8"/>
+  <text x="910" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">MEMBROS</text>
+  <text x="910" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">31</text>
+  <rect x="994" y="154" width="1" height="40" fill="#f0e0c8"/>
+  <text x="1020" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">CAMPOS</text>
+  <text x="1020" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">3</text>
+  <text x="1110" y="168" fill="#8A8A8A" font-size="9" text-anchor="middle">ENVIADOS</text>
+  <text x="1110" y="185" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">7</text>
+  <rect x="884" y="228" width="110" height="24" rx="8" fill="#e13500"/>
+  <text x="939" y="244" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ver ministério</text>
+  <rect x="1000" y="228" width="110" height="24" rx="8" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="1055" y="244" fill="#5A5A5A" font-size="11" text-anchor="middle">Relatório</text>
+
+  <!-- Row 2 -->
+  <!-- Card 4: Jovens -->
+  <rect x="234" y="276" width="295" height="180" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <rect x="234" y="276" width="295" height="6" rx="3" fill="#C4841D"/>
+  <rect x="254" y="302" width="40" height="40" rx="20" fill="#C4841D15"/>
+  <text x="274" y="327" fill="#C4841D" font-size="22" text-anchor="middle">⚡</text>
+  <text x="306" y="315" fill="#161616" font-size="14" font-weight="700">Jovens — JEC</text>
+  <text x="306" y="332" fill="#8A8A8A" font-size="11">Ldr. Bruno Gomes</text>
+  <text x="280" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">MEMBROS</text>
+  <text x="280" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">67</text>
+  <text x="390" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">EVENTOS/MÊS</text>
+  <text x="390" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">6</text>
+  <text x="465" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">NOVOS</text>
+  <text x="465" y="385" fill="#2D7A4F" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">+11</text>
+  <rect x="254" y="428" width="110" height="24" rx="8" fill="#e13500"/>
+  <text x="309" y="444" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ver ministério</text>
+
+  <!-- Card 5: Intercessão -->
+  <rect x="549" y="276" width="295" height="180" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <rect x="549" y="276" width="295" height="6" rx="3" fill="#2B6CB0"/>
+  <rect x="569" y="302" width="40" height="40" rx="20" fill="#2B6CB015"/>
+  <text x="589" y="327" fill="#2B6CB0" font-size="22" text-anchor="middle">🙏</text>
+  <text x="621" y="315" fill="#161616" font-size="14" font-weight="700">Intercessão</text>
+  <text x="621" y="332" fill="#8A8A8A" font-size="11">Ldr. Irmã Maria José</text>
+  <text x="595" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">MEMBROS</text>
+  <text x="595" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">19</text>
+  <text x="705" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">JEJUNS/MÊS</text>
+  <text x="705" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">4</text>
+  <text x="780" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">VIGÍLIAS</text>
+  <text x="780" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">2</text>
+  <rect x="569" y="428" width="110" height="24" rx="8" fill="#e13500"/>
+  <text x="624" y="444" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ver ministério</text>
+
+  <!-- Card 6: Diaconia -->
+  <rect x="864" y="276" width="296" height="180" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <rect x="864" y="276" width="296" height="6" rx="3" fill="#2D7A4F"/>
+  <rect x="884" y="302" width="40" height="40" rx="20" fill="#2D7A4F15"/>
+  <text x="904" y="327" fill="#2D7A4F" font-size="22" text-anchor="middle">❤️</text>
+  <text x="936" y="315" fill="#161616" font-size="14" font-weight="700">Diaconia Social</text>
+  <text x="936" y="332" fill="#8A8A8A" font-size="11">Diác. Sandra Lima</text>
+  <text x="910" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">VOLUNTÁRIOS</text>
+  <text x="910" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">23</text>
+  <text x="1020" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">FAMÍLIAS</text>
+  <text x="1020" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">48</text>
+  <text x="1110" y="368" fill="#8A8A8A" font-size="9" text-anchor="middle">CESTAS/MÊS</text>
+  <text x="1110" y="385" fill="#161616" font-size="18" font-weight="700" text-anchor="middle" font-family="'Courier New',monospace">48</text>
+  <rect x="884" y="428" width="110" height="24" rx="8" fill="#e13500"/>
+  <text x="939" y="444" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ver ministério</text>
+
+  <!-- Summary section -->
+  <rect x="234" y="476" width="926" height="60" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="254" y="501" fill="#8A8A8A" font-size="10" font-weight="600" letter-spacing="0.8">TOTAL DE VOLUNTÁRIOS ATIVOS POR MINISTÉRIO</text>
+  <!-- Progress bars -->
+  <text x="254" y="520" fill="#5A5A5A" font-size="10">Louvor (42)</text>
+  <rect x="340" y="512" width="120" height="8" rx="4" fill="#f0e0c8"/>
+  <rect x="340" y="512" width="88" height="8" rx="4" fill="#e13500"/>
+  <text x="530" y="520" fill="#5A5A5A" font-size="10">Jovens (67)</text>
+  <rect x="616" y="512" width="120" height="8" rx="4" fill="#f0e0c8"/>
+  <rect x="616" y="512" width="120" height="8" rx="4" fill="#C4841D"/>
+  <text x="810" y="520" fill="#5A5A5A" font-size="10">Infantil (28)</text>
+  <rect x="886" y="512" width="120" height="8" rx="4" fill="#f0e0c8"/>
+  <rect x="886" y="512" width="60" height="8" rx="4" fill="#2D7A4F"/>
+  <text x="1086" y="520" fill="#5A5A5A" font-size="10">Outros (87)</text>
+</svg>
