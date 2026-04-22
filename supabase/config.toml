@@ -72,3 +72,10 @@ verify_jwt = false
 # ── Infraestrutura de Batch ────────────────────────────────────────────────────
 [functions.batch-resolve]
 verify_jwt = false   # autenticado via bearer token do n8n, não JWT de usuário
+
+# ── Landing Page — captação pública ───────────────────────────────────────────
+[functions.stripe-checkout-public]
+verify_jwt = false   # público — pastor ainda não tem conta
+
+[functions.lead-capture]
+verify_jwt = false   # público — pastor ainda não tem conta

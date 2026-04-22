@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom'
 import {
   Check, ChevronDown, Menu, X, Star, Zap, Crown,
   Users, BarChart2, Wallet, CalendarRange, Bell, Heart,
-  Bot, MessageCircle, Shield, TrendingUp, Building2,
+  Bot, MessageCircle, Shield, TrendingUp, Building2, UserPlus,
 } from 'lucide-react'
 
 // ── Env ────────────────────────────────────────────────────
@@ -33,70 +33,6 @@ function getUtmParams() {
   }
 }
 
-// ── Planos ─────────────────────────────────────────────────
-const PLANS = [
-  {
-    slug:        'chamado',
-    name:        'Chamado',
-    price:       'R$389',
-    period:      '/mês',
-    description: 'Para igrejas que estão começando a digitalizar a operação pastoral.',
-    badge:       null,
-    icon:        <Star size={22} strokeWidth={1.75} />,
-    color:       '#5A5A5A',
-    features: [
-      'Até 2 usuários',
-      'Dashboard pastoral completo',
-      'Cadastro e acompanhamento de membros',
-      'Caminho de discipulado (pipeline)',
-      'Rede de células',
-      'Agente Suporte 24h (incluído)',
-      'Suporte por email',
-    ],
-    notIncluded: ['Agentes IA avançados', 'Automações', 'Multi-site'],
-  },
-  {
-    slug:        'missao',
-    name:        'Missão',
-    price:       'R$698',
-    period:      '/mês',
-    description: 'Para igrejas em crescimento que querem automação inteligente.',
-    badge:       'Mais popular',
-    icon:        <Zap size={22} strokeWidth={1.75} />,
-    color:       '#e13500',
-    features: [
-      'Até 3 usuários',
-      'Tudo do plano Chamado',
-      '3 agentes IA inclusos',
-      'Relatórios automáticos',
-      'Automações pastorais',
-      'Escalas de voluntários',
-      'Suporte prioritário',
-    ],
-    notIncluded: ['Multi-site', 'Agente WhatsApp'],
-  },
-  {
-    slug:        'avivamento',
-    name:        'Avivamento',
-    price:       'R$1.015',
-    period:      '/mês',
-    description: 'Para igrejas grandes com operação pastoral complexa e multi-site.',
-    badge:       null,
-    icon:        <Crown size={22} strokeWidth={1.75} />,
-    color:       '#670000',
-    features: [
-      'Até 4 usuários',
-      'Tudo do plano Missão',
-      '6 agentes IA inclusos',
-      'Agente WhatsApp incluso',
-      'Multi-site (múltiplas sedes)',
-      'Importação de dados',
-      'Suporte dedicado',
-    ],
-    notIncluded: [],
-  },
-]
-
 // ── FAQ ────────────────────────────────────────────────────
 const FAQ_ITEMS = [
   {
@@ -108,11 +44,7 @@ const FAQ_ITEMS = [
     a: 'Sim. Utilizamos infraestrutura de nível bancário (Supabase + PostgreSQL com criptografia em repouso e em trânsito). Seus membros e dados pastorais ficam 100% privados e você pode exportar tudo a qualquer momento.',
   },
   {
-    q: 'Posso cancelar quando quiser?',
-    a: 'Sim, sem multa. Você pode cancelar a qualquer momento pelo painel de configurações. Você continua com acesso até o fim do período pago.',
-  },
-  {
-    q: 'Como funciona o período de migração gratuito?',
+    q: 'Como funciona a migração gratuita?',
     a: 'Nossa equipe importa seus dados de planilhas, sistemas anteriores ou qualquer formato. Para as próximas 50 igrejas, essa migração é feita sem custo adicional.',
   },
   {
@@ -127,6 +59,10 @@ const FAQ_ITEMS = [
     q: 'O que acontece depois que eu contratar?',
     a: 'Você receberá um email para criar sua senha e acesso. Logo em seguida, nosso Consultor de Onboarding — um assistente com IA — guia você em 20 perguntas simples e configura todo o CRM em menos de 30 minutos.',
   },
+  {
+    q: 'Como funciona a consultoria nos planos Missão e Avivamento?',
+    a: 'Ao solicitar contato, um consultor pastoral entra em contato em até 24h para entender a realidade da sua igreja e apresentar uma proposta personalizada. O processo é guiado e sem pressão.',
+  },
 ]
 
 // ══════════════════════════════════════════════════════════
@@ -134,11 +70,12 @@ const FAQ_ITEMS = [
 // ══════════════════════════════════════════════════════════
 
 export default function Landing() {
-  const [menuOpen,     setMenuOpen]     = useState(false)
-  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
-  const [showWa,       setShowWa]       = useState(false)
-  const [faqOpen,      setFaqOpen]      = useState<number | null>(null)
-  const [scrolled,     setScrolled]     = useState(false)
+  const [menuOpen,      setMenuOpen]      = useState(false)
+  const [checkoutPlan,  setCheckoutPlan]  = useState<string | null>(null)
+  const [showWa,        setShowWa]        = useState(false)
+  const [faqOpen,       setFaqOpen]       = useState<number | null>(null)
+  const [scrolled,      setScrolled]      = useState(false)
+  const [leadModal,     setLeadModal]     = useState<'missao' | 'avivamento' | null>(null)
   const pricingRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -151,6 +88,12 @@ export default function Landing() {
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Bloqueia scroll do body quando modal está aberto
+  useEffect(() => {
+    document.body.style.overflow = leadModal ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [leadModal])
 
   async function handleCheckout(planSlug: string) {
     if (checkoutPlan) return
@@ -215,7 +158,7 @@ export default function Landing() {
             {[
               { label: 'Funcionalidades', href: '#funcionalidades' },
               { label: 'Agentes IA',      href: '#agentes' },
-              { label: 'Preços',          href: '#pricing' },
+              { label: 'Planos',          href: '#pricing' },
               { label: 'FAQ',             href: '#faq' },
             ].map(l => (
               <a key={l.href} href={l.href}
@@ -250,7 +193,7 @@ export default function Landing() {
             {['#funcionalidades', '#agentes', '#pricing', '#faq'].map((href, i) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
                 className="text-sm font-medium py-1 text-gray-600">
-                {['Funcionalidades', 'Agentes IA', 'Preços', 'FAQ'][i]}
+                {['Funcionalidades', 'Agentes IA', 'Planos', 'FAQ'][i]}
               </a>
             ))}
             <div className="flex gap-3 pt-2">
@@ -615,12 +558,12 @@ export default function Landing() {
         style={{ background: 'rgba(249,238,220,0.40)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos e preços</p>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
               Investimento que se paga com o primeiro membro retido
             </h2>
             <p className="text-lg max-w-xl mx-auto text-gray-500">
-              Cancele quando quiser. Sem fidelidade. Sem pegadinhas.
+              Do self-service ao consultivo — escolha o que faz sentido para a sua igreja.
             </p>
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mt-6"
               style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500', border: '1px solid rgba(225,53,0,0.2)' }}>
@@ -629,14 +572,183 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 items-start">
-            {PLANS.map(plan => (
-              <PlanCard
-                key={plan.slug}
-                plan={plan}
-                loading={checkoutPlan === plan.slug}
-                onCheckout={handleCheckout}
-              />
-            ))}
+            {/* ── CHAMADO (self-service) ── */}
+            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 flex flex-col">
+              <div className="p-7 flex-1">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: 'rgba(90,90,90,0.08)', color: '#5A5A5A' }}>
+                    <Star size={22} strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base text-[#161616]">Chamado</p>
+                    <p className="text-xs text-[#8A8A8A]">Para igrejas que estão começando a digitalizar a operação pastoral.</p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <span className="font-mono font-bold text-4xl text-[#161616]">R$689,90</span>
+                  <span className="text-sm ml-1 text-[#8A8A8A]">/mês</span>
+                </div>
+
+                <ul className="space-y-2.5 mb-6">
+                  {[
+                    'Até 2 usuários',
+                    'Dashboard pastoral completo',
+                    'Cadastro e acompanhamento de membros',
+                    'Caminho de discipulado (pipeline)',
+                    'Rede de células',
+                    'Agente Suporte 24h (incluído)',
+                    'Suporte por email',
+                  ].map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm">
+                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+                      <span className="text-[#161616]">{f}</span>
+                    </li>
+                  ))}
+                  {['Agentes IA avançados', 'Automações', 'Multi-site'].map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm opacity-40">
+                      <X size={15} strokeWidth={2} style={{ color: '#999', flexShrink: 0, marginTop: 1 }} />
+                      <span className="text-[#8A8A8A]">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="px-7 pb-7">
+                <button
+                  onClick={() => handleCheckout('chamado')}
+                  disabled={checkoutPlan === 'chamado'}
+                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
+                  {checkoutPlan === 'chamado' ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Aguarde...
+                    </span>
+                  ) : 'Contratar agora →'}
+                </button>
+                <p className="text-center text-xs mt-2 text-[#AAA]">Acesso imediato</p>
+              </div>
+            </div>
+
+            {/* ── MISSÃO (consultivo) ── */}
+            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-2xl scale-[1.02] flex flex-col">
+              {/* Badge */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
+                  style={{ background: '#e13500' }}>⭐ Mais popular</span>
+              </div>
+
+              <div className="p-7 flex-1">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500' }}>
+                    <Zap size={22} strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base" style={{ color: '#f9eedc' }}>Missão</p>
+                    <p className="text-xs" style={{ color: 'rgba(249,238,220,0.5)' }}>Para igrejas em crescimento que querem automação inteligente.</p>
+                  </div>
+                </div>
+
+                {/* Sem preço — venda consultiva */}
+                <div className="mb-6">
+                  <span className="font-display font-bold text-2xl" style={{ color: '#f9eedc' }}>Plano personalizado</span>
+                  <p className="text-xs mt-1" style={{ color: 'rgba(249,238,220,0.4)' }}>Proposta sob medida para a sua realidade</p>
+                </div>
+
+                <ul className="space-y-2.5 mb-6">
+                  {[
+                    'Até 3 usuários',
+                    'Tudo do plano Chamado',
+                    '3 agentes IA inclusos',
+                    'Relatórios automáticos',
+                    'Automações pastorais',
+                    'Escalas de voluntários',
+                    'Suporte prioritário',
+                  ].map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm">
+                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ color: 'rgba(249,238,220,0.8)' }}>{f}</span>
+                    </li>
+                  ))}
+                  {['Multi-site', 'Agente WhatsApp'].map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm opacity-40">
+                      <X size={15} strokeWidth={2} style={{ color: '#999', flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ color: 'rgba(249,238,220,0.5)' }}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="px-7 pb-7">
+                <button
+                  onClick={() => setLeadModal('missao')}
+                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: '#e13500', color: '#ffffff', minHeight: 52 }}>
+                  Solicitar contato →
+                </button>
+                <p className="text-center text-xs mt-2" style={{ color: 'rgba(249,238,220,0.35)' }}>
+                  Consultoria personalizada
+                </p>
+              </div>
+            </div>
+
+            {/* ── AVIVAMENTO (consultivo) ── */}
+            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 flex flex-col">
+              {/* Badge */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
+                  style={{ background: '#670000' }}>👑 Completo</span>
+              </div>
+
+              <div className="p-7 flex-1 pt-10">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: 'rgba(103,0,0,0.08)', color: '#670000' }}>
+                    <Crown size={22} strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base text-[#161616]">Avivamento</p>
+                    <p className="text-xs text-[#8A8A8A]">Para igrejas grandes com operação pastoral complexa e multi-site.</p>
+                  </div>
+                </div>
+
+                {/* Sem preço — venda consultiva */}
+                <div className="mb-6">
+                  <span className="font-display font-bold text-2xl text-[#161616]">Plano sob medida</span>
+                  <p className="text-xs mt-1 text-[#8A8A8A]">Proposta dedicada para operações complexas</p>
+                </div>
+
+                <ul className="space-y-2.5 mb-6">
+                  {[
+                    'Até 4 usuários',
+                    'Tudo do plano Missão',
+                    '6 agentes IA inclusos',
+                    'Agente WhatsApp incluso',
+                    'Multi-site (múltiplas sedes)',
+                    'Importação de dados',
+                    'Suporte dedicado',
+                  ].map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm">
+                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+                      <span className="text-[#161616]">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="px-7 pb-7">
+                <button
+                  onClick={() => setLeadModal('avivamento')}
+                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: '#e13500', color: '#ffffff', minHeight: 52 }}>
+                  Solicitar contato →
+                </button>
+                <p className="text-center text-xs mt-2 text-[#AAA]">Acompanhamento dedicado</p>
+              </div>
+            </div>
           </div>
 
           {/* Addons */}
@@ -783,7 +895,7 @@ export default function Landing() {
             Sua congregação está esperando por um pastor mais presente
           </h2>
           <p className="text-lg mb-3 max-w-xl mx-auto text-white/80">
-            Setup em 30 minutos. Migração gratuita. Cancele quando quiser.
+            Setup em 30 minutos. Migração gratuita.
           </p>
           <p className="text-sm italic mb-10 text-white/55">
             "O bom pastor dá a sua vida pelas ovelhas." — Jo 10:11
@@ -792,7 +904,7 @@ export default function Landing() {
             <button onClick={scrollToPricing}
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
               style={{ color: '#e13500', minHeight: 56 }}>
-              Ver planos e preços
+              Ver planos
             </button>
             <a href={waHref} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base border-2 transition-all hover:bg-white/10 text-white"
@@ -827,7 +939,7 @@ export default function Landing() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Produto</p>
               <ul className="space-y-2.5">
-                {['Funcionalidades','Preços','Agentes IA','Changelog'].map(l => (
+                {['Funcionalidades','Planos','Agentes IA','Changelog'].map(l => (
                   <li key={l}><a href="#" className="text-sm transition-colors"
                     style={{ color: 'rgba(249,238,220,0.5)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
@@ -889,184 +1001,229 @@ export default function Landing() {
           50%       { box-shadow: 0 0 0 12px rgba(37,211,102,0); }
         }
       `}</style>
-    </div>
-  )
-}
 
-// ══════════════════════════════════════════════════════════
-// SUBCOMPONENTES
-// ══════════════════════════════════════════════════════════
-
-// ── Screenshot com browser frame ───────────────────────────
-function ScreenshotFrame({ src, alt, url }: { src: string; alt: string; url: string }) {
-  const [failed, setFailed] = useState(false)
-
-  return (
-    <div className="relative group">
-      {/* Glow sutil */}
-      <div className="absolute inset-0 rounded-3xl blur-3xl opacity-10 pointer-events-none"
-        style={{ background: '#e13500', transform: 'scale(0.9) translateY(8%)' }} />
-      {/* Frame */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.18)]">
-        {/* Browser chrome */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <div className="flex gap-1.5">
-            {['#FF5F57','#FEBC2E','#28C840'].map(c => (
-              <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />
-            ))}
-          </div>
-          <div className="flex-1 mx-3">
-            <div className="rounded-md px-3 py-1 text-xs bg-gray-100 text-gray-400">
-              {url}
-            </div>
-          </div>
-        </div>
-        {/* Screenshot ou fallback */}
-        {!failed ? (
-          <img
-            src={src}
-            alt={alt}
-            loading="lazy"
-            className="w-full h-auto block"
-            onError={() => setFailed(true)}
-          />
-        ) : (
-          <ScreenshotPlaceholder />
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ── Placeholder quando screenshot não carrega ───────────────
-function ScreenshotPlaceholder() {
-  return (
-    <div className="p-5" style={{ background: '#f9eedc', minHeight: 280 }}>
-      <div className="flex gap-3 h-full">
-        <div className="w-8 flex flex-col gap-2 pt-1">
-          {[0,1,2,3,4].map(i => (
-            <div key={i} className="w-full h-5 rounded"
-              style={{ background: i === 0 ? '#e13500' : '#d4c4ac', opacity: i === 0 ? 1 : 0.4 }} />
-          ))}
-        </div>
-        <div className="flex-1 space-y-3">
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { l: 'Membros',    n: '314', c: '#e13500' },
-              { l: 'Convertidos',n: '146', c: '#670000' },
-              { l: 'Células',    n: '36',  c: '#2D7A4F' },
-              { l: 'Líderes',    n: '61',  c: '#C4841D' },
-            ].map(m => (
-              <div key={m.l} className="bg-white rounded-lg p-2 border border-[#f0e0c8]">
-                <p className="font-mono font-bold text-sm" style={{ color: m.c }}>{m.n}</p>
-                <p className="text-[9px] mt-0.5 text-gray-400">{m.l}</p>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {[0,1].map(i => (
-              <div key={i} className="bg-white rounded-lg p-3 border border-[#f0e0c8]" style={{ height: 80 }}>
-                <div className="text-[9px] font-semibold mb-2 text-gray-400">
-                  {i === 0 ? 'Crescimento' : 'Retenção'}
-                </div>
-                <div className="flex items-end gap-1 h-10">
-                  {[60,80,55,90,70,85,100].map((h, j) => (
-                    <div key={j} className="flex-1 rounded-sm"
-                      style={{ height: `${h * 0.4}px`, background: j === 6 ? '#e13500' : '#f0e0c8' }} />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Card de plano ──────────────────────────────────────────
-function PlanCard({ plan, loading, onCheckout }: {
-  plan: typeof PLANS[0]
-  loading: boolean
-  onCheckout: (slug: string) => void
-}) {
-  const isPopular = !!plan.badge
-  return (
-    <div className={`relative rounded-2xl flex flex-col transition-all duration-200 ${
-      isPopular
-        ? 'shadow-2xl scale-[1.02] border-2'
-        : 'border border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-1'
-    }`}
-      style={{
-        background:  isPopular ? '#161616' : '#ffffff',
-        borderColor: isPopular ? '#e13500' : undefined,
-      }}>
-
-      {isPopular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-            style={{ background: '#e13500' }}>⭐ {plan.badge}</span>
-        </div>
+      {/* ── MODAL DE LEAD ─────────────────────────────────────── */}
+      {leadModal && (
+        <LeadModal
+          plan={leadModal}
+          supabaseUrl={SUPABASE_URL}
+          utmParams={getUtmParams()}
+          onClose={() => setLeadModal(null)}
+        />
       )}
+    </div>
+  )
+}
 
-      <div className="p-7 flex-1">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: isPopular ? 'rgba(225,53,0,0.15)' : 'rgba(225,53,0,0.08)', color: plan.color }}>
-            {plan.icon}
-          </div>
-          <div>
-            <p className="font-semibold text-base" style={{ color: isPopular ? '#f9eedc' : '#161616' }}>{plan.name}</p>
-            <p className="text-xs" style={{ color: isPopular ? 'rgba(249,238,220,0.5)' : '#8A8A8A' }}>{plan.description}</p>
-          </div>
-        </div>
+// ══════════════════════════════════════════════════════════
+// MODAL DE CAPTAÇÃO DE LEAD
+// ══════════════════════════════════════════════════════════
 
-        <div className="mb-6">
-          <span className="font-mono font-bold text-4xl" style={{ color: isPopular ? '#f9eedc' : '#161616' }}>
-            {plan.price}
-          </span>
-          <span className="text-sm ml-1" style={{ color: isPopular ? 'rgba(249,238,220,0.45)' : '#8A8A8A' }}>
-            {plan.period}
-          </span>
-        </div>
+interface LeadModalProps {
+  plan: 'missao' | 'avivamento'
+  supabaseUrl: string
+  utmParams: { source: string; medium: string; campaign: string; content: string }
+  onClose: () => void
+}
 
-        <ul className="space-y-2.5 mb-6">
-          {plan.features.map(f => (
-            <li key={f} className="flex items-start gap-2.5 text-sm">
-              <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-              <span style={{ color: isPopular ? 'rgba(249,238,220,0.8)' : '#161616' }}>{f}</span>
-            </li>
-          ))}
-          {plan.notIncluded.map(f => (
-            <li key={f} className="flex items-start gap-2.5 text-sm opacity-40">
-              <X size={15} strokeWidth={2} style={{ color: '#999', flexShrink: 0, marginTop: 1 }} />
-              <span style={{ color: isPopular ? 'rgba(249,238,220,0.5)' : '#8A8A8A' }}>{f}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
+  const planLabel = plan === 'missao' ? 'Missão' : 'Avivamento'
 
-      <div className="px-7 pb-7">
-        <button
-          onClick={() => onCheckout(plan.slug)}
-          disabled={loading}
-          className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-          style={{
-            background: isPopular ? '#e13500' : 'transparent',
-            color:      isPopular ? '#ffffff' : '#e13500',
-            border:     isPopular ? 'none' : '2px solid #e13500',
-            minHeight:  52,
-          }}>
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              Aguarde...
+  const [form, setForm] = useState({
+    name:              '',
+    email:             '',
+    phone:             '',
+    church_name:       '',
+    estimated_members: '',
+  })
+  const [sending,  setSending]  = useState(false)
+  const [success,  setSuccess]  = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setErrorMsg('')
+    setSending(true)
+
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/lead-capture`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          ...form,
+          plan_interest: planLabel,
+          utm_source:    utmParams.source,
+          utm_medium:    utmParams.medium,
+          utm_campaign:  utmParams.campaign,
+        }),
+      })
+      const data = await res.json() as { success?: boolean; error?: string }
+      if (!res.ok || !data.success) throw new Error(data.error ?? 'Erro ao enviar')
+      setSuccess(true)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro inesperado'
+      setErrorMsg(msg)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
+        {/* Header */}
+        <div className="px-8 pt-8 pb-5 border-b border-gray-100">
+          <button
+            onClick={onClose}
+            className="absolute top-5 right-5 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <X size={18} />
+          </button>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
+              style={{ background: '#e13500' }}>
+              <UserPlus size={12} /> Plano {planLabel}
             </span>
-          ) : `Contratar ${plan.name}`}
-        </button>
-        <p className="text-center text-xs mt-2" style={{ color: isPopular ? 'rgba(249,238,220,0.35)' : '#AAA' }}>
-          Sem fidelidade · Cancele quando quiser
-        </p>
+          </div>
+          <h2 className="font-display text-xl font-bold text-[#161616]">
+            Solicitar contato
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Preencha os dados abaixo e um consultor entrará em contato em até 24h.
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="px-8 py-6">
+          {success ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                style={{ background: 'rgba(45,122,79,0.1)' }}>
+                <Check size={32} strokeWidth={2.5} style={{ color: '#2D7A4F' }} />
+              </div>
+              <h3 className="font-display text-xl font-bold text-[#161616] mb-2">
+                Solicitação enviada!
+              </h3>
+              <p className="text-sm text-gray-500 max-w-xs mx-auto">
+                Recebemos seu interesse no plano <strong>{planLabel}</strong>. Um consultor entrará em contato em até 24h.
+              </p>
+              <button
+                onClick={onClose}
+                className="mt-6 px-8 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
+                style={{ background: '#e13500' }}>
+                Fechar
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Nome */}
+              <div>
+                <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+                  Nome completo <span style={{ color: '#e13500' }}>*</span>
+                </label>
+                <input
+                  name="name" value={form.name} onChange={handleChange} required
+                  placeholder="Ex: Pr. João Silva"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  style={{ background: '#fafafa' }}
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+                  Email <span style={{ color: '#e13500' }}>*</span>
+                </label>
+                <input
+                  name="email" type="email" value={form.email} onChange={handleChange} required
+                  placeholder="pastor@suaigreja.com.br"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  style={{ background: '#fafafa' }}
+                />
+              </div>
+
+              {/* Telefone */}
+              <div>
+                <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+                  Telefone / WhatsApp <span style={{ color: '#e13500' }}>*</span>
+                </label>
+                <input
+                  name="phone" type="tel" value={form.phone} onChange={handleChange} required
+                  placeholder="(11) 99999-9999"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  style={{ background: '#fafafa' }}
+                />
+              </div>
+
+              {/* Igreja */}
+              <div>
+                <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+                  Nome da igreja <span style={{ color: '#e13500' }}>*</span>
+                </label>
+                <input
+                  name="church_name" value={form.church_name} onChange={handleChange} required
+                  placeholder="Ex: Igreja Vida Nova"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  style={{ background: '#fafafa' }}
+                />
+              </div>
+
+              {/* Membros */}
+              <div>
+                <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+                  Quantidade de membros
+                </label>
+                <select
+                  name="estimated_members" value={form.estimated_members} onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  style={{ background: '#fafafa' }}
+                >
+                  <option value="">Selecione</option>
+                  <option value="Até 100">Até 100</option>
+                  <option value="100-300">100 – 300</option>
+                  <option value="300-500">300 – 500</option>
+                  <option value="500+">Acima de 500</option>
+                </select>
+              </div>
+
+              {/* Plano (readonly) */}
+              <div>
+                <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+                  Plano de interesse
+                </label>
+                <input
+                  value={planLabel} readOnly
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-100 text-gray-400 cursor-default"
+                  style={{ background: '#f3f3f3' }}
+                />
+              </div>
+
+              {errorMsg && (
+                <p className="text-xs text-red-600 bg-red-50 px-4 py-2 rounded-xl">{errorMsg}</p>
+              )}
+
+              <button
+                type="submit" disabled={sending}
+                className="w-full py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 mt-2"
+                style={{ background: '#e13500', minHeight: 52 }}>
+                {sending ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Enviando...
+                  </span>
+                ) : 'Enviar solicitação →'}
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   )
