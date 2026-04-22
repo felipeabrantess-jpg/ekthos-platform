@@ -46,11 +46,11 @@ const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'Authorization, Content-Type',
 }
 
-// ── Agentes por plano (fonte da verdade — BUG 4) ─────────
+// ── Agentes por plano (fonte da verdade) ─────────────────
 const PLAN_AGENTS: Record<string, string[]> = {
   chamado:    ['agent-suporte', 'agent-onboarding'],
-  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
-  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro'],
+  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-metricas', 'agent-whatsapp'],
 }
 
 // ── Labels dos 20 steps ───────────────────────────────────
