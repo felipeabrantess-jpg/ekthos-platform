@@ -3,28 +3,30 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
 export interface EnabledModules {
-  pessoas:     boolean
-  pipeline:    boolean
-  celulas:     boolean
-  ministerios: boolean
-  voluntarios: boolean
-  escalas:     boolean
-  financeiro:  boolean
-  agenda:      boolean
-  gabinete:    boolean
+  pessoas:      boolean
+  aniversarios: boolean
+  pipeline:     boolean
+  celulas:      boolean
+  ministerios:  boolean
+  voluntarios:  boolean
+  escalas:      boolean
+  financeiro:   boolean
+  agenda:       boolean
+  gabinete:     boolean
   [key: string]: boolean
 }
 
 export const DEFAULT_MODULES: EnabledModules = {
-  pessoas:     true,
-  pipeline:    true,
-  celulas:     false,
-  ministerios: true,
-  voluntarios: false,
-  escalas:     false,
-  financeiro:  true,
-  agenda:      true,
-  gabinete:    false,
+  pessoas:      true,
+  aniversarios: true,
+  pipeline:     true,
+  celulas:      false,
+  ministerios:  true,
+  voluntarios:  false,
+  escalas:      false,
+  financeiro:   true,
+  agenda:       true,
+  gabinete:     false,
 }
 
 export interface ChurchBranding {

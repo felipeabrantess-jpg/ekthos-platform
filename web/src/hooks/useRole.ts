@@ -24,9 +24,10 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 
 // Quais roles têm acesso a cada rota
 export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
-  '/dashboard':   ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary', 'treasurer'],
-  '/pessoas':     ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
-  '/pipeline':    ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
+  '/dashboard':    ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary', 'treasurer'],
+  '/pessoas':      ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  '/aniversarios': ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  '/pipeline':     ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
   '/ministerios': ['admin', 'admin_departments'],
   '/voluntarios': ['admin', 'admin_departments'],
   '/escalas':     ['admin', 'admin_departments'],
