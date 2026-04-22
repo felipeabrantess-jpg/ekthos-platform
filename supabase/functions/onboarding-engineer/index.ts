@@ -411,18 +411,14 @@ async function runStep(
         .eq('church_id', churchId)
         .maybeSingle()
       if (sub) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('subscription_agents').upsert({
+        // Tabela subscription_agents: colunas reais são (subscription_id, agent_slug, active)
+        // Não existem: source, is_active, context_data
+        const { error: sa10Err } = await supabase.from('subscription_agents').upsert({
           subscription_id: sub.id,
           agent_slug:      'agent-suporte',
-          source:          'free',
-          is_active:       true,
-          context_data: {
-            church_name: tenant.name,
-            schedule:    (config.events_calendar as Record<string, unknown>)?.recurring ?? [],
-            channels:    config.channels,
-          },
-        }, { onConflict: 'subscription_id, agent_slug' })
+          active:          true,
+        }, { onConflict: 'subscription_id,agent_slug' })
+        if (sa10Err) throw sa10Err
       }
       break
     }
@@ -440,13 +436,12 @@ async function runStep(
         .from('subscriptions').select('id').eq('church_id', churchId).maybeSingle()
       if (!sub) break
       for (const agentSlug of includedAgents) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('subscription_agents').upsert({
+        const { error: sa11Err } = await supabase.from('subscription_agents').upsert({
           subscription_id: sub.id,
           agent_slug:      agentSlug,
-          source:          'included',
-          is_active:       true,
-        }, { onConflict: 'subscription_id, agent_slug' })
+          active:          true,
+        }, { onConflict: 'subscription_id,agent_slug' })
+        if (sa11Err) throw sa11Err
       }
       break
     }

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard, Users, GitBranch, Network, Building2,
+  LayoutDashboard, Users, Gift, GitBranch, Network, Building2,
   Heart, CalendarRange, Wallet, Calendar, Lock, Bot,
   Settings, LogOut,
 } from 'lucide-react'
@@ -21,8 +21,9 @@ interface NavItem {
 // Chave de módulo por rota — tem que bater com EnabledModules
 const ALL_NAV_ITEMS: NavItem[] = [
   { path: '/dashboard',        label: 'Dashboard',    icon: <LayoutDashboard size={16} strokeWidth={1.75} />, moduleKey: null },
-  { path: '/pessoas',          label: 'Pessoas',      icon: <Users          size={16} strokeWidth={1.75} />, moduleKey: 'pessoas' },
-  { path: '/pipeline',         label: 'Discipulado',  icon: <GitBranch      size={16} strokeWidth={1.75} />, moduleKey: 'pipeline' },
+  { path: '/pessoas',          label: 'Pessoas',      icon: <Users          size={16} strokeWidth={1.75} />, moduleKey: 'pessoas'      },
+  { path: '/aniversarios',     label: 'Aniversários', icon: <Gift           size={16} strokeWidth={1.75} />, moduleKey: 'aniversarios' },
+  { path: '/pipeline',         label: 'Discipulado',  icon: <GitBranch      size={16} strokeWidth={1.75} />, moduleKey: 'pipeline'     },
   { path: '/celulas',          label: 'Células',       icon: <Network        size={16} strokeWidth={1.75} />, moduleKey: 'celulas' },
   { path: '/ministerios',      label: 'Ministérios',   icon: <Building2      size={16} strokeWidth={1.75} />, moduleKey: 'ministerios' },
   { path: '/voluntarios',      label: 'Voluntários',   icon: <Heart          size={16} strokeWidth={1.75} />, moduleKey: 'voluntarios' },

@@ -4,12 +4,13 @@ import {
 } from 'recharts'
 import {
   UserCheck, UserPlus, Users, Network, Droplets,
-  GraduationCap, Wallet, AlertTriangle, CheckCircle, BarChart2,
+  GraduationCap, Wallet, AlertTriangle, CheckCircle, BarChart2, TrendingUp,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, canManageDepartments } from '@/hooks/useRole'
 import type { AppRole } from '@/hooks/useRole'
 import { usePastoralDashboard } from '@/features/dashboard/hooks/usePastoralDashboard'
+import { useConsolidacaoStats, STAGE_COLORS as STAGE_PILL_COLORS } from '@/features/dashboard/hooks/useConsolidacaoStats'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
@@ -221,6 +222,7 @@ function ChartEmptyState({ message = 'Nenhum dado no período' }: { message?: st
 export default function Dashboard() {
   const { churchId, role } = useAuth()
   const { data, isLoading, isError, refetch } = usePastoralDashboard(churchId ?? '')
+  const { data: consolidacao } = useConsolidacaoStats(churchId ?? '')
 
   if (!churchId) {
     return <ErrorState message="Igreja não identificada. Faça login novamente." />
@@ -309,6 +311,72 @@ export default function Dashboard() {
             icon={<Droplets size={18} strokeWidth={1.75} />}
           />
         </div>
+      </section>
+
+      {/* Consolidação de Pessoas */}
+      <section>
+        <SectionTitle title="Consolidação de Pessoas" sub="Últimos 7, 14 e 90 dias" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <MetricCard
+            label="Novos esta Semana"
+            value={consolidacao?.novosSemana ?? '—'}
+            sub="adicionados nos últimos 7 dias"
+            color="blue"
+            icon={<UserPlus size={18} strokeWidth={1.75} />}
+          />
+          <MetricCard
+            label="Em Risco"
+            value={consolidacao?.emRisco ?? '—'}
+            sub="frequentadores+ sem presença há 14d"
+            alert={(consolidacao?.emRisco ?? 0) > 0}
+            color={(consolidacao?.emRisco ?? 0) > 0 ? 'red' : 'green'}
+            icon={<AlertTriangle size={18} strokeWidth={1.75} />}
+          />
+          <MetricCard
+            label="Consolidação 90 Dias"
+            value={consolidacao ? `${consolidacao.consolidacao90d}%` : '—'}
+            sub="visitantes/contatos avançados de stage"
+            meta="Meta: 60%"
+            color={
+              (consolidacao?.consolidacao90d ?? 0) >= 60 ? 'green' :
+              (consolidacao?.consolidacao90d ?? 0) >= 40 ? 'yellow' : 'red'
+            }
+            icon={<TrendingUp size={18} strokeWidth={1.75} />}
+          />
+        </div>
+
+        {/* Distribuição por estágio */}
+        {consolidacao && consolidacao.porStage.length > 0 && (
+          <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(30,20,10,0.4)' }}>
+              Distribuição por Estágio
+            </p>
+            <div className="space-y-2.5">
+              {consolidacao.porStage.map(({ stage, label, count }) => {
+                const pct = consolidacao.totalPeople > 0
+                  ? Math.round((count / consolidacao.totalPeople) * 100)
+                  : 0
+                const colors = STAGE_PILL_COLORS[stage] ?? {
+                  bg: 'bg-cream-dark/40', text: 'text-ekthos-black/50', bar: '#EDE0CC',
+                }
+                return (
+                  <div key={stage} className="flex items-center gap-3">
+                    <span className={`text-xs font-medium w-24 shrink-0 ${colors.text}`}>{label}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#EDE0CC' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: colors.bar }}
+                      />
+                    </div>
+                    <span className="text-xs font-mono-ekthos text-ekthos-black/50 w-8 text-right shrink-0">
+                      {count}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Métricas secundárias */}
