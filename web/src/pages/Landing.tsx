@@ -593,7 +593,7 @@ export default function Landing() {
 
                 <ul className="space-y-2.5 mb-6">
                   {[
-                    'Até 2 usuários',
+                    'Até 5 usuários',
                     'Dashboard pastoral completo',
                     'Cadastro e acompanhamento de membros',
                     'Caminho de discipulado (pipeline)',
@@ -660,7 +660,7 @@ export default function Landing() {
 
                 <ul className="space-y-2.5 mb-6">
                   {[
-                    'Até 3 usuários',
+                    'Até 8 usuários',
                     'Tudo do plano Chamado',
                     '3 agentes IA inclusos',
                     'Relatórios automáticos',
@@ -723,7 +723,7 @@ export default function Landing() {
 
                 <ul className="space-y-2.5 mb-6">
                   {[
-                    'Até 4 usuários',
+                    'Até 10 usuários',
                     'Tudo do plano Missão',
                     '6 agentes IA inclusos',
                     'Agente WhatsApp incluso',
