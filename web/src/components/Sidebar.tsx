@@ -80,13 +80,25 @@ export default function Sidebar() {
             alt={church.name}
             className="h-8 w-auto object-contain max-w-[130px]"
           />
-        ) : (
+        ) : church?.name ? (
           <span
             className="font-display text-xl font-bold truncate max-w-[130px]"
             style={{ color: 'var(--church-primary, #e13500)' }}
           >
-            {church?.name ?? 'Ekthos'}
+            {church.name}
           </span>
+        ) : (
+          <img
+            src="/logo/ekthos-church-200.png"
+            alt="Ekthos Church"
+            className="h-8 w-auto object-contain max-w-[130px]"
+            onError={e => {
+              const el = e.currentTarget
+              el.style.display = 'none'
+              const fallback = el.nextElementSibling as HTMLElement | null
+              if (fallback) fallback.style.display = 'block'
+            }}
+          />
         )}
         <NotificationBell />
       </div>

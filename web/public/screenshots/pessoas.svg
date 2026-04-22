@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="-apple-system,'Segoe UI',sans-serif">
+  <defs>
+    <filter id="shadow-card"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#00000010"/></filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="720" fill="#f9eedc"/>
+
+  <!-- ── Sidebar ── -->
+  <rect width="210" height="720" fill="#161616"/>
+  <rect x="20" y="20" width="32" height="32" rx="6" fill="#e13500"/>
+  <text x="36" y="41" fill="white" font-size="16" font-weight="700" text-anchor="middle">E</text>
+  <text x="62" y="35" fill="#f9eedc" font-size="13" font-weight="700" letter-spacing="0.5">EKTHOS</text>
+  <text x="62" y="48" fill="#e13500" font-size="9" font-weight="600" letter-spacing="2">CHURCH</text>
+  <rect x="0" y="68" width="210" height="1" fill="#ffffff10"/>
+  <!-- Dashboard -->
+  <text x="40" y="101" fill="#ffffff60" font-size="12">Dashboard</text>
+  <!-- Pessoas (active) -->
+  <rect x="0" y="110" width="3" height="38" fill="#e13500"/>
+  <rect x="3" y="110" width="207" height="38" fill="#ffffff0a"/>
+  <text x="40" y="133" fill="white" font-size="12" font-weight="600">Pessoas</text>
+  <text x="40" y="165" fill="#ffffff60" font-size="12">Discipulado</text>
+  <text x="40" y="197" fill="#ffffff60" font-size="12">Células</text>
+  <text x="40" y="229" fill="#ffffff60" font-size="12">Ministérios</text>
+  <text x="40" y="261" fill="#ffffff60" font-size="12">Voluntários</text>
+  <text x="40" y="293" fill="#ffffff60" font-size="12">Escalas</text>
+  <text x="40" y="325" fill="#ffffff60" font-size="12">Financeiro</text>
+  <text x="40" y="357" fill="#ffffff60" font-size="12">Agenda</text>
+  <circle cx="30" cy="690" r="14" fill="#e13500"/>
+  <text x="30" y="695" fill="white" font-size="11" font-weight="700" text-anchor="middle">PC</text>
+  <text x="52" y="686" fill="#f9eedc" font-size="11" font-weight="600">Pr. Carlos</text>
+  <text x="52" y="699" fill="#f9eedc50" font-size="10">admin</text>
+
+  <!-- ── Main content ── -->
+  <!-- Top bar -->
+  <rect x="210" y="0" width="990" height="60" fill="#f9eedc"/>
+  <rect x="210" y="59" width="990" height="1" fill="#00000008"/>
+  <text x="234" y="26" fill="#161616" font-size="18" font-weight="700" font-family="Georgia,'Times New Roman',serif">Pessoas</text>
+  <text x="234" y="46" fill="#8A8A8A" font-size="12">314 membros · 48 visitantes · 61 líderes</text>
+  <!-- Botão novo membro -->
+  <rect x="1060" y="14" width="120" height="34" rx="10" fill="#e13500"/>
+  <text x="1120" y="36" fill="white" font-size="12" font-weight="600" text-anchor="middle">+ Novo membro</text>
+
+  <!-- Filtros e busca -->
+  <rect x="234" y="76" width="300" height="36" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="256" y="99" fill="#8A8A8A" font-size="12">🔍  Buscar por nome, telefone...</text>
+  <!-- Filter tabs -->
+  <rect x="548" y="76" width="64" height="36" rx="10" fill="#e13500"/>
+  <text x="580" y="99" fill="white" font-size="12" font-weight="600" text-anchor="middle">Todos</text>
+  <rect x="618" y="76" width="78" height="36" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="657" y="99" fill="#5A5A5A" font-size="12" text-anchor="middle">Visitante</text>
+  <rect x="702" y="76" width="68" height="36" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="736" y="99" fill="#5A5A5A" font-size="12" text-anchor="middle">Membro</text>
+  <rect x="776" y="76" width="56" height="36" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="804" y="99" fill="#5A5A5A" font-size="12" text-anchor="middle">Líder</text>
+  <!-- QR button -->
+  <rect x="1060" y="76" width="120" height="36" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="1120" y="99" fill="#5A5A5A" font-size="12" text-anchor="middle">📱 QR Code</text>
+
+  <!-- Table header -->
+  <rect x="234" y="128" width="936" height="36" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="290" y="151" fill="#8A8A8A" font-size="10" font-weight="700" letter-spacing="0.6">PESSOA</text>
+  <text x="530" y="151" fill="#8A8A8A" font-size="10" font-weight="700" letter-spacing="0.6">STATUS</text>
+  <text x="650" y="151" fill="#8A8A8A" font-size="10" font-weight="700" letter-spacing="0.6">CÉLULA</text>
+  <text x="800" y="151" fill="#8A8A8A" font-size="10" font-weight="700" letter-spacing="0.6">ENTRADA</text>
+  <text x="940" y="151" fill="#8A8A8A" font-size="10" font-weight="700" letter-spacing="0.6">ÚLTIMA VISITA</text>
+  <text x="1090" y="151" fill="#8A8A8A" font-size="10" font-weight="700" letter-spacing="0.6">AÇÕES</text>
+
+  <!-- Row 1 -->
+  <rect x="234" y="170" width="936" height="60" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <circle cx="266" cy="200" r="18" fill="#e1350015"/>
+  <text x="266" y="205" fill="#e13500" font-size="13" font-weight="700" text-anchor="middle">MS</text>
+  <text x="292" y="196" fill="#161616" font-size="12" font-weight="600">Maria da Silva</text>
+  <text x="292" y="211" fill="#8A8A8A" font-size="10">maria.silva@gmail.com · (11) 9 8765-4321</text>
+  <rect x="510" y="188" width="70" height="22" rx="11" fill="#2D7A4F20"/>
+  <text x="545" y="203" fill="#2D7A4F" font-size="10" font-weight="700" text-anchor="middle">● Membro</text>
+  <text x="650" y="203" fill="#5A5A5A" font-size="11">Célula Norte</text>
+  <text x="800" y="203" fill="#5A5A5A" font-size="11">Março 2023</text>
+  <text x="940" y="203" fill="#5A5A5A" font-size="11">20/04/2026</text>
+  <rect x="1080" y="188" width="24" height="24" rx="6" fill="#f9eedc"/>
+  <text x="1092" y="204" fill="#5A5A5A" font-size="12" text-anchor="middle">✏</text>
+
+  <!-- Row 2 -->
+  <rect x="234" y="238" width="936" height="60" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <circle cx="266" cy="268" r="18" fill="#67000015"/>
+  <text x="266" y="273" fill="#670000" font-size="13" font-weight="700" text-anchor="middle">JP</text>
+  <text x="292" y="264" fill="#161616" font-size="12" font-weight="600">João Pedro Alves</text>
+  <text x="292" y="279" fill="#8A8A8A" font-size="10">joaopedro@hotmail.com · (11) 9 7654-3210</text>
+  <rect x="510" y="256" width="70" height="22" rx="11" fill="#67000020"/>
+  <text x="545" y="271" fill="#670000" font-size="10" font-weight="700" text-anchor="middle">★ Líder</text>
+  <text x="650" y="271" fill="#5A5A5A" font-size="11">Célula Sul</text>
+  <text x="800" y="271" fill="#5A5A5A" font-size="11">Jan 2021</text>
+  <text x="940" y="271" fill="#5A5A5A" font-size="11">21/04/2026</text>
+  <rect x="1080" y="256" width="24" height="24" rx="6" fill="#f9eedc"/>
+  <text x="1092" y="272" fill="#5A5A5A" font-size="12" text-anchor="middle">✏</text>
+
+  <!-- Row 3 -->
+  <rect x="234" y="306" width="936" height="60" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <circle cx="266" cy="336" r="18" fill="#C4841D15"/>
+  <text x="266" y="341" fill="#C4841D" font-size="13" font-weight="700" text-anchor="middle">AC</text>
+  <text x="292" y="332" fill="#161616" font-size="12" font-weight="600">Ana Carolina Ramos</text>
+  <text x="292" y="347" fill="#8A8A8A" font-size="10">anacaro@gmail.com · (21) 9 9876-5432</text>
+  <rect x="510" y="324" width="70" height="22" rx="11" fill="#C4841D20"/>
+  <text x="545" y="339" fill="#C4841D" font-size="10" font-weight="700" text-anchor="middle">◎ Visitante</text>
+  <text x="650" y="339" fill="#5A5A5A" font-size="11">—</text>
+  <text x="800" y="339" fill="#5A5A5A" font-size="11">Abr 2026</text>
+  <text x="940" y="339" fill="#5A5A5A" font-size="11">19/04/2026</text>
+  <rect x="1080" y="324" width="24" height="24" rx="6" fill="#f9eedc"/>
+  <text x="1092" y="340" fill="#5A5A5A" font-size="12" text-anchor="middle">✏</text>
+
+  <!-- Row 4 -->
+  <rect x="234" y="374" width="936" height="60" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <circle cx="266" cy="404" r="18" fill="#2D7A4F15"/>
+  <text x="266" y="409" fill="#2D7A4F" font-size="13" font-weight="700" text-anchor="middle">RM</text>
+  <text x="292" y="400" fill="#161616" font-size="12" font-weight="600">Rafael Moura</text>
+  <text x="292" y="415" fill="#8A8A8A" font-size="10">rafaelmoura@icloud.com · (31) 9 8888-7777</text>
+  <rect x="510" y="392" width="70" height="22" rx="11" fill="#2D7A4F20"/>
+  <text x="545" y="407" fill="#2D7A4F" font-size="10" font-weight="700" text-anchor="middle">● Membro</text>
+  <text x="650" y="407" fill="#5A5A5A" font-size="11">Célula Centro</text>
+  <text x="800" y="407" fill="#5A5A5A" font-size="11">Jun 2022</text>
+  <text x="940" y="407" fill="#5A5A5A" font-size="11">18/04/2026</text>
+  <rect x="1080" y="392" width="24" height="24" rx="6" fill="#f9eedc"/>
+  <text x="1092" y="408" fill="#5A5A5A" font-size="12" text-anchor="middle">✏</text>
+
+  <!-- Row 5 -->
+  <rect x="234" y="442" width="936" height="60" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <circle cx="266" cy="472" r="18" fill="#e1350015"/>
+  <text x="266" y="477" fill="#e13500" font-size="13" font-weight="700" text-anchor="middle">LS</text>
+  <text x="292" y="468" fill="#161616" font-size="12" font-weight="600">Luciana Santos</text>
+  <text x="292" y="483" fill="#8A8A8A" font-size="10">luciana.s@yahoo.com · (11) 9 5555-1234</text>
+  <rect x="510" y="460" width="70" height="22" rx="11" fill="#67000020"/>
+  <text x="545" y="475" fill="#670000" font-size="10" font-weight="700" text-anchor="middle">★ Líder</text>
+  <text x="650" y="475" fill="#5A5A5A" font-size="11">Célula Jovens</text>
+  <text x="800" y="475" fill="#5A5A5A" font-size="11">Out 2019</text>
+  <text x="940" y="475" fill="#5A5A5A" font-size="11">22/04/2026</text>
+  <rect x="1080" y="460" width="24" height="24" rx="6" fill="#f9eedc"/>
+  <text x="1092" y="476" fill="#5A5A5A" font-size="12" text-anchor="middle">✏</text>
+
+  <!-- Row 6 -->
+  <rect x="234" y="510" width="936" height="60" rx="10" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <circle cx="266" cy="540" r="18" fill="#2B6CB015"/>
+  <text x="266" y="545" fill="#2B6CB0" font-size="13" font-weight="700" text-anchor="middle">FO</text>
+  <text x="292" y="536" fill="#161616" font-size="12" font-weight="600">Fernanda Oliveira</text>
+  <text x="292" y="551" fill="#8A8A8A" font-size="10">fernanda.o@gmail.com · (21) 9 4444-9999</text>
+  <rect x="510" y="528" width="70" height="22" rx="11" fill="#C4841D20"/>
+  <text x="545" y="543" fill="#C4841D" font-size="10" font-weight="700" text-anchor="middle">◎ Visitante</text>
+  <text x="650" y="543" fill="#5A5A5A" font-size="11">—</text>
+  <text x="800" y="543" fill="#5A5A5A" font-size="11">Abr 2026</text>
+  <text x="940" y="543" fill="#5A5A5A" font-size="11">22/04/2026</text>
+  <rect x="1080" y="528" width="24" height="24" rx="6" fill="#f9eedc"/>
+  <text x="1092" y="544" fill="#5A5A5A" font-size="12" text-anchor="middle">✏</text>
+
+  <!-- Pagination -->
+  <text x="234" y="604" fill="#8A8A8A" font-size="11">Mostrando 1–6 de 423 pessoas</text>
+  <rect x="1020" y="588" width="32" height="28" rx="8" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="1036" y="607" fill="#5A5A5A" font-size="12" text-anchor="middle">‹</text>
+  <rect x="1058" y="588" width="32" height="28" rx="8" fill="#e13500"/>
+  <text x="1074" y="607" fill="white" font-size="12" font-weight="700" text-anchor="middle">1</text>
+  <rect x="1096" y="588" width="32" height="28" rx="8" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="1112" y="607" fill="#5A5A5A" font-size="12" text-anchor="middle">2</text>
+  <rect x="1134" y="588" width="32" height="28" rx="8" fill="white" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="1150" y="607" fill="#5A5A5A" font-size="12" text-anchor="middle">›</text>
+</svg>

@@ -1,0 +1,271 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" font-family="-apple-system,'Segoe UI',sans-serif">
+  <defs>
+    <filter id="shadow-card"><feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#00000010"/></filter>
+    <clipPath id="sidebar-clip"><rect width="210" height="720"/></clipPath>
+  </defs>
+
+  <!-- ── Background ── -->
+  <rect width="1200" height="720" fill="#f9eedc"/>
+
+  <!-- ── Sidebar ── -->
+  <rect width="210" height="720" fill="#161616"/>
+  <!-- Logo area -->
+  <rect x="20" y="20" width="32" height="32" rx="6" fill="#e13500"/>
+  <text x="36" y="41" fill="white" font-size="16" font-weight="700" text-anchor="middle">E</text>
+  <text x="62" y="35" fill="#f9eedc" font-size="13" font-weight="700" letter-spacing="0.5">EKTHOS</text>
+  <text x="62" y="48" fill="#e13500" font-size="9" font-weight="600" letter-spacing="2">CHURCH</text>
+  <!-- Divider -->
+  <rect x="0" y="68" width="210" height="1" fill="#ffffff10"/>
+  <!-- Nav items -->
+  <!-- Dashboard (active) -->
+  <rect x="0" y="78" width="3" height="38" fill="#e13500"/>
+  <rect x="3" y="78" width="207" height="38" fill="#ffffff0a" rx="0"/>
+  <rect x="18" y="91" width="14" height="14" rx="2" fill="#e1350040"/>
+  <rect x="19" y="92" width="12" height="2" rx="1" fill="#e13500"/>
+  <rect x="19" y="96" width="8" height="2" rx="1" fill="#e13500"/>
+  <rect x="19" y="100" width="12" height="2" rx="1" fill="#e13500"/>
+  <text x="40" y="101" fill="white" font-size="12" font-weight="600">Dashboard</text>
+  <!-- Pessoas -->
+  <rect x="18" y="130" width="14" height="14" rx="7" fill="#ffffff20"/>
+  <circle cx="25" cy="135" r="3" fill="#ffffff50"/>
+  <path d="M19 141 Q25 138 31 141" stroke="#ffffff50" stroke-width="1.5" fill="none"/>
+  <text x="40" y="141" fill="#ffffff60" font-size="12">Pessoas</text>
+  <!-- Pipeline -->
+  <rect x="18" y="162" width="14" height="14" rx="2" fill="#ffffff10"/>
+  <rect x="19" y="165" width="4" height="8" rx="1" fill="#ffffff40"/>
+  <rect x="24" y="167" width="4" height="6" rx="1" fill="#ffffff40"/>
+  <rect x="29" y="164" width="4" height="9" rx="1" fill="#ffffff40"/>
+  <text x="40" y="173" fill="#ffffff60" font-size="12">Discipulado</text>
+  <!-- Células -->
+  <circle cx="25" cy="201" r="4" fill="none" stroke="#ffffff40" stroke-width="1.5"/>
+  <circle cx="18" cy="198" r="2.5" fill="none" stroke="#ffffff30" stroke-width="1.2"/>
+  <circle cx="32" cy="198" r="2.5" fill="none" stroke="#ffffff30" stroke-width="1.2"/>
+  <text x="40" y="205" fill="#ffffff60" font-size="12">Células</text>
+  <!-- Ministérios -->
+  <rect x="18" y="218" width="14" height="14" rx="2" fill="#ffffff10"/>
+  <rect x="19" y="220" width="12" height="10" rx="1" fill="none" stroke="#ffffff40" stroke-width="1.2"/>
+  <rect x="22" y="224" width="6" height="4" rx="1" fill="#ffffff30"/>
+  <text x="40" y="229" fill="#ffffff60" font-size="12">Ministérios</text>
+  <!-- Voluntários -->
+  <path d="M22 246 Q25 243 28 246 L29 252 H21 Z" fill="#ffffff40"/>
+  <text x="40" y="253" fill="#ffffff60" font-size="12">Voluntários</text>
+  <!-- Escalas -->
+  <rect x="18" y="266" width="14" height="14" rx="2" fill="#ffffff10"/>
+  <rect x="19" y="268" width="12" height="2" rx="1" fill="#ffffff40"/>
+  <rect x="21" y="272" width="8" height="1.5" rx="0.5" fill="#ffffff30"/>
+  <rect x="21" y="275" width="6" height="1.5" rx="0.5" fill="#ffffff30"/>
+  <text x="40" y="277" fill="#ffffff60" font-size="12">Escalas</text>
+  <!-- Financeiro -->
+  <circle cx="25" cy="301" r="5" fill="none" stroke="#ffffff40" stroke-width="1.5"/>
+  <text x="25" y="304" fill="#ffffff50" font-size="7" text-anchor="middle" font-weight="700">$</text>
+  <text x="40" y="305" fill="#ffffff60" font-size="12">Financeiro</text>
+  <!-- Agenda -->
+  <rect x="18" y="318" width="14" height="14" rx="2" fill="#ffffff10"/>
+  <rect x="19" y="319" width="12" height="2" rx="0" fill="#ffffff40"/>
+  <rect x="21" y="323" width="2" height="2" fill="#ffffff30"/>
+  <rect x="25" y="323" width="2" height="2" fill="#ffffff30"/>
+  <rect x="29" y="323" width="2" height="2" fill="#ffffff30"/>
+  <text x="40" y="329" fill="#ffffff60" font-size="12">Agenda</text>
+  <!-- Divider -->
+  <rect x="15" y="345" width="180" height="1" fill="#ffffff08"/>
+  <!-- Agentes IA -->
+  <text x="18" y="362" fill="#f9eedc50" font-size="8" font-weight="700" letter-spacing="1.5">ASSISTENTES</text>
+  <rect x="18" y="370" width="174" height="30" rx="8" fill="#e1350015"/>
+  <rect x="22" y="378" width="14" height="14" rx="7" fill="#e1350030"/>
+  <circle cx="29" cy="385" r="3" fill="#e13500"/>
+  <text x="42" y="388" fill="#f9eedc90" font-size="11">Ana — Pastoral IA</text>
+  <!-- User footer -->
+  <rect x="0" y="660" width="210" height="1" fill="#ffffff10"/>
+  <circle cx="30" cy="690" r="14" fill="#e13500"/>
+  <text x="30" y="695" fill="white" font-size="11" font-weight="700" text-anchor="middle">PC</text>
+  <text x="52" y="686" fill="#f9eedc" font-size="11" font-weight="600">Pr. Carlos</text>
+  <text x="52" y="699" fill="#f9eedc50" font-size="10">admin</text>
+  <!-- Logout icon -->
+  <rect x="182" y="682" width="12" height="2" rx="1" fill="#ffffff40"/>
+  <path d="M190 678 L194 684 L190 690" stroke="#ffffff40" stroke-width="1.5" fill="none"/>
+
+  <!-- ── Main content ── -->
+  <!-- Top bar -->
+  <rect x="210" y="0" width="990" height="60" fill="#f9eedc"/>
+  <rect x="210" y="59" width="990" height="1" fill="#00000008"/>
+  <!-- Page title -->
+  <text x="234" y="26" fill="#161616" font-size="18" font-weight="700" font-family="Georgia,'Times New Roman',serif">Dashboard</text>
+  <text x="234" y="46" fill="#8A8A8A" font-size="12">Visão pastoral — Abril 2026</text>
+  <!-- Notification bell -->
+  <circle cx="1160" cy="30" r="14" fill="#ffffff" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="1160" y="35" fill="#5A5A5A" font-size="14" text-anchor="middle">🔔</text>
+  <circle cx="1170" cy="22" r="5" fill="#e13500"/>
+  <text x="1170" y="25" fill="white" font-size="7" font-weight="700" text-anchor="middle">3</text>
+
+  <!-- ── 4 Metric cards ── -->
+  <!-- Membros -->
+  <rect x="234" y="80" width="215" height="100" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="254" y="112" fill="#8A8A8A" font-size="10" font-weight="600" letter-spacing="0.8">MEMBROS ATIVOS</text>
+  <text x="254" y="145" fill="#161616" font-size="32" font-weight="700" font-family="'Courier New',monospace">314</text>
+  <rect x="254" y="158" width="40" height="4" rx="2" fill="#e1350020"/>
+  <rect x="254" y="158" width="28" height="4" rx="2" fill="#e13500"/>
+  <text x="300" y="162" fill="#2D7A4F" font-size="10" font-weight="600">▲ 8%</text>
+  <!-- Convertidos -->
+  <rect x="463" y="80" width="215" height="100" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="483" y="112" fill="#8A8A8A" font-size="10" font-weight="600" letter-spacing="0.8">CONVERTIDOS</text>
+  <text x="483" y="145" fill="#161616" font-size="32" font-weight="700" font-family="'Courier New',monospace">146</text>
+  <rect x="483" y="158" width="40" height="4" rx="2" fill="#67000020"/>
+  <rect x="483" y="158" width="32" height="4" rx="2" fill="#670000"/>
+  <text x="529" y="162" fill="#2D7A4F" font-size="10" font-weight="600">▲ 12%</text>
+  <!-- Células -->
+  <rect x="692" y="80" width="215" height="100" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="712" y="112" fill="#8A8A8A" font-size="10" font-weight="600" letter-spacing="0.8">CÉLULAS ATIVAS</text>
+  <text x="712" y="145" fill="#161616" font-size="32" font-weight="700" font-family="'Courier New',monospace">36</text>
+  <rect x="712" y="158" width="40" height="4" rx="2" fill="#2D7A4F20"/>
+  <rect x="712" y="158" width="30" height="4" rx="2" fill="#2D7A4F"/>
+  <text x="758" y="162" fill="#2D7A4F" font-size="10" font-weight="600">▲ 5%</text>
+  <!-- Líderes -->
+  <rect x="921" y="80" width="215" height="100" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="941" y="112" fill="#8A8A8A" font-size="10" font-weight="600" letter-spacing="0.8">LÍDERES</text>
+  <text x="941" y="145" fill="#161616" font-size="32" font-weight="700" font-family="'Courier New',monospace">61</text>
+  <rect x="941" y="158" width="40" height="4" rx="2" fill="#C4841D20"/>
+  <rect x="941" y="158" width="22" height="4" rx="2" fill="#C4841D"/>
+  <text x="987" y="162" fill="#C4841D" font-size="10" font-weight="600">↔ 0%</text>
+
+  <!-- ── Charts row ── -->
+  <!-- Chart 1: Crescimento Pipeline -->
+  <rect x="234" y="200" width="450" height="200" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="254" y="228" fill="#161616" font-size="13" font-weight="600" font-family="Georgia,'Times New Roman',serif">Crescimento do Pipeline</text>
+  <text x="254" y="243" fill="#8A8A8A" font-size="10">Visitantes → Membros → Líderes</text>
+  <!-- Bar chart -->
+  <!-- Jan -->
+  <rect x="274" y="360" width="28" height="20" rx="3" fill="#f0e0c8"/>
+  <rect x="274" y="340" width="28" height="20" rx="3" fill="#67000060"/>
+  <rect x="274" y="310" width="28" height="30" rx="3" fill="#e13500"/>
+  <text x="288" y="380" fill="#8A8A8A" font-size="8" text-anchor="middle">Jan</text>
+  <!-- Fev -->
+  <rect x="316" y="355" width="28" height="25" rx="3" fill="#f0e0c8"/>
+  <rect x="316" y="332" width="28" height="23" rx="3" fill="#67000060"/>
+  <rect x="316" y="300" width="28" height="32" rx="3" fill="#e13500"/>
+  <text x="330" y="380" fill="#8A8A8A" font-size="8" text-anchor="middle">Fev</text>
+  <!-- Mar -->
+  <rect x="358" y="348" width="28" height="32" rx="3" fill="#f0e0c8"/>
+  <rect x="358" y="324" width="28" height="24" rx="3" fill="#67000060"/>
+  <rect x="358" y="288" width="28" height="36" rx="3" fill="#e13500"/>
+  <text x="372" y="380" fill="#8A8A8A" font-size="8" text-anchor="middle">Mar</text>
+  <!-- Abr -->
+  <rect x="400" y="342" width="28" height="38" rx="3" fill="#f0e0c8"/>
+  <rect x="400" y="316" width="28" height="26" rx="3" fill="#67000060"/>
+  <rect x="400" y="278" width="28" height="38" rx="3" fill="#e13500"/>
+  <text x="414" y="380" fill="#8A8A8A" font-size="8" text-anchor="middle">Abr</text>
+  <!-- Mai -->
+  <rect x="442" y="338" width="28" height="42" rx="3" fill="#f0e0c8"/>
+  <rect x="442" y="310" width="28" height="28" rx="3" fill="#67000060"/>
+  <rect x="442" y="270" width="28" height="40" rx="3" fill="#e13500"/>
+  <text x="456" y="380" fill="#8A8A8A" font-size="8" text-anchor="middle">Mai</text>
+  <!-- Jun -->
+  <rect x="484" y="332" width="28" height="48" rx="3" fill="#f0e0c8"/>
+  <rect x="484" y="302" width="28" height="30" rx="3" fill="#67000060"/>
+  <rect x="484" y="258" width="28" height="44" rx="3" fill="#e13500"/>
+  <text x="498" y="380" fill="#8A8A8A" font-size="8" text-anchor="middle">Jun</text>
+  <!-- Legend -->
+  <rect x="254" y="390" width="8" height="8" rx="2" fill="#e13500"/>
+  <text x="266" y="398" fill="#5A5A5A" font-size="9">Novos membros</text>
+  <rect x="340" y="390" width="8" height="8" rx="2" fill="#67000060"/>
+  <text x="352" y="398" fill="#5A5A5A" font-size="9">Convertidos</text>
+  <rect x="410" y="390" width="8" height="8" rx="2" fill="#f0e0c8"/>
+  <text x="422" y="398" fill="#5A5A5A" font-size="9">Visitantes</text>
+
+  <!-- Chart 2: Atividade Recente -->
+  <rect x="700" y="200" width="436" height="200" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="720" y="228" fill="#161616" font-size="13" font-weight="600" font-family="Georgia,'Times New Roman',serif">Atividade Recente</text>
+  <!-- Activity items -->
+  <circle cx="735" cy="258" r="14" fill="#e1350015"/>
+  <text x="735" y="263" fill="#e13500" font-size="11" text-anchor="middle" font-weight="700">MS</text>
+  <text x="756" y="253" fill="#161616" font-size="11" font-weight="600">Maria Silva</text>
+  <text x="756" y="267" fill="#8A8A8A" font-size="10">Avançou para Membro ativo</text>
+  <text x="1110" y="260" fill="#8A8A8A" font-size="10">2h atrás</text>
+  <rect x="720" y="278" width="396" height="0.5" fill="#f0e0c8"/>
+
+  <circle cx="735" cy="300" r="14" fill="#2D7A4F15"/>
+  <text x="735" y="305" fill="#2D7A4F" font-size="11" text-anchor="middle" font-weight="700">JP</text>
+  <text x="756" y="295" fill="#161616" font-size="11" font-weight="600">João Pedro</text>
+  <text x="756" y="309" fill="#8A8A8A" font-size="10">Batizado hoje — célula Norte</text>
+  <text x="1110" y="302" fill="#8A8A8A" font-size="10">3h atrás</text>
+  <rect x="720" y="320" width="396" height="0.5" fill="#f0e0c8"/>
+
+  <circle cx="735" cy="342" r="14" fill="#67000015"/>
+  <text x="735" y="347" fill="#670000" font-size="11" text-anchor="middle" font-weight="700">AC</text>
+  <text x="756" y="337" fill="#161616" font-size="11" font-weight="600">Ana Carvalho</text>
+  <text x="756" y="351" fill="#8A8A8A" font-size="10">Assumiu liderança de célula</text>
+  <text x="1110" y="344" fill="#8A8A8A" font-size="10">5h atrás</text>
+  <rect x="720" y="362" width="396" height="0.5" fill="#f0e0c8"/>
+
+  <circle cx="735" cy="384" r="14" fill="#C4841D15"/>
+  <text x="735" y="389" fill="#C4841D" font-size="11" text-anchor="middle" font-weight="700">RM</text>
+  <text x="756" y="379" fill="#161616" font-size="11" font-weight="600">Rafael Moura</text>
+  <text x="756" y="393" fill="#8A8A8A" font-size="10">Primeira visita registrada via QR</text>
+  <text x="1110" y="386" fill="#8A8A8A" font-size="10">6h atrás</text>
+
+  <!-- ── Bottom alerts row ── -->
+  <!-- Ausentes >14 dias -->
+  <rect x="234" y="420" width="450" height="280" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="254" y="450" fill="#161616" font-size="13" font-weight="600" font-family="Georgia,'Times New Roman',serif">Ausentes há mais de 14 dias</text>
+  <rect x="630" y="437" width="36" height="20" rx="10" fill="#e1350015"/>
+  <text x="648" y="451" fill="#e13500" font-size="10" font-weight="700" text-anchor="middle">12</text>
+  <!-- Table header -->
+  <rect x="234" y="460" width="450" height="1" fill="#f0e0c8"/>
+  <text x="254" y="476" fill="#8A8A8A" font-size="10" font-weight="600">MEMBRO</text>
+  <text x="490" y="476" fill="#8A8A8A" font-size="10" font-weight="600">ÚLTIMA VEZ</text>
+  <text x="600" y="476" fill="#8A8A8A" font-size="10" font-weight="600">DIAS</text>
+  <rect x="234" y="480" width="450" height="0.5" fill="#f0e0c8"/>
+  <!-- Rows -->
+  <circle cx="268" cy="500" r="11" fill="#e1350015"/>
+  <text x="268" y="504" fill="#e13500" font-size="9" text-anchor="middle" font-weight="700">LF</text>
+  <text x="286" y="498" fill="#161616" font-size="11" font-weight="600">Lucas Ferreira</text>
+  <text x="286" y="511" fill="#8A8A8A" font-size="9">Célula Sul</text>
+  <text x="490" y="503" fill="#5A5A5A" font-size="10">07/04/2026</text>
+  <rect x="595" y="490" width="40" height="18" rx="9" fill="#e1350020"/>
+  <text x="615" y="503" fill="#e13500" font-size="10" font-weight="700" text-anchor="middle">21d</text>
+  <rect x="234" y="520" width="450" height="0.5" fill="#f0e0c8"/>
+
+  <circle cx="268" cy="540" r="11" fill="#C4841D15"/>
+  <text x="268" y="544" fill="#C4841D" font-size="9" text-anchor="middle" font-weight="700">PS</text>
+  <text x="286" y="538" fill="#161616" font-size="11" font-weight="600">Patrícia Santos</text>
+  <text x="286" y="551" fill="#8A8A8A" font-size="9">Célula Norte</text>
+  <text x="490" y="543" fill="#5A5A5A" font-size="10">09/04/2026</text>
+  <rect x="595" y="530" width="40" height="18" rx="9" fill="#e1350020"/>
+  <text x="615" y="543" fill="#e13500" font-size="10" font-weight="700" text-anchor="middle">19d</text>
+  <rect x="234" y="560" width="450" height="0.5" fill="#f0e0c8"/>
+
+  <circle cx="268" cy="580" r="11" fill="#67000015"/>
+  <text x="268" y="584" fill="#670000" font-size="9" text-anchor="middle" font-weight="700">TA</text>
+  <text x="286" y="578" fill="#161616" font-size="11" font-weight="600">Thiago Alves</text>
+  <text x="286" y="591" fill="#8A8A8A" font-size="9">Célula Centro</text>
+  <text x="490" y="583" fill="#5A5A5A" font-size="10">10/04/2026</text>
+  <rect x="595" y="570" width="40" height="18" rx="9" fill="#e1350020"/>
+  <text x="615" y="583" fill="#e13500" font-size="10" font-weight="700" text-anchor="middle">18d</text>
+  <rect x="234" y="600" width="450" height="0.5" fill="#f0e0c8"/>
+
+  <text x="450" y="685" fill="#e13500" font-size="11" font-weight="600" text-anchor="middle">Ver todos os 12 ausentes →</text>
+
+  <!-- Células em alerta -->
+  <rect x="700" y="420" width="436" height="280" rx="16" fill="white" filter="url(#shadow-card)" stroke="#f0e0c8" stroke-width="1"/>
+  <text x="720" y="450" fill="#161616" font-size="13" font-weight="600" font-family="Georgia,'Times New Roman',serif">Células em Alerta</text>
+  <rect x="1098" y="437" width="20" height="20" rx="10" fill="#C4841D15"/>
+  <text x="1108" y="451" fill="#C4841D" font-size="10" font-weight="700" text-anchor="middle">3</text>
+  <rect x="700" y="460" width="436" height="1" fill="#f0e0c8"/>
+  <!-- Cell cards -->
+  <rect x="720" y="470" width="396" height="64" rx="10" fill="#f9eedc80"/>
+  <text x="740" y="492" fill="#161616" font-size="11" font-weight="700">Célula Zona Norte — Pr. André</text>
+  <text x="740" y="508" fill="#8A8A8A" font-size="10">8 membros · Última reunião: 12/04</text>
+  <rect x="1058" y="479" width="48" height="18" rx="9" fill="#C4841D20"/>
+  <text x="1082" y="492" fill="#C4841D" font-size="10" font-weight="600" text-anchor="middle">⚠ 10d</text>
+
+  <rect x="720" y="544" width="396" height="64" rx="10" fill="#f9eedc80"/>
+  <text x="740" y="566" fill="#161616" font-size="11" font-weight="700">Célula Jovens — Ldr. Camila</text>
+  <text x="740" y="582" fill="#8A8A8A" font-size="10">12 membros · Última reunião: 10/04</text>
+  <rect x="1058" y="553" width="48" height="18" rx="9" fill="#e1350020"/>
+  <text x="1082" y="566" fill="#e13500" font-size="10" font-weight="600" text-anchor="middle">🔴 12d</text>
+
+  <rect x="720" y="618" width="396" height="64" rx="10" fill="#f9eedc80"/>
+  <text x="740" y="640" fill="#161616" font-size="11" font-weight="700">Célula Família — Ldr. Roberto</text>
+  <text x="740" y="656" fill="#8A8A8A" font-size="10">6 membros · Última reunião: 09/04</text>
+  <rect x="1058" y="627" width="48" height="18" rx="9" fill="#e1350020"/>
+  <text x="1082" y="640" fill="#e13500" font-size="10" font-weight="600" text-anchor="middle">🔴 13d</text>
+</svg>
