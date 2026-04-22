@@ -59,6 +59,7 @@ const AdminChurch   = lazy(() => import('@/pages/admin/Church'))
 const AdminRevenue     = lazy(() => import('@/pages/admin/Revenue'))
 const AdminOnboardings = lazy(() => import('@/pages/admin/Onboardings'))
 const AdminTasks       = lazy(() => import('@/pages/admin/Tasks'))
+const AdminLeads       = lazy(() => import('@/pages/admin/Leads'))
 const AdminPricing     = lazy(() => import('@/pages/admin/Pricing'))
 const AdminAffiliates  = lazy(() => import('@/pages/admin/Affiliates'))
 const AffiliateDetail  = lazy(() => import('@/pages/admin/AffiliateDetail'))
@@ -233,6 +234,7 @@ export default function App() {
             <Route path="churches"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurches /></Suspense></ErrorBoundary>} />
             <Route path="churches/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurch /></Suspense></ErrorBoundary>} />
             <Route path="onboardings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminOnboardings /></Suspense></ErrorBoundary>} />
+            <Route path="leads"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminLeads /></Suspense></ErrorBoundary>} />
             <Route path="tasks"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminTasks /></Suspense></ErrorBoundary>} />
             <Route path="revenue"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminRevenue /></Suspense></ErrorBoundary>} />
             <Route path="pricing"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminPricing /></Suspense></ErrorBoundary>} />
