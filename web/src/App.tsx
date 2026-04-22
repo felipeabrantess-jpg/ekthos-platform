@@ -9,6 +9,11 @@ import AdminLayout from '@/components/AdminLayout'
 import Spinner from '@/components/ui/Spinner'
 
 // ── Lazy page imports ───────────────────────────────────────
+// Landing + Checkout (públicas, sem auth)
+const Landing           = lazy(() => import('@/pages/Landing'))
+const CheckoutSucesso   = lazy(() => import('@/pages/checkout/Sucesso'))
+const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
+
 // Públicas
 const Login                 = lazy(() => import('@/pages/Login'))
 const Signup                = lazy(() => import('@/pages/Signup'))
@@ -123,6 +128,11 @@ export default function App() {
       <BrowserRouter>
       <Suspense fallback={<FullScreenSpinner />}>
         <Routes>
+          {/* ── Landing page + checkout (totalmente públicos, sem auth) ── */}
+          <Route path="/landing"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Landing /></Suspense></ErrorBoundary>} />
+          <Route path="/checkout/sucesso"    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutSucesso /></Suspense></ErrorBoundary>} />
+          <Route path="/checkout/cancelado"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutCancelado /></Suspense></ErrorBoundary>} />
+
           {/* ── Rotas públicas ── */}
           <Route path="/login"    element={<ErrorBoundary><Login /></ErrorBoundary>} />
           <Route path="/signup"   element={<ErrorBoundary><Signup /></ErrorBoundary>} />
