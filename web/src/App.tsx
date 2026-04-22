@@ -128,6 +128,9 @@ export default function App() {
       <BrowserRouter>
       <Suspense fallback={<FullScreenSpinner />}>
         <Routes>
+          {/* ── Raiz inteligente: Landing (não auth) ou dashboard (auth) ── */}
+          <Route index element={<SmartRoot />} />
+
           {/* ── Landing page + checkout (totalmente públicos, sem auth) ── */}
           <Route path="/landing"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Landing /></Suspense></ErrorBoundary>} />
           <Route path="/checkout/sucesso"    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutSucesso /></Suspense></ErrorBoundary>} />
@@ -191,8 +194,6 @@ export default function App() {
               </ErrorBoundary>
             }
           >
-            <Route index element={<RootRedirect />} />
-
             <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></ErrorBoundary>} />
             <Route path="agenda"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
 
@@ -245,10 +246,11 @@ export default function App() {
   )
 }
 
-function RootRedirect() {
-  const { role, isEkthosAdmin, loading } = useAuth()
+// Rota raiz inteligente: Landing (não autenticado) | Dashboard (autenticado)
+function SmartRoot() {
+  const { user, role, isEkthosAdmin, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
-  // Ekthos admins sempre vão para o cockpit, independente do role CRM
+  if (!user) return <Navigate to="/landing" replace />
   if (isEkthosAdmin) return <Navigate to="/admin/cockpit" replace />
   return <Navigate to={defaultRoute(role as AppRole | null)} replace />
 }

@@ -73,7 +73,7 @@ async function resolvePriceLineItem(
       .from('plans')
       .select('price_cents, name')
       .eq('slug', planSlug)
-      .eq('is_active', true)
+      .eq('active', true)
       .maybeSingle()
 
     if (!plan?.price_cents) {
@@ -127,12 +127,12 @@ Deno.serve(async (req: Request) => {
     return err('Email inválido', 422)
   }
 
-  // Busca o plano
+  // Busca o plano — PK é slug, sem coluna id
   const { data: plan } = await supabase
     .from('plans')
-    .select('id, slug, name')
+    .select('slug, name')
     .eq('slug', plan_slug)
-    .eq('is_active', true)
+    .eq('active', true)
     .maybeSingle()
 
   if (!plan) return err(`Plano '${plan_slug}' não encontrado ou inativo`, 404)
@@ -148,8 +148,7 @@ Deno.serve(async (req: Request) => {
   // Monta metadata com UTMs para rastreamento de conversão
   const metadata: Record<string, string> = {
     plan_slug,
-    plan_id:     plan.id,
-    source:      'landing_page',
+    source: 'landing_page',
   }
   if (email)        metadata.email        = email
   if (name)         metadata.name         = name ?? ''
