@@ -1,7 +1,7 @@
 // ============================================================
-// Landing Page — Ekthos Platform
+// Landing Page — Ekthos Church
+// Light mode: bg-white, navbar branca, screenshots reais do CRM
 // Segue skills: ekthos-frontend + landing-page-ekthos
-// 13 seções otimizadas para conversão — pastores brasileiros
 // ============================================================
 
 import { useState, useEffect, useRef } from 'react'
@@ -9,23 +9,21 @@ import { Link } from 'react-router-dom'
 import {
   Check, ChevronDown, Menu, X, Star, Zap, Crown,
   Users, BarChart2, Wallet, CalendarRange, Bell, Heart,
-  Bot, MessageCircle, Shield, TrendingUp, Clock,
+  Bot, MessageCircle, Shield, TrendingUp, Building2,
 } from 'lucide-react'
 
 // ── Env ────────────────────────────────────────────────────
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string || '5511999999999'
 
-// ── Tipos ──────────────────────────────────────────────────
-interface UtmParams {
-  source:   string
-  medium:   string
-  campaign: string
-  content:  string
-}
+const WA_ICON = (
+  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+)
 
-// ── Coleta UTMs da URL ─────────────────────────────────────
-function getUtmParams(): UtmParams {
+// ── UTMs ───────────────────────────────────────────────────
+function getUtmParams() {
   const p = new URLSearchParams(window.location.search)
   return {
     source:   p.get('utm_source')   ?? '',
@@ -63,7 +61,7 @@ const PLANS = [
     price:       'R$698',
     period:      '/mês',
     description: 'Para igrejas em crescimento que querem automação inteligente.',
-    badge:       'Mais escolhido',
+    badge:       'Mais popular',
     icon:        <Zap size={22} strokeWidth={1.75} />,
     color:       '#e13500',
     features: [
@@ -99,11 +97,11 @@ const PLANS = [
   },
 ]
 
-// ── Perguntas FAQ ──────────────────────────────────────────
+// ── FAQ ────────────────────────────────────────────────────
 const FAQ_ITEMS = [
   {
-    q: 'Preciso ter conhecimento técnico para usar o Ekthos?',
-    a: 'Não. O Ekthos foi projetado para pastores e líderes, não para programadores. A interface é intuitiva e o onboarding é guiado por um assistente que configura tudo por você em menos de 30 minutos.',
+    q: 'Preciso ter conhecimento técnico para usar o Ekthos Church?',
+    a: 'Não. O Ekthos Church foi projetado para pastores e líderes, não para programadores. A interface é intuitiva e o onboarding é guiado por um assistente que configura tudo por você em menos de 30 minutos.',
   },
   {
     q: 'Meus dados ficam seguros?',
@@ -136,16 +134,16 @@ const FAQ_ITEMS = [
 // ══════════════════════════════════════════════════════════
 
 export default function Landing() {
-  const [menuOpen,      setMenuOpen]      = useState(false)
-  const [checkoutPlan,  setCheckoutPlan]  = useState<string | null>(null)
-  const [showWa,        setShowWa]        = useState(false)
-  const [faqOpen,       setFaqOpen]       = useState<number | null>(null)
-  const [scrolled,      setScrolled]      = useState(false)
+  const [menuOpen,     setMenuOpen]     = useState(false)
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
+  const [showWa,       setShowWa]       = useState(false)
+  const [faqOpen,      setFaqOpen]      = useState<number | null>(null)
+  const [scrolled,     setScrolled]     = useState(false)
   const pricingRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowWa(true), 3000)
-    return () => clearTimeout(timer)
+    const t = setTimeout(() => setShowWa(true), 3000)
+    return () => clearTimeout(t)
   }, [])
 
   useEffect(() => {
@@ -157,7 +155,7 @@ export default function Landing() {
   async function handleCheckout(planSlug: string) {
     if (checkoutPlan) return
     setCheckoutPlan(planSlug)
-    const utm = getUtmParams()
+    const utm    = getUtmParams()
     const origin = window.location.origin
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout-public`, {
@@ -187,22 +185,25 @@ export default function Landing() {
     setMenuOpen(false)
   }
 
-  return (
-    <div className="min-h-screen font-body antialiased" style={{ background: '#f9eedc' }}>
+  const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%21+Quero+conhecer+o+Ekthos+Church`
 
-      {/* ── 1. NAVBAR ─────────────────────────────────── */}
+  return (
+    <div className="min-h-screen font-body antialiased bg-white text-[#161616]">
+
+      {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'shadow-md' : ''
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/90 backdrop-blur-md border-b border-gray-100 ${
+          scrolled ? 'shadow-sm' : ''
         }`}
-        style={{ background: scrolled ? 'rgba(22,22,22,0.97)' : '#161616', backdropFilter: scrolled ? 'blur(12px)' : 'none' }}
       >
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2.5 shrink-0">
+          <a href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
               style={{ background: '#e13500' }}>E</div>
-            <span className="font-display text-white text-lg font-bold tracking-tight">Ekthos</span>
+            <span className="font-display text-[#161616] text-lg font-bold tracking-tight">
+              Ekthos <span style={{ color: '#e13500' }}>Church</span>
+            </span>
           </a>
 
           {/* Links desktop */}
@@ -214,48 +215,43 @@ export default function Landing() {
               { label: 'FAQ',             href: '#faq' },
             ].map(l => (
               <a key={l.href} href={l.href}
-                className="text-sm font-medium transition-colors"
-                style={{ color: 'rgba(249,238,220,0.65)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.65)')}
-              >{l.label}</a>
+                className="text-sm font-medium text-gray-500 hover:text-[#161616] transition-colors">
+                {l.label}
+              </a>
             ))}
           </nav>
 
           {/* CTAs desktop */}
           <div className="hidden md:flex items-center gap-3">
             <Link to="/login"
-              className="text-sm font-medium px-4 py-2 rounded-xl transition-colors"
-              style={{ color: 'rgba(249,238,220,0.65)' }}
-            >Entrar</Link>
+              className="text-sm font-medium px-4 py-2 rounded-xl text-gray-500 hover:text-[#161616] transition-colors">
+              Entrar
+            </Link>
             <button onClick={scrollToPricing}
               className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: '#e13500' }}
-            >Ver planos</button>
+              style={{ background: '#e13500' }}>
+              Ver planos
+            </button>
           </div>
 
           {/* Hamburger mobile */}
-          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2"
-            style={{ color: 'rgba(249,238,220,0.8)' }}>
+          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2 text-gray-500">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
 
         {/* Menu mobile */}
         {menuOpen && (
-          <div className="md:hidden px-5 pb-6 pt-2 flex flex-col gap-4 border-t"
-            style={{ background: '#161616', borderColor: 'rgba(255,255,255,0.07)' }}>
-            {['#funcionalidades','#agentes','#pricing','#faq'].map((href, i) => (
+          <div className="md:hidden px-5 pb-6 pt-2 flex flex-col gap-4 bg-white border-t border-gray-100">
+            {['#funcionalidades', '#agentes', '#pricing', '#faq'].map((href, i) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="text-sm font-medium py-1"
-                style={{ color: 'rgba(249,238,220,0.75)' }}>
-                {['Funcionalidades','Agentes IA','Preços','FAQ'][i]}
+                className="text-sm font-medium py-1 text-gray-600">
+                {['Funcionalidades', 'Agentes IA', 'Preços', 'FAQ'][i]}
               </a>
             ))}
             <div className="flex gap-3 pt-2">
               <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border"
-                style={{ borderColor: 'rgba(255,255,255,0.15)', color: '#f9eedc' }}>
+                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-[#161616]">
                 Entrar
               </Link>
               <button onClick={scrollToPricing}
@@ -268,52 +264,45 @@ export default function Landing() {
         )}
       </header>
 
-      {/* ── 2. HERO ───────────────────────────────────── */}
-      <section className="pt-28 pb-20 lg:pt-36 lg:pb-28 px-5 lg:px-8 max-w-7xl mx-auto">
+      {/* ── 2. HERO ───────────────────────────────────────────── */}
+      <section className="pt-28 pb-16 lg:pt-36 lg:pb-24 px-5 lg:px-8 max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           {/* Copy */}
           <div className="flex-1 text-center lg:text-left">
-            {/* Badge de urgência */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
-              style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500', border: '1px solid rgba(225,53,0,0.2)' }}>
+              style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500', border: '1px solid rgba(225,53,0,0.15)' }}>
               ✦ Migração gratuita para as próximas 50 igrejas
             </div>
 
-            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6"
-              style={{ color: '#161616', letterSpacing: '-0.02em' }}>
-              Sua igreja merece uma gestão{' '}
-              <span style={{ color: '#e13500' }}>à altura do chamado</span>
+            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[#161616]"
+              style={{ letterSpacing: '-0.02em' }}>
+              Nenhum visitante{' '}
+              <span style={{ color: '#e13500' }}>se perde no caminho</span>
             </h1>
 
-            <p className="text-lg lg:text-xl leading-relaxed mb-8 max-w-xl mx-auto lg:mx-0"
-              style={{ color: '#5A5A5A' }}>
-              CRM pastoral com inteligência artificial. Acompanhe cada membro,
-              automatize tarefas repetitivas e foque no que realmente importa: cuidar da sua comunidade.
+            <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0 text-gray-500">
+              Plataforma de acompanhamento pastoral com inteligência artificial.
+              Acompanhe cada membro, automatize tarefas repetitivas e foque no
+              que realmente importa: cuidar da sua comunidade.
             </p>
 
-            {/* Versículo sutil */}
-            <p className="text-sm italic mb-8" style={{ color: '#8A8A8A' }}>
+            <p className="text-sm italic mb-8 text-gray-400">
               "Conhece o estado do teu rebanho e põe o coração nos teus gados." — Pv 27:23
             </p>
 
-            {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <button onClick={scrollToPricing}
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] shadow-lg"
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] shadow-lg shadow-[#e13500]/20"
                 style={{ background: '#e13500', minHeight: 56 }}>
-                Começar agora
-                <span className="text-white/70 text-sm font-normal">→</span>
+                Começar agora →
               </button>
-              <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Quero conhecer o Ekthos`}
-                target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-base transition-all border-2 hover:shadow-md"
-                style={{ borderColor: '#e13500', color: '#e13500', minHeight: 56, background: 'transparent' }}>
-                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                Falar com consultor
+              <a href={waHref} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-base transition-all border-2 hover:bg-[#e13500]/5"
+                style={{ borderColor: '#e13500', color: '#e13500', minHeight: 56 }}>
+                {WA_ICON} Falar com consultor
               </a>
             </div>
 
-            {/* Micro-social proof */}
             <div className="flex items-center gap-4 mt-8 justify-center lg:justify-start flex-wrap">
               <div className="flex -space-x-2">
                 {['🙏','✝️','🕊️','👑','🔥'].map((e, i) => (
@@ -321,21 +310,25 @@ export default function Landing() {
                     style={{ background: i % 2 === 0 ? '#e13500' : '#670000' }}>{e}</div>
                 ))}
               </div>
-              <p className="text-sm" style={{ color: '#5A5A5A' }}>
-                <strong style={{ color: '#161616' }}>+200 igrejas</strong> já usam o Ekthos
+              <p className="text-sm text-gray-500">
+                <strong className="text-[#161616]">+200 igrejas</strong> já usam o Ekthos Church
               </p>
             </div>
           </div>
 
-          {/* Visual — mockup do dashboard */}
+          {/* Hero screenshot */}
           <div className="flex-1 w-full max-w-xl lg:max-w-none">
-            <DashboardMockup />
+            <ScreenshotFrame
+              src="/screenshots/painel.png"
+              alt="Dashboard Ekthos Church — painel de gestão pastoral com métricas de membros, células e convertidos"
+              url="app.ekthosai.net/dashboard"
+            />
           </div>
         </div>
       </section>
 
-      {/* ── 3. PROVA SOCIAL ───────────────────────────── */}
-      <section className="py-12 border-y" style={{ background: '#161616', borderColor: 'rgba(255,255,255,0.05)' }}>
+      {/* ── 3. PROVA SOCIAL ───────────────────────────────────── */}
+      <section className="py-14 border-y border-gray-100 bg-[#f9eedc]/30">
         <div className="max-w-5xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -346,21 +339,23 @@ export default function Landing() {
             ].map(s => (
               <div key={s.n}>
                 <p className="font-mono text-3xl font-bold mb-1" style={{ color: '#e13500' }}>{s.n}</p>
-                <p className="text-sm" style={{ color: 'rgba(249,238,220,0.55)' }}>{s.l}</p>
+                <p className="text-sm text-gray-500">{s.l}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 4. PROBLEMA ───────────────────────────────── */}
+      {/* ── 4. PROBLEMA ───────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>A realidade de muitas igrejas</p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#161616' }}>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+            A realidade de muitas igrejas
+          </p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
             Você não consegue cuidar de todos sozinho
           </h2>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: '#5A5A5A' }}>
+          <p className="text-lg max-w-2xl mx-auto text-gray-500">
             Crescer sem ferramentas é como pastorear no escuro. Você sente, mas não vê.
           </p>
         </div>
@@ -370,38 +365,37 @@ export default function Landing() {
             {
               icon: <Users size={28} strokeWidth={1.5} />,
               title: 'Membros se afastando em silêncio',
-              body: 'Você só percebe que alguém saiu quando já foi embora. Sem dados, sem alertas, sem acompanhamento sistemático.',
-            },
-            {
-              icon: <Clock size={28} strokeWidth={1.5} />,
-              title: 'Horas perdidas em tarefas manuais',
-              body: 'Planilhas, WhatsApp, cadernos. O pastor gasta mais tempo organizando do que pastoreando. A administração devorou o ministério.',
+              body:  'Você só percebe que alguém saiu quando já foi embora. Sem dados, sem alertas, sem acompanhamento sistemático.',
             },
             {
               icon: <BarChart2 size={28} strokeWidth={1.5} />,
+              title: 'Horas perdidas em tarefas manuais',
+              body:  'Planilhas, WhatsApp, cadernos. O pastor gasta mais tempo organizando do que pastoreando.',
+            },
+            {
+              icon: <TrendingUp size={28} strokeWidth={1.5} />,
               title: 'Decisões sem dados reais',
-              body: 'Sem métricas, você navega por intuição. Quantos visitantes voltaram? Qual ministério está em queda? Você não sabe.',
+              body:  'Sem métricas, você navega por intuição. Quantos visitantes voltaram? Qual ministério está em queda?',
             },
           ].map((p, i) => (
-            <div key={i} className="bg-white rounded-2xl p-7 border hover:shadow-xl transition-all duration-200"
-              style={{ borderColor: '#f0e0c8' }}>
+            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                 style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
                 {p.icon}
               </div>
-              <h3 className="font-semibold text-lg mb-2" style={{ color: '#161616' }}>{p.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: '#5A5A5A' }}>{p.body}</p>
+              <h3 className="font-semibold text-lg mb-2 text-[#161616]">{p.title}</h3>
+              <p className="text-sm leading-relaxed text-gray-500">{p.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── 5. SOLUÇÃO — AGENTES IA ───────────────────── */}
-      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8"
-        style={{ background: '#161616' }}>
+      {/* ── 5. AGENTES IA ─────────────────────────────────────── */}
+      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(225,53,0,0.8)' }}>Inteligência Artificial pastoral</p>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3"
+              style={{ color: 'rgba(225,53,0,0.8)' }}>Inteligência Artificial pastoral</p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#f9eedc' }}>
               Agentes que conhecem a linguagem da igreja
             </h2>
@@ -412,24 +406,20 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: <Bot size={20} />,            slug: 'Suporte',      desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.',            badge: 'Incluso em todos os planos', free: true },
-              { icon: <Users size={20} />,           slug: 'Onboarding',   desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.',      badge: 'Incluso',    free: true  },
-              { icon: <MessageCircle size={20} />,   slug: 'Cadastro',     desc: 'Registra visitantes e membros automaticamente via formulário inteligente.',        badge: 'Plano Missão+' },
-              { icon: <Bell size={20} />,            slug: 'Reengajamento',desc: 'Detecta membros afastados e sugere ações pastorais de acolhimento.',               badge: 'Plano Missão+' },
-              { icon: <TrendingUp size={20} />,      slug: 'Métricas',     desc: 'Gera relatórios automáticos de crescimento, frequência e saúde da comunidade.',   badge: 'Plano Avivamento' },
-              { icon: <Shield size={20} />,          slug: 'WhatsApp',     desc: 'Envia comunicados e lembretes pelo WhatsApp de forma automatizada e segmentada.', badge: 'Plano Avivamento' },
+              { icon: <Bot size={20} />,           slug: 'Suporte',       desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.',          badge: 'Incluso em todos', free: true },
+              { icon: <Users size={20} />,          slug: 'Onboarding',    desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.',    badge: 'Incluso',          free: true },
+              { icon: <MessageCircle size={20} />,  slug: 'Cadastro',      desc: 'Registra visitantes e membros automaticamente via formulário inteligente.',      badge: 'Plano Missão+' },
+              { icon: <Bell size={20} />,           slug: 'Reengajamento', desc: 'Detecta membros afastados e sugere ações pastorais de acolhimento.',             badge: 'Plano Missão+' },
+              { icon: <TrendingUp size={20} />,     slug: 'Métricas',      desc: 'Gera relatórios automáticos de crescimento, frequência e saúde da comunidade.', badge: 'Plano Avivamento' },
+              { icon: <Shield size={20} />,         slug: 'WhatsApp',      desc: 'Envia comunicados pelo WhatsApp de forma automatizada e segmentada.',           badge: 'Plano Avivamento' },
             ].map((a, i) => (
               <div key={i} className="rounded-2xl p-6 border transition-all hover:border-[#e13500]/40"
                 style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500' }}>
-                    {a.icon}
-                  </div>
+                    style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500' }}>{a.icon}</div>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    a.free
-                      ? 'bg-green-900/40 text-green-400'
-                      : 'bg-[#e13500]/15 text-[#e13500]'
+                    a.free ? 'bg-green-900/40 text-green-400' : 'bg-[#e13500]/15 text-[#e13500]'
                   }`}>{a.badge}</span>
                 </div>
                 <h3 className="font-semibold mb-1.5" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
@@ -440,85 +430,171 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 6. FUNCIONALIDADES ────────────────────────── */}
-      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Tudo que sua operação pastoral precisa</p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#161616' }}>
-            Um CRM feito para igrejas
-          </h2>
-        </div>
+      {/* ── 6a. FUNCIONALIDADES — Painel ─────────────────────── */}
+      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+              Tudo que sua operação pastoral precisa
+            </p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+              Um CRM feito para igrejas
+            </h2>
+          </div>
 
-        <div className="space-y-20">
-          {[
-            {
-              flip: false,
-              icon: <Users size={24} strokeWidth={1.5} />,
-              label: 'Pessoas',
-              title: 'Cada membro, um cuidado personalizado',
-              body: 'Cadastro completo com histórico de visitas, batismo, discipulado e envolvimento nos ministérios. Saiba quem está crescendo e quem precisa de atenção.',
-              items: ['Perfil completo do membro','Histórico de participação','Alertas de afastamento','Aniversários automáticos'],
-            },
-            {
-              flip: true,
-              icon: <BarChart2 size={24} strokeWidth={1.5} />,
-              label: 'Discipulado',
-              title: 'Do primeiro contato à liderança',
-              body: 'Visualize o caminho de cada pessoa na sua igreja, do visitante ao líder. Pipeline visual que mostra onde cada um está e o que precisa para crescer.',
-              items: ['Pipeline visual tipo kanban','Etapas personalizáveis','SLA de acompanhamento','Relatórios de conversão'],
-            },
-            {
-              flip: false,
-              icon: <Wallet size={24} strokeWidth={1.5} />,
-              label: 'Financeiro',
-              title: 'Transparência que honra a confiança dos dízimos',
-              body: 'Controle de entradas e saídas, relatórios mensais e visão clara da saúde financeira da sua congregação. Simples, confiável e seguro.',
-              items: ['Lançamento de dízimos e ofertas','Relatórios automáticos','Comparativo mensal','Acesso controlado por perfil'],
-            },
-            {
-              flip: true,
-              icon: <CalendarRange size={24} strokeWidth={1.5} />,
-              label: 'Escalas',
-              title: 'Voluntários bem organizados servem com mais alegria',
-              body: 'Monte escalas de voluntários sem conflito, comunique automaticamente e tenha controle de quem serve em cada evento e ministério.',
-              items: ['Montagem visual de escalas','Notificação automática','Conflito de disponibilidade','Histórico de serviço'],
-            },
-          ].map((f, i) => (
-            <div key={i} className={`flex flex-col ${f.flip ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-10 lg:gap-16`}>
-              {/* Visual */}
-              <div className="flex-1 w-full">
-                <FeatureMockup icon={f.icon} label={f.label} items={f.items} />
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Copy */}
+            <div className="flex-1 order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
+                <BarChart2 size={14} /> Dashboard
               </div>
-              {/* Copy */}
-              <div className="flex-1">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-                  style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
-                  {f.icon} {f.label}
-                </div>
-                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4" style={{ color: '#161616' }}>
-                  {f.title}
-                </h3>
-                <p className="text-base leading-relaxed mb-6" style={{ color: '#5A5A5A' }}>{f.body}</p>
-                <ul className="space-y-2.5">
-                  {f.items.map(item => (
-                    <li key={item} className="flex items-center gap-2.5 text-sm" style={{ color: '#161616' }}>
-                      <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+                Visão completa da sua comunidade
+              </h3>
+              <p className="text-base leading-relaxed mb-6 text-gray-500">
+                Métricas em tempo real de membros, visitantes, células, convertidos e voluntários.
+                Tudo numa tela — sem precisar de planilhas ou relatórios manuais.
+              </p>
+              <ul className="space-y-2.5">
+                {['314 membros rastreados em tempo real','Alertas de afastamento automáticos','Redes e células com visão hierárquica','Relatório de novos convertidos mensal'].map(item => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
+                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ))}
+            {/* Screenshot */}
+            <div className="flex-1 w-full order-1 lg:order-2">
+              <ScreenshotFrame
+                src="/screenshots/painel.png"
+                alt="Painel de controle Ekthos Church com métricas de 314 membros, 146 convertidos, 36 células e 61 líderes"
+                url="app.ekthosai.net/dashboard"
+              />
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ── 7. MÓDULOS PREMIUM ────────────────────────── */}
-      <section className="py-16 px-5 lg:px-8"
-        style={{ background: 'linear-gradient(135deg, #670000 0%, #161616 100%)' }}>
+      {/* ── 6b. FUNCIONALIDADES — Pessoas ────────────────────── */}
+      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: 'rgba(249,238,220,0.30)' }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Screenshot */}
+            <div className="flex-1 w-full">
+              <ScreenshotFrame
+                src="/screenshots/pessoas.png"
+                alt="Lista de pessoas do Ekthos Church com filtros Visitante, Membro e Líder, busca e registro via QR Code"
+                url="app.ekthosai.net/pessoas"
+              />
+            </div>
+            {/* Copy */}
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
+                <Users size={14} /> Pessoas
+              </div>
+              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+                Gestão de pessoas inteligente
+              </h3>
+              <p className="text-base leading-relaxed mb-6 text-gray-500">
+                Cadastro completo com histórico de visitas, batismo, discipulado e envolvimento nos ministérios.
+                Registre visitantes por QR Code em segundos. Filtre por Membro, Líder ou Visitante.
+              </p>
+              <ul className="space-y-2.5">
+                {['Perfil completo com histórico pastoral','Registro de visitante por QR Code','Filtros por estágio de discipulado','253 membros + 61 líderes organizados'].map(item => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
+                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6c. FUNCIONALIDADES — Ministérios ────────────────── */}
+      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Copy */}
+            <div className="flex-1 order-2 lg:order-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
+                <Building2 size={14} /> Ministérios
+              </div>
+              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+                Ministérios organizados e ativos
+              </h3>
+              <p className="text-base leading-relaxed mb-6 text-gray-500">
+                Gerencie todos os ministérios e equipes de serviço da sua igreja em um só lugar.
+                Cards com nome, descrição, responsáveis e status — sem planilhas separadas.
+              </p>
+              <ul className="space-y-2.5">
+                {['Louvor, Diaconal, Comunicação e mais','Responsáveis e equipes definidos','Status ativo/inativo em tempo real','Descrição completa de cada ministério'].map(item => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
+                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {/* Screenshot */}
+            <div className="flex-1 w-full order-1 lg:order-2">
+              <ScreenshotFrame
+                src="/screenshots/ministerios.png"
+                alt="Grid de ministérios da Ekthos Church com cards de Louvor, Diaconal, Comunicação e outros"
+                url="app.ekthosai.net/ministerios"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6d. FUNCIONALIDADES — Agenda ─────────────────────── */}
+      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: 'rgba(249,238,220,0.30)' }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Screenshot */}
+            <div className="flex-1 w-full">
+              <ScreenshotFrame
+                src="/screenshots/agenda.png"
+                alt="Relatório de acompanhamento pastoral da Ekthos Church com taxa de retenção de novos convertidos"
+                url="app.ekthosai.net/agenda"
+              />
+            </div>
+            {/* Copy */}
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
+                <CalendarRange size={14} /> Acompanhamento
+              </div>
+              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+                Relatórios que revelam o que está invisível
+              </h3>
+              <p className="text-base leading-relaxed mb-6 text-gray-500">
+                Taxa de retenção de convertidos, mês a mês. Veja quem permaneceu, quem saiu e qual ação pastoral
+                fez diferença. Dados reais para decisões pastorais reais.
+              </p>
+              <ul className="space-y-2.5">
+                {['Taxa de retenção de novos convertidos','Análise mensal e anual comparativa','Exportação CSV para relatórios externos','Critério de retenção ajustável por igreja'].map(item => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
+                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 7. MÓDULOS EM BREVE ───────────────────────────────── */}
+      <section className="py-16 px-5 lg:px-8" style={{ background: 'linear-gradient(135deg, #670000 0%, #161616 100%)' }}>
         <div className="max-w-5xl mx-auto text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest mb-3"
-            style={{ color: 'rgba(225,53,0,0.7)' }}>Em breve</p>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(225,53,0,0.7)' }}>Em breve</p>
           <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3" style={{ color: '#f9eedc' }}>
             Módulos em desenvolvimento
           </h2>
@@ -527,15 +603,12 @@ export default function Landing() {
           </p>
           <div className="grid md:grid-cols-2 gap-5 text-left">
             {[
-              { icon: <Heart size={20} />,       title: 'Voluntários Avançado', desc: 'Perfil de dons, histórico de serviço, reconhecimento automático e onboarding de novos voluntários.' },
-              { icon: <Shield size={20} />,       title: 'EBD / Escola Bíblica',  desc: 'Controle de turmas, frequência de alunos, materiais digitais e certificados automáticos.' },
+              { icon: <Heart size={20} />,   title: 'Voluntários Avançado', desc: 'Perfil de dons, histórico de serviço, reconhecimento automático e onboarding de novos voluntários.' },
+              { icon: <Shield size={20} />,  title: 'EBD / Escola Bíblica', desc: 'Controle de turmas, frequência de alunos, materiais digitais e certificados automáticos.' },
             ].map((m, i) => (
-              <div key={i} className="rounded-2xl p-6 border"
-                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}>
+              <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-                  style={{ background: 'rgba(225,53,0,0.2)', color: '#e13500' }}>
-                  {m.icon}
-                </div>
+                  style={{ background: 'rgba(225,53,0,0.2)', color: '#e13500' }}>{m.icon}</div>
                 <h3 className="font-semibold mb-1.5" style={{ color: '#f9eedc' }}>{m.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.5)' }}>{m.desc}</p>
               </div>
@@ -544,89 +617,92 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 8. PRICING ────────────────────────────────── */}
-      <section id="pricing" ref={pricingRef} className="py-20 lg:py-32 px-5 lg:px-8 max-w-7xl mx-auto scroll-mt-20">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos e preços</p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#161616' }}>
-            Investimento que se paga com o primeiro membro retido
-          </h2>
-          <p className="text-lg max-w-xl mx-auto" style={{ color: '#5A5A5A' }}>
-            Cancele quando quiser. Sem fidelidade. Sem pegadinhas.
-          </p>
-          {/* Urgência */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mt-6"
-            style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500', border: '1px solid rgba(225,53,0,0.2)' }}>
-            ⏳ Migração gratuita para as próximas 50 igrejas
+      {/* ── 8. PRICING ────────────────────────────────────────── */}
+      <section id="pricing" ref={pricingRef}
+        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20"
+        style={{ background: 'rgba(249,238,220,0.40)' }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos e preços</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+              Investimento que se paga com o primeiro membro retido
+            </h2>
+            <p className="text-lg max-w-xl mx-auto text-gray-500">
+              Cancele quando quiser. Sem fidelidade. Sem pegadinhas.
+            </p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium mt-6"
+              style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500', border: '1px solid rgba(225,53,0,0.2)' }}>
+              ⏳ Migração gratuita para as próximas 50 igrejas
+            </div>
           </div>
-        </div>
 
-        <div className="grid md:grid-cols-3 gap-6 items-start">
-          {PLANS.map(plan => (
-            <PlanCard
-              key={plan.slug}
-              plan={plan}
-              loading={checkoutPlan === plan.slug}
-              onCheckout={handleCheckout}
-            />
-          ))}
-        </div>
-
-        {/* Addons */}
-        <div className="mt-10 bg-white rounded-2xl border p-6 lg:p-8" style={{ borderColor: '#f0e0c8' }}>
-          <p className="font-semibold text-center mb-6" style={{ color: '#161616' }}>
-            Complementos disponíveis em qualquer plano
-          </p>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { icon: <Users size={18} />,  title: 'Usuário extra',   price: 'R$69,90/mês', desc: 'Adicione mais líderes com acesso ao sistema.' },
-              { icon: <Bot size={18} />,    title: 'Agente de IA',    price: 'R$149,90/mês', desc: 'Ative agentes avançados individualmente.' },
-              { icon: <Heart size={18} />,  title: 'Suporte dedicado', price: 'R$149,90/mês', desc: 'Atendimento com consultor pastoral exclusivo.' },
-            ].map((a, i) => (
-              <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500' }}>{a.icon}</div>
-                <div>
-                  <p className="font-semibold text-sm" style={{ color: '#161616' }}>{a.title}</p>
-                  <p className="font-mono text-sm font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
-                  <p className="text-xs mt-0.5" style={{ color: '#8A8A8A' }}>{a.desc}</p>
-                </div>
-              </div>
+          <div className="grid md:grid-cols-3 gap-6 items-start">
+            {PLANS.map(plan => (
+              <PlanCard
+                key={plan.slug}
+                plan={plan}
+                loading={checkoutPlan === plan.slug}
+                onCheckout={handleCheckout}
+              />
             ))}
+          </div>
+
+          {/* Addons */}
+          <div className="mt-10 bg-white rounded-2xl border border-gray-200 shadow-lg p-6 lg:p-8">
+            <p className="font-semibold text-center mb-6 text-[#161616]">
+              Complementos disponíveis em qualquer plano
+            </p>
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { icon: <Users size={18} />, title: 'Usuário extra',    price: 'R$69,90/mês',  desc: 'Adicione mais líderes com acesso ao sistema.' },
+                { icon: <Bot size={18} />,   title: 'Agente de IA',     price: 'R$149,90/mês', desc: 'Ative agentes avançados individualmente.' },
+                { icon: <Heart size={18} />, title: 'Suporte dedicado', price: 'R$149,90/mês', desc: 'Atendimento com consultor pastoral exclusivo.' },
+              ].map((a, i) => (
+                <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500' }}>{a.icon}</div>
+                  <div>
+                    <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
+                    <p className="font-mono text-sm font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
+                    <p className="text-xs mt-0.5 text-gray-400">{a.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── 9. COMPARATIVO ────────────────────────────── */}
-      <section className="py-16 px-5 lg:px-8 max-w-5xl mx-auto">
+      {/* ── 9. COMPARATIVO ────────────────────────────────────── */}
+      <section className="py-16 px-5 lg:px-8 max-w-5xl mx-auto bg-white">
         <div className="text-center mb-10">
-          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3" style={{ color: '#161616' }}>
-            Por que igrejas migram para o Ekthos?
+          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[#161616]">
+            Por que igrejas migram para o Ekthos Church?
           </h2>
         </div>
-        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0e0c8' }}>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: '#f9eedc' }}>
-                <th className="text-left p-4 font-semibold" style={{ color: '#161616' }}>Recurso</th>
-                <th className="p-4 text-center font-semibold" style={{ color: '#8A8A8A' }}>Planilhas</th>
-                <th className="p-4 text-center font-semibold" style={{ color: '#8A8A8A' }}>CRM Genérico</th>
-                <th className="p-4 text-center font-semibold rounded-t-xl" style={{ color: '#e13500', background: 'rgba(225,53,0,0.06)' }}>Ekthos ✦</th>
+                <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
+                <th className="p-4 text-center font-semibold text-gray-400">Planilhas</th>
+                <th className="p-4 text-center font-semibold text-gray-400">CRM Genérico</th>
+                <th className="p-4 text-center font-semibold rounded-t-xl" style={{ color: '#e13500', background: 'rgba(225,53,0,0.06)' }}>Ekthos Church ✦</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ['Fala a linguagem da igreja',      false, false, true ],
-                ['Caminho de discipulado',           false, false, true ],
-                ['Agentes IA pastorais',             false, false, true ],
-                ['Setup em 30 minutos',              false, false, true ],
-                ['Alertas de membros afastados',     false, false, true ],
-                ['Controle de células',              false, false, true ],
-                ['Relatórios automáticos',           false, true,  true ],
-                ['Suporte em português',             false, false, true ],
+                ['Fala a linguagem da igreja',    false, false, true],
+                ['Caminho de discipulado',         false, false, true],
+                ['Agentes IA pastorais',           false, false, true],
+                ['Setup em 30 minutos',            false, false, true],
+                ['Alertas de membros afastados',   false, false, true],
+                ['Controle de células',            false, false, true],
+                ['Relatórios automáticos',         false, true,  true],
+                ['Suporte em português',           false, false, true],
               ].map(([label, col1, col2, col3], i) => (
-                <tr key={String(label)} className={i % 2 === 0 ? '' : ''} style={{ borderTop: '1px solid #f0e0c8' }}>
-                  <td className="p-4" style={{ color: '#161616' }}>{label}</td>
+                <tr key={String(label)} style={{ borderTop: '1px solid #f0f0f0' }}>
+                  <td className="p-4 text-[#161616]">{label}</td>
                   <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                   <td className="p-4 text-center">{col2 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                   <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: '#e13500', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
@@ -637,7 +713,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 10. DEPOIMENTOS ───────────────────────────── */}
+      {/* ── 10. DEPOIMENTOS ───────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -648,23 +724,18 @@ export default function Landing() {
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { name: 'Pr. Carlos Mendes',    church: 'Igreja Vida Nova — SP',     text: 'Em 3 meses, reduzi em 60% o tempo que gastava com planilhas. Agora consigo focar no que realmente importa: as pessoas.', stars: 5 },
-              { name: 'Pr. Roberto Alves',    church: 'Comunidade Ágape — RJ',     text: 'O sistema identificou 34 membros afastados que eu nem sabia que tinham sumido. Recuperamos 18 deles em 60 dias.', stars: 5 },
-              { name: 'Pastora Lúcia Santos', church: 'Assembleia do Rei — BH',    text: 'O onboarding com IA foi surpreendente. Em 25 minutos o sistema estava configurado do jeito que nossa igreja funciona.', stars: 5 },
-              { name: 'Pr. André Costa',      church: 'Igreja Renascer — Curitiba', text: 'As escalas de voluntários pararam de gerar conflitos. A equipe recebe confirmação automática e todo mundo sabe o que precisa fazer.', stars: 5 },
-              { name: 'Pr. José Ferreira',    church: 'Comunidade Shalom — Fortaleza', text: 'Finalmente tenho números reais. Sei quantos visitantes voltaram, qual ministério está crescendo e onde preciso de mais atenção.', stars: 5 },
-              { name: 'Pastora Ana Lima',     church: 'IBatista Central — Recife', text: 'Migrei de uma planilha gigante sem perder nenhum dado. A equipe do Ekthos cuidou de tudo. Recomendo muito.', stars: 5 },
+              { name: 'Pr. Carlos Mendes',    church: 'Igreja Vida Nova — SP',        text: 'Em 3 meses, reduzi em 60% o tempo que gastava com planilhas. Agora consigo focar no que realmente importa: as pessoas.' },
+              { name: 'Pr. Roberto Alves',    church: 'Comunidade Ágape — RJ',        text: 'O sistema identificou 34 membros afastados que eu nem sabia. Recuperamos 18 deles em 60 dias.' },
+              { name: 'Pastora Lúcia Santos', church: 'Assembleia do Rei — BH',       text: 'O onboarding com IA foi surpreendente. Em 25 minutos o sistema estava configurado do jeito que nossa igreja funciona.' },
+              { name: 'Pr. André Costa',      church: 'Igreja Renascer — Curitiba',   text: 'As escalas de voluntários pararam de gerar conflitos. A equipe recebe confirmação automática.' },
+              { name: 'Pr. José Ferreira',    church: 'Comunidade Shalom — Fortaleza',text: 'Finalmente tenho números reais. Sei quantos visitantes voltaram e qual ministério precisa de atenção.' },
+              { name: 'Pastora Ana Lima',     church: 'IBatista Central — Recife',    text: 'Migrei de uma planilha gigante sem perder nenhum dado. A equipe do Ekthos Church cuidou de tudo.' },
             ].map((t, i) => (
-              <div key={i} className="rounded-2xl p-6 border"
-                style={{ background: 'rgba(249,238,220,0.04)', borderColor: 'rgba(249,238,220,0.08)' }}>
+              <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(249,238,220,0.04)', borderColor: 'rgba(249,238,220,0.08)' }}>
                 <div className="flex gap-0.5 mb-4">
-                  {Array(t.stars).fill(0).map((_, j) => (
-                    <Star key={j} size={14} fill="#e13500" style={{ color: '#e13500' }} />
-                  ))}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="#e13500" style={{ color: '#e13500' }} />)}
                 </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(249,238,220,0.75)' }}>
-                  "{t.text}"
-                </p>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(249,238,220,0.75)' }}>"{t.text}"</p>
                 <div>
                   <p className="font-semibold text-sm" style={{ color: '#f9eedc' }}>{t.name}</p>
                   <p className="text-xs mt-0.5" style={{ color: 'rgba(249,238,220,0.4)' }}>{t.church}</p>
@@ -675,31 +746,35 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 11. FAQ ───────────────────────────────────── */}
+      {/* ── 11. FAQ ───────────────────────────────────────────── */}
       <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#161616' }}>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
             Respondemos antes de você perguntar
           </h2>
         </div>
 
         <div className="space-y-3">
           {FAQ_ITEMS.map((item, i) => (
-            <div key={i} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: '#f0e0c8' }}>
+            <div key={i} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <button
                 onClick={() => setFaqOpen(faqOpen === i ? null : i)}
                 className="w-full flex items-center justify-between px-6 py-5 text-left"
               >
-                <span className="font-semibold text-base pr-4" style={{ color: '#161616' }}>{item.q}</span>
+                <span className="font-semibold text-base pr-4 text-[#161616]">{item.q}</span>
                 <ChevronDown
                   size={18} strokeWidth={2}
-                  style={{ color: '#e13500', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }}
+                  style={{
+                    color: '#e13500', flexShrink: 0,
+                    transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)',
+                    transition: 'transform 0.2s ease',
+                  }}
                 />
               </button>
               {faqOpen === i && (
                 <div className="px-6 pb-5">
-                  <p className="text-sm leading-relaxed" style={{ color: '#5A5A5A' }}>{item.a}</p>
+                  <p className="text-sm leading-relaxed text-gray-500">{item.a}</p>
                 </div>
               )}
             </div>
@@ -707,93 +782,87 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 12. CTA FINAL ─────────────────────────────── */}
+      {/* ── 12. CTA FINAL ─────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8"
         style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(255,255,255,0.6)' }}>
-            Comece hoje mesmo
-          </p>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-4 text-white/60">Comece hoje mesmo</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-5">
             Sua congregação está esperando por um pastor mais presente
           </h2>
-          <p className="text-lg mb-3 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.8)' }}>
+          <p className="text-lg mb-3 max-w-xl mx-auto text-white/80">
             Setup em 30 minutos. Migração gratuita. Cancele quando quiser.
           </p>
-          <p className="text-sm italic mb-10" style={{ color: 'rgba(255,255,255,0.55)' }}>
+          <p className="text-sm italic mb-10 text-white/55">
             "O bom pastor dá a sua vida pelas ovelhas." — Jo 10:11
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={scrollToPricing}
-              className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'white', color: '#e13500', minHeight: 56 }}>
+              className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
+              style={{ color: '#e13500', minHeight: 56 }}>
               Ver planos e preços
             </button>
-            <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Quero conhecer o Ekthos`}
-              target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base border-2 transition-all hover:bg-white/10"
-              style={{ borderColor: 'rgba(255,255,255,0.5)', color: 'white', minHeight: 56 }}>
-              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              Falar com consultor
+            <a href={waHref} target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base border-2 transition-all hover:bg-white/10 text-white"
+              style={{ borderColor: 'rgba(255,255,255,0.5)', minHeight: 56 }}>
+              {WA_ICON} Falar com consultor
             </a>
           </div>
         </div>
       </section>
 
-      {/* ── 13. FOOTER ────────────────────────────────── */}
+      {/* ── 13. FOOTER ────────────────────────────────────────── */}
       <footer style={{ background: '#161616' }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
-            {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
                   style={{ background: '#e13500' }}>E</div>
-                <span className="font-display text-white text-lg font-bold">Ekthos</span>
+                <span className="font-display text-white text-lg font-bold">Ekthos Church</span>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.45)' }}>
                 CRM pastoral com inteligência artificial para igrejas que querem cuidar melhor da sua comunidade.
               </p>
             </div>
-            {/* Produto */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Produto</p>
               <ul className="space-y-2.5">
                 {['Funcionalidades','Preços','Agentes IA','Changelog'].map(l => (
-                  <li key={l}><a href="#" className="text-sm transition-colors" style={{ color: 'rgba(249,238,220,0.5)' }}
+                  <li key={l}><a href="#" className="text-sm transition-colors"
+                    style={{ color: 'rgba(249,238,220,0.5)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.5)')}>{l}</a></li>
                 ))}
               </ul>
             </div>
-            {/* Empresa */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Empresa</p>
               <ul className="space-y-2.5">
                 {['Sobre','Blog','Afiliados','Contato'].map(l => (
-                  <li key={l}><a href="#" className="text-sm transition-colors" style={{ color: 'rgba(249,238,220,0.5)' }}
+                  <li key={l}><a href="#" className="text-sm transition-colors"
+                    style={{ color: 'rgba(249,238,220,0.5)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.5)')}>{l}</a></li>
                 ))}
               </ul>
             </div>
-            {/* Legal */}
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Legal</p>
               <ul className="space-y-2.5">
                 {['Termos de Uso','Política de Privacidade','LGPD'].map(l => (
-                  <li key={l}><a href="#" className="text-sm transition-colors" style={{ color: 'rgba(249,238,220,0.5)' }}
+                  <li key={l}><a href="#" className="text-sm transition-colors"
+                    style={{ color: 'rgba(249,238,220,0.5)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
                     onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.5)')}>{l}</a></li>
                 ))}
               </ul>
             </div>
           </div>
-
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
             <p className="text-xs" style={{ color: 'rgba(249,238,220,0.3)' }}>
-              © 2026 Ekthos. Feito com ✝️ para a Igreja de Cristo.
+              © 2026 Ekthos Church. Feito com ✝️ para a Igreja de Cristo.
             </p>
             <p className="text-xs" style={{ color: 'rgba(249,238,220,0.2)' }}>
               CNPJ 00.000.000/0001-00 · São Paulo, Brasil
@@ -802,24 +871,19 @@ export default function Landing() {
         </div>
       </footer>
 
-      {/* ── WHATSAPP FLUTUANTE ─────────────────────────── */}
+      {/* ── WHATSAPP FLUTUANTE ─────────────────────────────────── */}
       {showWa && (
-        <a
-          href={`https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Quero conhecer o Ekthos`}
-          target="_blank" rel="noopener noreferrer"
+        <a href={waHref} target="_blank" rel="noopener noreferrer"
           className="fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
-          style={{
-            width: 56, height: 56,
-            background: '#25D366',
-            animation: 'waPulse 2s ease-in-out infinite',
-          }}
-          title="Falar no WhatsApp"
-        >
-          <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          style={{ width: 56, height: 56, background: '#25D366', animation: 'waPulse 2s ease-in-out infinite' }}
+          title="Falar no WhatsApp com Ekthos Church"
+          aria-label="Abrir WhatsApp">
+          <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white" aria-hidden>
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          </svg>
         </a>
       )}
 
-      {/* Keyframe para pulse do WhatsApp */}
       <style>{`
         @keyframes waPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0.4); }
@@ -834,6 +898,93 @@ export default function Landing() {
 // SUBCOMPONENTES
 // ══════════════════════════════════════════════════════════
 
+// ── Screenshot com browser frame ───────────────────────────
+function ScreenshotFrame({ src, alt, url }: { src: string; alt: string; url: string }) {
+  const [failed, setFailed] = useState(false)
+
+  return (
+    <div className="relative group">
+      {/* Glow sutil */}
+      <div className="absolute inset-0 rounded-3xl blur-3xl opacity-10 pointer-events-none"
+        style={{ background: '#e13500', transform: 'scale(0.9) translateY(8%)' }} />
+      {/* Frame */}
+      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.18)]">
+        {/* Browser chrome */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+          <div className="flex gap-1.5">
+            {['#FF5F57','#FEBC2E','#28C840'].map(c => (
+              <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />
+            ))}
+          </div>
+          <div className="flex-1 mx-3">
+            <div className="rounded-md px-3 py-1 text-xs bg-gray-100 text-gray-400">
+              {url}
+            </div>
+          </div>
+        </div>
+        {/* Screenshot ou fallback */}
+        {!failed ? (
+          <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            className="w-full h-auto block"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <ScreenshotPlaceholder />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Placeholder quando screenshot não carrega ───────────────
+function ScreenshotPlaceholder() {
+  return (
+    <div className="p-5" style={{ background: '#f9eedc', minHeight: 280 }}>
+      <div className="flex gap-3 h-full">
+        <div className="w-8 flex flex-col gap-2 pt-1">
+          {[0,1,2,3,4].map(i => (
+            <div key={i} className="w-full h-5 rounded"
+              style={{ background: i === 0 ? '#e13500' : '#d4c4ac', opacity: i === 0 ? 1 : 0.4 }} />
+          ))}
+        </div>
+        <div className="flex-1 space-y-3">
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { l: 'Membros',    n: '314', c: '#e13500' },
+              { l: 'Convertidos',n: '146', c: '#670000' },
+              { l: 'Células',    n: '36',  c: '#2D7A4F' },
+              { l: 'Líderes',    n: '61',  c: '#C4841D' },
+            ].map(m => (
+              <div key={m.l} className="bg-white rounded-lg p-2 border border-[#f0e0c8]">
+                <p className="font-mono font-bold text-sm" style={{ color: m.c }}>{m.n}</p>
+                <p className="text-[9px] mt-0.5 text-gray-400">{m.l}</p>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[0,1].map(i => (
+              <div key={i} className="bg-white rounded-lg p-3 border border-[#f0e0c8]" style={{ height: 80 }}>
+                <div className="text-[9px] font-semibold mb-2 text-gray-400">
+                  {i === 0 ? 'Crescimento' : 'Retenção'}
+                </div>
+                <div className="flex items-end gap-1 h-10">
+                  {[60,80,55,90,70,85,100].map((h, j) => (
+                    <div key={j} className="flex-1 rounded-sm"
+                      style={{ height: `${h * 0.4}px`, background: j === 6 ? '#e13500' : '#f0e0c8' }} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Card de plano ──────────────────────────────────────────
 function PlanCard({ plan, loading, onCheckout }: {
   plan: typeof PLANS[0]
@@ -842,13 +993,14 @@ function PlanCard({ plan, loading, onCheckout }: {
 }) {
   const isPopular = !!plan.badge
   return (
-    <div className={`relative rounded-2xl border flex flex-col transition-all duration-200 hover:shadow-2xl ${
-      isPopular ? 'shadow-xl scale-[1.02]' : 'hover:-translate-y-1'
+    <div className={`relative rounded-2xl flex flex-col transition-all duration-200 ${
+      isPopular
+        ? 'shadow-2xl scale-[1.02] border-2'
+        : 'border border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-1'
     }`}
       style={{
-        background:   isPopular ? '#161616' : '#ffffff',
-        borderColor:  isPopular ? '#e13500' : '#f0e0c8',
-        borderWidth:  isPopular ? 2 : 1,
+        background:  isPopular ? '#161616' : '#ffffff',
+        borderColor: isPopular ? '#e13500' : undefined,
       }}>
 
       {isPopular && (
@@ -859,7 +1011,6 @@ function PlanCard({ plan, loading, onCheckout }: {
       )}
 
       <div className="p-7 flex-1">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: isPopular ? 'rgba(225,53,0,0.15)' : 'rgba(225,53,0,0.08)', color: plan.color }}>
@@ -871,7 +1022,6 @@ function PlanCard({ plan, loading, onCheckout }: {
           </div>
         </div>
 
-        {/* Preço */}
         <div className="mb-6">
           <span className="font-mono font-bold text-4xl" style={{ color: isPopular ? '#f9eedc' : '#161616' }}>
             {plan.price}
@@ -881,7 +1031,6 @@ function PlanCard({ plan, loading, onCheckout }: {
           </span>
         </div>
 
-        {/* Features */}
         <ul className="space-y-2.5 mb-6">
           {plan.features.map(f => (
             <li key={f} className="flex items-start gap-2.5 text-sm">
@@ -898,7 +1047,6 @@ function PlanCard({ plan, loading, onCheckout }: {
         </ul>
       </div>
 
-      {/* CTA */}
       <div className="px-7 pb-7">
         <button
           onClick={() => onCheckout(plan.slug)}
@@ -915,109 +1063,11 @@ function PlanCard({ plan, loading, onCheckout }: {
               <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Aguarde...
             </span>
-          ) : (
-            `Contratar ${plan.name}`
-          )}
+          ) : `Contratar ${plan.name}`}
         </button>
         <p className="text-center text-xs mt-2" style={{ color: isPopular ? 'rgba(249,238,220,0.35)' : '#AAA' }}>
           Sem fidelidade · Cancele quando quiser
         </p>
-      </div>
-    </div>
-  )
-}
-
-// ── Dashboard Mockup ───────────────────────────────────────
-function DashboardMockup() {
-  return (
-    <div className="relative">
-      {/* Glow */}
-      <div className="absolute inset-0 rounded-3xl blur-3xl opacity-20"
-        style={{ background: 'radial-gradient(circle, #e13500 0%, transparent 70%)', transform: 'scale(0.9) translateY(5%)' }} />
-      {/* Browser frame */}
-      <div className="relative rounded-2xl overflow-hidden shadow-2xl border"
-        style={{ background: '#161616', borderColor: 'rgba(255,255,255,0.08)' }}>
-        {/* Browser chrome */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b" style={{ background: '#1a1a1a', borderColor: 'rgba(255,255,255,0.06)' }}>
-          <div className="flex gap-1.5">
-            {['#FF5F57','#FEBC2E','#28C840'].map(c => (
-              <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />
-            ))}
-          </div>
-          <div className="flex-1 mx-3">
-            <div className="rounded-md px-3 py-1 text-xs" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.3)' }}>
-              app.ekthos.com.br/dashboard
-            </div>
-          </div>
-        </div>
-        {/* Dashboard content */}
-        <div className="p-4" style={{ background: '#f9eedc', minHeight: 280 }}>
-          {/* Sidebar mini */}
-          <div className="flex gap-3 h-full">
-            <div className="w-8 flex flex-col gap-2 pt-1">
-              {[0,1,2,3,4].map(i => (
-                <div key={i} className={`w-full h-5 rounded ${i === 0 ? 'opacity-100' : 'opacity-30'}`}
-                  style={{ background: i === 0 ? '#e13500' : '#444' }} />
-              ))}
-            </div>
-            {/* Main content */}
-            <div className="flex-1 space-y-3">
-              {/* Metric cards */}
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { l: 'Membros',    n: '247',  c: '#e13500' },
-                  { l: 'Visitantes', n: '18',   c: '#670000' },
-                  { l: 'Células',    n: '23',   c: '#2D7A4F' },
-                  { l: 'Em risco',   n: '7',    c: '#C4841D' },
-                ].map(m => (
-                  <div key={m.l} className="bg-white rounded-lg p-2 border" style={{ borderColor: '#f0e0c8' }}>
-                    <p className="font-mono font-bold text-sm" style={{ color: m.c }}>{m.n}</p>
-                    <p className="text-[9px] mt-0.5" style={{ color: '#8A8A8A' }}>{m.l}</p>
-                  </div>
-                ))}
-              </div>
-              {/* Charts placeholder */}
-              <div className="grid grid-cols-2 gap-2">
-                {[0, 1].map(i => (
-                  <div key={i} className="bg-white rounded-lg p-3 border" style={{ borderColor: '#f0e0c8', height: 80 }}>
-                    <div className="text-[9px] font-semibold mb-2" style={{ color: '#8A8A8A' }}>
-                      {i === 0 ? 'Discipulado' : 'Frequência'}
-                    </div>
-                    {/* Bar chart mini */}
-                    <div className="flex items-end gap-1 h-10">
-                      {[60,80,55,90,70,85,100].map((h, j) => (
-                        <div key={j} className="flex-1 rounded-sm" style={{ height: `${h * 0.4}px`, background: j === 6 ? '#e13500' : '#f0e0c8' }} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Feature mockup lateral ─────────────────────────────────
-function FeatureMockup({ icon, label, items }: { icon: React.ReactNode; label: string; items: string[] }) {
-  return (
-    <div className="bg-white rounded-2xl border p-6 shadow-lg" style={{ borderColor: '#f0e0c8' }}>
-      <div className="flex items-center gap-2 mb-5 pb-4 border-b" style={{ borderColor: '#f0e0c8' }}>
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>{icon}</div>
-        <span className="font-semibold text-sm" style={{ color: '#161616' }}>{label}</span>
-        <div className="ml-auto w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-      </div>
-      <div className="space-y-3">
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-xl"
-            style={{ background: i === 0 ? 'rgba(225,53,0,0.06)' : '#fafafa', border: `1px solid ${i === 0 ? 'rgba(225,53,0,0.12)' : '#f0f0f0'}` }}>
-            <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
-            <span className="text-sm" style={{ color: '#161616' }}>{item}</span>
-          </div>
-        ))}
       </div>
     </div>
   )

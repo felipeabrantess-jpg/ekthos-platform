@@ -85,7 +85,7 @@ export default function Sidebar() {
             className="font-display text-xl font-bold truncate max-w-[130px]"
             style={{ color: 'var(--church-primary, #e13500)' }}
           >
-            {church?.name ?? 'Ekthos'}
+            {church?.name ?? 'Ekthos Church'}
           </span>
         )}
         <NotificationBell />
