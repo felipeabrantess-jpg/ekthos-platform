@@ -198,25 +198,15 @@ export default function Landing() {
       >
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center shrink-0">
+          <a href="/" className="flex items-center gap-3 shrink-0">
             <img
               src="/logo/ekthos-church.svg"
               alt="Ekthos Church"
-              className="h-9 w-auto object-contain"
-              onError={e => {
-                const el = e.currentTarget
-                el.style.display = 'none'
-                const fallback = el.nextElementSibling as HTMLElement | null
-                if (fallback) fallback.style.display = 'flex'
-              }}
+              className="h-12 w-auto object-contain"
+              onError={e => { (e.currentTarget as HTMLElement).style.display = 'none' }}
             />
-            {/* Fallback texto — visível somente se logo não carrega */}
-            <span className="items-center gap-2.5 hidden" aria-hidden>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: '#e13500' }}>E</div>
-              <span className="font-display text-[#161616] text-lg font-bold tracking-tight">
-                Ekthos <span style={{ color: '#e13500' }}>Church</span>
-              </span>
+            <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
+              Ekthos <span style={{ color: '#e13500' }}>Church</span>
             </span>
           </a>
 
@@ -330,12 +320,58 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Hero screenshot */}
-          <div className="flex-1 w-full max-w-xl lg:max-w-none">
-            <ScreenshotFrame
-              src="/screenshots/painel.svg"
-              alt="Dashboard Ekthos Church — painel de gestão pastoral com métricas de membros, células e convertidos"
-              url="app.ekthosai.net/dashboard"
+          {/* Hero — collage 4 screenshots */}
+          <div className="flex-1 w-full relative" style={{ minHeight: 420, paddingTop: 24, paddingRight: 40, paddingBottom: 60 }}>
+            {/* Glow de fundo */}
+            <div className="absolute inset-0 rounded-3xl blur-3xl opacity-[0.07] pointer-events-none"
+              style={{ background: 'radial-gradient(circle at 60% 40%, #e13500 0%, transparent 70%)' }} />
+
+            {/* Principal: painel (frente, centralizado) */}
+            <img
+              src="/screenshots/painel.png"
+              alt="Dashboard Ekthos Church com 314 membros, 36 células e 62 líderes"
+              loading="eager"
+              className="relative z-30 w-full rounded-2xl border border-black/10"
+              style={{ boxShadow: '0 24px 64px rgba(0,0,0,0.22)', display: 'block' }}
+            />
+
+            {/* Sobreposta esquerda-baixo: pessoas */}
+            <img
+              src="/screenshots/pessoas.png"
+              alt="Relatório de novos convertidos"
+              loading="lazy"
+              className="absolute z-40 rounded-xl border border-black/10 transition-transform duration-500 hover:scale-[1.03]"
+              style={{
+                width: '54%', bottom: -24, left: -28,
+                boxShadow: '0 16px 40px rgba(0,0,0,0.24)',
+                transform: 'rotate(-2.5deg)',
+              }}
+            />
+
+            {/* Sobreposta direita-baixo: agenda */}
+            <img
+              src="/screenshots/agenda.png"
+              alt="Agenda da Igreja — Abril 2026"
+              loading="lazy"
+              className="absolute z-20 rounded-xl border border-black/10 transition-transform duration-500 hover:scale-[1.03]"
+              style={{
+                width: '50%', bottom: -32, right: -28,
+                boxShadow: '0 16px 40px rgba(0,0,0,0.20)',
+                transform: 'rotate(2deg)',
+              }}
+            />
+
+            {/* Sobreposta topo-direita: ministerios */}
+            <img
+              src="/screenshots/ministerios.png"
+              alt="Funil de conversão e saúde da igreja"
+              loading="lazy"
+              className="absolute z-10 rounded-xl border border-black/10 transition-transform duration-500 hover:scale-[1.03]"
+              style={{
+                width: '44%', top: -16, right: -32,
+                boxShadow: '0 12px 32px rgba(0,0,0,0.18)',
+                transform: 'rotate(3deg)',
+              }}
             />
           </div>
         </div>
@@ -444,158 +480,100 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 6a. FUNCIONALIDADES — Painel ─────────────────────── */}
+      {/* ── 6. FUNCIONALIDADES (ícones + texto) ──────────────── */}
       <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
+          <div className="text-center mb-16">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
               Tudo que sua operação pastoral precisa
             </p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
               Um CRM feito para igrejas
             </h2>
+            <p className="text-lg max-w-xl mx-auto mt-4 text-gray-500">
+              Cada módulo foi desenhado para a realidade do pastor brasileiro.
+            </p>
           </div>
 
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Copy */}
-            <div className="flex-1 order-2 lg:order-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Dashboard */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-200 group">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
                 style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
-                <BarChart2 size={14} /> Dashboard
+                <BarChart2 size={28} strokeWidth={1.5} />
               </div>
-              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
-                Visão completa da sua comunidade
-              </h3>
-              <p className="text-base leading-relaxed mb-6 text-gray-500">
-                Métricas em tempo real de membros, visitantes, células, convertidos e voluntários.
-                Tudo numa tela — sem precisar de planilhas ou relatórios manuais.
+              <h3 className="font-display text-xl font-bold mb-3 text-[#161616]">Painel de Controle</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                Métricas em tempo real de membros, visitantes, células e convertidos.
+                Alertas de afastamento automáticos — você vê quem precisa de atenção antes de ser tarde.
               </p>
-              <ul className="space-y-2.5">
-                {['314 membros rastreados em tempo real','Alertas de afastamento automáticos','Redes e células com visão hierárquica','Relatório de novos convertidos mensal'].map(item => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
-                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              <ul className="space-y-2">
+                {['314 membros rastreados em tempo real','Alertas de afastamento automáticos','Redes e células com visão hierárquica','Relatório mensal de novos convertidos'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-[#161616]">
+                    <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
-            {/* Screenshot */}
-            <div className="flex-1 w-full order-1 lg:order-2">
-              <ScreenshotFrame
-                src="/screenshots/painel.svg"
-                alt="Painel de controle Ekthos Church com métricas de 314 membros, 146 convertidos, 36 células e 61 líderes"
-                url="app.ekthosai.net/dashboard"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── 6b. FUNCIONALIDADES — Pessoas ────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: 'rgba(249,238,220,0.30)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Screenshot */}
-            <div className="flex-1 w-full">
-              <ScreenshotFrame
-                src="/screenshots/pessoas.svg"
-                alt="Lista de pessoas do Ekthos Church com filtros Visitante, Membro e Líder, busca e registro via QR Code"
-                url="app.ekthosai.net/pessoas"
-              />
-            </div>
-            {/* Copy */}
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
-                <Users size={14} /> Pessoas
+            {/* Pessoas */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-200 group">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(103,0,0,0.07)', color: '#670000' }}>
+                <Users size={28} strokeWidth={1.5} />
               </div>
-              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
-                Gestão de pessoas inteligente
-              </h3>
-              <p className="text-base leading-relaxed mb-6 text-gray-500">
-                Cadastro completo com histórico de visitas, batismo, discipulado e envolvimento nos ministérios.
-                Registre visitantes por QR Code em segundos. Filtre por Membro, Líder ou Visitante.
+              <h3 className="font-display text-xl font-bold mb-3 text-[#161616]">Gestão de Pessoas</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                Cadastro completo com histórico de visitas, batismo e discipulado.
+                Registre visitantes em segundos com QR Code — sem papel, sem planilha.
               </p>
-              <ul className="space-y-2.5">
-                {['Perfil completo com histórico pastoral','Registro de visitante por QR Code','Filtros por estágio de discipulado','253 membros + 61 líderes organizados'].map(item => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
-                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              <ul className="space-y-2">
+                {['Perfil pastoral completo de cada membro','Registro de visitante por QR Code','Filtros por Visitante, Membro ou Líder','Histórico de presença e interações'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-[#161616]">
+                    <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── 6c. FUNCIONALIDADES — Ministérios ────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Copy */}
-            <div className="flex-1 order-2 lg:order-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
-                <Building2 size={14} /> Ministérios
+            {/* Ministérios & Células */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-200 group">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(45,122,79,0.08)', color: '#2D7A4F' }}>
+                <Building2 size={28} strokeWidth={1.5} />
               </div>
-              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
-                Ministérios organizados e ativos
-              </h3>
-              <p className="text-base leading-relaxed mb-6 text-gray-500">
-                Gerencie todos os ministérios e equipes de serviço da sua igreja em um só lugar.
-                Cards com nome, descrição, responsáveis e status — sem planilhas separadas.
+              <h3 className="font-display text-xl font-bold mb-3 text-[#161616]">Ministérios e Células</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                Gerencie todos os ministérios, células e redes da sua igreja em um só lugar.
+                Saúde de cada grupo em tempo real — sem perder nenhuma ovelha.
               </p>
-              <ul className="space-y-2.5">
-                {['Louvor, Diaconal, Comunicação e mais','Responsáveis e equipes definidos','Status ativo/inativo em tempo real','Descrição completa de cada ministério'].map(item => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
-                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              <ul className="space-y-2">
+                {['Louvor, Diaconal, Missões e muito mais','Líderes e responsáveis definidos por célula','Alertas de células sem reunião há 14+ dias','Funil de conversão por rede pastoral'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-[#161616]">
+                    <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
-            {/* Screenshot */}
-            <div className="flex-1 w-full order-1 lg:order-2">
-              <ScreenshotFrame
-                src="/screenshots/ministerios.svg"
-                alt="Grid de ministérios da Ekthos Church com cards de Louvor, Diaconal, Comunicação e outros"
-                url="app.ekthosai.net/ministerios"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ── 6d. FUNCIONALIDADES — Agenda ─────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: 'rgba(249,238,220,0.30)' }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Screenshot */}
-            <div className="flex-1 w-full">
-              <ScreenshotFrame
-                src="/screenshots/agenda.svg"
-                alt="Relatório de acompanhamento pastoral da Ekthos Church com taxa de retenção de novos convertidos"
-                url="app.ekthosai.net/agenda"
-              />
-            </div>
-            {/* Copy */}
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
-                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
-                <CalendarRange size={14} /> Acompanhamento
+            {/* Agenda & Relatórios */}
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-200 group">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+                style={{ background: 'rgba(196,132,29,0.08)', color: '#C4841D' }}>
+                <CalendarRange size={28} strokeWidth={1.5} />
               </div>
-              <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
-                Relatórios que revelam o que está invisível
-              </h3>
-              <p className="text-base leading-relaxed mb-6 text-gray-500">
-                Taxa de retenção de convertidos, mês a mês. Veja quem permaneceu, quem saiu e qual ação pastoral
-                fez diferença. Dados reais para decisões pastorais reais.
+              <h3 className="font-display text-xl font-bold mb-3 text-[#161616]">Agenda e Relatórios</h3>
+              <p className="text-gray-500 text-sm leading-relaxed mb-5">
+                Calendário completo de cultos, encontros e eventos. Taxa de retenção de convertidos,
+                mês a mês — dados reais para decisões pastorais reais.
               </p>
-              <ul className="space-y-2.5">
-                {['Taxa de retenção de novos convertidos','Análise mensal e anual comparativa','Exportação CSV para relatórios externos','Critério de retenção ajustável por igreja'].map(item => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-[#161616]">
-                    <Check size={16} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              <ul className="space-y-2">
+                {['Calendário mensal com eventos categorizados','Taxa de retenção de novos convertidos','Análise mensal e anual comparativa','Exportação CSV para relatórios externos'].map(item => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-[#161616]">
+                    <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
                     {item}
                   </li>
                 ))}
@@ -830,24 +808,17 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
-              <div className="mb-4">
+              <div className="mb-4 flex items-center gap-3">
                 <img
                   src="/logo/ekthos-church.svg"
                   alt="Ekthos Church"
-                  className="h-10 w-auto object-contain"
+                  className="h-12 w-auto object-contain"
                   style={{ filter: 'brightness(0) invert(1)' }}
-                  onError={e => {
-                    const el = e.currentTarget
-                    el.style.display = 'none'
-                    const fallback = el.nextElementSibling as HTMLElement | null
-                    if (fallback) fallback.style.display = 'flex'
-                  }}
+                  onError={e => { (e.currentTarget as HTMLElement).style.display = 'none' }}
                 />
-                <div className="items-center gap-2 hidden" aria-hidden>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                    style={{ background: '#e13500' }}>E</div>
-                  <span className="font-display text-white text-lg font-bold">Ekthos Church</span>
-                </div>
+                <span className="font-display text-2xl font-bold text-white tracking-tight">
+                  Ekthos <span style={{ color: '#e13500' }}>Church</span>
+                </span>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.45)' }}>
                 CRM pastoral com inteligência artificial para igrejas que querem cuidar melhor da sua comunidade.
