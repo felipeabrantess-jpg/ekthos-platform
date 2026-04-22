@@ -245,8 +245,8 @@ const MAX_QUESTIONS = 22 // com P2_CORES
 // ── Agentes por plano (fonte da verdade) ──────────────────
 const PLAN_AGENTS: Record<string, string[]> = {
   chamado:    ['agent-suporte', 'agent-onboarding'],
-  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
-  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro'],
+  avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-metricas', 'agent-whatsapp'],
 }
 
 // ── UNDO helpers ───────────────────────────────────────────

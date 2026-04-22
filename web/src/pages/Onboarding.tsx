@@ -37,18 +37,6 @@ interface LogoConfirmState {
 
 // ── Constantes ─────────────────────────────────────────────
 
-const PLAN_LABEL: Record<string, string> = {
-  chamado:    'Chamado — R$689,90/mês',
-  missao:     'Missão — R$1.639,90/mês',
-  avivamento: 'Avivamento — R$2.469,90/mês',
-}
-
-const PLAN_SHORT: Record<string, string> = {
-  chamado:    'R$689,90/mês',
-  missao:     'R$1.639,90/mês',
-  avivamento: 'R$2.469,90/mês',
-}
-
 const COLOR_PALETTES: ColorPaletteOption[] = [
   { label: 'Fogo e Paixão',          primary: '#E13500', secondary: '#670000', emoji: '🔥' },
   { label: 'Céu e Mar',              primary: '#2563EB', secondary: '#1E3A5F', emoji: '🌊' },
@@ -574,13 +562,12 @@ export default function Onboarding() {
   const inputRef       = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    if (!planSlug) return  // aguarda seleção de plano
     setMessages([{
       role:      'assistant',
-      content:   `Olá! Seja muito bem-vindo à Ekthos! 🙏\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja com atenção a cada detalhe da sua operação pastoral.\n\nVocê escolheu o plano ${PLAN_LABEL[planSlug] ?? planSlug}. Ótima escolha!\n\nVamos começar: qual é o nome completo da sua igreja?`,
+      content:   `Olá! Seja muito bem-vindo à Ekthos! 🙏\n\nSou seu Consultor de Onboarding — estou aqui para personalizar o CRM da sua igreja com atenção a cada detalhe da sua operação pastoral.\n\nVamos começar: qual é o nome completo da sua igreja?`,
       timestamp: new Date(),
     }])
-  }, [planSlug])
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -849,7 +836,7 @@ export default function Onboarding() {
         </div>
         <span className="text-xs font-semibold px-3 py-1.5 rounded-full"
           style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}>
-          {PLAN_SHORT[planSlug] ?? planSlug}
+          Configuração
         </span>
       </div>
 
