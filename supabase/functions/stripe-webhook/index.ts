@@ -273,9 +273,124 @@ async function markConversionsRefunded(churchId: string, invoiceId: string): Pro
   }
 }
 
+// ── Landing page provisioning ────────────────────────────────
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')   // remove diacritics
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40)
+}
+
+async function handleLandingPageCheckout(session: Stripe.Checkout.Session): Promise<void> {
+  const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
+  const subId      = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null
+
+  // Email obrigatório para convidar o pastor
+  const email = session.customer_email
+    ?? session.customer_details?.email
+    ?? session.metadata?.email
+    ?? null
+
+  if (!email) {
+    console.error('[stripe-webhook] landing_page checkout sem email:', session.id)
+    return
+  }
+
+  const planSlug   = session.metadata?.plan_slug ?? 'chamado'
+  const pastorName = (session.metadata?.name ?? session.customer_details?.name ?? '').trim()
+
+  // Extrai nome da igreja de custom_fields (key: church_name)
+  type CustomTextField = { key: string; text?: { value?: string | null } }
+  const churchNameField = ((session.custom_fields ?? []) as CustomTextField[])
+    .find(f => f.key === 'church_name')
+  const churchName = churchNameField?.text?.value?.trim()
+    || (pastorName ? `Igreja de ${pastorName}` : `Igreja ${email.split('@')[0]}`)
+
+  // Slug único com sufixo de timestamp base-36
+  const slug = `${slugify(churchName)}-${Date.now().toString(36)}`
+
+  // 1. Cria church
+  const { data: church, error: churchErr } = await supabase
+    .from('churches')
+    .insert({ name: churchName, slug, status: 'onboarding', subscription_plan: planSlug })
+    .select('id')
+    .single()
+
+  if (churchErr || !church) {
+    console.error('[stripe-webhook] falha ao criar church (landing):', churchErr?.message, session.id)
+    return
+  }
+
+  const churchId = church.id
+  console.log(`[stripe-webhook] church criada (landing): ${churchId} slug=${slug} plan=${planSlug}`)
+
+  // 2. Cria subscription
+  const { error: subErr } = await supabase
+    .from('subscriptions')
+    .insert({
+      church_id:                  churchId,
+      plan_slug:                  planSlug,
+      status:                     'active',
+      stripe_subscription_id:     subId,
+      stripe_customer_id:         customerId,
+      stripe_checkout_session_id: session.id,
+    })
+
+  if (subErr) {
+    console.error('[stripe-webhook] falha ao criar subscription (landing):', subErr.message)
+    // Non-fatal — continua para convidar o pastor
+  }
+
+  // 3. Convida pastor via magic-link
+  try {
+    const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
+      email,
+      {
+        redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'}/onboarding`,
+        data: { full_name: pastorName },
+      },
+    )
+
+    if (inviteErr) {
+      console.warn('[stripe-webhook] inviteUserByEmail (landing):', inviteErr.message)
+    } else if (invited?.user) {
+      const { error: metaErr } = await supabase.auth.admin.updateUserById(
+        invited.user.id,
+        { app_metadata: { church_id: churchId, role: 'admin' } },
+      )
+      if (metaErr) console.warn('[stripe-webhook] updateUserById (landing):', metaErr.message)
+      else console.log(`[stripe-webhook] pastor ${email} convidado → church ${churchId}`)
+    }
+  } catch (e) {
+    console.warn('[stripe-webhook] invite failed (landing):', (e as Error).message)
+  }
+
+  // 4. Salva church_id no customer Stripe para resolveChurchId em futuros webhooks
+  if (customerId) {
+    try {
+      await stripe.customers.update(customerId, { metadata: { church_id: churchId } })
+    } catch (e) {
+      console.warn('[stripe-webhook] customer metadata update (landing):', (e as Error).message)
+    }
+  }
+
+  // 5. Affiliate conversion (non-fatal)
+  await recordAffiliateConversion(session, churchId)
+}
+
 // ── Handlers ────────────────────────────────────────────────
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  // Landing page: provisiona church + usuário do zero
+  if (session.metadata?.source === 'landing_page') {
+    await handleLandingPageCheckout(session)
+    return
+  }
+
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
   const subId      = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null
 
