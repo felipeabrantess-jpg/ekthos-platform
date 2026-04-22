@@ -198,25 +198,15 @@ export default function Landing() {
       >
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center shrink-0">
+          <a href="/" className="flex items-center gap-3 shrink-0">
             <img
               src="/logo/ekthos-church.svg"
               alt="Ekthos Church"
-              className="h-9 w-auto object-contain"
-              onError={e => {
-                const el = e.currentTarget
-                el.style.display = 'none'
-                const fallback = el.nextElementSibling as HTMLElement | null
-                if (fallback) fallback.style.display = 'flex'
-              }}
+              className="h-12 w-auto object-contain"
+              onError={e => { (e.currentTarget as HTMLElement).style.display = 'none' }}
             />
-            {/* Fallback texto — visível somente se logo não carrega */}
-            <span className="items-center gap-2.5 hidden" aria-hidden>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                style={{ background: '#e13500' }}>E</div>
-              <span className="font-display text-[#161616] text-lg font-bold tracking-tight">
-                Ekthos <span style={{ color: '#e13500' }}>Church</span>
-              </span>
+            <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
+              Ekthos <span style={{ color: '#e13500' }}>Church</span>
             </span>
           </a>
 
@@ -830,24 +820,17 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
-              <div className="mb-4">
+              <div className="mb-4 flex items-center gap-3">
                 <img
                   src="/logo/ekthos-church.svg"
                   alt="Ekthos Church"
-                  className="h-10 w-auto object-contain"
+                  className="h-12 w-auto object-contain"
                   style={{ filter: 'brightness(0) invert(1)' }}
-                  onError={e => {
-                    const el = e.currentTarget
-                    el.style.display = 'none'
-                    const fallback = el.nextElementSibling as HTMLElement | null
-                    if (fallback) fallback.style.display = 'flex'
-                  }}
+                  onError={e => { (e.currentTarget as HTMLElement).style.display = 'none' }}
                 />
-                <div className="items-center gap-2 hidden" aria-hidden>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                    style={{ background: '#e13500' }}>E</div>
-                  <span className="font-display text-white text-lg font-bold">Ekthos Church</span>
-                </div>
+                <span className="font-display text-2xl font-bold text-white tracking-tight">
+                  Ekthos <span style={{ color: '#e13500' }}>Church</span>
+                </span>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.45)' }}>
                 CRM pastoral com inteligência artificial para igrejas que querem cuidar melhor da sua comunidade.
