@@ -300,7 +300,7 @@ export default function Landing() {
       </section>
 
       {/* ── 3. FATOS ──────────────────────────────────────────── */}
-      <section className="py-14 border-y border-gray-100" style={{ background: 'rgba(249,238,220,0.35)' }}>
+      <section className="py-14 border-y w-full" style={{ background: '#F6F2EC', borderColor: '#E8E0D4' }}>
         <div className="max-w-5xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -404,7 +404,7 @@ export default function Landing() {
       </section>
 
       {/* ── 6. FUNCIONALIDADES (ALTERNATING) ──────────────────── */}
-      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 bg-white">
+      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
@@ -516,7 +516,7 @@ export default function Landing() {
       </section>
 
       {/* ── 7. VOLUNTEER + KIDS ───────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: 'rgba(249,238,220,0.35)' }}>
+      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
@@ -660,7 +660,7 @@ export default function Landing() {
 
       {/* ── 9. PRICING ────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef}
-        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 bg-white">
+        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: '#F0EAE0' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
@@ -873,7 +873,8 @@ export default function Landing() {
       </section>
 
       {/* ── 10. COMPARATIVO ───────────────────────────────────── */}
-      <section className="py-16 px-5 lg:px-8 max-w-5xl mx-auto">
+      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+        <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[#161616]">
             Por que igrejas migram para o Ekthos Church?
@@ -911,6 +912,7 @@ export default function Landing() {
             </tbody>
           </table>
         </div>
+        </div>
       </section>
 
       {/* ── 11. DEPOIMENTOS ───────────────────────────────────── */}
@@ -947,7 +949,8 @@ export default function Landing() {
       </section>
 
       {/* ── 12. FAQ ───────────────────────────────────────────── */}
-      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 max-w-3xl mx-auto">
+      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
+        <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
           <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
@@ -956,7 +959,7 @@ export default function Landing() {
         </div>
         <div className="space-y-3">
           {FAQ_ITEMS.map((item, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div key={i} className="rounded-2xl border shadow-sm overflow-hidden" style={{ background: '#FDFAF6', borderColor: '#E4DAD0' }}>
               <button
                 onClick={() => setFaqOpen(faqOpen === i ? null : i)}
                 className="w-full flex items-center justify-between px-6 py-5 text-left">
@@ -971,6 +974,7 @@ export default function Landing() {
               )}
             </div>
           ))}
+        </div>
         </div>
       </section>
 
