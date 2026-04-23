@@ -137,7 +137,7 @@ export default function Landing() {
   const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%21+Quero+conhecer+o+Ekthos+Church`
 
   return (
-    <div className="min-h-screen font-body antialiased bg-white text-[#161616]">
+    <div className="min-h-screen font-body antialiased bg-white text-[#161616] overflow-x-hidden">
 
       {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md border-b border-gray-100 ${scrolled ? 'shadow-sm' : ''}`}>
@@ -331,7 +331,7 @@ export default function Landing() {
       </section>
 
       {/* ── 5. AGENTES IA ─────────────────────────────────────── */}
-      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
+      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3"
@@ -346,12 +346,12 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 gap-x-20 gap-y-0">
             {[
-              { icon: <Bot       size={16} />, slug: 'Suporte',    desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.',        badge: 'Todos os planos', free: true },
-              { icon: <Users     size={16} />, slug: 'Onboarding', desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.',  badge: 'Todos os planos', free: true },
-              { icon: <MessageCircle size={16} />, slug: 'Cadastro', desc: 'Registra visitantes e membros automaticamente via formulário inteligente.', badge: 'Missão e Avivamento' },
-              { icon: <Bell      size={16} />, slug: 'Conteúdo',   desc: 'Gera comunicados pastorais, roteiros de culto e materiais de célula com IA.',  badge: 'Avivamento' },
-              { icon: <TrendingUp size={16} />, slug: 'Métricas',  desc: 'Gera relatórios de crescimento, frequência e saúde da comunidade.',            badge: 'Avivamento' },
-              { icon: <Shield    size={16} />, slug: 'WhatsApp',   desc: 'Envia comunicados pelo WhatsApp de forma automatizada e segmentada.',           badge: 'Avivamento' },
+              { icon: <Bot           size={16} />, slug: 'Suporte',    desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.' },
+              { icon: <Users         size={16} />, slug: 'Onboarding', desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.' },
+              { icon: <MessageCircle size={16} />, slug: 'Cadastro',   desc: 'Registra visitantes e membros automaticamente via formulário inteligente.' },
+              { icon: <Bell          size={16} />, slug: 'Conteúdo',   desc: 'Gera comunicados pastorais, roteiros de culto e materiais de célula com IA.' },
+              { icon: <TrendingUp    size={16} />, slug: 'Métricas',   desc: 'Gera relatórios de crescimento, frequência e saúde da comunidade.' },
+              { icon: <Shield        size={16} />, slug: 'WhatsApp',   desc: 'Envia comunicados pelo WhatsApp de forma automatizada e segmentada.' },
             ].map((a, i) => (
               <div key={i} className="flex items-start gap-5 py-8 border-b"
                 style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
@@ -360,14 +360,9 @@ export default function Landing() {
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+                  <div className="flex items-center gap-2.5 mb-1.5">
                     <span style={{ color: '#f9eedc' }}>{a.icon}</span>
                     <h3 className="font-semibold" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
-                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
-                      a.free
-                        ? 'border-green-700/40 text-green-400'
-                        : 'border-[#e13500]/30 text-[#e13500]'
-                    }`}>{a.badge}</span>
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.55)' }}>{a.desc}</p>
                 </div>
@@ -571,7 +566,7 @@ export default function Landing() {
       </section>
 
       {/* ── 8. APP PRÓPRIO DA IGREJA ──────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
+      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24">
 
@@ -667,7 +662,7 @@ export default function Landing() {
 
                 <ul className="space-y-2.5 mb-4">
                   {[
-                    '2 usuários administrativos',
+                    '5 usuários administrativos',
                     'Dashboard pastoral completo',
                     'Cadastro e acompanhamento de membros',
                     'Caminho de discipulado (pipeline)',
@@ -726,7 +721,7 @@ export default function Landing() {
 
                 <ul className="space-y-2.5 mb-4">
                   {[
-                    '4 usuários administrativos',
+                    '8 usuários administrativos',
                     'Tudo do plano Chamado',
                     'Agente Cadastro incluso',
                     'Relatórios automáticos',
@@ -796,7 +791,7 @@ export default function Landing() {
 
                 <ul className="space-y-2.5 mb-6">
                   {[
-                    '4 usuários administrativos',
+                    '10 usuários administrativos',
                     'Tudo do plano Missão',
                     '6 agentes IA completos',
                     'Multi-site (múltiplas sedes)',
@@ -888,7 +883,7 @@ export default function Landing() {
       </section>
 
       {/* ── 11. DEPOIMENTOS ───────────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
+      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(225,53,0,0.8)' }}>O que os pastores dizem</p>
@@ -949,7 +944,7 @@ export default function Landing() {
       </section>
 
       {/* ── 13. CTA FINAL ─────────────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8"
+      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full"
         style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-sm font-semibold uppercase tracking-widest mb-4 text-white/60">Comece hoje mesmo</p>
@@ -978,7 +973,7 @@ export default function Landing() {
       </section>
 
       {/* ── 14. FOOTER ────────────────────────────────────────── */}
-      <footer style={{ background: '#161616' }}>
+      <footer className="bg-[#161616] w-full">
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
