@@ -126,6 +126,19 @@ async function recordAffiliateConversion(
 
       if (!coupon) continue
 
+      // SEC-005: Idempotência — evita duplicar conversão se webhook reentrar
+      const { data: existingConversion } = await supabase
+        .from('affiliate_conversions')
+        .select('id')
+        .eq('church_id', churchId)
+        .eq('coupon_id', coupon.id)
+        .maybeSingle()
+
+      if (existingConversion?.id) {
+        console.log(`[stripe-webhook] affiliate_conversion já existe (idempotente): church=${churchId} coupon=${coupon.id}`)
+        continue
+      }
+
       // Insert conversion
       await supabase.from('affiliate_conversions').insert({
         affiliate_id:   coupon.affiliate_id,
@@ -286,6 +299,18 @@ function slugify(text: string): string {
 }
 
 async function handleLandingPageCheckout(session: Stripe.Checkout.Session): Promise<void> {
+  // SEC-005: Idempotência — verifica se este checkout já foi processado
+  const { data: existingSub } = await supabase
+    .from('subscriptions')
+    .select('id, church_id')
+    .eq('stripe_checkout_session_id', session.id)
+    .maybeSingle()
+
+  if (existingSub?.id) {
+    console.log(`[stripe-webhook] landing checkout já processado (idempotente): session=${session.id} church=${existingSub.church_id}`)
+    return
+  }
+
   const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id ?? null
   const subId      = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id ?? null
 
