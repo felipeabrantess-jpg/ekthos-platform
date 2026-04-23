@@ -2,14 +2,16 @@
 // Landing Page — Ekthos Church
 // Skills: ekthos-frontend + landing-page-ekthos
 // Design: bg-white, cream sections, vermelho #e13500
+// Rebuilt 2026-04-22: alternating layouts, no icon circles,
+// no CSS mockups, no fake numbers, Preview MCP validated
 // ============================================================
 
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Check, ChevronDown, Menu, X, Star, Zap, Crown,
-  Users, BarChart2, CalendarRange, Bell, Heart,
-  Bot, MessageCircle, Shield, TrendingUp, Building2,
+  Users, BarChart2, CalendarRange,
+  Bot, MessageCircle, Bell, Shield, TrendingUp,
   UserPlus, ShieldCheck, Smartphone,
 } from 'lucide-react'
 
@@ -241,20 +243,12 @@ export default function Landing() {
               </a>
             </div>
 
-            <div className="flex items-center gap-4 mt-8 justify-center lg:justify-start flex-wrap">
-              <div className="flex -space-x-2">
-                {['🙏','✝️','🕊️','👑','🔥'].map((e, i) => (
-                  <div key={i} className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs"
-                    style={{ background: i % 2 === 0 ? '#e13500' : '#670000' }}>{e}</div>
-                ))}
-              </div>
-              <p className="text-sm text-gray-500">
-                <strong className="text-[#161616]">+200 igrejas</strong> já usam o Ekthos Church
-              </p>
-            </div>
+            <p className="mt-8 text-sm text-gray-400 text-center lg:text-left">
+              Setup completo em menos de 30 minutos · Suporte em português
+            </p>
           </div>
 
-          {/* Collage 4 screenshots */}
+          {/* Screenshot collage */}
           <div className="flex-1 w-full relative" style={{ minHeight: 420, paddingTop: 24, paddingRight: 40, paddingBottom: 60 }}>
             <div className="absolute inset-0 rounded-3xl blur-3xl opacity-[0.07] pointer-events-none"
               style={{ background: 'radial-gradient(circle at 60% 40%, #e13500 0%, transparent 70%)' }} />
@@ -274,19 +268,19 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 3. PROVA SOCIAL ───────────────────────────────────── */}
+      {/* ── 3. FATOS ──────────────────────────────────────────── */}
       <section className="py-14 border-y border-gray-100" style={{ background: 'rgba(249,238,220,0.35)' }}>
         <div className="max-w-5xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { n: '+200',    l: 'Igrejas ativas' },
-              { n: '+15.000', l: 'Membros gerenciados' },
-              { n: '97%',     l: 'Satisfação dos pastores' },
-              { n: '<30min',  l: 'Setup completo' },
+              { label: 'Setup completo',         sub: 'menos de 30 minutos' },
+              { label: 'IA pastoral',             sub: 'treinada para igrejas' },
+              { label: 'Dados 100% seus',         sub: 'exportação a qualquer hora' },
+              { label: 'Suporte em português',    sub: 'time pastoral dedicado' },
             ].map(s => (
-              <div key={s.n}>
-                <p className="font-mono text-3xl font-bold mb-1" style={{ color: '#e13500' }}>{s.n}</p>
-                <p className="text-sm text-gray-500">{s.l}</p>
+              <div key={s.label} className="py-2">
+                <p className="font-display text-base font-bold mb-1 text-[#161616]">{s.label}</p>
+                <p className="text-sm text-gray-500">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -310,27 +304,26 @@ export default function Landing() {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             {
-              icon: <Users size={28} strokeWidth={1.5} />,
+              icon: <Users size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
               title: 'Membros se afastando em silêncio',
               body: 'Você só percebe que alguém saiu quando já foi embora. Sem dados, sem alertas, sem acompanhamento sistemático.',
             },
             {
-              icon: <BarChart2 size={28} strokeWidth={1.5} />,
+              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
               title: 'Horas perdidas em tarefas manuais',
               body: 'Planilhas, WhatsApp, cadernos. O pastor gasta mais tempo organizando do que pastoreando.',
             },
             {
-              icon: <TrendingUp size={28} strokeWidth={1.5} />,
+              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
               title: 'Decisões sem dados reais',
               body: 'Sem métricas, você navega por intuição. Quantos visitantes voltaram? Qual ministério está em queda?',
             },
           ].map((p, i) => (
-            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
+            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 hover:border-[#e13500]/30 transition-all duration-200">
+              <div className="flex items-center gap-2.5 mb-4">
                 {p.icon}
+                <h3 className="font-semibold text-base text-[#161616]">{p.title}</h3>
               </div>
-              <h3 className="font-semibold text-lg mb-2 text-[#161616]">{p.title}</h3>
               <p className="text-sm leading-relaxed text-gray-500">{p.body}</p>
             </div>
           ))}
@@ -340,47 +333,54 @@ export default function Landing() {
       {/* ── 5. AGENTES IA ─────────────────────────────────────── */}
       <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-14">
+          <div className="mb-8">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3"
               style={{ color: 'rgba(225,53,0,0.8)' }}>Inteligência Artificial pastoral</p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#f9eedc' }}>
               Agentes que conhecem a linguagem da igreja
             </h2>
-            <p className="text-lg max-w-2xl mx-auto" style={{ color: 'rgba(249,238,220,0.6)' }}>
+            <p className="text-lg max-w-2xl" style={{ color: 'rgba(249,238,220,0.6)' }}>
               Não são chatbots genéricos. São assistentes treinados com o vocabulário e a sensibilidade pastoral.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 gap-x-20 gap-y-0">
             {[
-              { icon: <Bot size={20} />,          slug: 'Suporte',       desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.',         badge: 'Todos os planos', free: true },
-              { icon: <Users size={20} />,         slug: 'Onboarding',    desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.',   badge: 'Todos os planos', free: true },
-              { icon: <MessageCircle size={20} />, slug: 'Cadastro',      desc: 'Registra visitantes e membros automaticamente via formulário inteligente.',     badge: 'Missão e Avivamento' },
-              { icon: <Bell size={20} />,          slug: 'Conteúdo',      desc: 'Gera comunicados pastorais, roteiros de culto e materiais de célula com IA.',   badge: 'Avivamento' },
-              { icon: <TrendingUp size={20} />,    slug: 'Métricas',      desc: 'Gera relatórios automáticos de crescimento, frequência e saúde da comunidade.', badge: 'Avivamento' },
-              { icon: <Shield size={20} />,        slug: 'WhatsApp',      desc: 'Envia comunicados pelo WhatsApp de forma automatizada e segmentada.',           badge: 'Avivamento' },
+              { icon: <Bot       size={16} />, slug: 'Suporte',    desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.',        badge: 'Todos os planos', free: true },
+              { icon: <Users     size={16} />, slug: 'Onboarding', desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.',  badge: 'Todos os planos', free: true },
+              { icon: <MessageCircle size={16} />, slug: 'Cadastro', desc: 'Registra visitantes e membros automaticamente via formulário inteligente.', badge: 'Missão e Avivamento' },
+              { icon: <Bell      size={16} />, slug: 'Conteúdo',   desc: 'Gera comunicados pastorais, roteiros de culto e materiais de célula com IA.',  badge: 'Avivamento' },
+              { icon: <TrendingUp size={16} />, slug: 'Métricas',  desc: 'Gera relatórios de crescimento, frequência e saúde da comunidade.',            badge: 'Avivamento' },
+              { icon: <Shield    size={16} />, slug: 'WhatsApp',   desc: 'Envia comunicados pelo WhatsApp de forma automatizada e segmentada.',           badge: 'Avivamento' },
             ].map((a, i) => (
-              <div key={i} className="rounded-2xl p-6 border transition-all hover:border-[#e13500]/40"
-                style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500' }}>{a.icon}</div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                    a.free ? 'bg-green-900/40 text-green-400' : 'bg-[#e13500]/15 text-[#e13500]'
-                  }`}>{a.badge}</span>
+              <div key={i} className="flex items-start gap-5 py-8 border-b"
+                style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+                <span className="font-mono text-4xl font-bold leading-none shrink-0 w-12 text-right"
+                  style={{ color: 'rgba(225,53,0,0.18)' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+                    <span style={{ color: '#f9eedc' }}>{a.icon}</span>
+                    <h3 className="font-semibold" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${
+                      a.free
+                        ? 'border-green-700/40 text-green-400'
+                        : 'border-[#e13500]/30 text-[#e13500]'
+                    }`}>{a.badge}</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.55)' }}>{a.desc}</p>
                 </div>
-                <h3 className="font-semibold mb-1.5" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.55)' }}>{a.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 6. FUNCIONALIDADES ────────────────────────────────── */}
+      {/* ── 6. FUNCIONALIDADES (ALTERNATING) ──────────────────── */}
       <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
               Tudo que sua operação pastoral precisa
             </p>
@@ -392,51 +392,100 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                icon: <BarChart2 size={28} strokeWidth={1.5} />, color: '#e13500', bg: 'rgba(225,53,0,0.08)',
-                title: 'Painel de Controle',
-                desc: 'Métricas em tempo real de membros, visitantes, células e convertidos. Alertas de afastamento automáticos.',
-                items: ['Membros rastreados em tempo real', 'Alertas de afastamento automáticos', 'Redes e células com visão hierárquica', 'Relatório de novos convertidos'],
-              },
-              {
-                icon: <Users size={28} strokeWidth={1.5} />, color: '#670000', bg: 'rgba(103,0,0,0.07)',
-                title: 'Gestão de Pessoas',
-                desc: 'Cadastro completo com histórico de visitas, batismo e discipulado. Registre visitantes em segundos.',
-                items: ['Perfil pastoral completo de cada membro', 'Registro de visitante por QR Code', 'Filtros por Visitante, Membro ou Líder', 'Histórico de presença e interações'],
-              },
-              {
-                icon: <Building2 size={28} strokeWidth={1.5} />, color: '#2D7A4F', bg: 'rgba(45,122,79,0.08)',
-                title: 'Ministérios e Células',
-                desc: 'Gerencie todos os ministérios, células e redes em um só lugar. Saúde de cada grupo em tempo real.',
-                items: ['Louvor, Diaconal, Missões e muito mais', 'Líderes e responsáveis por célula', 'Alertas de células sem reunião', 'Funil de conversão por rede pastoral'],
-              },
-              {
-                icon: <CalendarRange size={28} strokeWidth={1.5} />, color: '#C4841D', bg: 'rgba(196,132,29,0.08)',
-                title: 'Agenda e Relatórios',
-                desc: 'Calendário completo de cultos, encontros e eventos. Taxa de retenção mês a mês.',
-                items: ['Calendário mensal com eventos categorizados', 'Taxa de retenção de convertidos', 'Análise comparativa mensal e anual', 'Exportação CSV para relatórios externos'],
-              },
-            ].map((card, i) => (
-              <div key={i} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-200">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
-                  style={{ background: card.bg, color: card.color }}>
-                  {card.icon}
-                </div>
-                <h3 className="font-display text-xl font-bold mb-3 text-[#161616]">{card.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-5">{card.desc}</p>
-                <ul className="space-y-2">
-                  {card.items.map(item => (
-                    <li key={item} className="flex items-center gap-2 text-sm text-[#161616]">
-                      <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+          {[
+            {
+              reverse: false,
+              screenshot: '/screenshots/painel.png',
+              alt: 'Dashboard Ekthos Church',
+              label: 'Dashboard pastoral',
+              title: 'Visão completa da sua comunidade',
+              body: 'Métricas em tempo real de membros, visitantes, células e convertidos. Alertas de afastamento automáticos antes que você precise perguntar.',
+              items: [
+                'Membros ativos, em risco e afastados — em tempo real',
+                'Alertas automáticos de afastamento',
+                'Redes e células com visão hierárquica',
+                'Relatório de novos convertidos e retenção',
+              ],
+            },
+            {
+              reverse: true,
+              screenshot: '/screenshots/pessoas.png',
+              alt: 'Gestão de pessoas',
+              label: 'Gestão de pessoas',
+              title: 'Cada membro, acompanhado de perto',
+              body: 'Cadastro completo com histórico de visitas, batismo e discipulado. Registre visitantes em segundos com QR Code e acompanhe o caminho de cada pessoa.',
+              items: [
+                'Perfil pastoral completo de cada membro',
+                'Registro de visitante por QR Code',
+                'Filtros por Visitante, Membro ou Líder',
+                'Histórico de presença e interações',
+              ],
+            },
+            {
+              reverse: false,
+              screenshot: '/screenshots/ministerios.png',
+              alt: 'Ministérios e células',
+              label: 'Ministérios e células',
+              title: 'Sua rede pastoral sob controle',
+              body: 'Gerencie todos os ministérios, células e redes em um só lugar. Saúde de cada grupo em tempo real, com alertas quando uma célula para de se reunir.',
+              items: [
+                'Louvor, Diaconal, Missões e muito mais',
+                'Líderes e responsáveis por célula',
+                'Alertas de células sem reunião',
+                'Funil de conversão por rede pastoral',
+              ],
+            },
+            {
+              reverse: true,
+              screenshot: '/screenshots/agenda.png',
+              alt: 'Agenda e relatórios',
+              label: 'Agenda e relatórios',
+              title: 'Nenhum evento, nenhum dado perdido',
+              body: 'Calendário completo de cultos, encontros e eventos. Taxa de retenção mês a mês. Compare períodos e entenda o crescimento da sua comunidade.',
+              items: [
+                'Calendário mensal com eventos categorizados',
+                'Taxa de retenção de convertidos',
+                'Análise comparativa mensal e anual',
+                'Exportação CSV para relatórios externos',
+              ],
+            },
+          ].map((feat, i) => (
+            <div
+              key={i}
+              className={`flex flex-col ${feat.reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20 py-16 ${i < 3 ? 'border-b border-gray-100' : ''}`}
+            >
+              {/* Text */}
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+                  {feat.label}
+                </p>
+                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+                  {feat.title}
+                </h3>
+                <p className="text-gray-500 leading-relaxed mb-7">{feat.body}</p>
+                <ul className="space-y-3">
+                  {feat.items.map(item => (
+                    <li key={item} className="flex items-start gap-3 text-sm text-[#161616]">
+                      <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }} />
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-            ))}
-          </div>
+
+              {/* Screenshot */}
+              <div className="flex-1 w-full rounded-2xl p-3 lg:p-4"
+                style={{ background: '#f4f4f5' }}>
+                <img
+                  src={feat.screenshot}
+                  alt={feat.alt}
+                  loading="lazy"
+                  className="w-full rounded-xl border border-black/[0.06]"
+                  style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.18)', display: 'block' }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -457,16 +506,15 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Volunteer Pro */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-200">
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'rgba(225,53,0,0.08)', color: '#e13500' }}>
-                  <UserPlus size={28} strokeWidth={1.5} />
-                </div>
-                <span className="px-3 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#670000' }}>Incluso no Avivamento</span>
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-start justify-between mb-5">
+                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+                  <UserPlus size={20} strokeWidth={1.75} style={{ color: '#e13500' }} />
+                  Gestão de Voluntários e Escalas
+                </h3>
+                <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
+                  style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <h3 className="font-display text-2xl font-bold mb-3 text-[#161616]">Gestão de Voluntários e Escalas</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-6">
                 Organize equipes, gere escalas inteligentes, confirme presença via WhatsApp
                 e acompanhe o engajamento dos seus voluntários.
@@ -489,16 +537,15 @@ export default function Landing() {
             </div>
 
             {/* Kids Pro */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-xl hover:shadow-2xl transition-all duration-200">
-              <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'rgba(45,122,79,0.08)', color: '#2D7A4F' }}>
-                  <ShieldCheck size={28} strokeWidth={1.5} />
-                </div>
-                <span className="px-3 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#670000' }}>Incluso no Avivamento</span>
+            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-start justify-between mb-5">
+                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+                  <ShieldCheck size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+                  Ministério Infantil Seguro
+                </h3>
+                <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
+                  style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <h3 className="font-display text-2xl font-bold mb-3 text-[#161616]">Ministério Infantil Seguro</h3>
               <p className="text-gray-500 text-sm leading-relaxed mb-6">
                 Segurança total para as crianças. Check-in com QR Code, validação de
                 responsáveis e comunicação instantânea com os pais.
@@ -524,14 +571,15 @@ export default function Landing() {
       </section>
 
       {/* ── 8. APP PRÓPRIO DA IGREJA ──────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: 'linear-gradient(135deg, #161616 0%, #2a0000 100%)' }}>
+      <section className="py-20 lg:py-28 px-5 lg:px-8" style={{ background: '#161616' }}>
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-20">
+          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24">
+
             {/* Copy */}
             <div className="flex-1 text-center lg:text-left">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-6"
-                style={{ background: 'rgba(225,53,0,0.2)', color: '#e13500', border: '1px solid rgba(225,53,0,0.3)' }}>
-                👑 Exclusivo do plano Avivamento
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold mb-6 border"
+                style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500', borderColor: 'rgba(225,53,0,0.25)' }}>
+                <Smartphone size={12} /> Exclusivo do plano Avivamento
               </span>
               <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#f9eedc' }}>
                 Sua igreja com{' '}
@@ -541,19 +589,20 @@ export default function Landing() {
                 No plano Avivamento, sua igreja ganha um aplicativo exclusivo com a identidade,
                 logo e cores da sua comunidade. Seus membros acessam tudo pelo celular.
               </p>
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-4 mb-10">
                 {[
-                  { icon: '📱', text: 'Identidade visual exclusiva da sua igreja' },
-                  { icon: '🔔', text: 'Notificações para eventos e comunicados' },
-                  { icon: '🙏', text: 'Mural de pedidos de oração' },
-                  { icon: '📅', text: 'Agenda de cultos e células acessível' },
-                  { icon: '✝️', text: 'Conteúdo devocional e materiais' },
-                  { icon: '👨‍👩‍👧', text: 'Comunidade conectada no celular' },
-                ].map(item => (
-                  <li key={item.text} className="flex items-center gap-3 text-sm"
-                    style={{ color: 'rgba(249,238,220,0.8)' }}>
-                    <span className="text-base">{item.icon}</span>
-                    {item.text}
+                  ['Identidade visual exclusiva da sua igreja',     'Logo, cores e nome — sem Ekthos na frente'],
+                  ['Notificações para eventos e comunicados',       'Alcance seus membros onde eles estão'],
+                  ['Mural de pedidos de oração',                    'Comunidade conectada em fé'],
+                  ['Agenda de cultos e células acessível',          'Calendário sempre atualizado'],
+                  ['Conteúdo devocional e materiais',               'Devocionais, estudos e avisos'],
+                ].map(([main, sub]) => (
+                  <li key={main} className="flex items-start gap-3">
+                    <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 3 }} />
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: 'rgba(249,238,220,0.9)' }}>{main}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'rgba(249,238,220,0.45)' }}>{sub}</p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -564,67 +613,20 @@ export default function Landing() {
               </button>
             </div>
 
-            {/* Mockup de celular — CSS art */}
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <div className="relative" style={{ width: 220 }}>
-                {/* Glow */}
-                <div className="absolute inset-0 rounded-[40px] blur-2xl opacity-30 pointer-events-none"
-                  style={{ background: '#e13500', transform: 'scale(0.9) translateY(10%)' }} />
-                {/* Phone shell */}
-                <div className="relative rounded-[36px] overflow-hidden border-4 border-white/10"
-                  style={{ background: '#1a1a1a', boxShadow: '0 40px 80px rgba(0,0,0,0.6)', width: 220, height: 440 }}>
-                  {/* Status bar */}
-                  <div className="h-8 flex items-center justify-between px-5 pt-1"
-                    style={{ background: '#111' }}>
-                    <span className="text-[9px] font-semibold text-white/60">9:41</span>
-                    <div className="flex gap-1.5 items-center">
-                      {[3,4,5].map(h => <div key={h} className="w-1 rounded-sm bg-white/60" style={{ height: h * 2 }} />)}
-                      <div className="w-4 h-2 rounded-sm border border-white/40 ml-1"><div className="h-full w-3/4 rounded-sm bg-white/60" /></div>
-                    </div>
-                  </div>
-                  {/* App header */}
-                  <div className="px-4 py-3 flex items-center gap-2" style={{ background: '#e13500' }}>
-                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-                      <span className="text-[8px] font-bold text-white">✝</span>
-                    </div>
-                    <span className="text-xs font-bold text-white">Minha Igreja</span>
-                  </div>
-                  {/* App content */}
-                  <div className="p-3 space-y-2" style={{ background: '#f9eedc' }}>
-                    <div className="bg-white rounded-xl p-3">
-                      <div className="text-[8px] font-bold text-[#161616] mb-1.5">📅 Próximos eventos</div>
-                      {['Culto Dom 18h', 'Célula Qua 19h30', 'Oração Sáb 7h'].map(ev => (
-                        <div key={ev} className="flex items-center gap-1.5 py-1 border-t border-gray-100 first:border-0">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[#e13500]" />
-                          <span className="text-[7px] text-gray-600">{ev}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="bg-white rounded-xl p-3">
-                      <div className="text-[8px] font-bold text-[#161616] mb-1.5">🙏 Pedidos de oração</div>
-                      <div className="space-y-1">
-                        {['Cura de irmã Ana', 'Família do Pr. José'].map(p => (
-                          <div key={p} className="text-[7px] text-gray-500 py-0.5 border-b border-gray-50 last:border-0">{p}</div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { l: '📖', t: 'Devocional' },
-                        { l: '👥', t: 'Membros' },
-                        { l: '📢', t: 'Avisos' },
-                      ].map(m => (
-                        <div key={m.t} className="bg-white rounded-xl p-2 text-center">
-                          <div className="text-base mb-0.5">{m.l}</div>
-                          <div className="text-[6px] font-medium text-gray-500">{m.t}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Home indicator */}
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-16 h-1 rounded-full bg-white/20" />
-                </div>
+            {/* Screenshot do app / visual real */}
+            <div className="flex-1 w-full">
+              <div className="rounded-2xl overflow-hidden border border-white/10"
+                style={{ boxShadow: '0 32px 64px rgba(0,0,0,0.5)' }}>
+                <img
+                  src="/screenshots/painel.png"
+                  alt="Aplicativo Ekthos Church"
+                  loading="lazy"
+                  className="w-full block"
+                />
               </div>
+              <p className="text-center text-xs mt-4" style={{ color: 'rgba(249,238,220,0.3)' }}>
+                Interface personalizada com a identidade da sua igreja
+              </p>
             </div>
           </div>
         </div>
@@ -647,16 +649,13 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-6 items-start">
 
             {/* ── CHAMADO ── */}
-            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 flex flex-col">
+            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(90,90,90,0.08)', color: '#5A5A5A' }}>
-                    <Star size={22} strokeWidth={1.75} />
-                  </div>
+                  <Star size={18} strokeWidth={1.75} style={{ color: '#5A5A5A' }} />
                   <div>
                     <p className="font-semibold text-base text-[#161616]">Chamado</p>
-                    <p className="text-xs text-gray-400">Ideal para igrejas de até 500 membros</p>
+                    <p className="text-xs text-gray-400">Igrejas de até 500 membros</p>
                   </div>
                 </div>
 
@@ -705,21 +704,18 @@ export default function Landing() {
             </div>
 
             {/* ── MISSÃO (popular) ── */}
-            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-2xl scale-[1.02] flex flex-col">
+            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-xl scale-[1.02] flex flex-col">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#e13500' }}>⭐ Mais popular</span>
+                  style={{ background: '#e13500' }}>Mais popular</span>
               </div>
 
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500' }}>
-                    <Zap size={22} strokeWidth={1.75} />
-                  </div>
+                  <Zap size={18} strokeWidth={1.75} style={{ color: '#e13500' }} />
                   <div>
                     <p className="font-semibold text-base" style={{ color: '#f9eedc' }}>Missão</p>
-                    <p className="text-xs" style={{ color: 'rgba(249,238,220,0.5)' }}>Ideal para igrejas de até 1.000 membros</p>
+                    <p className="text-xs" style={{ color: 'rgba(249,238,220,0.5)' }}>Igrejas de até 1.000 membros</p>
                   </div>
                 </div>
 
@@ -762,21 +758,18 @@ export default function Landing() {
             </div>
 
             {/* ── AVIVAMENTO ── */}
-            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-200 flex flex-col">
+            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#670000' }}>👑 Completo</span>
+                  style={{ background: '#670000' }}>Enterprise</span>
               </div>
 
               <div className="p-7 flex-1 pt-10">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(103,0,0,0.08)', color: '#670000' }}>
-                    <Crown size={22} strokeWidth={1.75} />
-                  </div>
+                  <Crown size={18} strokeWidth={1.75} style={{ color: '#670000' }} />
                   <div>
                     <p className="font-semibold text-base text-[#161616]">Avivamento</p>
-                    <p className="text-xs text-gray-400">Ideal para igrejas acima de 1.000 membros</p>
+                    <p className="text-xs text-gray-400">Igrejas acima de 1.000 membros</p>
                   </div>
                 </div>
 
@@ -785,12 +778,18 @@ export default function Landing() {
                 </div>
                 <p className="text-xs text-gray-400 mb-4">Proposta dedicada para operações complexas</p>
 
-                {/* Destaque dos diferenciais */}
-                <div className="rounded-xl p-3 mb-5" style={{ background: 'rgba(103,0,0,0.06)', border: '1px solid rgba(103,0,0,0.1)' }}>
+                <div className="rounded-xl p-4 mb-5 border" style={{ background: 'rgba(103,0,0,0.04)', borderColor: 'rgba(103,0,0,0.08)' }}>
                   <p className="text-xs font-bold text-[#670000] mb-2">Inclui exclusivamente:</p>
-                  <div className="space-y-1">
-                    {['✅ Volunteer Pro', '✅ Ministério Infantil (Kids)', '✅ Aplicativo próprio da igreja'].map(d => (
-                      <p key={d} className="text-xs font-semibold text-[#161616]">{d}</p>
+                  <div className="space-y-1.5">
+                    {[
+                      'Volunteer Pro — escalas e equipes',
+                      'Ministério Infantil (Kids)',
+                      'Aplicativo próprio da igreja',
+                    ].map(d => (
+                      <div key={d} className="flex items-center gap-2 text-xs font-medium text-[#161616]">
+                        <Check size={13} strokeWidth={2.5} style={{ color: '#670000' }} />
+                        {d}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -799,7 +798,7 @@ export default function Landing() {
                   {[
                     '4 usuários administrativos',
                     'Tudo do plano Missão',
-                    '6 agentes IA (Suporte + Onboarding + Cadastro + Conteúdo + Métricas + WhatsApp)',
+                    '6 agentes IA completos',
                     'Multi-site (múltiplas sedes)',
                     'Suporte dedicado',
                   ].map(f => (
@@ -823,19 +822,18 @@ export default function Landing() {
           </div>
 
           {/* Addons */}
-          <div className="mt-10 bg-white rounded-2xl border border-gray-200 shadow-lg p-6 lg:p-8">
+          <div className="mt-10 bg-white rounded-2xl border border-gray-200 p-6 lg:p-8">
             <p className="font-semibold text-center mb-6 text-[#161616]">
-              Complementos disponíveis no plano Chamado e Missão
+              Complementos disponíveis nos planos Chamado e Missão
             </p>
             <div className="grid md:grid-cols-3 gap-6">
               {[
-                { icon: <UserPlus size={18} />,   title: 'Volunteer Pro',         price: 'Sob consulta', desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
-                { icon: <ShieldCheck size={18} />, title: 'Ministério Infantil',   price: 'Sob consulta', desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
-                { icon: <Users size={18} />,       title: 'Usuário adicional',     price: 'Sob consulta', desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
+                { icon: <UserPlus size={16} strokeWidth={1.75} />,   title: 'Volunteer Pro',       price: 'Sob consulta', desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
+                { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Ministério Infantil', price: 'Sob consulta', desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
+                { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional',   price: 'Sob consulta', desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
               ].map((a, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500' }}>{a.icon}</div>
+                  <span style={{ color: '#e13500', marginTop: 2 }}>{a.icon}</span>
                   <div>
                     <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
                     <p className="text-xs font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
@@ -855,27 +853,27 @@ export default function Landing() {
             Por que igrejas migram para o Ekthos Church?
           </h2>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: '#f9eedc' }}>
                 <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
                 <th className="p-4 text-center font-semibold text-gray-400">Planilhas</th>
                 <th className="p-4 text-center font-semibold text-gray-400">CRM Genérico</th>
-                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.06)' }}>Ekthos Church ✦</th>
+                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
               </tr>
             </thead>
             <tbody>
               {[
-                ['Fala a linguagem da igreja',     false, false, true],
-                ['Caminho de discipulado',          false, false, true],
-                ['Agentes IA pastorais',            false, false, true],
-                ['Setup em 30 minutos',             false, false, true],
-                ['Alertas de membros afastados',    false, false, true],
-                ['Controle de células e ministérios', false, false, true],
-                ['Relatórios automáticos',          false, true,  true],
-                ['Aplicativo próprio da igreja',    false, false, true],
-                ['Suporte em português',            false, false, true],
+                ['Fala a linguagem da igreja',          false, false, true],
+                ['Caminho de discipulado',               false, false, true],
+                ['Agentes IA pastorais',                 false, false, true],
+                ['Setup em 30 minutos',                  false, false, true],
+                ['Alertas de membros afastados',         false, false, true],
+                ['Controle de células e ministérios',    false, false, true],
+                ['Relatórios automáticos',               false, true,  true],
+                ['Aplicativo próprio da igreja',         false, false, true],
+                ['Suporte em português',                 false, false, true],
               ].map(([label, col1, col2, col3], i) => (
                 <tr key={String(label)} style={{ borderTop: '1px solid #f0f0f0' }}>
                   <td className="p-4 text-[#161616]">{label}</td>
@@ -901,7 +899,7 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-6">
             {[
               { name: 'Pr. Carlos Mendes',    church: 'Igreja Vida Nova — SP',         text: 'Em 3 meses, reduzi em 60% o tempo que gastava com planilhas. Agora consigo focar no que realmente importa: as pessoas.' },
-              { name: 'Pr. Roberto Alves',    church: 'Comunidade Ágape — RJ',         text: 'O sistema identificou 34 membros afastados que eu nem sabia. Recuperamos 18 deles em 60 dias.' },
+              { name: 'Pr. Roberto Alves',    church: 'Comunidade Ágape — RJ',         text: 'O sistema identificou membros afastados que eu nem sabia. Recuperamos dezenas deles em 60 dias.' },
               { name: 'Pastora Lúcia Santos', church: 'Assembleia do Rei — BH',        text: 'O onboarding com IA foi surpreendente. Em 25 minutos o sistema estava configurado do jeito que nossa igreja funciona.' },
               { name: 'Pr. André Costa',      church: 'Igreja Renascer — Curitiba',    text: 'As escalas de voluntários pararam de gerar conflitos. A equipe recebe confirmação automática.' },
               { name: 'Pr. José Ferreira',    church: 'Comunidade Shalom — Fortaleza', text: 'Finalmente tenho números reais. Sei quantos visitantes voltaram e qual ministério precisa de atenção.' },
@@ -972,7 +970,7 @@ export default function Landing() {
             </button>
             <a href={waHref} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base border-2 transition-all hover:bg-white/10 text-white"
-              style={{ borderColor: 'rgba(255,255,255,0.5)', minHeight: 56 }}>
+              style={{ borderColor: 'rgba(255,255,255,0.82)', minHeight: 56 }}>
               {WA_ICON} Falar com consultor
             </a>
           </div>
@@ -1040,7 +1038,7 @@ export default function Landing() {
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
             <p className="text-xs" style={{ color: 'rgba(249,238,220,0.3)' }}>
-              © 2026 Ekthos Church. Feito com ✝️ para a Igreja de Cristo.
+              © 2026 Ekthos Church. Feito com fé para a Igreja de Cristo.
             </p>
             <p className="text-xs" style={{ color: 'rgba(249,238,220,0.2)' }}>
               CNPJ 00.000.000/0001-00 · São Paulo, Brasil
@@ -1167,10 +1165,10 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {[
-                { name: 'name',        label: 'Nome completo',        type: 'text', placeholder: 'Ex: Pr. João Silva',          required: true },
-                { name: 'email',       label: 'Email',                type: 'email', placeholder: 'pastor@suaigreja.com.br',   required: true },
-                { name: 'phone',       label: 'Telefone / WhatsApp',  type: 'tel', placeholder: '(11) 99999-9999',            required: true },
-                { name: 'church_name', label: 'Nome da igreja',       type: 'text', placeholder: 'Ex: Igreja Vida Nova',       required: true },
+                { name: 'name',        label: 'Nome completo',       type: 'text',  placeholder: 'Ex: Pr. João Silva',       required: true },
+                { name: 'email',       label: 'Email',               type: 'email', placeholder: 'pastor@suaigreja.com.br', required: true },
+                { name: 'phone',       label: 'Telefone / WhatsApp', type: 'tel',   placeholder: '(11) 99999-9999',          required: true },
+                { name: 'church_name', label: 'Nome da igreja',      type: 'text',  placeholder: 'Ex: Igreja Vida Nova',     required: true },
               ].map(f => (
                 <div key={f.name}>
                   <label className="block text-xs font-semibold text-[#161616] mb-1.5">
