@@ -27,7 +27,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const STRIPE_SECRET_KEY         = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || '*'
+// SEC-003: nunca usar wildcard '*' em produção — usar domínio explícito
+const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
@@ -120,7 +121,24 @@ Deno.serve(async (req: Request) => {
 
   if (!plan_slug)                  return err('plan_slug é obrigatório', 422)
   if (!success_url || !cancel_url) return err('success_url e cancel_url são obrigatórios', 422)
-  try { new URL(success_url); new URL(cancel_url) } catch { return err('URLs inválidas', 422) }
+
+  // SEC-004: validar domínio das URLs de redirect — impede Open Redirect
+  const ALLOWED_REDIRECT_HOSTS = [
+    'ekthos-platform.vercel.app',
+    'app.ekthosai.net',
+    'localhost',
+    '127.0.0.1',
+  ]
+  function validateRedirectUrl(rawUrl: string): boolean {
+    try {
+      const parsed = new URL(rawUrl)
+      return ALLOWED_REDIRECT_HOSTS.some(h =>
+        parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)
+      )
+    } catch { return false }
+  }
+  if (!validateRedirectUrl(success_url)) return err('success_url aponta para domínio não autorizado', 422)
+  if (!validateRedirectUrl(cancel_url))  return err('cancel_url aponta para domínio não autorizado', 422)
 
   // Valida email se fornecido
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {

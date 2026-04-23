@@ -493,6 +493,20 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return jsonErr('Unauthorized', 401)
 
+  // SEC-012: Rate limiting — máx. 10 sessões de onboarding criadas por usuário por hora.
+  // Evita DoS econômico via múltiplas chamadas simultâneas à API Anthropic.
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+  const { count: sessionCount } = await supabase
+    .from('onboarding_sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .gte('created_at', oneHourAgo)
+
+  if ((sessionCount ?? 0) >= 10) {
+    console.warn(`[onboarding-consultant] rate limit atingido: user=${user.id} sessions=${sessionCount}/hora`)
+    return jsonErr('Limite de sessões excedido. Máximo de 10 por hora. Tente novamente mais tarde.', 429)
+  }
+
   let body: { message: string; session_id?: string; plan_slug?: string }
   try   { body = await req.json() }
   catch { return jsonErr('Body inválido', 400) }
