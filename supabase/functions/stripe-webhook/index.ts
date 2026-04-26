@@ -375,7 +375,7 @@ async function handleLandingPageCheckout(session: Stripe.Checkout.Session): Prom
     const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
       email,
       {
-        redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'}/onboarding`,
+        redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'}/auth/set-password`,
         data: { full_name: pastorName },
       },
     )
@@ -469,7 +469,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session):
       const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
         pastorEmail,
         {
-          redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'}/onboarding`,
+          redirectTo: `${Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'}/auth/set-password`,
           data: {
             full_name: session.metadata?.pastor_name ?? '',
           },
