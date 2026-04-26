@@ -20,7 +20,7 @@ import {
   type ReactNode,
 } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
+import type { User, Session } from '@supabase/supabase-js'
 import type { AppRole } from '@/hooks/useRole'
 
 const SESSION_TOKEN_KEY = 'ekthos_session_token'
@@ -29,6 +29,8 @@ const SESSION_TOKEN_KEY = 'ekthos_session_token'
 
 export interface AuthState {
   user: User | null
+  /** Sessão completa com access_token — necessário para decodificar claims JWT (ex: amr). */
+  session: Session | null
   churchId: string | null
   churchStatus: string | null
   role: AppRole | null
@@ -40,6 +42,7 @@ export interface AuthState {
 
 const AuthContext = createContext<AuthState>({
   user: null,
+  session: null,
   churchId: null,
   churchStatus: null,
   role: null,
@@ -64,7 +67,7 @@ async function fetchRole(userId: string, churchId: string): Promise<AppRole | nu
   }
 }
 
-async function resolveAuthFromUser(user: User): Promise<AuthState> {
+async function resolveAuthFromUser(user: User, session: Session): Promise<AuthState> {
   const isEkthosAdmin =
     user.app_metadata?.is_ekthos_admin === true ||
     user.user_metadata?.is_ekthos_admin === true
@@ -115,7 +118,7 @@ async function resolveAuthFromUser(user: User): Promise<AuthState> {
       )
   }
 
-  return { user, churchId, churchStatus, role, isEkthosAdmin, loading: false }
+  return { user, session, churchId, churchStatus, role, isEkthosAdmin, loading: false }
 }
 
 // ── Provider ────────────────────────────────────────────────
@@ -123,6 +126,7 @@ async function resolveAuthFromUser(user: User): Promise<AuthState> {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
+    session: null,
     churchId: null,
     churchStatus: null,
     role: null,
@@ -140,17 +144,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return
 
       if (session?.user) {
-        const resolved = await resolveAuthFromUser(session.user)
+        const resolved = await resolveAuthFromUser(session.user, session)
         if (!cancelled) setState(resolved)
       } else {
         // Sem sessão via refresh — tenta getSession como fallback (offline, etc.)
         const { data: { session: fallback } } = await supabase.auth.getSession()
         if (cancelled) return
         if (fallback?.user) {
-          const resolved = await resolveAuthFromUser(fallback.user)
+          const resolved = await resolveAuthFromUser(fallback.user, fallback)
           if (!cancelled) setState(resolved)
         } else {
-          setState({ user: null, churchId: null, churchStatus: null, role: null, isEkthosAdmin: false, loading: false })
+          setState({ user: null, session: null, churchId: null, churchStatus: null, role: null, isEkthosAdmin: false, loading: false })
         }
       }
     })
@@ -159,11 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (cancelled) return
       if (session?.user) {
-        void resolveAuthFromUser(session.user).then(resolved => {
+        void resolveAuthFromUser(session.user, session).then(resolved => {
           if (!cancelled) setState(resolved)
         })
       } else {
-        setState({ user: null, churchId: null, churchStatus: null, role: null, isEkthosAdmin: false, loading: false })
+        setState({ user: null, session: null, churchId: null, churchStatus: null, role: null, isEkthosAdmin: false, loading: false })
       }
     })
 
