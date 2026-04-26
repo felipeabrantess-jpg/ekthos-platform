@@ -250,9 +250,11 @@ export default function App() {
 
 // Rota raiz inteligente: Landing (não autenticado) | Dashboard (autenticado)
 function SmartRoot() {
-  const { user, role, isEkthosAdmin, loading } = useAuth()
+  const { user, churchId, role, isEkthosAdmin, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
   if (!user) return <Navigate to="/landing" replace />
   if (isEkthosAdmin) return <Navigate to="/admin/cockpit" replace />
+  // Usuário autenticado sem church_id ainda (invite recém-aceito, pré-Stripe) → onboarding
+  if (!churchId) return <Navigate to="/onboarding" replace />
   return <Navigate to={defaultRoute(role as AppRole | null)} replace />
 }
