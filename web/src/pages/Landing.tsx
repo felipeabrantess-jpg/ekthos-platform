@@ -1142,7 +1142,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
       const res = await fetch(`${supabaseUrl}/functions/v1/lead-capture`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...form, plan_interest: planLabel, utm_source: utmParams.source, utm_medium: utmParams.medium, utm_campaign: utmParams.campaign }),
+        body:    JSON.stringify({ ...form, plan_interest: planLabel, utm_source: utmParams.source, utm_medium: utmParams.medium, utm_campaign: utmParams.campaign, utm_content: utmParams.content }),
       })
       const data = await res.json() as { success?: boolean; error?: string }
       if (!res.ok || !data.success) throw new Error(data.error ?? 'Erro ao enviar')
