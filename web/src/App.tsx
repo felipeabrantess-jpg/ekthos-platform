@@ -17,6 +17,7 @@ const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
 // Públicas
 const Login                 = lazy(() => import('@/pages/Login'))
 const Signup                = lazy(() => import('@/pages/Signup'))
+const SetPassword           = lazy(() => import('@/pages/SetPassword'))
 const ChoosePlan            = lazy(() => import('@/pages/ChoosePlan'))
 const Onboarding            = lazy(() => import('@/pages/Onboarding'))
 const OnboardingConfiguring = lazy(() => import('@/pages/onboarding/Configuring'))
@@ -140,6 +141,7 @@ export default function App() {
           {/* ── Rotas públicas ── */}
           <Route path="/login"    element={<ErrorBoundary><Login /></ErrorBoundary>} />
           <Route path="/signup"   element={<ErrorBoundary><Signup /></ErrorBoundary>} />
+          <Route path="/auth/set-password" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><SetPassword /></Suspense></ErrorBoundary>} />
           <Route path="/choose-plan" element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
           <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
           <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
@@ -248,13 +250,31 @@ export default function App() {
   )
 }
 
+// ── Helpers de SmartRoot ────────────────────────────────────
+type AmrEntry = { method: string; timestamp?: number }
+
+/** Detecta login via OTP (invite ou magic-link) sem senha definida ainda. */
+function needsPasswordSetup(user: ReturnType<typeof useAuth>['user']): boolean {
+  if (!user) return false
+  const amr = (user as unknown as { amr?: AmrEntry[] }).amr ?? []
+  const isOtp = amr.some(m => m.method === 'otp')
+  const passwordSet = user.user_metadata?.password_set === true
+  return isOtp && !passwordSet
+}
+
 // Rota raiz inteligente: Landing (não autenticado) | Dashboard (autenticado)
+// Ordem dos guards:
+//   1. !user            → /landing
+//   2. isEkthosAdmin    → /admin/cockpit  (admins nunca passam por invite)
+//   3. needsPasswordSetup → /auth/set-password  (invite recém-aceito, sem senha)
+//   4. !churchId        → /onboarding     (pré-Stripe ou invite manual pós-senha)
+//   5. defaultRoute     → /dashboard | /financeiro
 function SmartRoot() {
   const { user, churchId, role, isEkthosAdmin, loading } = useAuth()
   if (loading) return <FullScreenSpinner />
   if (!user) return <Navigate to="/landing" replace />
   if (isEkthosAdmin) return <Navigate to="/admin/cockpit" replace />
-  // Usuário autenticado sem church_id ainda (invite recém-aceito, pré-Stripe) → onboarding
+  if (needsPasswordSetup(user)) return <Navigate to="/auth/set-password" replace />
   if (!churchId) return <Navigate to="/onboarding" replace />
   return <Navigate to={defaultRoute(role as AppRole | null)} replace />
 }
