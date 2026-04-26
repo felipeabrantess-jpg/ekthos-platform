@@ -8,12 +8,20 @@ import Input from '@/components/ui/Input'
 
 // ── Helpers ─────────────────────────────────────────────────
 
-type AmrEntry = { method: string; timestamp?: number }
-
-/** Verifica se o usuário se autenticou via OTP (invite ou magic-link). */
-function hasOtpAmr(user: unknown): boolean {
-  const amr = (user as { amr?: AmrEntry[] })?.amr
-  return Array.isArray(amr) && amr.some(m => m.method === 'otp')
+/**
+ * Verifica se o usuário se autenticou via OTP (invite ou magic-link).
+ * Lê o campo amr do JWT (access_token) — NÃO de user.amr, que não
+ * existe no objeto User retornado pelo Supabase JS.
+ */
+function hasOtpAmr(accessToken: string | undefined): boolean {
+  if (!accessToken) return false
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]))
+    const amr: { method?: string }[] = payload.amr ?? []
+    return Array.isArray(amr) && amr.some(m => m.method === 'otp')
+  } catch {
+    return false
+  }
 }
 
 interface PasswordChecks {
@@ -54,7 +62,7 @@ function Criterion({ ok, label }: { ok: boolean; label: string }) {
 
 export default function SetPassword() {
   const navigate   = useNavigate()
-  const { user, loading } = useAuth()
+  const { user, session, loading } = useAuth()
 
   const [password,    setPassword]    = useState('')
   const [confirm,     setConfirm]     = useState('')
@@ -71,7 +79,7 @@ export default function SetPassword() {
 
   // Já tem senha definida (ou não veio de invite) → SmartRoot decide
   const needsSetup =
-    hasOtpAmr(user) && user.user_metadata?.password_set !== true
+    hasOtpAmr(session?.access_token) && user.user_metadata?.password_set !== true
   if (!needsSetup) return <Navigate to="/" replace />
 
   const checks   = checkPassword(password)
