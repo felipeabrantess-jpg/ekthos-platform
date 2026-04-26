@@ -80,6 +80,17 @@ verify_jwt = false   # público — pastor ainda não tem conta
 [functions.lead-capture]
 verify_jwt = false   # público — pastor ainda não tem conta
 
+# ── Auth — configurações de produção ─────────────────────────────────────────
+[auth]
+site_url = "https://ekthos-platform.vercel.app"
+additional_redirect_urls = [
+  "https://ekthos-platform.vercel.app/*",
+  "https://ekthosai.com",
+  "https://ekthosai.com/*",
+  "https://www.ekthosai.com",
+  "https://www.ekthosai.com/*"
+]
+
 # ── Email Templates ───────────────────────────────────────────────────────────
 [auth.email.template.invite]
 subject = "Bem-vindo ao Ekthos — sua igreja te espera"
