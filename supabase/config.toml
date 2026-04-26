@@ -79,3 +79,8 @@ verify_jwt = false   # público — pastor ainda não tem conta
 
 [functions.lead-capture]
 verify_jwt = false   # público — pastor ainda não tem conta
+
+# ── Email Templates ───────────────────────────────────────────────────────────
+[auth.email.template.invite]
+subject = "Bem-vindo ao Ekthos — sua igreja te espera"
+content_path = "./supabase/templates/invite.html"
