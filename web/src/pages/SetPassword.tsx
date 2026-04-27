@@ -98,20 +98,23 @@ export default function SetPassword() {
 
     setSubmitting(true)
     try {
-      // 1. Define a senha na conta Supabase
-      const { error: pwErr } = await supabase.auth.updateUser({ password })
-      if (pwErr) throw pwErr
-
-      // 2. Marca flag no user_metadata para SmartRoot não redirecionar aqui de novo
-      const { error: metaErr } = await supabase.auth.updateUser({
+      // 1. Define senha + marca flag em UMA chamada atômica.
+      //
+      // IMPORTANTE: NÃO fazer 2 chamadas separadas (updateUser({ password })
+      // seguido de updateUser({ data: ... })). Em sessões OTP recém-criadas
+      // (invite/recovery), o GoTrue pode processar o segundo PATCH como
+      // full-merge e sobrescrever encrypted_password com o valor anterior
+      // — causando login inválido logo após set-password.
+      //
+      // Diagnóstico confirmado: auth logs mostraram 2× PUT /user em 18:16:41
+      // seguido de 400 "Invalid login credentials" em 18:18:00.
+      const { error: pwErr } = await supabase.auth.updateUser({
+        password,
         data: { password_set: true },
       })
-      if (metaErr) {
-        // Não fatal — só loga; senha foi criada com sucesso
-        console.warn('[set-password] metadata update failed:', metaErr.message)
-      }
+      if (pwErr) throw pwErr
 
-      // 3. Força emissão de novo JWT com password_set=true no user_metadata
+      // 2. Força emissão de novo JWT com password_set=true no user_metadata
       await supabase.auth.refreshSession()
 
       // 4. SmartRoot decide o destino: churchId → /dashboard via StatusGuard;
