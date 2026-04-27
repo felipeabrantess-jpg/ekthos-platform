@@ -1,12 +1,16 @@
 // ============================================================
-// Edge Function: contact-consultant
-// Notifica admin Ekthos quando pastor quer falar sobre
-// contratação de agente, módulo ou upgrade de plano.
+// Edge Function: contact-consultant v2
+// Registra pedido de contato com consultor + tenta enviar email.
 //
 // POST /contact-consultant
 // Headers: Authorization: Bearer <supabase-jwt>
-// Body: { context: 'agent' | 'module' | 'plan', target_slug: string }
-// Returns: 200 { ok: true }
+// Body: { context: 'agent' | 'module' | 'plan', target_slug: string, origin_page?: string }
+// Returns: SEMPRE 200 { success: true, message, request_id }
+//
+// Garantia: pastor nunca recebe erro.
+// - INSERT em contact_requests: SEMPRE (fallback persistente)
+// - Email via Resend: best-effort (email_sent=false se falhar/sem chave)
+// - Admin Ekthos vê pedidos no banco para contato manual se email não saiu
 //
 // verify_jwt: false — validação manual (padrão ES256)
 // ============================================================
@@ -53,24 +57,21 @@ const CONTEXT_LABEL: Record<string, string> = {
   plan:   'Upgrade de Plano',
 }
 
-// ── Envio de email via Resend ─────────────────────────────────
-async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  if (!RESEND_API_KEY) {
-    console.log('[contact-consultant] RESEND_API_KEY not set — email skipped')
-    console.log(`TO: ${to} | SUBJECT: ${subject}`)
-    return
-  }
+// ── Envio via Resend (best-effort) ────────────────────────────
+async function sendEmailViaResend(
+  to: string, subject: string, html: string
+): Promise<void> {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      Authorization: `Bearer ${RESEND_API_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
   })
   if (!res.ok) {
-    const err = await res.text()
-    console.error('[contact-consultant] Resend error:', err)
+    const body = await res.text()
+    throw new Error(`Resend ${res.status}: ${body}`)
   }
 }
 
@@ -95,14 +96,14 @@ Deno.serve(async (req: Request) => {
   if (!churchId) return jsonErr('Church not found in token', 400)
 
   // ── Body ───────────────────────────────────────────────────
-  let body: { context?: string; target_slug?: string }
+  let body: { context?: string; target_slug?: string; origin_page?: string }
   try {
     body = await req.json()
   } catch {
     return jsonErr('Invalid JSON body', 400)
   }
 
-  const { context, target_slug } = body
+  const { context, target_slug, origin_page } = body
   if (!context || !['agent', 'module', 'plan'].includes(context)) {
     return jsonErr('context must be "agent", "module" or "plan"', 400)
   }
@@ -110,35 +111,104 @@ Deno.serve(async (req: Request) => {
     return jsonErr('target_slug is required', 400)
   }
 
-  // ── Busca dados da igreja e pastor ────────────────────────
-  const [{ data: church }, { data: profile }] = await Promise.all([
+  // ── Busca dados do pastor e da igreja ─────────────────────
+  const [{ data: church }, { data: profile }, { data: subscription }] = await Promise.all([
     supabase.from('churches').select('name').eq('id', churchId).maybeSingle(),
     supabase.from('profiles').select('name, display_name').eq('user_id', user.id).maybeSingle(),
+    supabase.from('subscriptions').select('plan_slug').eq('church_id', churchId).maybeSingle(),
   ])
 
-  const pastorName  = profile?.display_name ?? profile?.name ?? user.email ?? 'Pastor'
-  const churchName  = church?.name ?? 'Igreja'
-  const contextLabel = CONTEXT_LABEL[context] ?? context
-  const subject     = `[Ekthos] Consultor solicitado — ${contextLabel}: ${target_slug}`
+  const pastorName     = profile?.display_name ?? profile?.name ?? 'Pastor'
+  const pastorEmail    = user.email ?? ''
+  const churchName     = church?.name ?? 'Igreja'
+  const planAtRequest  = subscription?.plan_slug ?? 'desconhecido'
+  const contextLabel   = CONTEXT_LABEL[context] ?? context
 
+  // ── STEP 1: INSERT em contact_requests (sempre, antes do email) ──
+  const { data: inserted, error: insertErr } = await supabase
+    .from('contact_requests')
+    .insert({
+      church_id:       churchId,
+      user_id:         user.id,
+      pastor_name:     pastorName,
+      pastor_email:    pastorEmail,
+      church_name:     churchName,
+      plan_at_request: planAtRequest,
+      context,
+      target_slug,
+      origin_page:     origin_page ?? null,
+      email_sent:      false,
+    })
+    .select('id')
+    .single()
+
+  if (insertErr || !inserted) {
+    // Mesmo o INSERT falhando, não expor erro ao pastor (improvável com service_role)
+    console.error('[contact-consultant] INSERT failed:', insertErr)
+    return jsonOk({
+      success: true,
+      message: 'Recebemos sua mensagem, entraremos em contato em breve.',
+      request_id: null,
+    })
+  }
+
+  const requestId = inserted.id
+  console.log(`[contact-consultant] request_id=${requestId} church=${churchName} pastor=${pastorName} context=${context} slug=${target_slug}`)
+
+  // ── STEP 2: Envio de email (best-effort) ──────────────────
+  if (!RESEND_API_KEY) {
+    console.log(`[contact-consultant] RESEND_API_KEY não configurada — request_id=${requestId} salvo sem email`)
+    return jsonOk({
+      success: true,
+      message: 'Recebemos sua mensagem, entraremos em contato em breve.',
+      request_id: requestId,
+    })
+  }
+
+  const subject = `[Ekthos] Consultor solicitado — ${contextLabel}: ${target_slug}`
   const html = `
-    <h2>Solicitação de Consultor — Ekthos Church</h2>
-    <table style="font-family:sans-serif;font-size:14px;border-collapse:collapse;">
-      <tr><td style="padding:6px 12px;font-weight:bold;">Igreja</td><td style="padding:6px 12px;">${churchName}</td></tr>
-      <tr><td style="padding:6px 12px;font-weight:bold;">Pastor</td><td style="padding:6px 12px;">${pastorName}</td></tr>
-      <tr><td style="padding:6px 12px;font-weight:bold;">Email</td><td style="padding:6px 12px;">${user.email}</td></tr>
-      <tr><td style="padding:6px 12px;font-weight:bold;">Interesse</td><td style="padding:6px 12px;">${contextLabel}</td></tr>
-      <tr><td style="padding:6px 12px;font-weight:bold;">Slug</td><td style="padding:6px 12px;">${target_slug}</td></tr>
-      <tr><td style="padding:6px 12px;font-weight:bold;">Data</td><td style="padding:6px 12px;">${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</td></tr>
+    <h2 style="font-family:sans-serif;color:#161616;">Solicitação de Consultor — Ekthos Church</h2>
+    <table style="font-family:sans-serif;font-size:14px;border-collapse:collapse;width:100%;max-width:480px;">
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Igreja</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${churchName}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Pastor</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${pastorName}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Email</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${pastorEmail}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Plano</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${planAtRequest}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Interesse</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${contextLabel}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Slug</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${target_slug}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">Origem</td><td style="padding:8px 12px;border:1px solid #e0e0e0;">${origin_page ?? '—'}</td></tr>
+      <tr><td style="padding:8px 12px;font-weight:bold;background:#f5f5f5;border:1px solid #e0e0e0;">request_id</td><td style="padding:8px 12px;border:1px solid #e0e0e0;font-size:12px;color:#666;">${requestId}</td></tr>
     </table>
-    <p style="margin-top:16px;font-size:12px;color:#666;">
-      Acesse o <a href="https://ekthos-platform.vercel.app/admin/churches">Cockpit Admin</a> para ver detalhes da igreja.
+    <p style="margin-top:16px;font-family:sans-serif;font-size:12px;color:#999;">
+      Data: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}<br>
+      <a href="https://ekthos-platform.vercel.app/admin/churches">Ver no Cockpit Admin</a>
     </p>
   `
 
-  await sendEmail(ADMIN_EMAIL, subject, html)
+  try {
+    await sendEmailViaResend(ADMIN_EMAIL, subject, html)
 
-  console.log(`[contact-consultant] Request logged — church=${churchName} pastor=${pastorName} context=${context} slug=${target_slug}`)
+    // Atualiza registro como email_sent=true
+    await supabase
+      .from('contact_requests')
+      .update({ email_sent: true, email_sent_at: new Date().toISOString() })
+      .eq('id', requestId)
 
-  return jsonOk({ ok: true, context, target_slug })
+    console.log(`[contact-consultant] email enviado — request_id=${requestId}`)
+  } catch (emailErr) {
+    const errMsg = emailErr instanceof Error ? emailErr.message : String(emailErr)
+    console.error(`[contact-consultant] email falhou — request_id=${requestId} err=${errMsg}`)
+
+    // Registra falha de email sem bloquear pastor
+    await supabase
+      .from('contact_requests')
+      .update({ email_error: errMsg })
+      .eq('id', requestId)
+  }
+
+  // ── STEP 3: Sempre retorna 200 ────────────────────────────
+  return jsonOk({
+    success: true,
+    message: 'Recebemos sua mensagem, entraremos em contato em breve.',
+    request_id: requestId,
+  })
 })
