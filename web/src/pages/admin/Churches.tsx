@@ -133,9 +133,10 @@ export default function AdminChurches() {
   const [status,  setStatus]  = useState<FilterStatus>('all')
   const [plan,    setPlan]    = useState<FilterPlan>('all')
 
-  const [showModal,   setShowModal]   = useState(false)
-  const [creating,    setCreating]    = useState(false)
-  const [createError, setCreateError] = useState('')
+  const [showModal,    setShowModal]    = useState(false)
+  const [creating,     setCreating]     = useState(false)
+  const [createError,  setCreateError]  = useState('')
+  const [successMsg,   setSuccessMsg]   = useState('')
   const [form, setForm] = useState({
     name:        '',
     admin_email: '',
@@ -167,11 +168,13 @@ export default function AdminChurches() {
           timezone:    form.timezone,
         }),
       })
-      const json = await res.json() as { error?: string; church_id?: string }
-      if (!res.ok) throw new Error(json.error ?? 'Erro ao criar igreja')
+      const result = await res.json() as { error?: string; church_id?: string; invite_sent?: boolean }
+      if (!res.ok) throw new Error(result.error ?? 'Erro ao criar igreja')
 
       setShowModal(false)
       setForm({ name: '', admin_email: '', city: '', state: '', plan_slug: 'chamado', timezone: 'America/Sao_Paulo' })
+      setSuccessMsg('Igreja criada com sucesso. Pastor recebeu invite por email.')
+      setTimeout(() => setSuccessMsg(''), 5000)
       void load() // recarrega a lista
     } catch (err: unknown) {
       setCreateError((err as { message?: string }).message ?? 'Erro ao criar igreja. Tente novamente.')
@@ -266,6 +269,13 @@ export default function AdminChurches() {
           Nova Igreja
         </button>
       </div>
+
+      {/* Toast de sucesso */}
+      {successMsg && (
+        <div className="px-4 py-3 rounded-xl text-sm font-medium text-green-700 bg-green-50 border border-green-200">
+          {successMsg}
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-4 flex flex-wrap items-center gap-3">
