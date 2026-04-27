@@ -96,11 +96,7 @@ export function usePlan() {
   const eligibleAgents = allAgents.filter(a => a.pricing_tier === 'eligible')
 
   const hasAgent = (slug: string): boolean => {
-    const agent = allAgents.find(a => a.slug === slug)
-    if (!agent) return false
-    if (agent.pricing_tier === 'free') return true
     if (!isActive) return false
-    if (agent.pricing_tier === 'always_paid') return true
     return activeAgentSlugs.includes(slug)
   }
 

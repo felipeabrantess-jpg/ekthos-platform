@@ -66,13 +66,12 @@ const PLAN_INFO: Record<string, { name: string; price: string }> = {
 
 const PLAN_AGENTS: Record<string, string[]> = {
   chamado:    ['agent-suporte', 'agent-onboarding'],
-  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-whatsapp'],
+  missao:     ['agent-suporte', 'agent-onboarding', 'agent-cadastro'],
   avivamento: ['agent-suporte', 'agent-onboarding', 'agent-cadastro', 'agent-conteudo', 'agent-whatsapp', 'agent-metricas'],
 }
 
 const ADDON_AGENTS = [
   'agent-financeiro', 'agent-reengajamento', 'agent-agenda',
-  'agent-escalas', 'agent-relatorios',
 ]
 
 // ── Mapa slug → nome legível ───────────────────────────────
@@ -368,7 +367,7 @@ function CompletionScreen({
                   {AGENT_NAMES[slug] ?? slug}
                 </span>
                 <span className="text-[11px] font-semibold shrink-0" style={{ color: '#E13500' }}>
-                  R$378,90/mês
+                  R$149,90/mês
                 </span>
               </div>
             ))}

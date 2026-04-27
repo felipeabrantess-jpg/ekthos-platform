@@ -26,7 +26,7 @@ export const DEFAULT_MODULES: EnabledModules = {
   escalas:      false,
   financeiro:   true,
   agenda:       true,
-  gabinete:     false,
+  gabinete:     true,
 }
 
 export interface ChurchBranding {
