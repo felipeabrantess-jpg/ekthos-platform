@@ -2,23 +2,26 @@
  * AgentDetail.tsx — /agentes/:slug
  *
  * Estados:
- *  - "active"       → agente em uso; painel lateral de chat abre ao clicar
- *  - "contractable" → elegível, não ativo; CTA "Contratar" disabled + tooltip "Em breve"
- *  - "module-bound" → vinculado a módulo; CTA aponta para /modulos/:moduleId
+ *  - "active"       → agente em uso; instrução de uso na sidebar
+ *  - "contractable" → elegível, não ativo
+ *                     CTA: [Adicionar ao meu plano] + [Falar com consultor]
+ *  - "module-bound" → vinculado a módulo
+ *                     CTA: [Conhecer módulo] → /modulos/:moduleId
  *  - "unavailable"  → plano incompatível (ex: agent-whatsapp no Missão)
+ *                     CTA: [Falar com consultor]
  *
- * Regras:
- *  - "Testar 7 dias grátis" DESABILITADO (placeholder Fase 6)
- *  - Não exibe preço se agent-whatsapp e plano != avivamento (apenas explica)
+ * REGRA: "Testar 7 dias grátis" continua DESABILITADO (Fase 6)
  */
 
+import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Lock, MessageCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Lock, MessageCircle, Loader2, Check, AlertCircle } from 'lucide-react'
 import { usePlan } from '@/hooks/usePlan'
 import { getAgentContent } from '@/lib/agents-content'
+import { useAddonActions } from '@/hooks/useAddonActions'
 import Button from '@/components/ui/Button'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Tipos ─────────────────────────────────────────────────────────────────────
 
 type AgentState = 'active' | 'contractable' | 'module-bound' | 'unavailable'
 
@@ -28,7 +31,6 @@ function getAgentState(
   planSlug: string,
   moduleId?: string
 ): AgentState {
-  // Whatsapp exclusivo Avivamento
   if (slug === 'agent-whatsapp' && planSlug !== 'avivamento') return 'unavailable'
   if (hasAgent(slug)) return 'active'
   if (moduleId) return 'module-bound'
@@ -39,21 +41,51 @@ function formatPrice(cents: number) {
   return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
 }
 
+// ── Toast inline ─────────────────────────────────────────────────────────────
+
+function Toast({ ok, message, onClose }: { ok: boolean; message: string; onClose: () => void }) {
+  return (
+    <div
+      className={`flex items-start gap-3 p-4 rounded-2xl border ${
+        ok ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+      }`}
+    >
+      {ok
+        ? <Check size={16} className="text-green-600 shrink-0 mt-0.5" strokeWidth={2.5} />
+        : <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
+      }
+      <p className={`text-sm flex-1 ${ok ? 'text-green-800' : 'text-red-800'}`}>{message}</p>
+      <button onClick={onClose} className="text-xs opacity-40 hover:opacity-70 shrink-0">✕</button>
+    </div>
+  )
+}
+
 // ── CTA por estado ────────────────────────────────────────────────────────────
 
-function AgentCTA({
-  state,
-  slug,
-  moduleId,
-  planSlug,
-}: {
+interface CTAProps {
   state: AgentState
   slug: string
   moduleId?: string
   planSlug: string
-}) {
+}
+
+function AgentCTA({ state, slug, moduleId, planSlug }: CTAProps) {
+  const { adicionarAoPlano, falarComConsultor, loadingAddon, loadingConsultor } = useAddonActions()
+  const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null)
+
+  async function handleAdicionar() {
+    setToast(null)
+    const result = await adicionarAoPlano('agent', slug)
+    setToast({ ok: result.ok, message: result.message })
+  }
+
+  async function handleConsultor(context: 'agent' | 'plan') {
+    setToast(null)
+    const result = await falarComConsultor(context, slug)
+    setToast({ ok: result.ok, message: result.message })
+  }
+
   if (state === 'active') {
-    // Abre o chat widget (o botão existe na sidebar; aqui apenas info)
     return (
       <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl">
         <CheckCircle2 size={20} className="text-green-500 shrink-0" strokeWidth={2} />
@@ -73,15 +105,15 @@ function AgentCTA({
         <div className="flex items-start gap-3 p-4 bg-brand-50 border border-brand-100 rounded-2xl">
           <Lock size={18} className="text-brand-400 shrink-0 mt-0.5" strokeWidth={1.75} />
           <div>
-            <p className="text-sm font-semibold text-brand-900">Disponível no módulo</p>
+            <p className="text-sm font-semibold text-brand-900">Disponível via módulo</p>
             <p className="text-xs text-brand-600 mt-0.5">
-              Este agente faz parte de um módulo pago. Conheça o módulo para ver tudo o que ele inclui.
+              Este agente faz parte de um módulo pago. Conheça o módulo para adicionar ao seu plano.
             </p>
           </div>
         </div>
         <Link to={`/modulos/${moduleId}`}>
           <Button variant="primary" className="w-full">
-            Ver módulo
+            Conhecer módulo →
           </Button>
         </Link>
       </div>
@@ -90,36 +122,75 @@ function AgentCTA({
 
   if (state === 'unavailable') {
     return (
-      <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-        <Lock size={18} className="text-amber-500 shrink-0 mt-0.5" strokeWidth={1.75} />
-        <div>
-          <p className="text-sm font-semibold text-amber-900">Exclusivo do plano Avivamento</p>
-          <p className="text-xs text-amber-700 mt-0.5">
-            Este agente está disponível apenas no plano Avivamento.
-            {planSlug !== 'avivamento' && ' Faça upgrade para desbloquear.'}
-          </p>
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+          <Lock size={18} className="text-amber-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">Exclusivo do plano Avivamento</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Este agente está disponível apenas no plano Avivamento. Fale com um consultor para fazer o upgrade.
+            </p>
+          </div>
         </div>
+        {toast && <Toast ok={toast.ok} message={toast.message} onClose={() => setToast(null)} />}
+        <Button
+          variant="primary"
+          className="w-full"
+          disabled={loadingConsultor}
+          onClick={() => void handleConsultor('plan')}
+        >
+          {loadingConsultor ? (
+            <><Loader2 size={14} className="animate-spin mr-2" />Enviando...</>
+          ) : (
+            'Falar com consultor'
+          )}
+        </Button>
       </div>
     )
   }
 
-  // contractable — CTA desabilitado "Em breve"
+  // ── contractable: CTAs reais ─────────────────────────────────────────────
   return (
     <div className="space-y-3">
+      {toast && <Toast ok={toast.ok} message={toast.message} onClose={() => setToast(null)} />}
+
+      <Button
+        variant="primary"
+        className="w-full"
+        disabled={loadingAddon || !!toast?.ok}
+        onClick={() => void handleAdicionar()}
+      >
+        {loadingAddon ? (
+          <><Loader2 size={14} className="animate-spin mr-2" />Registrando pedido...</>
+        ) : toast?.ok ? (
+          <><Check size={14} className="mr-2" />Pedido registrado!</>
+        ) : (
+          'Adicionar ao meu plano'
+        )}
+      </Button>
+
+      <Button
+        variant="secondary"
+        className="w-full"
+        disabled={loadingConsultor}
+        onClick={() => void handleConsultor('agent')}
+      >
+        {loadingConsultor ? (
+          <><Loader2 size={14} className="animate-spin mr-2" />Enviando...</>
+        ) : (
+          'Falar com consultor'
+        )}
+      </Button>
+
+      {/* Trial desabilitado — Fase 6 */}
       <div className="group relative">
-        <Button variant="primary" disabled className="w-full cursor-not-allowed opacity-60">
-          Contratar agente — Em breve
-        </Button>
-        <div
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
-          style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.1)' }}
+        <button
+          disabled
+          className="w-full text-xs text-ekthos-black/30 cursor-not-allowed py-1 hover:text-ekthos-black/40 transition-colors"
         >
-          Contratação de agentes via app em breve
-        </div>
+          Testar 7 dias grátis — disponível em breve
+        </button>
       </div>
-      <p className="text-center text-xs text-ekthos-black/30">
-        Por enquanto, fale com o time Ekthos para contratar.
-      </p>
     </div>
   )
 }
@@ -132,8 +203,6 @@ export default function AgentDetail() {
   const { hasAgent, planSlug, isLoading, allAgents } = usePlan()
 
   const content = slug ? getAgentContent(slug) : undefined
-
-  // Verifica se slug existe no catálogo DB
   const catalogAgent = allAgents.find(a => a.slug === slug)
 
   if (!content || !catalogAgent) {

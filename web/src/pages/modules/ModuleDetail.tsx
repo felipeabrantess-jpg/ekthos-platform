@@ -1,19 +1,38 @@
 /**
  * ModuleDetail.tsx — /modulos/:id
  *
- * Página genérica de módulo pago.
+ * Página de módulo pago com CTAs reais:
+ *  - Volunteer Pro / Kids Pro: [Adicionar ao meu plano] + [Falar com consultor]
+ *  - Financeiro Pro (consultive): [Falar com consultor] apenas
  *
- * Regras:
- *  - Sempre bloqueado — sem botão de compra funcional (placeholder Fase 4 / Stripe)
- *  - "Testar 7 dias grátis" DESABILITADO
- *  - Financeiro Pro: consultive = true → sem CTA de compra, apenas contato
- *  - CTAs desabilitados com tooltip "Em breve"
+ * REGRA: "Testar 7 dias grátis" continua DESABILITADO (Fase 6)
  */
 
+import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Lock, CheckCircle2, Plus } from 'lucide-react'
+import { ArrowLeft, Lock, CheckCircle2, Plus, Loader2, Check, AlertCircle } from 'lucide-react'
 import { getModuleContent, type ModuleContent } from '@/lib/modules-content'
+import { useAddonActions } from '@/hooks/useAddonActions'
 import Button from '@/components/ui/Button'
+
+// ── Toast inline ─────────────────────────────────────────────────────────────
+
+function Toast({ ok, message, onClose }: { ok: boolean; message: string; onClose: () => void }) {
+  return (
+    <div
+      className={`flex items-start gap-3 p-4 rounded-2xl border ${
+        ok ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+      }`}
+    >
+      {ok
+        ? <Check size={16} className="text-green-600 shrink-0 mt-0.5" strokeWidth={2.5} />
+        : <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
+      }
+      <p className={`text-sm flex-1 ${ok ? 'text-green-800' : 'text-red-800'}`}>{message}</p>
+      <button onClick={onClose} className="text-xs opacity-40 hover:opacity-70 shrink-0">✕</button>
+    </div>
+  )
+}
 
 // ── Feature list ──────────────────────────────────────────────────────────────
 
@@ -71,6 +90,21 @@ function AgentsList({ agents }: { agents: ModuleContent['agents'] }) {
 // ── CTA block ─────────────────────────────────────────────────────────────────
 
 function ModuleCTA({ module }: { module: ModuleContent }) {
+  const { adicionarAoPlano, falarComConsultor, loadingAddon, loadingConsultor } = useAddonActions()
+  const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null)
+
+  async function handleAdicionar() {
+    setToast(null)
+    const result = await adicionarAoPlano('module', module.id)
+    setToast({ ok: result.ok, message: result.message })
+  }
+
+  async function handleConsultor() {
+    setToast(null)
+    const result = await falarComConsultor('module', module.id)
+    setToast({ ok: result.ok, message: result.message })
+  }
+
   if (module.consultive) {
     return (
       <div className="p-5 bg-brand-50 border border-brand-100 rounded-2xl space-y-3">
@@ -81,18 +115,22 @@ function ModuleCTA({ module }: { module: ModuleContent }) {
             <p className="text-xs text-brand-600 mt-0.5 leading-relaxed">
               O {module.name} é configurado com o apoio do time Ekthos para garantir
               que a implantação atenda às necessidades específicas da sua Igreja.
-              Entre em contato para saber mais.
             </p>
           </div>
         </div>
-        <a
-          href="mailto:contato@ekthosai.net?subject=Interesse%20no%20Financeiro%20Pro"
-          className="block"
+        {toast && <Toast ok={toast.ok} message={toast.message} onClose={() => setToast(null)} />}
+        <Button
+          variant="primary"
+          className="w-full"
+          disabled={loadingConsultor}
+          onClick={() => void handleConsultor()}
         >
-          <Button variant="secondary" className="w-full">
-            Falar com o time Ekthos
-          </Button>
-        </a>
+          {loadingConsultor ? (
+            <><Loader2 size={14} className="animate-spin mr-2" />Enviando...</>
+          ) : (
+            'Falar com consultor'
+          )}
+        </Button>
       </div>
     )
   }
@@ -102,37 +140,50 @@ function ModuleCTA({ module }: { module: ModuleContent }) {
       <div className="flex items-start gap-3">
         <Lock size={18} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
         <div>
-          <p className="text-sm font-semibold text-brand-900">Em breve — compra via app</p>
+          <p className="text-sm font-semibold text-brand-900">{module.price}/mês</p>
           <p className="text-xs text-brand-600 mt-0.5">
-            A contratação de módulos diretamente pelo app chegará em breve.
-            Por enquanto, fale com o time Ekthos.
+            A cobrança entra na sua próxima fatura após confirmação do pedido.
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {/* CTA principal desabilitado */}
-        <div className="group relative">
-          <Button variant="primary" disabled className="w-full cursor-not-allowed opacity-60">
-            Contratar {module.name} — Em breve
-          </Button>
-          <div
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            style={{ background: '#161616', border: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            Disponível em breve
-          </div>
-        </div>
+      {toast && <Toast ok={toast.ok} message={toast.message} onClose={() => setToast(null)} />}
 
-        {/* Falar com time */}
-        <a
-          href={`mailto:contato@ekthosai.net?subject=Interesse%20no%20${encodeURIComponent(module.name)}`}
-        >
-          <Button variant="secondary" className="w-full">
-            Falar com o time Ekthos
-          </Button>
-        </a>
-      </div>
+      <Button
+        variant="primary"
+        className="w-full"
+        disabled={loadingAddon || !!toast?.ok}
+        onClick={() => void handleAdicionar()}
+      >
+        {loadingAddon ? (
+          <><Loader2 size={14} className="animate-spin mr-2" />Registrando pedido...</>
+        ) : toast?.ok ? (
+          <><Check size={14} className="mr-2" />Pedido registrado!</>
+        ) : (
+          'Adicionar ao meu plano'
+        )}
+      </Button>
+
+      <Button
+        variant="secondary"
+        className="w-full"
+        disabled={loadingConsultor}
+        onClick={() => void handleConsultor()}
+      >
+        {loadingConsultor ? (
+          <><Loader2 size={14} className="animate-spin mr-2" />Enviando...</>
+        ) : (
+          'Falar com consultor'
+        )}
+      </Button>
+
+      {/* Trial desabilitado — Fase 6 */}
+      <button
+        disabled
+        className="w-full text-xs text-ekthos-black/25 cursor-not-allowed py-1"
+      >
+        Testar 7 dias grátis — disponível em breve
+      </button>
     </div>
   )
 }
@@ -192,13 +243,11 @@ export default function ModuleDetail() {
 
       {/* Conteúdo */}
       <div className="bg-white border border-cream-dark/60 rounded-2xl p-5 space-y-6">
-        {/* Para quem */}
         <div>
           <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-2">Para quem</h2>
           <p className="text-sm text-ekthos-black/65 leading-relaxed">{module.forWhom}</p>
         </div>
 
-        {/* Problemas que resolve */}
         <div>
           <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Problemas que resolve</h2>
           <ul className="space-y-2">
@@ -211,13 +260,11 @@ export default function ModuleDetail() {
           </ul>
         </div>
 
-        {/* Funcionalidades */}
         <div>
           <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">O que inclui</h2>
           <FeatureList features={module.features} />
         </div>
 
-        {/* Agentes */}
         <div>
           <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Agentes IA</h2>
           <AgentsList agents={module.agents} />
