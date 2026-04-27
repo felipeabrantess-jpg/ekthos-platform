@@ -149,8 +149,8 @@ Configurado em .claude/settings.json — executa automaticamente.
 
 - **Supabase project ref:** `mlqjywqnchilvgkbvicd`
 - **Supabase URL:** `https://mlqjywqnchilvgkbvicd.supabase.co`
-- **Igreja de teste:** `c6ae4259-4a42-4c2c-be5b-66afbd366d73`
-- **Subscription de teste:** `295f7951-a9ba-4f2a-ae92-0a7ab2db7a9a`
-- **Admin Ekthos email:** `felipeabrantess@gmail.com`
-- **Admin Ekthos UUID:** `3a3b547f-5f69-442a-b8ab-67d89f6bbe3e`
-- **Pastor teste UUID:** `33e630d6-1c10-49bb-824b-cc1e6952a0ba`
+- **Admin Ekthos email:** `felipe@ekthosai.net`
+- **Admin Ekthos UUID:** `579d0f7b-9b8b-4c20-94c5-513b4a424642`
+- **Igreja de teste:** (definida via cockpit pós-validação)
+- **Subscription de teste:** (definida via cockpit pós-validação)
+- **Pastor teste UUID:** (definido via cockpit pós-validação)
