@@ -149,7 +149,9 @@ Configurado em .claude/settings.json — executa automaticamente.
 
 - **Supabase project ref:** `mlqjywqnchilvgkbvicd`
 - **Supabase URL:** `https://mlqjywqnchilvgkbvicd.supabase.co`
+- **Login:** email + senha
 - **Admin Ekthos email:** `felipe@ekthosai.net`
+- **Admin Ekthos senha:** `Ekthos2026!`
 - **Admin Ekthos UUID:** `579d0f7b-9b8b-4c20-94c5-513b4a424642`
 - **Igreja de teste:** (definida via cockpit pós-validação)
 - **Subscription de teste:** (definida via cockpit pós-validação)
