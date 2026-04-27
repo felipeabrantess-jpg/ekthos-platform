@@ -144,3 +144,13 @@ Configurado em .claude/settings.json — executa automaticamente.
 ### Scripts
 - .claude/hooks/pre-bash.js — pré-commit (Layers 1,2,4,5,7)
 - .claude/hooks/post-write.js — pós-escrita (Layers 3,6)
+
+## [IDENTIFICADORES DE PROJETO]
+
+- **Supabase project ref:** `mlqjywqnchilvgkbvicd`
+- **Supabase URL:** `https://mlqjywqnchilvgkbvicd.supabase.co`
+- **Admin Ekthos email:** `felipe@ekthosai.net`
+- **Admin Ekthos UUID:** `579d0f7b-9b8b-4c20-94c5-513b4a424642`
+- **Igreja de teste:** (definida via cockpit pós-validação)
+- **Subscription de teste:** (definida via cockpit pós-validação)
+- **Pastor teste UUID:** (definido via cockpit pós-validação)

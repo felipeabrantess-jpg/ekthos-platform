@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import PasswordInput from '@/components/ui/PasswordInput'
 
 export default function Login() {
   const { user, isEkthosAdmin, loading } = useAuth()
@@ -57,15 +58,26 @@ export default function Login() {
               required
               autoComplete="email"
             />
-            <Input
-              label="Senha"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
+
+            <div>
+              <PasswordInput
+                label="Senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
+              {/* T5 — link "Esqueci minha senha" abaixo do campo de senha */}
+              <div className="flex justify-end mt-1.5">
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-sm text-brand-700 hover:underline"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+            </div>
 
             {error && (
               <p className="text-sm text-brand-600 bg-brand-50 rounded-xl px-3 py-2 font-medium">

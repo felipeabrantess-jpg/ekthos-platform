@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Check, X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
-import Input from '@/components/ui/Input'
+import PasswordInput from '@/components/ui/PasswordInput'
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -64,12 +64,10 @@ export default function SetPassword() {
   const navigate   = useNavigate()
   const { user, session, loading } = useAuth()
 
-  const [password,    setPassword]    = useState('')
-  const [confirm,     setConfirm]     = useState('')
-  const [showPw,      setShowPw]      = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [submitting,  setSubmitting]  = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
+  const [password,   setPassword]   = useState('')
+  const [confirm,    setConfirm]    = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
 
   // Aguarda AuthProvider resolver sessão
   if (loading) return null
@@ -162,25 +160,14 @@ export default function SetPassword() {
           <form onSubmit={handleSubmit} className="space-y-5">
 
             {/* Campo: senha */}
-            <div className="relative">
-              <Input
-                label="Nova senha"
-                type={showPw ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
-                autoComplete="new-password"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw(v => !v)}
-                className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-              >
-                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
+            <PasswordInput
+              label="Nova senha"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Mínimo 8 caracteres"
+              autoComplete="new-password"
+              required
+            />
 
             {/* Indicadores de força em tempo real */}
             {password.length > 0 && (
@@ -192,30 +179,19 @@ export default function SetPassword() {
             )}
 
             {/* Campo: confirmar senha */}
-            <div className="relative">
-              <Input
-                label="Confirmar senha"
-                type={showConfirm ? 'text' : 'password'}
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                placeholder="Repita a senha"
-                autoComplete="new-password"
-                error={
-                  confirm.length > 0 && confirm !== password
-                    ? 'As senhas não conferem'
-                    : undefined
-                }
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirm(v => !v)}
-                className="absolute right-3 top-[38px] text-gray-400 hover:text-gray-600"
-                tabIndex={-1}
-              >
-                {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
+            <PasswordInput
+              label="Confirmar senha"
+              value={confirm}
+              onChange={e => setConfirm(e.target.value)}
+              placeholder="Repita a senha"
+              autoComplete="new-password"
+              error={
+                confirm.length > 0 && confirm !== password
+                  ? 'As senhas não conferem'
+                  : undefined
+              }
+              required
+            />
 
             {/* Erro geral */}
             {error && (
