@@ -49,6 +49,14 @@ function json(data: unknown, status = 200) {
   })
 }
 
+function slugify(text: string): string {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+
 // ── Rollback helpers ─────────────────────────────────────────
 
 async function deleteGrant(churchId: string) {
@@ -129,10 +137,15 @@ Deno.serve(async (req: Request) => {
 
   // ── 3. Cria church com status='onboarding' ────────────────
   // BUG FIX 1: era 'pending_payment' — correto para Caminho B é 'onboarding'
+  // Slug gerado a partir do nome — onboarding-engineer step 1 sobrescreve com slug definitivo
+  const baseSlug = slugify(churchName)
+  const uniqueSlug = `${baseSlug}-${Date.now().toString(36)}`
+
   const { data: church, error: churchErr } = await supabase
     .from('churches')
     .insert({
       name:     churchName,
+      slug:     uniqueSlug,
       city:     city?.trim()  ?? null,
       state:    state?.trim() ?? null,
       timezone: tz,
