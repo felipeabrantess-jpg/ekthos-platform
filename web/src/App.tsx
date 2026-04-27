@@ -19,6 +19,8 @@ const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
 const Login                 = lazy(() => import('@/pages/Login'))
 const Signup                = lazy(() => import('@/pages/Signup'))
 const SetPassword           = lazy(() => import('@/pages/SetPassword'))
+const ForgotPassword        = lazy(() => import('@/pages/ForgotPassword'))
+const ResetPassword         = lazy(() => import('@/pages/ResetPassword'))
 const ChoosePlan            = lazy(() => import('@/pages/ChoosePlan'))
 const Onboarding            = lazy(() => import('@/pages/Onboarding'))
 const OnboardingConfiguring = lazy(() => import('@/pages/onboarding/Configuring'))
@@ -142,7 +144,9 @@ export default function App() {
           {/* ── Rotas públicas ── */}
           <Route path="/login"    element={<ErrorBoundary><Login /></ErrorBoundary>} />
           <Route path="/signup"   element={<ErrorBoundary><Signup /></ErrorBoundary>} />
-          <Route path="/auth/set-password" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><SetPassword /></Suspense></ErrorBoundary>} />
+          <Route path="/auth/set-password"    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><SetPassword /></Suspense></ErrorBoundary>} />
+          <Route path="/auth/forgot-password" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><ForgotPassword /></Suspense></ErrorBoundary>} />
+          <Route path="/auth/reset-password"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><ResetPassword /></Suspense></ErrorBoundary>} />
           <Route path="/choose-plan" element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
           <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
           <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
