@@ -80,6 +80,13 @@ verify_jwt = false   # público — pastor ainda não tem conta
 [functions.lead-capture]
 verify_jwt = false   # público — pastor ainda não tem conta
 
+# ── Billing — Coupons (F3/F4/F5) ─────────────────────────────────────────────
+[functions.coupons-stripe-sync]
+verify_jwt = false   # JWT validado manualmente — admin only
+
+[functions.coupon-validate]
+verify_jwt = false   # Auth condicional: anônimo p/ landing, JWT p/ cockpit_assisted
+
 # ── Auth — configurações de produção ─────────────────────────────────────────
 [auth]
 site_url = "https://ekthos-platform.vercel.app"
