@@ -25,29 +25,37 @@ export interface ModuleAgentEntry {
 }
 
 export interface ModuleContent {
-  id:          string          // volunteer-pro | kids-pro | financeiro-pro
-  name:        string
-  tagline:     string          // 1 linha de impacto
-  price:       string          // ex: "R$ 289,90/mês"
-  priceCents:  number
-  Icon:        LucideIcon
-  forWhom:     string          // parágrafo "Para quem"
-  problems:    string[]        // 3-4 problemas que resolve
-  features:    ModuleFeature[] // o que inclui (funcionalidades)
-  agents:      ModuleAgentEntry[]
-  /** se true, não exibe botão de compra — apenas info + "entre em contato" */
-  consultive?: boolean
+  id:               string          // volunteer-pro | kids-pro | financeiro-pro
+  name:             string
+  tagline:          string          // 1 linha de impacto
+  price:            string          // ex: "R$ 289,90/mês"
+  priceCents:       number
+  Icon:             LucideIcon
+  forWhom:          string          // parágrafo "Para quem"
+  problems:         string[]        // 3-4 problemas que resolve
+  features:         ModuleFeature[] // o que inclui (funcionalidades)
+  agents:           ModuleAgentEntry[]
+  /** Todos os módulos são consultivos: sem self-service enquanto MVO não existe */
+  consultive:       true
+  aquisicao:        'consultivo'
+  cta_principal:    'consultor'
+  /** Microcopy de implementação acompanhada exibida abaixo do CTA */
+  implementacaoDesc: string
 }
 
 export const MODULES_CONTENT: ModuleContent[] = [
   // ── Volunteer Pro ────────────────────────────────────────────────────────
   {
-    id:         'volunteer-pro',
-    name:       'Volunteer Pro',
-    tagline:    'Gestão completa de voluntários — da escala à valorização.',
-    price:      'R$ 289,90/mês',
-    priceCents: 28990,
-    Icon:       Users,
+    id:               'volunteer-pro',
+    name:             'Volunteer Pro',
+    tagline:          'Gestão completa de voluntários — da escala à valorização.',
+    price:            'R$ 289,90/mês',
+    priceCents:       28990,
+    Icon:             Users,
+    consultive:       true,
+    aquisicao:        'consultivo',
+    cta_principal:    'consultor',
+    implementacaoDesc: 'Implementação acompanhada pelo time Ekthos. Inclui demo, configuração inicial e suporte na ativação.',
     forWhom:    'Igrejas com 15 ou mais voluntários ativos e equipe de coordenação que perde horas toda semana montando escalas, confirmando presenças e gerenciando substituições de última hora.',
     problems: [
       'Escala montada na mão toda semana, com risco de esquecimentos e faltas',
@@ -71,12 +79,16 @@ export const MODULES_CONTENT: ModuleContent[] = [
 
   // ── Kids Pro ─────────────────────────────────────────────────────────────
   {
-    id:         'kids-pro',
-    name:       'Kids Pro',
-    tagline:    'Segurança e cuidado pastoral para cada criança do ministério.',
-    price:      'R$ 349,90/mês',
-    priceCents: 34990,
-    Icon:       Shield,
+    id:               'kids-pro',
+    name:             'Kids Pro',
+    tagline:          'Segurança e cuidado pastoral para cada criança do ministério.',
+    price:            'R$ 349,90/mês',
+    priceCents:       34990,
+    Icon:             Shield,
+    consultive:       true,
+    aquisicao:        'consultivo',
+    cta_principal:    'consultor',
+    implementacaoDesc: 'Implementação acompanhada com cuidado especial: cadastro seguro de crianças, treinamento da equipe infantil e configuração de salas.',
     forWhom:    'Igrejas com ministério infantil ativo que precisam garantir a segurança no check-in/checkout, acompanhar o desenvolvimento espiritual das crianças e manter os pais engajados durante a semana.',
     problems: [
       'Controle de check-in/checkout manual — risco de entrega errada',
@@ -101,12 +113,16 @@ export const MODULES_CONTENT: ModuleContent[] = [
 
   // ── Financeiro Pro ───────────────────────────────────────────────────────
   {
-    id:         'financeiro-pro',
-    name:       'Financeiro Pro',
-    tagline:    'Controle financeiro completo: folha, prestadores e DRE mensal.',
-    price:      'R$ 489,90/mês',
-    priceCents: 48990,
-    Icon:       DollarSign,
+    id:               'financeiro-pro',
+    name:             'Financeiro Pro',
+    tagline:          'Controle financeiro completo: folha, prestadores e DRE mensal.',
+    price:            'R$ 489,90/mês',
+    priceCents:       48990,
+    Icon:             DollarSign,
+    consultive:       true,
+    aquisicao:        'consultivo',
+    cta_principal:    'consultor',
+    implementacaoDesc: 'Implementação técnica acompanhada. Inclui setup contábil, importação inicial de funcionários e treinamento da tesouraria.',
     forWhom:    'Igrejas com operação financeira mais complexa — folha de pagamento de pastores e funcionários, contratos com prestadores PJ/MEI, controle de centros de custo e necessidade de DRE mensal para prestação de contas.',
     problems: [
       'Folha de pagamento calculada em planilha, com risco de erros',
@@ -125,7 +141,6 @@ export const MODULES_CONTENT: ModuleContent[] = [
     agents: [
       { slug: 'agent-financeiro', name: 'Assistente Financeiro', included: true, Icon: DollarSign },
     ],
-    consultive: true,
   },
 ]
 

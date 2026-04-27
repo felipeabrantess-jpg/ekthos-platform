@@ -92,7 +92,10 @@ export function useAddonActions() {
         return { ok: false, message: json.error ?? 'Erro ao enviar mensagem.' }
       }
 
-      return { ok: true, message: 'Recebemos sua mensagem! Entraremos em contato em breve.' }
+      const message = context === 'module'
+        ? 'Recebemos sua mensagem! Nosso time vai contatar em até 24h para apresentar o módulo e fazer a ativação.'
+        : 'Recebemos sua mensagem! Entraremos em contato em breve.'
+      return { ok: true, message }
     } catch {
       return { ok: false, message: 'Erro de conexão. Tente novamente.' }
     } finally {

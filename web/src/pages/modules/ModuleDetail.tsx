@@ -1,16 +1,19 @@
 /**
  * ModuleDetail.tsx — /modulos/:id
  *
- * Página de módulo pago com CTAs reais:
- *  - Volunteer Pro / Kids Pro: [Adicionar ao meu plano] + [Falar com consultor]
- *  - Financeiro Pro (consultive): [Falar com consultor] apenas
+ * Todos os módulos são consultivos: sem "Adicionar ao plano" enquanto
+ * as telas operacionais (MVO) não existem. CTA único: "Falar com consultor".
  *
- * REGRA: "Testar 7 dias grátis" continua DESABILITADO (Fase 6)
+ * Motivo: honestidade com o pastor — ele não paga por algo que não tem onde acessar.
+ * Agentes avulsos mantêm self-service (não passam por aqui).
  */
 
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Lock, CheckCircle2, Plus, Loader2, Check, AlertCircle } from 'lucide-react'
+import {
+  ArrowLeft, Lock, CheckCircle2, Plus, Loader2,
+  Check, AlertCircle, ListOrdered,
+} from 'lucide-react'
 import { getModuleContent, type ModuleContent } from '@/lib/modules-content'
 import { useAddonActions } from '@/hooks/useAddonActions'
 import Button from '@/components/ui/Button'
@@ -87,17 +90,47 @@ function AgentsList({ agents }: { agents: ModuleContent['agents'] }) {
   )
 }
 
-// ── CTA block ─────────────────────────────────────────────────────────────────
+// ── Card "Como funciona a contratação" ───────────────────────────────────────
+
+const CONTRATACAO_STEPS = [
+  'Você fala com nosso time',
+  'Apresentamos o módulo em uma demo curta',
+  'Configuramos o ambiente da sua igreja',
+  'Treinamos sua equipe',
+  'Ativamos o módulo no seu plano',
+]
+
+function ComoFuncionaCard() {
+  return (
+    <div className="p-5 bg-cream-light border border-cream-dark/50 rounded-2xl space-y-4">
+      <div className="flex items-center gap-2.5">
+        <ListOrdered size={16} className="text-ekthos-black/50 shrink-0" strokeWidth={1.75} />
+        <h2 className="text-xs font-bold uppercase tracking-widest text-ekthos-black/50">
+          Como funciona a contratação
+        </h2>
+      </div>
+      <ol className="space-y-2.5">
+        {CONTRATACAO_STEPS.map((step, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <div className="mt-0.5 h-5 w-5 rounded-full bg-brand-100 border border-brand-200 flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-brand-700">{i + 1}</span>
+            </div>
+            <span className="text-sm text-ekthos-black/70 leading-relaxed">{step}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="text-xs text-ekthos-black/40 italic pt-1">
+        Tudo isso sem você precisar mexer em nada.
+      </p>
+    </div>
+  )
+}
+
+// ── CTA block (todos os módulos são consultivos) ──────────────────────────────
 
 function ModuleCTA({ module }: { module: ModuleContent }) {
-  const { adicionarAoPlano, falarComConsultor, loadingAddon, loadingConsultor } = useAddonActions()
+  const { falarComConsultor, loadingConsultor } = useAddonActions()
   const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null)
-
-  async function handleAdicionar() {
-    setToast(null)
-    const result = await adicionarAoPlano('module', module.id)
-    setToast({ ok: result.ok, message: result.message })
-  }
 
   async function handleConsultor() {
     setToast(null)
@@ -105,44 +138,14 @@ function ModuleCTA({ module }: { module: ModuleContent }) {
     setToast({ ok: result.ok, message: result.message })
   }
 
-  if (module.consultive) {
-    return (
-      <div className="p-5 bg-brand-50 border border-brand-100 rounded-2xl space-y-3">
-        <div className="flex items-start gap-3">
-          <Lock size={18} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
-          <div>
-            <p className="text-sm font-semibold text-brand-900">Módulo consultivo</p>
-            <p className="text-xs text-brand-600 mt-0.5 leading-relaxed">
-              O {module.name} é configurado com o apoio do time Ekthos para garantir
-              que a implantação atenda às necessidades específicas da sua Igreja.
-            </p>
-          </div>
-        </div>
-        {toast && <Toast ok={toast.ok} message={toast.message} onClose={() => setToast(null)} />}
-        <Button
-          variant="primary"
-          className="w-full"
-          disabled={loadingConsultor}
-          onClick={() => void handleConsultor()}
-        >
-          {loadingConsultor ? (
-            <><Loader2 size={14} className="animate-spin mr-2" />Enviando...</>
-          ) : (
-            'Falar com consultor'
-          )}
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="p-5 bg-brand-50 border border-brand-100 rounded-2xl space-y-3">
       <div className="flex items-start gap-3">
         <Lock size={18} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
         <div>
-          <p className="text-sm font-semibold text-brand-900">{module.price}/mês</p>
-          <p className="text-xs text-brand-600 mt-0.5">
-            A cobrança entra na sua próxima fatura após confirmação do pedido.
+          <p className="text-sm font-semibold text-brand-900">Implementação acompanhada</p>
+          <p className="text-xs text-brand-600 mt-0.5 leading-relaxed">
+            {module.implementacaoDesc}
           </p>
         </div>
       </div>
@@ -152,38 +155,17 @@ function ModuleCTA({ module }: { module: ModuleContent }) {
       <Button
         variant="primary"
         className="w-full"
-        disabled={loadingAddon || !!toast?.ok}
-        onClick={() => void handleAdicionar()}
-      >
-        {loadingAddon ? (
-          <><Loader2 size={14} className="animate-spin mr-2" />Registrando pedido...</>
-        ) : toast?.ok ? (
-          <><Check size={14} className="mr-2" />Pedido registrado!</>
-        ) : (
-          'Adicionar ao meu plano'
-        )}
-      </Button>
-
-      <Button
-        variant="secondary"
-        className="w-full"
-        disabled={loadingConsultor}
+        disabled={loadingConsultor || !!toast?.ok}
         onClick={() => void handleConsultor()}
       >
         {loadingConsultor ? (
           <><Loader2 size={14} className="animate-spin mr-2" />Enviando...</>
+        ) : toast?.ok ? (
+          <><Check size={14} className="mr-2" />Mensagem enviada!</>
         ) : (
           'Falar com consultor'
         )}
       </Button>
-
-      {/* Trial desabilitado — Fase 6 */}
-      <button
-        disabled
-        className="w-full text-xs text-ekthos-black/25 cursor-not-allowed py-1"
-      >
-        Testar 7 dias grátis — disponível em breve
-      </button>
     </div>
   )
 }
@@ -243,6 +225,10 @@ export default function ModuleDetail() {
 
       {/* Conteúdo */}
       <div className="bg-white border border-cream-dark/60 rounded-2xl p-5 space-y-6">
+
+        {/* Como funciona a contratação — antes de "Para quem" */}
+        <ComoFuncionaCard />
+
         <div>
           <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-2">Para quem</h2>
           <p className="text-sm text-ekthos-black/65 leading-relaxed">{module.forWhom}</p>
