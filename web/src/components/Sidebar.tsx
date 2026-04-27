@@ -149,9 +149,17 @@ export default function Sidebar() {
         {/* ─── 2. AGENTES IA ──────────────────────────────────────── */}
         <div className="pt-4">
           <div className="flex items-center justify-between px-3 mb-1.5">
-            <p className={SECTION_LABEL.replace('px-3 mb-1.5 mt-1', '')} style={SECTION_COLOR}>
+            <NavLink
+              to="/agentes"
+              className={({ isActive }) =>
+                `text-[10px] font-semibold uppercase tracking-widest transition-colors ${
+                  isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+                }`
+              }
+              style={SECTION_COLOR}
+            >
               Agentes IA
-            </p>
+            </NavLink>
             {/* Contador: ativos / total no catálogo */}
             {!planLoading && (
               <span
@@ -192,42 +200,54 @@ export default function Sidebar() {
         <div className="pt-4">
           <p className={SECTION_LABEL} style={SECTION_COLOR}>Módulos</p>
 
-          {/* TODO Fase 4: substituir por lógica de compra + sub-sidebar */}
-          {MODULE_ADDONS.map(mod => (
-            <div
-              key={mod.id}
-              className="group relative"
-              onMouseEnter={() => setHoveredModule(mod.id)}
-              onMouseLeave={() => setHoveredModule(null)}
-            >
+          {/* Fase 4: lógica de compra (Stripe) + sub-sidebar */}
+          {MODULE_ADDONS.map(mod => {
+            const moduleDetailId = mod.id === 'volunteer' ? 'volunteer-pro'
+              : mod.id === 'kids' ? 'kids-pro'
+              : 'financeiro-pro'
+            return (
               <div
-                className={`${NAV_BASE} border-transparent cursor-default select-none`}
-                style={{ color: 'rgba(255,255,255,0.25)' }}
+                key={mod.id}
+                className="group relative"
+                onMouseEnter={() => setHoveredModule(mod.id)}
+                onMouseLeave={() => setHoveredModule(null)}
               >
-                <Sparkles size={16} strokeWidth={1.75} className="opacity-40" />
-                <span className="flex-1 opacity-40 text-sm">{mod.label}</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-semibold" style={{ color: 'rgba(249,238,220,0.3)' }}>
-                    {mod.price}
-                  </span>
-                  <Lock size={11} strokeWidth={2} style={{ color: 'rgba(255,255,255,0.2)' }} />
-                </div>
-              </div>
-
-              {/* Tooltip "Em breve" */}
-              {hoveredModule === mod.id && (
-                <div
-                  className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-3 py-2 rounded-xl text-[11px] font-medium text-white whitespace-nowrap pointer-events-none"
-                  style={{ background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: '180px' }}
+                <NavLink
+                  to={`/modulos/${moduleDetailId}`}
+                  className={({ isActive }) =>
+                    `${NAV_BASE} ${isActive ? NAV_ACTIVE : 'border-transparent'}`
+                  }
+                  style={({ isActive }) =>
+                    isActive
+                      ? { borderColor: 'var(--church-primary, #e13500)' }
+                      : { color: 'rgba(255,255,255,0.25)' }
+                  }
                 >
-                  <p className="font-semibold text-white/90 mb-0.5">{mod.label} — Em breve</p>
-                  <p className="text-white/50">{mod.price}/mês</p>
-                  <p className="text-white/30 text-[10px] mt-1 leading-tight">{mod.description}</p>
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent" style={{ borderRightColor: '#1f1f1f' }} />
-                </div>
-              )}
-            </div>
-          ))}
+                  <Sparkles size={16} strokeWidth={1.75} className="opacity-40" />
+                  <span className="flex-1 opacity-40 text-sm">{mod.label}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] font-semibold" style={{ color: 'rgba(249,238,220,0.3)' }}>
+                      {mod.price}
+                    </span>
+                    <Lock size={11} strokeWidth={2} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                  </div>
+                </NavLink>
+
+                {/* Tooltip */}
+                {hoveredModule === mod.id && (
+                  <div
+                    className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-3 py-2 rounded-xl text-[11px] font-medium text-white whitespace-nowrap pointer-events-none"
+                    style={{ background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: '180px' }}
+                  >
+                    <p className="font-semibold text-white/90 mb-0.5">{mod.label} — Em breve</p>
+                    <p className="text-white/50">{mod.price}/mês</p>
+                    <p className="text-white/30 text-[10px] mt-1 leading-tight">{mod.description}</p>
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent" style={{ borderRightColor: '#1f1f1f' }} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </nav>
 
@@ -257,7 +277,7 @@ export default function Sidebar() {
 
         {/* Configurações */}
         <NavLink
-          to="/settings/billing"
+          to="/configuracoes"
           className={({ isActive }) =>
             `${NAV_BASE} ${isActive ? NAV_ACTIVE : NAV_IDLE}`
           }

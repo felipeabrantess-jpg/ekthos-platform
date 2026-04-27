@@ -42,7 +42,34 @@ const Celulas        = lazy(() => import('@/pages/Celulas'))
 const Aniversarios   = lazy(() => import('@/pages/Aniversarios'))
 const Agents         = lazy(() => import('@/pages/Agents').then(m => ({ default: m.Agents })))
 
-// Settings — named exports → wrap para default
+// Lote A — Agentes, Módulos, Configurações
+const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
+const AgentDetail  = lazy(() => import('@/pages/agents/AgentDetail'))
+const ModuleDetail = lazy(() => import('@/pages/modules/ModuleDetail'))
+
+const ConfiguracoesLayoutPage = lazy(() =>
+  import('@/pages/configuracoes/SettingsLayout').then(m => ({ default: m.ConfiguracoesLayout }))
+)
+const ConfiguracoesIndex = lazy(() =>
+  import('@/pages/configuracoes/SettingsLayout').then(m => ({ default: m.ConfiguracoesIndex }))
+)
+const DadosPage = lazy(() =>
+  import('@/pages/configuracoes/Dados').then(m => ({ default: m.Dados }))
+)
+const IdentidadePage = lazy(() =>
+  import('@/pages/configuracoes/Identidade').then(m => ({ default: m.Identidade }))
+)
+const PlanoPage = lazy(() =>
+  import('@/pages/configuracoes/Plano').then(m => ({ default: m.Plano }))
+)
+const UsuariosPage = lazy(() =>
+  import('@/pages/configuracoes/Usuarios').then(m => ({ default: m.Usuarios }))
+)
+const ModulosPage = lazy(() =>
+  import('@/pages/configuracoes/Modulos').then(m => ({ default: m.Modulos }))
+)
+
+// Settings legados — mantidos para backward compat
 const SettingsLayoutPage = lazy(() =>
   import('@/pages/settings/Layout').then(m => ({ default: m.SettingsLayout }))
 )
@@ -217,6 +244,24 @@ export default function App() {
 
             <Route path="agents" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agents /></Suspense></ErrorBoundary>} />
 
+            {/* ── Lote A: Agentes IA ── */}
+            <Route path="agentes"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentsList /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></ErrorBoundary>} />
+
+            {/* ── Lote A: Módulos ── */}
+            <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
+
+            {/* ── Lote A: Configurações reestruturadas ── */}
+            <Route path="configuracoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConfiguracoesLayoutPage /></Suspense></ErrorBoundary>}>
+              <Route index element={<Suspense fallback={<PageLoader />}><ConfiguracoesIndex /></Suspense>} />
+              <Route path="dados"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DadosPage /></Suspense></ErrorBoundary>} />
+              <Route path="identidade" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><IdentidadePage /></Suspense></ErrorBoundary>} />
+              <Route path="plano"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><PlanoPage /></Suspense></ErrorBoundary>} />
+              <Route path="usuarios"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsuariosPage /></Suspense></ErrorBoundary>} />
+              <Route path="modulos"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModulosPage /></Suspense></ErrorBoundary>} />
+            </Route>
+
+            {/* ── Settings legados (backward compat) ── */}
             <Route path="settings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><SettingsLayoutPage /></Suspense></ErrorBoundary>}>
               <Route index element={<Navigate to="billing" replace />} />
               <Route path="billing"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BillingPage /></Suspense></ErrorBoundary>} />
