@@ -1,4 +1,23 @@
-﻿// ============================================================
+﻿/**
+ * @deprecated EM F4 (27/04/2026)
+ *
+ * Esta EF é LEGADA. Não usar em código novo.
+ *
+ * Substituída por:
+ *   - UPDATE em public.coupons (tabela F3) alterando active +
+ *   - Trigger queue_coupon_sync que enfileira operation 'deactivate'
+ *     ou 'update' em public.coupon_sync_jobs +
+ *   - EF coupons-stripe-sync que processa o job.
+ *
+ * Callsite conhecido: web/src/pages/admin/AffiliateDetail.tsx:352
+ * Será atualizado em F11 quando Cockpit migrar para public.coupons.
+ *
+ * Mantida temporariamente para retrocompatibilidade do Cockpit
+ * antigo (/admin/afiliados). Tabela alvo affiliate_coupons tem
+ * 0 rows em produção.
+ */
+
+// ============================================================
 // Edge Function: affiliate-coupon-toggle
 // POST — toggles active status of an affiliate coupon.
 // If deactivating and has stripe_promotion_code_id: deactivates on Stripe too.
