@@ -342,6 +342,7 @@ function ModulosSubPanel() {
         <NavLink
           key={mod.id}
           to={`/modulos/${mod.id}`}
+          title="Fale com consultor para ativar"
           className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
           style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
         >
@@ -350,6 +351,9 @@ function ModulosSubPanel() {
             <p className="text-[12px] font-medium leading-tight truncate">{mod.name}</p>
             <p className="text-[10px] leading-tight" style={{ color: 'rgba(249,238,220,0.3)' }}>
               {mod.price.replace('/mês', '')}
+            </p>
+            <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(249,238,220,0.2)' }}>
+              Implementação acompanhada
             </p>
           </div>
           <Lock size={10} className="shrink-0 opacity-25" strokeWidth={2} />
