@@ -1,5 +1,16 @@
+/**
+ * People.tsx — Fase 2: tabs de categorias
+ *
+ * Tabs:
+ *  - Visão geral    → lista completa (default)
+ *  - Aniversários   → pessoas com aniversário no mês atual
+ *  - Novos          → stage: visitante | interesse-grupo
+ *  - Líderes        → stage: lider
+ *  - Em Risco       → stage: inativo
+ */
+
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Gift } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
@@ -14,15 +25,26 @@ import type { Person, PersonWithStage } from '@/lib/types/joins'
 
 type BadgeVariant = 'blue' | 'green' | 'yellow' | 'gray' | 'red' | 'purple'
 
-// Mapeamento de stage slug → cor do badge
+type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'lideres' | 'em-risco'
+
+const TABS: { id: PeopleTab; label: string }[] = [
+  { id: 'geral',         label: 'Visão geral'      },
+  { id: 'aniversarios',  label: 'Aniversários'     },
+  { id: 'novos',         label: 'Novos Convertidos' },
+  { id: 'lideres',       label: 'Líderes'          },
+  { id: 'em-risco',      label: 'Em Risco'         },
+]
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
 function stageToBadgeVariant(slug: string): BadgeVariant {
   const map: Record<string, BadgeVariant> = {
-    visitante: 'yellow',
+    visitante:         'yellow',
     'interesse-grupo': 'blue',
     'em-acompanhamento': 'purple',
-    membro: 'green',
-    lider: 'green',
-    inativo: 'gray',
+    membro:            'green',
+    lider:             'green',
+    inativo:           'gray',
   }
   return map[slug] ?? 'gray'
 }
@@ -36,6 +58,43 @@ function formatDate(date: string | null) {
   if (!date) return '—'
   return new Intl.DateTimeFormat('pt-BR').format(new Date(date))
 }
+
+/** Obtém o slug do stage de uma pessoa (considera apenas o primeiro da fila) */
+function getStageSlug(person: PersonWithStage): string | null {
+  return person.person_pipeline?.[0]?.pipeline_stages?.slug ?? null
+}
+
+/** Filtra pessoas pelo stage slug */
+function filterByStage(people: PersonWithStage[], slugs: string[]): PersonWithStage[] {
+  return people.filter(p => {
+    const s = getStageSlug(p)
+    return s !== null && slugs.includes(s)
+  })
+}
+
+/** Filtra aniversariantes do mês atual via campo birthday (se disponível) */
+function filterBirthdayThisMonth(people: PersonWithStage[]): PersonWithStage[] {
+  const now = new Date()
+  return people.filter(p => {
+    // Acesso seguro ao campo birthday (pode não existir no tipo base)
+    const bday = (p as unknown as { birthday?: string | null }).birthday
+    if (!bday) return false
+    const d = new Date(bday + 'T00:00:00')
+    return d.getMonth() === now.getMonth()
+  })
+}
+
+function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithStage[] {
+  switch (tab) {
+    case 'aniversarios': return filterBirthdayThisMonth(people)
+    case 'novos':        return filterByStage(people, ['visitante', 'interesse-grupo'])
+    case 'lideres':      return filterByStage(people, ['lider'])
+    case 'em-risco':     return filterByStage(people, ['inativo'])
+    default:             return people
+  }
+}
+
+// ── Componentes internos ─────────────────────────────────────────────────────
 
 interface PersonRowProps {
   person: PersonWithStage
@@ -107,12 +166,15 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
   )
 }
 
+// ── Componente principal ─────────────────────────────────────────────────────
+
 export default function People() {
   const { churchId } = useAuth()
-  const [search, setSearch] = useState('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingPerson, setEditingPerson] = useState<Person | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
+  const [search, setSearch]         = useState('')
+  const [modalOpen, setModalOpen]   = useState(false)
+  const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
+  const [deletingId, setDeletingId]         = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
 
   const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', { search })
@@ -120,19 +182,9 @@ export default function People() {
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
-  function handleView(person: PersonWithStage) {
-    setSelectedPerson(person)
-  }
-
-  function handleEdit(person: Person) {
-    setEditingPerson(person)
-    setModalOpen(true)
-  }
-
-  function handleNewPerson() {
-    setEditingPerson(null)
-    setModalOpen(true)
-  }
+  function handleView(person: PersonWithStage)  { setSelectedPerson(person) }
+  function handleEdit(person: Person)           { setEditingPerson(person); setModalOpen(true) }
+  function handleNewPerson()                    { setEditingPerson(null); setModalOpen(true) }
 
   async function handleDelete(person: Person) {
     if (!confirm(`Remover ${person.name ?? 'esta pessoa'}? Esta ação pode ser revertida.`)) return
@@ -144,7 +196,17 @@ export default function People() {
     }
   }
 
-  const displayedPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
+  const allPeople     = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
+  const filteredPeople = applyTabFilter(activeTab, allPeople)
+
+  // Mensagens de estado vazio por aba
+  const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
+    geral:        { title: 'Nenhuma pessoa cadastrada', description: 'Adicione a primeira pessoa clicando em "Nova Pessoa".' },
+    aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
+    novos:        { title: 'Nenhum novo convertido', description: 'Pessoas nos stages Visitante ou Interesse em Grupo aparecerão aqui.' },
+    lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
+    'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
+  }
 
   return (
     <div className="space-y-6">
@@ -153,23 +215,51 @@ export default function People() {
         <div>
           <h1 className="font-display text-2xl font-bold text-ekthos-black">Pessoas</h1>
           <p className="text-sm text-ekthos-black/50 mt-1">
-            {people ? `${people.length} cadastradas` : 'Carregando...'}
+            {people ? `${allPeople.length} cadastradas` : 'Carregando...'}
           </p>
         </div>
-        <Button onClick={handleNewPerson}>
-          + Nova Pessoa
-        </Button>
+        <Button onClick={handleNewPerson}>+ Nova Pessoa</Button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex gap-3">
-        <Input
-          placeholder="Buscar por nome, telefone ou e-mail..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
-        />
+      {/* ── Tabs ─────────────────────────────────────────────────── */}
+      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); setSearch('') }}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'border-brand-600 text-brand-700'
+                : 'border-transparent text-ekthos-black/50 hover:text-ekthos-black/80 hover:border-cream-dark'
+            }`}
+          >
+            {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
+            {tab.label}
+            {/* Badge de contagem (só quando data já carregada) */}
+            {people && tab.id !== 'geral' && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                activeTab === tab.id
+                  ? 'bg-brand-100 text-brand-700'
+                  : 'bg-cream-dark/60 text-ekthos-black/40'
+              }`}>
+                {applyTabFilter(tab.id, allPeople).length}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
+
+      {/* Busca (só na visão geral) */}
+      {activeTab === 'geral' && (
+        <div className="flex gap-3">
+          <Input
+            placeholder="Buscar por nome, telefone ou e-mail..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+      )}
 
       {/* Tabela */}
       <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
@@ -179,11 +269,11 @@ export default function People() {
           </div>
         ) : isError ? (
           <ErrorState onRetry={() => void refetch()} />
-        ) : displayedPeople.length === 0 ? (
+        ) : filteredPeople.length === 0 ? (
           <EmptyState
-            title={search ? 'Nenhuma pessoa encontrada' : 'Nenhuma pessoa cadastrada'}
-            description={search ? 'Tente buscar por outro nome ou telefone.' : 'Adicione a primeira pessoa clicando em "Nova Pessoa".'}
-            action={!search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
+            title={search ? 'Nenhuma pessoa encontrada' : emptyMessages[activeTab].title}
+            description={search ? 'Tente buscar por outro nome ou telefone.' : emptyMessages[activeTab].description}
+            action={activeTab === 'geral' && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
           />
         ) : (
           <div className="overflow-x-auto">
@@ -199,7 +289,7 @@ export default function People() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-cream-dark/40">
-                {displayedPeople.map((person) => (
+                {filteredPeople.map((person) => (
                   <PersonRow
                     key={person.id}
                     person={person}
@@ -226,10 +316,7 @@ export default function People() {
       <PersonDetailPanel
         person={selectedPerson}
         onClose={() => setSelectedPerson(null)}
-        onEdit={(p) => {
-          setSelectedPerson(null)
-          handleEdit(p)
-        }}
+        onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
       />
     </div>
   )
