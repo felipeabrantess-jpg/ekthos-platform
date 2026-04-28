@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox } from 'lucide-react'
+import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare } from 'lucide-react'
 import { useLogout } from '@/hooks/useAuth'
 
 const NAV = [
@@ -11,6 +11,7 @@ const NAV = [
   { to: '/admin/revenue',      label: 'Receita',      icon: <TrendingUp      size={16} strokeWidth={1.75} /> },
   { to: '/admin/pricing',      label: 'Pricing',      icon: <Tag             size={16} strokeWidth={1.75} /> },
   { to: '/admin/afiliados',    label: 'Afiliados',    icon: <Users           size={16} strokeWidth={1.75} /> },
+  { to: '/admin/comunicacao',  label: 'Comunicação',  icon: <MessageSquare   size={16} strokeWidth={1.75} /> },
 ]
 
 export default function AdminLayout() {
