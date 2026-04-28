@@ -45,6 +45,7 @@ const Agents         = lazy(() => import('@/pages/Agents').then(m => ({ default:
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
 const AgentDetail  = lazy(() => import('@/pages/agents/AgentDetail'))
+const AgentChat    = lazy(() => import('@/pages/agents/AgentChat'))
 const ModuleDetail = lazy(() => import('@/pages/modules/ModuleDetail'))
 
 const ConfiguracoesLayoutPage = lazy(() =>
@@ -247,6 +248,10 @@ export default function App() {
             {/* ── Lote A: Agentes IA ── */}
             <Route path="agentes"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentsList /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></ErrorBoundary>} />
+
+            {/* ── Frente D: Chat dedicado por agente ── */}
+            <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
 
             {/* ── Lote A: Módulos ── */}
             <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
