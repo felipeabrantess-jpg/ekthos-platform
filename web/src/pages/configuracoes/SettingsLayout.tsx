@@ -12,14 +12,15 @@
  */
 
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { Building2, Palette, CreditCard, Users, Package } from 'lucide-react'
+import { Building2, Palette, CreditCard, Users, Package, GitBranch } from 'lucide-react'
 
 const TABS = [
-  { path: 'dados',       label: 'Dados',      Icon: Building2,   description: 'Nome, endereço e CNPJ' },
-  { path: 'identidade',  label: 'Identidade', Icon: Palette,     description: 'Logo e cores da Igreja' },
-  { path: 'plano',       label: 'Plano',      Icon: CreditCard,  description: 'Assinatura e faturamento' },
-  { path: 'usuarios',    label: 'Usuários',   Icon: Users,       description: 'Equipe com acesso ao sistema' },
-  { path: 'modulos',     label: 'Módulos',    Icon: Package,     description: 'Add-ons pagos' },
+  { path: 'dados',        label: 'Dados',        Icon: Building2,  description: 'Nome, endereço e CNPJ' },
+  { path: 'identidade',   label: 'Identidade',   Icon: Palette,    description: 'Logo e cores da Igreja' },
+  { path: 'plano',        label: 'Plano',        Icon: CreditCard, description: 'Assinatura e faturamento' },
+  { path: 'usuarios',     label: 'Usuários',     Icon: Users,      description: 'Equipe com acesso ao sistema' },
+  { path: 'modulos',      label: 'Módulos',      Icon: Package,    description: 'Add-ons pagos' },
+  { path: 'discipulado',  label: 'Discipulado',  Icon: GitBranch,  description: 'Etapas da jornada espiritual' },
 ]
 
 export function ConfiguracoesLayout() {
