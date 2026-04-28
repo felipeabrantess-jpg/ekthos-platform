@@ -119,3 +119,87 @@ export function useDeactivateVolunteer() {
     },
   })
 }
+
+// ── Per-person hooks (used in PersonDetailPanel) ──────────────────────────────
+
+export interface PersonVolunteer {
+  id: string
+  ministry_id: string
+  role: string | null
+  is_active: boolean
+  joined_at: string
+  ministries: { id: string; name: string } | null
+}
+
+/** Voluntários de UMA pessoa específica */
+export function usePersonVolunteers(personId: string | undefined, churchId: string | undefined) {
+  return useQuery({
+    queryKey: ['person_volunteers', personId],
+    queryFn: async (): Promise<PersonVolunteer[]> => {
+      const { data, error } = await supabase
+        .from('volunteers')
+        .select('id, ministry_id, role, is_active, joined_at, ministries(id, name)')
+        .eq('person_id', personId!)
+        .eq('church_id', churchId!)
+        .eq('is_active', true)
+        .order('joined_at', { ascending: false })
+
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonVolunteer[]
+    },
+    enabled: Boolean(personId) && Boolean(churchId),
+  })
+}
+
+/** Atualiza is_volunteer diretamente em people (toggle manual) */
+export function useSetPersonVolunteer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      personId,
+      churchId,
+      isVolunteer,
+    }: {
+      personId: string
+      churchId: string
+      isVolunteer: boolean
+    }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from('people').update({ is_volunteer: isVolunteer } as any)
+        .eq('id', personId)
+        .eq('church_id', churchId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['voluntarios'] })
+      void queryClient.invalidateQueries({ queryKey: ['person_volunteers'] })
+      void queryClient.invalidateQueries({ queryKey: ['people'] })
+    },
+  })
+}
+
+/** Remove vinculação de uma pessoa a um ministério */
+export function useRemovePersonFromMinistry() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      volunteerId,
+      churchId,
+    }: {
+      volunteerId: string
+      churchId: string
+    }) => {
+      const { error } = await supabase
+        .from('volunteers')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ is_active: false } as any)
+        .eq('id', volunteerId)
+        .eq('church_id', churchId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { churchId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['person_volunteers'] })
+      void queryClient.invalidateQueries({ queryKey: ['voluntarios', churchId] })
+    },
+  })
+}
