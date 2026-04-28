@@ -15,6 +15,9 @@ const Landing           = lazy(() => import('@/pages/Landing'))
 const CheckoutSucesso   = lazy(() => import('@/pages/checkout/Sucesso'))
 const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
 
+// Frente B — landing pública de visitantes via QR Code
+const VisitorLanding = lazy(() => import('@/pages/VisitorLanding'))
+
 // Públicas
 const Login                 = lazy(() => import('@/pages/Login'))
 const Signup                = lazy(() => import('@/pages/Signup'))
@@ -75,6 +78,9 @@ const ModulosPage = lazy(() =>
 )
 const DiscipleshipSettingsPage = lazy(() =>
   import('@/pages/configuracoes/DiscipleshipSettings').then(m => ({ default: m.DiscipleshipSettings }))
+)
+const QrVisitorPage = lazy(() =>
+  import('@/pages/configuracoes/QrVisitor').then(m => ({ default: m.QrVisitor }))
 )
 
 // Settings legados — mantidos para backward compat
@@ -176,6 +182,18 @@ export default function App() {
           <Route path="/checkout/sucesso"    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutSucesso /></Suspense></ErrorBoundary>} />
           <Route path="/checkout/cancelado"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutCancelado /></Suspense></ErrorBoundary>} />
 
+          {/* ── Frente B — Visitante via QR Code (totalmente público, sem auth) ── */}
+          <Route
+            path="/visita/:slug"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<FullScreenSpinner />}>
+                  <VisitorLanding />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
+
           {/* ── Rotas públicas ── */}
           <Route path="/login"    element={<ErrorBoundary><Login /></ErrorBoundary>} />
           <Route path="/signup"   element={<ErrorBoundary><Signup /></ErrorBoundary>} />
@@ -275,7 +293,8 @@ export default function App() {
               <Route path="plano"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><PlanoPage /></Suspense></ErrorBoundary>} />
               <Route path="usuarios"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsuariosPage /></Suspense></ErrorBoundary>} />
               <Route path="modulos"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModulosPage /></Suspense></ErrorBoundary>} />
-              <Route path="discipulado" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DiscipleshipSettingsPage /></Suspense></ErrorBoundary>} />
+              <Route path="discipulado"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DiscipleshipSettingsPage /></Suspense></ErrorBoundary>} />
+              <Route path="qr-visitante" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><QrVisitorPage /></Suspense></ErrorBoundary>} />
             </Route>
 
             {/* ── Settings legados (backward compat) ── */}

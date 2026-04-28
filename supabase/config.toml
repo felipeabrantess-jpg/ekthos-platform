@@ -80,6 +80,15 @@ verify_jwt = false   # público — pastor ainda não tem conta
 [functions.lead-capture]
 verify_jwt = false   # público — pastor ainda não tem conta
 
+[functions.visitor-capture]
+verify_jwt = false   # público — visitante NÃO tem conta (Frente B QR Code)
+
+[functions.church-public]
+verify_jwt = false   # público — dados mínimos da church para landing de visitante
+
+[functions.dispatch-person-event]
+verify_jwt = false   # interno — autenticado via service_role Bearer pelo chamador
+
 # ── Billing — Coupons (F3/F4/F5) ─────────────────────────────────────────────
 [functions.coupons-stripe-sync]
 verify_jwt = false   # JWT validado manualmente — admin only
