@@ -251,6 +251,47 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
 }
 
 // ──────────────────────────────────────────────────────────────
+// MobileStagePicker — seleciona coluna ativa no mobile
+// ──────────────────────────────────────────────────────────────
+
+interface MobileStagePickerProps {
+  stages: PipelineStage[]
+  activeId: string | null
+  board: Record<string, PersonWithStage[]>
+  onSelect: (id: string) => void
+}
+
+function MobileStagePicker({ stages, activeId, board, onSelect }: MobileStagePickerProps) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+      {stages.map(stage => {
+        const count = (board[stage.id] ?? []).length
+        const isActive = activeId === stage.id
+        return (
+          <button
+            key={stage.id}
+            onClick={() => onSelect(stage.id)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-all active:scale-95 ${
+              isActive
+                ? 'text-white shadow-sm'
+                : 'bg-cream-dark/50 text-ekthos-black/60 active:bg-cream-dark'
+            }`}
+            style={isActive ? { background: (stage as PipelineStage & { color?: string }).color ?? '#e13500' } : {}}
+          >
+            {stage.name}
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+              isActive ? 'bg-white/25 text-white' : 'bg-ekthos-black/10 text-ekthos-black/50'
+            }`}>
+              {count}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────────
 // Pipeline page
 // ──────────────────────────────────────────────────────────────
 
@@ -258,6 +299,7 @@ export default function Pipeline() {
   const { churchId } = useAuth()
   const [dragging, setDragging] = useState<{ personId: string; fromStageId: string } | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
+  const [mobileActiveStageId, setMobileActiveStageId] = useState<string | null>(null)
 
   const { data: stages, isLoading: stagesLoading, isError: stagesError, refetch: refetchStages } = usePipelineStages(churchId ?? '')
   const { data: board, isLoading: boardLoading, isError: boardError, refetch: refetchBoard } = usePipelineBoard(churchId ?? '')
@@ -306,6 +348,9 @@ export default function Pipeline() {
   const displayedStages = stages ?? []
   const displayedBoard = board ?? {}
 
+  // Auto-select first stage on mobile when stages load
+  const effectiveStageId = mobileActiveStageId ?? displayedStages[0]?.id ?? null
+
   // Total de pessoas com SLA estourado em todo o board
   const totalBreaches = displayedStages.reduce((acc, stage) => {
     const people = displayedBoard[stage.id] ?? []
@@ -316,11 +361,11 @@ export default function Pipeline() {
   }, 0)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl font-bold text-ekthos-black">Caminho de discipulado</h1>
-        <p className="text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa</p>
+        <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Caminho de discipulado</h1>
+        <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa</p>
       </div>
 
       {/* SLA alert banner */}
@@ -333,8 +378,29 @@ export default function Pipeline() {
         </div>
       )}
 
-      {/* Kanban Board */}
-      <div className="overflow-x-auto pb-4">
+      {/* ── Mobile: stage picker + coluna ativa ──────────────── */}
+      {displayedStages.length > 0 && (
+        <div className="md:hidden space-y-3">
+          <MobileStagePicker
+            stages={displayedStages}
+            activeId={effectiveStageId}
+            board={displayedBoard}
+            onSelect={setMobileActiveStageId}
+          />
+          {effectiveStageId && (
+            <KanbanColumn
+              stage={displayedStages.find(s => s.id === effectiveStageId)!}
+              people={displayedBoard[effectiveStageId] ?? []}
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+              onCardClick={setSelectedPerson}
+            />
+          )}
+        </div>
+      )}
+
+      {/* ── Desktop: kanban horizontal ───────────────────────── */}
+      <div className="hidden md:block overflow-x-auto pb-4">
         <div className="flex gap-4 min-w-max">
           {displayedStages.map((stage) => (
             <KanbanColumn
@@ -347,12 +413,19 @@ export default function Pipeline() {
             />
           ))}
           {displayedStages.length === 0 && (
-            <div className="flex items-center justify-center w-full py-16 text-gray-400">
+            <div className="flex items-center justify-center w-full py-16">
               <p className="text-sm text-ekthos-black/40">Nenhuma etapa configurada ainda.</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Mobile empty state */}
+      {displayedStages.length === 0 && (
+        <div className="md:hidden flex items-center justify-center py-16">
+          <p className="text-sm text-ekthos-black/40">Nenhuma etapa configurada ainda.</p>
+        </div>
+      )}
 
       {/* Detail panel */}
       {selectedPerson && (

@@ -257,10 +257,10 @@ export default function Dashboard() {
 
       {/* Header */}
       <div>
-        <h1 className="font-display text-3xl font-bold text-ekthos-black">
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-ekthos-black">
           Dashboard Pastoral
         </h1>
-        <p className="text-sm text-ekthos-black/40 mt-1 capitalize">{now}</p>
+        <p className="text-xs md:text-sm text-ekthos-black/40 mt-1 capitalize">{now}</p>
       </div>
 
       {/* Alerta critico */}

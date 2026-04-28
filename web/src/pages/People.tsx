@@ -94,6 +94,59 @@ function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithSt
   }
 }
 
+// ── PersonCard — mobile view ──────────────────────────────────────────────────
+
+interface PersonCardMobileProps {
+  person: PersonWithStage
+  onView: (p: PersonWithStage) => void
+  onEdit: (p: Person) => void
+}
+
+function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
+  const stage = person.person_pipeline?.[0]?.pipeline_stages
+
+  return (
+    <div
+      className="bg-white rounded-2xl border border-cream-dark/50 p-4 shadow-sm active:bg-cream-light transition-colors cursor-pointer"
+      onClick={() => onView(person)}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Avatar placeholder */}
+          <div
+            className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+            style={{ background: 'var(--church-primary, #e13500)' }}
+          >
+            {(person.name ?? '?').charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ekthos-black truncate">{person.name ?? '—'}</p>
+            {person.email && (
+              <p className="text-xs text-ekthos-black/50 truncate mt-0.5">{person.email}</p>
+            )}
+            {person.phone && (
+              <p className="text-xs text-ekthos-black/40 mt-0.5">{formatPhone(person.phone)}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          {stage && (
+            <Badge label={stage.name} variant={stageToBadgeVariant(stage.slug)} />
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(person) }}
+            className="p-2 rounded-lg text-ekthos-black/30 active:text-brand-600 active:bg-brand-50 transition-all"
+            title="Editar"
+          >
+            <Pencil size={15} strokeWidth={1.75} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Componentes internos ─────────────────────────────────────────────────────
 
 interface PersonRowProps {
@@ -209,20 +262,21 @@ export default function People() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
+      {/* Header — botão "Nova" só visível em desktop */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ekthos-black">Pessoas</h1>
-          <p className="text-sm text-ekthos-black/50 mt-1">
+          <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Pessoas</h1>
+          <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">
             {people ? `${allPeople.length} cadastradas` : 'Carregando...'}
           </p>
         </div>
-        <Button onClick={handleNewPerson}>+ Nova Pessoa</Button>
+        {/* Desktop CTA */}
+        <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
       </div>
 
-      {/* ── Tabs ─────────────────────────────────────────────────── */}
-      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2">
+      {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
+      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2 overflow-x-auto scrollbar-none pb-px">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -230,12 +284,11 @@ export default function People() {
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-brand-600 text-brand-700'
-                : 'border-transparent text-ekthos-black/50 hover:text-ekthos-black/80 hover:border-cream-dark'
+                : 'border-transparent text-ekthos-black/50 active:text-ekthos-black/80'
             }`}
           >
             {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
             {tab.label}
-            {/* Badge de contagem (só quando data já carregada) */}
             {people && tab.id !== 'geral' && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
                 activeTab === tab.id
@@ -249,60 +302,87 @@ export default function People() {
         ))}
       </div>
 
-      {/* Busca (só na visão geral) */}
+      {/* Busca full-width em mobile */}
       {activeTab === 'geral' && (
         <div className="flex gap-3">
           <Input
             placeholder="Buscar por nome, telefone ou e-mail..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
+            className="w-full md:max-w-sm"
           />
         </div>
       )}
 
-      {/* Tabela */}
-      <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner size="lg" />
-          </div>
-        ) : isError ? (
-          <ErrorState onRetry={() => void refetch()} />
-        ) : filteredPeople.length === 0 ? (
+      {/* ── Loading / Error / Empty ───────────────────────────── */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Spinner size="lg" />
+        </div>
+      ) : isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : filteredPeople.length === 0 ? (
+        <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
           <EmptyState
             title={search ? 'Nenhuma pessoa encontrada' : emptyMessages[activeTab].title}
             description={search ? 'Tente buscar por outro nome ou telefone.' : emptyMessages[activeTab].description}
             action={activeTab === 'geral' && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
           />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
-                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Nome</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Telefone</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Stage</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Tags</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Cadastro</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-cream-dark/40">
-                {filteredPeople.map((person) => (
-                  <PersonRow
-                    key={person.id}
-                    person={person}
-                    onView={handleView}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </tbody>
-            </table>
+        </div>
+      ) : (
+        <>
+          {/* ── Mobile: cards ─────────────────────────────────── */}
+          <div className="md:hidden space-y-2">
+            {filteredPeople.map((person) => (
+              <PersonCardMobile
+                key={person.id}
+                person={person}
+                onView={handleView}
+                onEdit={handleEdit}
+              />
+            ))}
           </div>
-        )}
-      </div>
+
+          {/* ── Desktop: tabela ───────────────────────────────── */}
+          <div className="hidden md:block bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
+                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Nome</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Telefone</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Stage</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Tags</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Cadastro</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-cream-dark/40">
+                  {filteredPeople.map((person) => (
+                    <PersonRow
+                      key={person.id}
+                      person={person}
+                      onView={handleView}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── FAB mobile: adicionar pessoa ─────────────────────── */}
+      <button
+        onClick={handleNewPerson}
+        className="md:hidden fixed bottom-6 right-6 z-20 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform"
+        style={{ width: 56, height: 56, background: 'var(--church-primary, #e13500)' }}
+        aria-label="Nova pessoa"
+      >
+        <span className="text-white text-2xl font-bold leading-none">+</span>
+      </button>
 
       {/* Modal */}
       <PersonModal
