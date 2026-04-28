@@ -4,13 +4,15 @@ import {
 } from 'recharts'
 import {
   UserCheck, UserPlus, Users, Network, Droplets,
-  GraduationCap, Wallet, AlertTriangle, CheckCircle, BarChart2, TrendingUp,
+  GraduationCap, Wallet, AlertTriangle, CheckCircle, BarChart2, TrendingUp, Heart,
 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, canManageDepartments } from '@/hooks/useRole'
 import type { AppRole } from '@/hooks/useRole'
 import { usePastoralDashboard } from '@/features/dashboard/hooks/usePastoralDashboard'
 import { useConsolidacaoStats, STAGE_COLORS as STAGE_PILL_COLORS } from '@/features/dashboard/hooks/useConsolidacaoStats'
+import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
@@ -224,6 +226,22 @@ export default function Dashboard() {
   const { data, isLoading, isError, refetch } = usePastoralDashboard(churchId ?? '')
   const { data: consolidacao } = useConsolidacaoStats(churchId ?? '')
 
+  const { data: novosConvertidos = 0 } = useQuery({
+    queryKey: ['novos_convertidos_30d', churchId],
+    enabled: !!churchId,
+    queryFn: async () => {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const { count } = await supabase
+        .from('people')
+        .select('id', { count: 'exact', head: true })
+        .eq('church_id', churchId!)
+        .eq('is_active', true)
+        .gte('conversion_date', thirtyDaysAgo.toISOString().split('T')[0])
+      return count ?? 0
+    },
+  })
+
   if (!churchId) {
     return <ErrorState message="Igreja não identificada. Faça login novamente." />
   }
@@ -309,6 +327,16 @@ export default function Dashboard() {
             meta="Meta: 15/tri"
             color={data.batismosTrimestre >= 15 ? 'green' : 'default'}
             icon={<Droplets size={18} strokeWidth={1.75} />}
+          />
+        </div>
+        {/* Novos Convertidos widget */}
+        <div className="mt-4">
+          <MetricCard
+            label="Novos Convertidos (30 dias)"
+            value={novosConvertidos}
+            sub="com data de conversão nos últimos 30 dias"
+            color={novosConvertidos > 0 ? 'green' : 'default'}
+            icon={<Heart size={18} strokeWidth={1.75} />}
           />
         </div>
       </section>

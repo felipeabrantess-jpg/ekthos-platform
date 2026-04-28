@@ -194,6 +194,25 @@ interface CreateCellMeetingInput {
   notes?: string
 }
 
+export function useDeleteGroup() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, church_id }: { id: string; church_id: string }) => {
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', id)
+        .eq('church_id', church_id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['groups', church_id] })
+    },
+  })
+}
+
 export function useCreateCellMeeting() {
   const queryClient = useQueryClient()
 

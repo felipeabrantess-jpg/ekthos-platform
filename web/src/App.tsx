@@ -41,6 +41,9 @@ const Gabinete    = lazy(() => import('@/pages/Gabinete'))
 const Celulas        = lazy(() => import('@/pages/Celulas'))
 const Aniversarios   = lazy(() => import('@/pages/Aniversarios'))
 const Agents         = lazy(() => import('@/pages/Agents').then(m => ({ default: m.Agents })))
+const Leaders        = lazy(() => import('@/pages/people/Leaders'))
+const Consolidation  = lazy(() => import('@/pages/people/Consolidation'))
+const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
 
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
@@ -235,8 +238,11 @@ export default function App() {
           >
             <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></ErrorBoundary>} />
             <Route path="agenda"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
+            <Route path="inscricoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmConstrucao name="Inscrições" previstoPara="2º semestre 2026" features={['Formulários de inscrição para eventos', 'Controle de vagas e lista de espera', 'Integração com Agenda']} /></Suspense></ErrorBoundary>} />
 
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { X, AlertTriangle } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { X, AlertTriangle, Settings2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
 import Spinner from '@/components/ui/Spinner'
@@ -297,6 +298,7 @@ function MobileStagePicker({ stages, activeId, board, onSelect }: MobileStagePic
 
 export default function Pipeline() {
   const { churchId } = useAuth()
+  const navigate = useNavigate()
   const [dragging, setDragging] = useState<{ personId: string; fromStageId: string } | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
   const [mobileActiveStageId, setMobileActiveStageId] = useState<string | null>(null)
@@ -363,9 +365,18 @@ export default function Pipeline() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Caminho de discipulado</h1>
-        <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Caminho de discipulado</h1>
+          <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa</p>
+        </div>
+        <button
+          onClick={() => navigate('/configuracoes/discipulado')}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-brand-600 hover:text-brand-600 bg-white transition-colors shrink-0"
+        >
+          <Settings2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Configurar</span>
+        </button>
       </div>
 
       {/* SLA alert banner */}
