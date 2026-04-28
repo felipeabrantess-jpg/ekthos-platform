@@ -21,6 +21,7 @@ import {
   Building2,
   Wallet,
   Calendar,
+  CalendarDays,
   ShieldCheck,
 } from 'lucide-react'
 
@@ -56,7 +57,8 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,       moduleKey: 'pipeline'    },
   { path: '/celulas',     label: 'Células',     Icon: Network,         moduleKey: 'celulas'     },
   { path: '/ministerios', label: 'Ministérios', Icon: Building2,       moduleKey: 'ministerios' },
-  { path: '/agenda',      label: 'Eventos',     Icon: Calendar,        moduleKey: 'agenda'      },
+  { path: '/agenda',      label: 'Calendário',  Icon: Calendar,        moduleKey: 'agenda'      },
+  { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,    moduleKey: 'agenda'      },
   { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,     moduleKey: 'gabinete'    },
   { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,          moduleKey: 'financeiro'  },
 ]
