@@ -4,7 +4,7 @@ import {
   useMinisterios,
   useCreateMinistry,
   useUpdateMinistry,
-  useDeactivateMinistry,
+  useDeleteMinistry,
 } from '@/features/ministerios/hooks/useMinisterios'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -39,10 +39,10 @@ function slugify(name: string): string {
 interface MinistryCardProps {
   ministry: MinistryWithLeader
   onEdit: (m: MinistryWithLeader) => void
-  onDeactivate: (m: MinistryWithLeader) => void
+  onDelete: (m: MinistryWithLeader) => void
 }
 
-function MinistryCard({ ministry, onEdit, onDeactivate }: MinistryCardProps) {
+function MinistryCard({ ministry, onEdit, onDelete }: MinistryCardProps) {
   const leaderName = ministry.leaders?.people?.name ?? null
 
   return (
@@ -76,10 +76,10 @@ function MinistryCard({ ministry, onEdit, onDeactivate }: MinistryCardProps) {
           Editar
         </button>
         <button
-          onClick={() => onDeactivate(ministry)}
-          className="text-xs text-red-500 hover:text-red-600 font-medium"
+          onClick={() => onDelete(ministry)}
+          className="ml-auto text-xs text-red-400 hover:text-red-600 font-medium"
         >
-          Desativar
+          Excluir
         </button>
       </div>
     </div>
@@ -191,7 +191,8 @@ export default function Ministerios() {
   const { churchId } = useAuth()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<MinistryWithLeader | null>(null)
-  const deactivate = useDeactivateMinistry()
+  const [deletingMinistry, setDeletingMinistry] = useState<MinistryWithLeader | null>(null)
+  const deleteMinistry = useDeleteMinistry()
 
   const { data: ministries, isLoading, isError, refetch } = useMinisterios(churchId ?? '')
 
@@ -207,9 +208,10 @@ export default function Ministerios() {
     setModalOpen(true)
   }
 
-  async function handleDeactivate(m: MinistryWithLeader) {
-    if (!confirm(`Desativar "${m.name}"? O ministério será removido da listagem.`)) return
-    await deactivate.mutateAsync({ id: m.id, churchId: churchId! })
+  async function handleConfirmDelete() {
+    if (!deletingMinistry || !churchId) return
+    await deleteMinistry.mutateAsync({ id: deletingMinistry.id, churchId })
+    setDeletingMinistry(null)
   }
 
   return (
@@ -245,7 +247,7 @@ export default function Ministerios() {
               key={ministry.id}
               ministry={ministry}
               onEdit={handleEdit}
-              onDeactivate={handleDeactivate}
+              onDelete={setDeletingMinistry}
             />
           ))}
         </div>
@@ -259,6 +261,35 @@ export default function Ministerios() {
           churchId={churchId}
           editing={editing}
         />
+      )}
+
+      {/* Delete confirmation modal */}
+      {deletingMinistry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingMinistry(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-semibold text-ekthos-black mb-1">Excluir ministério?</h3>
+            <p className="text-sm text-gray-500 mb-1">
+              Você está prestes a excluir <span className="font-semibold text-ekthos-black">{deletingMinistry.name}</span>.
+            </p>
+            <p className="text-xs text-red-500 mb-4">Esta ação é irreversível e removerá o ministério permanentemente.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeletingMinistry(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-cream"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void handleConfirmDelete()}
+                disabled={deleteMinistry.isPending}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-50"
+              >
+                {deleteMinistry.isPending ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

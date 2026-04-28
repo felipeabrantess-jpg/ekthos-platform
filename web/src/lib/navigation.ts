@@ -14,6 +14,8 @@ import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard,
   Users,
+  Users2,
+  Heart,
   GitBranch,
   Network,
   Building2,
@@ -49,6 +51,8 @@ export interface ModuleAddon {
 export const IGREJA_NAV: NavItem[] = [
   { path: '/dashboard',   label: 'Painel',      Icon: LayoutDashboard, moduleKey: null          },
   { path: '/pessoas',     label: 'Pessoas',     Icon: Users,           moduleKey: 'pessoas'     },
+  { path: '/lideres',     label: 'Líderes',     Icon: Users2,          moduleKey: 'pessoas'     },
+  { path: '/consolidacao', label: 'Consolidação', Icon: Heart,          moduleKey: 'pipeline'    },
   { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,       moduleKey: 'pipeline'    },
   { path: '/celulas',     label: 'Células',     Icon: Network,         moduleKey: 'celulas'     },
   { path: '/ministerios', label: 'Ministérios', Icon: Building2,       moduleKey: 'ministerios' },

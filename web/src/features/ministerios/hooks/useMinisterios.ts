@@ -166,6 +166,25 @@ export function useUpdateMinistry() {
   })
 }
 
+export function useDeleteMinistry() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
+      const { error } = await supabase
+        .from('ministries')
+        .delete()
+        .eq('id', id)
+        .eq('church_id', churchId)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { churchId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
+    },
+  })
+}
+
 export function useDeactivateMinistry() {
   const queryClient = useQueryClient()
 

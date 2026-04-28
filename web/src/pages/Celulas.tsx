@@ -8,18 +8,20 @@
  */
 
 import { useState } from 'react'
-import { X, BarChart2 } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   useGroups,
   useCreateGroup,
   useUpdateGroup,
+  useDeleteGroup,
   useCellMembers,
   useAddCellMember,
   useRemoveCellMember,
   useCellMeetings,
   useCreateCellMeeting,
 } from '@/features/celulas/hooks/useGroups'
+import CellReports from '@/components/cells/CellReports'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
@@ -268,9 +270,10 @@ interface GroupCardProps {
   group: Group
   onEdit: (g: Group) => void
   onView: (g: Group) => void
+  onDelete: (g: Group) => void
 }
 
-function GroupCard({ group, onEdit, onView }: GroupCardProps) {
+function GroupCard({ group, onEdit, onView, onDelete }: GroupCardProps) {
   const statusColor = group.status === 'active' ? 'green' : 'gray'
   const statusLabel = group.status === 'active' ? 'Ativa' : 'Inativa'
 
@@ -309,13 +312,14 @@ function GroupCard({ group, onEdit, onView }: GroupCardProps) {
       <div className="flex gap-2 pt-1 border-t border-cream-dark/40">
         <button onClick={() => onView(group)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">Ver detalhes</button>
         <button onClick={() => onEdit(group)} className="text-xs text-ekthos-black/50 hover:text-ekthos-black/80 font-medium">Editar</button>
+        <button onClick={() => onDelete(group)} className="ml-auto text-xs text-red-400 hover:text-red-600 font-medium">Excluir</button>
       </div>
     </div>
   )
 }
 
 // ── Tab: Lista compacta ──────────────────────────────────────────────
-function ListaTab({ groups, onEdit, onView }: { groups: Group[]; onEdit: (g: Group) => void; onView: (g: Group) => void }) {
+function ListaTab({ groups, onEdit, onView, onDelete }: { groups: Group[]; onEdit: (g: Group) => void; onView: (g: Group) => void; onDelete: (g: Group) => void }) {
   if (groups.length === 0) {
     return <EmptyState title="Nenhuma célula cadastrada" description="Crie a primeira célula pelo botão 'Nova Célula'." />
   }
@@ -345,8 +349,9 @@ function ListaTab({ groups, onEdit, onView }: { groups: Group[]; onEdit: (g: Gro
               <td className="px-4 py-3">
                 <Badge label={g.status === 'active' ? 'Ativa' : 'Inativa'} variant={g.status === 'active' ? 'green' : 'gray'} />
               </td>
-              <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+              <td className="px-4 py-3 flex gap-3" onClick={e => e.stopPropagation()}>
                 <button onClick={() => onEdit(g)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">Editar</button>
+                <button onClick={() => onDelete(g)} className="text-xs text-red-400 hover:text-red-600 font-medium">Excluir</button>
               </td>
             </tr>
           ))}
@@ -356,18 +361,37 @@ function ListaTab({ groups, onEdit, onView }: { groups: Group[]; onEdit: (g: Gro
   )
 }
 
-// ── Tab: Relatórios (placeholder) ────────────────────────────────────
-function RelatoriosTab() {
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-12 h-12 rounded-2xl bg-cream-dark/60 flex items-center justify-center mb-4">
-        <BarChart2 size={22} className="text-ekthos-black/30" strokeWidth={1.5} />
+// ── Tab: Relatórios — seleção de célula + relatórios reais ─────────
+function RelatoriosTab({ groups }: { groups: Group[] }) {
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    groups.length > 0 ? groups[0].id : null
+  )
+
+  if (groups.length === 0) {
+    return (
+      <div className="text-center py-16 text-ekthos-black/40">
+        <p className="text-sm">Cadastre células para acessar os relatórios.</p>
       </div>
-      <h2 className="font-display text-lg font-semibold text-ekthos-black/60 mb-1">Relatórios em breve</h2>
-      <p className="text-sm text-ekthos-black/40 max-w-xs">
-        Relatórios de presença, crescimento e desempenho das células estarão disponíveis na Fase 3.
-      </p>
-      {/* TODO Fase 3: implementar relatórios de célula — frequência, crescimento, reuniões */}
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Seletor de célula */}
+      <div className="flex gap-2 items-center flex-wrap">
+        <span className="text-sm text-ekthos-black/50 shrink-0">Célula:</span>
+        <select
+          value={selectedGroupId ?? ''}
+          onChange={e => setSelectedGroupId(e.target.value)}
+          className="flex-1 min-w-0 max-w-xs rounded-xl border border-black/10 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+        >
+          {groups.map(g => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {selectedGroupId && <CellReports groupId={selectedGroupId} />}
     </div>
   )
 }
@@ -381,13 +405,21 @@ export default function Celulas() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing]     = useState<Group | null>(null)
   const [viewing, setViewing]     = useState<Group | null>(null)
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null)
 
   const { data: groups, isLoading, isError, refetch } = useGroups(churchId ?? '')
+  const deleteGroup = useDeleteGroup()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
   function handleEdit(g: Group) { setEditing(g); setModalOpen(true) }
   function handleNew()          { setEditing(null); setModalOpen(true) }
+
+  async function handleConfirmDelete() {
+    if (!deletingGroup || !churchId) return
+    await deleteGroup.mutateAsync({ id: deletingGroup.id, church_id: churchId })
+    setDeletingGroup(null)
+  }
 
   const activeGroups   = (groups ?? []).filter(g => g.status === 'active')
   const inactiveGroups = (groups ?? []).filter(g => g.status !== 'active')
@@ -431,9 +463,9 @@ export default function Celulas() {
       ) : isError ? (
         <ErrorState message="Não foi possível carregar as células." onRetry={() => void refetch()} />
       ) : activeTab === 'relatorios' ? (
-        <RelatoriosTab />
+        <RelatoriosTab groups={allGroups.filter(g => g.status === 'active')} />
       ) : activeTab === 'lista' ? (
-        <ListaTab groups={allGroups} onEdit={handleEdit} onView={setViewing} />
+        <ListaTab groups={allGroups} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />
       ) : (
         // Visão geral — cards com agrupamento
         allGroups.length === 0 ? (
@@ -448,7 +480,7 @@ export default function Celulas() {
               <div>
                 <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Ativas</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} />)}
+                  {activeGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
                 </div>
               </div>
             )}
@@ -456,7 +488,7 @@ export default function Celulas() {
               <div>
                 <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Inativas</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {inactiveGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} />)}
+                  {inactiveGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
                 </div>
               </div>
             )}
@@ -474,6 +506,35 @@ export default function Celulas() {
       )}
       {viewing && (
         <CellDetailPanel group={viewing} churchId={churchId} onClose={() => setViewing(null)} />
+      )}
+
+      {/* Delete confirmation modal */}
+      {deletingGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingGroup(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+            <h3 className="font-semibold text-ekthos-black mb-1">Excluir célula?</h3>
+            <p className="text-sm text-gray-500 mb-1">
+              Você está prestes a excluir <span className="font-semibold text-ekthos-black">{deletingGroup.name}</span>.
+            </p>
+            <p className="text-xs text-red-500 mb-4">Esta ação é irreversível. Membros e reuniões vinculados serão desvinculados.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeletingGroup(null)}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-cream"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void handleConfirmDelete()}
+                disabled={deleteGroup.isPending}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 disabled:opacity-50"
+              >
+                {deleteGroup.isPending ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
