@@ -14,7 +14,7 @@ import { Pencil, Trash2, Gift, QrCode } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
-import { QrVisitor } from '@/pages/configuracoes/QrVisitor'
+import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -26,15 +26,14 @@ import type { Person, PersonWithStage } from '@/lib/types/joins'
 
 type BadgeVariant = 'blue' | 'green' | 'yellow' | 'gray' | 'red' | 'purple'
 
-type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'lideres' | 'em-risco' | 'qr-visitante'
+type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'lideres' | 'em-risco'
 
 const TABS: { id: PeopleTab; label: string }[] = [
-  { id: 'geral',          label: 'Visão geral'      },
-  { id: 'aniversarios',   label: 'Aniversários'     },
-  { id: 'novos',          label: 'Novos Convertidos' },
-  { id: 'lideres',        label: 'Líderes'          },
-  { id: 'em-risco',       label: 'Em Risco'         },
-  { id: 'qr-visitante',   label: 'QR Visitante'     },
+  { id: 'geral',         label: 'Visão geral'      },
+  { id: 'aniversarios',  label: 'Aniversários'     },
+  { id: 'novos',         label: 'Novos Convertidos' },
+  { id: 'lideres',       label: 'Líderes'          },
+  { id: 'em-risco',      label: 'Em Risco'         },
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -228,6 +227,7 @@ export default function People() {
   const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
   const [search, setSearch]         = useState('')
   const [modalOpen, setModalOpen]   = useState(false)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
   const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
   const [deletingId, setDeletingId]         = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
@@ -255,7 +255,7 @@ export default function People() {
   const filteredPeople = applyTabFilter(activeTab, allPeople)
 
   // Mensagens de estado vazio por aba
-  const emptyMessages: Record<Exclude<PeopleTab, 'qr-visitante'>, { title: string; description: string }> = {
+  const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
     geral:        { title: 'Nenhuma pessoa cadastrada', description: 'Adicione a primeira pessoa clicando em "Nova Pessoa".' },
     aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
     novos:        { title: 'Nenhum novo convertido', description: 'Pessoas nos stages Visitante ou Interesse em Grupo aparecerão aqui.' },
@@ -265,7 +265,7 @@ export default function People() {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
-      {/* Header — botão "Nova" só visível em desktop */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Pessoas</h1>
@@ -273,8 +273,18 @@ export default function People() {
             {people ? `${allPeople.length} cadastradas` : 'Carregando...'}
           </p>
         </div>
-        {/* Desktop CTA */}
-        <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
+        <div className="flex items-center gap-2">
+          {/* QR de Entrada */}
+          <button
+            onClick={() => setQrModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-colors"
+          >
+            <QrCode size={15} strokeWidth={1.75} />
+            <span className="hidden sm:inline">QR de Entrada</span>
+          </button>
+          {/* Nova Pessoa — só desktop */}
+          <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
+        </div>
       </div>
 
       {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
@@ -290,9 +300,8 @@ export default function People() {
             }`}
           >
             {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
-            {tab.id === 'qr-visitante' && <QrCode size={13} strokeWidth={2} />}
             {tab.label}
-            {people && tab.id !== 'geral' && tab.id !== 'qr-visitante' && (
+            {people && tab.id !== 'geral' && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
                 activeTab === tab.id
                   ? 'bg-brand-100 text-brand-700'
@@ -304,9 +313,6 @@ export default function People() {
           </button>
         ))}
       </div>
-
-      {/* ── QR Visitante ─────────────────────────────────────── */}
-      {activeTab === 'qr-visitante' && <QrVisitor />}
 
       {/* Busca full-width em mobile */}
       {activeTab === 'geral' && (
@@ -321,7 +327,7 @@ export default function People() {
       )}
 
       {/* ── Loading / Error / Empty / Lista ─────────────────────── */}
-      {activeTab !== 'qr-visitante' && (isLoading ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Spinner size="lg" />
         </div>
@@ -330,8 +336,8 @@ export default function People() {
       ) : filteredPeople.length === 0 ? (
         <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
           <EmptyState
-            title={search ? 'Nenhuma pessoa encontrada' : emptyMessages[activeTab as Exclude<PeopleTab, 'qr-visitante'>].title}
-            description={search ? 'Tente buscar por outro nome ou telefone.' : emptyMessages[activeTab as Exclude<PeopleTab, 'qr-visitante'>].description}
+            title={search ? 'Nenhuma pessoa encontrada' : emptyMessages[activeTab].title}
+            description={search ? 'Tente buscar por outro nome ou telefone.' : emptyMessages[activeTab].description}
             action={activeTab === 'geral' && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
           />
         </div>
@@ -378,7 +384,7 @@ export default function People() {
             </div>
           </div>
         </>
-      ))}
+      )}
 
       {/* ── FAB mobile: adicionar pessoa ─────────────────────── */}
       <button
@@ -403,6 +409,13 @@ export default function People() {
         person={selectedPerson}
         onClose={() => setSelectedPerson(null)}
         onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
+      />
+
+      {/* QR Code Modal */}
+      <QrCodeModal
+        open={qrModalOpen}
+        onOpenChange={setQrModalOpen}
+        churchId={churchId}
       />
     </div>
   )
