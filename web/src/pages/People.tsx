@@ -10,10 +10,11 @@
  */
 
 import { useState } from 'react'
-import { Pencil, Trash2, Gift } from 'lucide-react'
+import { Pencil, Trash2, Gift, QrCode } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
+import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -226,6 +227,7 @@ export default function People() {
   const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
   const [search, setSearch]         = useState('')
   const [modalOpen, setModalOpen]   = useState(false)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
   const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
   const [deletingId, setDeletingId]         = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
@@ -263,7 +265,7 @@ export default function People() {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
-      {/* Header — botão "Nova" só visível em desktop */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Pessoas</h1>
@@ -271,8 +273,18 @@ export default function People() {
             {people ? `${allPeople.length} cadastradas` : 'Carregando...'}
           </p>
         </div>
-        {/* Desktop CTA */}
-        <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
+        <div className="flex items-center gap-2">
+          {/* QR de Entrada */}
+          <button
+            onClick={() => setQrModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-colors"
+          >
+            <QrCode size={15} strokeWidth={1.75} />
+            <span className="hidden sm:inline">QR de Entrada</span>
+          </button>
+          {/* Nova Pessoa — só desktop */}
+          <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
+        </div>
       </div>
 
       {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
@@ -314,7 +326,7 @@ export default function People() {
         </div>
       )}
 
-      {/* ── Loading / Error / Empty ───────────────────────────── */}
+      {/* ── Loading / Error / Empty / Lista ─────────────────────── */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
           <Spinner size="lg" />
@@ -397,6 +409,13 @@ export default function People() {
         person={selectedPerson}
         onClose={() => setSelectedPerson(null)}
         onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
+      />
+
+      {/* QR Code Modal */}
+      <QrCodeModal
+        open={qrModalOpen}
+        onOpenChange={setQrModalOpen}
+        churchId={churchId}
       />
     </div>
   )

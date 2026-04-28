@@ -82,7 +82,6 @@ const DiscipleshipSettingsPage = lazy(() =>
 const QrVisitorPage = lazy(() =>
   import('@/pages/configuracoes/QrVisitor').then(m => ({ default: m.QrVisitor }))
 )
-
 // Settings legados — mantidos para backward compat
 const SettingsLayoutPage = lazy(() =>
   import('@/pages/settings/Layout').then(m => ({ default: m.SettingsLayout }))
