@@ -145,6 +145,72 @@ Configurado em .claude/settings.json — executa automaticamente.
 - .claude/hooks/pre-bash.js — pré-commit (Layers 1,2,4,5,7)
 - .claude/hooks/post-write.js — pós-escrita (Layers 3,6)
 
+## [HIGIENE DE CONTEXTO]
+
+Regras para manter o contexto limpo e evitar acúmulo de lixo técnico.
+
+### Ao iniciar sessão
+- Sempre ler `docs/04-pendencias.md` antes de implementar qualquer feature nova
+- Verificar `git status` antes de qualquer ação para entender o estado atual
+- Se houver stash pendente, inspecionar com `git stash show "stash@{0}" -p` antes de dropar
+
+### Ao encerrar sessão
+- Atualizar `docs/10-log-sessoes.md` com resumo da sessão (o que foi feito, decisões, pendências)
+- Atualizar `docs/04-pendencias.md` se novos itens foram descobertos ou resolvidos
+- Confirmar build limpo: `npm run build` sem erros de tsc
+- Commitar tudo o que está pronto antes de encerrar
+
+### Arquivos de documentação obrigatórios pós-feature
+- Qualquer feature de médio/grande porte → registrar em `docs/03-feito-decisoes.md`
+- Qualquer decisão arquitetural permanente → registrar em `docs/00-formacoes.md`
+- Qualquer armadilha nova descoberta → adicionar em `## ARMADILHAS CONHECIDAS` no CLAUDE.md raiz
+
+---
+
+## [SUPERPOWERS SKILLS]
+
+Skills instaladas via `claude plugin install superpowers`. Usar proativamente.
+
+| Skill | Comando | Quando usar |
+|---|---|---|
+| Brainstorming | `/brainstorming` | Frentes B e E, planejamento de features complexas |
+| Systematic Debugging | `/systematic-debugging` | Bugs que resistem à primeira abordagem |
+| Subagent Driven Dev | `/subagent-driven-development` | Tasks paralelizáveis (múltiplos arquivos simultâneos) |
+| Verification Before Completion | `/verification-before-completion` | Antes de marcar qualquer task como concluída |
+| Writing Plans | `/writing-plans` | Planejamento de implementações multi-etapa |
+| Frontend Design | auto-trigger | Qualquer mudança de UI/UX — design system, Tailwind, componentes |
+
+### Regras de uso
+- **`/verification-before-completion`** deve ser rodado antes de qualquer commit em feature nova
+- **`frontend-design`** é auto-trigger — não precisa chamar manualmente
+- Para tasks de TypeScript debt ou migrations, preferir `/systematic-debugging`
+
+---
+
+## [MEDIÇÃO DE CUSTO]
+
+Ferramenta instalada: `ccusage` (v18+). Monitora uso de tokens Claude Code.
+
+### Comandos principais
+```bash
+ccusage daily              # custo por dia (últimos 7 dias)
+ccusage daily --breakdown  # custo por dia + modelo utilizado
+ccusage blocks --live      # monitoramento em tempo real (atualiza a cada 5s)
+ccusage session            # custo da sessão atual
+```
+
+### Thresholds de alerta
+- Sessão simples (bug fix, docs): < $0.50 esperado
+- Sessão média (feature completa): $0.50–$2.00 esperado
+- Sessão pesada (múltiplos agentes, migrations + frontend): $2.00–$5.00 esperado
+- Acima de $5.00 por sessão: revisar se subagentes estão sendo usados eficientemente
+
+### Quando rodar
+- `ccusage daily` ao início de cada sessão de trabalho (baseline do dia)
+- `ccusage blocks --live` em background durante sessões longas com múltiplos agentes
+
+---
+
 ## [IDENTIFICADORES DE PROJETO]
 
 - **Supabase project ref:** `mlqjywqnchilvgkbvicd`

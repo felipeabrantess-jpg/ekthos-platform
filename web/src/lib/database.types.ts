@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -4169,6 +4169,51 @@ export type Database = {
           },
         ]
       }
+      qr_codes: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          scanned_count: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          scanned_count?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          scanned_count?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
           description: string | null
@@ -4747,6 +4792,54 @@ export type Database = {
           },
         ]
       }
+      visitor_capture_rate_limits: {
+        Row: {
+          block_reason: string | null
+          church_id: string | null
+          id: string
+          ip: string
+          phone: string | null
+          submitted_at: string
+          user_agent: string | null
+          was_blocked: boolean
+        }
+        Insert: {
+          block_reason?: string | null
+          church_id?: string | null
+          id?: string
+          ip: string
+          phone?: string | null
+          submitted_at?: string
+          user_agent?: string | null
+          was_blocked?: boolean
+        }
+        Update: {
+          block_reason?: string | null
+          church_id?: string | null
+          id?: string
+          ip?: string
+          phone?: string | null
+          submitted_at?: string
+          user_agent?: string | null
+          was_blocked?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visitor_capture_rate_limits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_capture_rate_limits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       volunteers: {
         Row: {
           availability: Json
@@ -4861,6 +4954,10 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      capture_visitor_to_pipeline: {
+        Args: { p_church_id: string; p_person_id: string }
+        Returns: string
+      }
       church_has_access: { Args: { p_church_id: string }; Returns: boolean }
       create_default_pipeline_stages: {
         Args: { p_church_id: string }
@@ -4886,6 +4983,10 @@ export type Database = {
           p_subscription_id?: string
         }
         Returns: string
+      }
+      increment_qr_scanned_count: {
+        Args: { p_church_id: string }
+        Returns: undefined
       }
       is_ekthos_admin: { Args: never; Returns: boolean }
       process_invoice_payment_failed: {
