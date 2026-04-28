@@ -6,8 +6,19 @@
 // Botão "Editar" delega para o PersonModal existente.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { X, Pencil, Phone, Mail, Link, MapPin, Calendar, Church } from 'lucide-react'
+import { useState } from 'react'
+import { X, Pencil, Phone, Mail, Link, MapPin, Calendar, Church, HandHeart, Plus, Trash2 } from 'lucide-react'
 import type { PersonWithStage } from '@/lib/types/joins'
+import { useAuth } from '@/hooks/useAuth'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import {
+  usePersonVolunteers,
+  useSetPersonVolunteer,
+  useRemovePersonFromMinistry,
+  useCreateVolunteer,
+  type PersonVolunteer,
+} from '@/features/voluntarios/hooks/useVoluntarios'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -115,6 +126,251 @@ function PresenceBadge({ lastAt }: { lastAt: string | null | undefined }) {
   )
 }
 
+// ── Voluntariado section ──────────────────────────────────────────────────────
+
+const ROLE_LABELS: Record<string, string> = {
+  volunteer:  'Voluntário',
+  leader:     'Líder',
+  'co-leader': 'Co-líder',
+}
+
+interface AddMinistryModalProps {
+  personId: string
+  churchId: string
+  onClose: () => void
+}
+
+function AddMinistryModal({ personId, churchId, onClose }: AddMinistryModalProps) {
+  const create = useCreateVolunteer()
+  const [ministryId, setMinistryId] = useState('')
+  const [role, setRole] = useState('volunteer')
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: ministries = [] } = useQuery({
+    queryKey: ['ministries_list', churchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ministries')
+        .select('id, name')
+        .eq('church_id', churchId)
+        .eq('is_active', true)
+        .order('name')
+      return data ?? []
+    },
+  })
+
+  async function handleAdd() {
+    if (!ministryId) return
+    setError(null)
+    try {
+      await create.mutateAsync({ church_id: churchId, person_id: personId, ministry_id: ministryId, role })
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao adicionar')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-ekthos-black">Adicionar ao ministério</h3>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-cream transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-ekthos-black mb-1.5">Ministério *</label>
+            <select
+              value={ministryId}
+              onChange={e => setMinistryId(e.target.value)}
+              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+            >
+              <option value="">Selecionar...</option>
+              {ministries.map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-ekthos-black mb-1.5">Função</label>
+            <select
+              value={role}
+              onChange={e => setRole(e.target.value)}
+              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+            >
+              <option value="volunteer">Voluntário</option>
+              <option value="leader">Líder</option>
+              <option value="co-leader">Co-líder</option>
+            </select>
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500">{error}</p>}
+
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-xl border border-black/10 text-sm font-medium text-gray-600 hover:bg-cream transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => { void handleAdd() }}
+            disabled={!ministryId || create.isPending}
+            className="flex-1 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          >
+            {create.isPending ? 'Adicionando...' : 'Adicionar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface VoluntariadoSectionProps {
+  personId: string
+  churchId: string
+  isVolunteer: boolean
+}
+
+function VoluntariadoSection({ personId, churchId, isVolunteer }: VoluntariadoSectionProps) {
+  const [addOpen, setAddOpen] = useState(false)
+  const [confirmRemoveAll, setConfirmRemoveAll] = useState(false)
+  const setVolunteer = useSetPersonVolunteer()
+  const removeFromMinistry = useRemovePersonFromMinistry()
+
+  const { data: volunteers = [], isLoading } = usePersonVolunteers(personId, churchId)
+
+  async function handleToggle(checked: boolean) {
+    if (!checked && volunteers.length > 0) {
+      setConfirmRemoveAll(true)
+      return
+    }
+    await setVolunteer.mutateAsync({ personId, churchId, isVolunteer: checked })
+  }
+
+  async function handleRemoveAll() {
+    // Deactivate all ministries
+    for (const v of volunteers) {
+      await removeFromMinistry.mutateAsync({ volunteerId: v.id, churchId })
+    }
+    await setVolunteer.mutateAsync({ personId, churchId, isVolunteer: false })
+    setConfirmRemoveAll(false)
+  }
+
+  async function handleRemoveOne(v: PersonVolunteer) {
+    await removeFromMinistry.mutateAsync({ volunteerId: v.id, churchId })
+  }
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl border border-cream-dark/50 overflow-hidden">
+        <div className="px-5 py-3 border-b border-cream-dark/40 bg-cream-dark/20 flex items-center gap-2">
+          <HandHeart size={14} className="text-brand-600" />
+          <h3 className="font-display text-sm font-semibold text-ekthos-black">Voluntariado</h3>
+        </div>
+
+        <div className="px-5 py-3 space-y-3">
+          {/* Toggle */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-ekthos-black/60">É voluntário(a) na igreja</span>
+            <button
+              onClick={() => { void handleToggle(!isVolunteer) }}
+              disabled={setVolunteer.isPending}
+              className={`relative w-10 h-5 rounded-full transition-colors ${
+                isVolunteer ? 'bg-brand-600' : 'bg-gray-200'
+              }`}
+            >
+              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                isVolunteer ? 'translate-x-5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
+
+          {/* Ministry list */}
+          {isLoading ? (
+            <p className="text-xs text-gray-400">Carregando...</p>
+          ) : volunteers.length === 0 ? (
+            <p className="text-xs text-ekthos-black/30 italic">Nenhum ministério vinculado</p>
+          ) : (
+            <div className="space-y-1.5">
+              {volunteers.map(v => (
+                <div key={v.id} className="flex items-center justify-between gap-2 bg-cream rounded-xl px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-brand-600 shrink-0" />
+                    <span className="text-xs font-medium text-ekthos-black truncate">
+                      {v.ministries?.name ?? '—'}
+                    </span>
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {ROLE_LABELS[v.role ?? 'volunteer'] ?? v.role}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => { void handleRemoveOne(v) }}
+                    disabled={removeFromMinistry.isPending}
+                    className="p-1 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add button */}
+          <button
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+          >
+            <Plus size={12} />
+            Adicionar ministério
+          </button>
+        </div>
+      </div>
+
+      {/* Confirm remove all */}
+      {confirmRemoveAll && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmRemoveAll(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm space-y-4">
+            <h3 className="font-semibold text-ekthos-black">Remover de todos os ministérios?</h3>
+            <p className="text-sm text-gray-500">
+              Esta pessoa será removida de {volunteers.length} ministério(s) e deixará de ser voluntária.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmRemoveAll(false)}
+                className="flex-1 px-4 py-2 rounded-xl border border-black/10 text-sm font-medium text-gray-600 hover:bg-cream"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { void handleRemoveAll() }}
+                className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {addOpen && (
+        <AddMinistryModal
+          personId={personId}
+          churchId={churchId}
+          onClose={() => setAddOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface PersonDetailPanelProps {
@@ -124,6 +380,8 @@ interface PersonDetailPanelProps {
 }
 
 export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDetailPanelProps) {
+  const { churchId } = useAuth()
+
   if (!person) return null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -416,6 +674,15 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
               </div>
             )}
           </InfoCard>
+
+          {/* 8. Voluntariado */}
+          {churchId && (
+            <VoluntariadoSection
+              personId={person.id}
+              churchId={churchId}
+              isVolunteer={!!(p.is_volunteer)}
+            />
+          )}
 
           {/* Espaço no fundo */}
           <div className="h-4" />
