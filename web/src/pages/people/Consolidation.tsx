@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Heart, AlertTriangle, Search, Clock } from 'lucide-react'
+import { Heart, AlertTriangle, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
@@ -11,7 +11,7 @@ interface ConsolidationPerson {
   name: string
   email: string | null
   phone: string | null
-  photo_url: string | null
+  avatar_url: string | null
   conversion_date: string | null
   first_visit_date: string | null
   stage_name: string | null
@@ -94,7 +94,7 @@ export default function Consolidation() {
 
       const query = supabase
         .from('people')
-        .select('id, name, email, phone, photo_url, conversion_date, first_visit_date, person_stage')
+        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage')
         .eq('church_id', churchId!)
         .gte('conversion_date', ninetyDaysAgo.toISOString().split('T')[0])
 

@@ -236,7 +236,7 @@ export default function Dashboard() {
         .from('people')
         .select('id', { count: 'exact', head: true })
         .eq('church_id', churchId!)
-        .eq('is_active', true)
+        .is('deleted_at', null)
         .gte('conversion_date', thirtyDaysAgo.toISOString().split('T')[0])
       return count ?? 0
     },

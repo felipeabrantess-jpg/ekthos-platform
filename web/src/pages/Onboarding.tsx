@@ -552,7 +552,7 @@ export default function Onboarding() {
   const [streamingContent,  setStreamingContent]  = useState<string | null>(null)
   const [userInitial,       setUserInitial]       = useState('')
   const [currentWidget,     setCurrentWidget]     = useState<InputWidget | null>(null)
-  const [currentQuestionId, setCurrentQuestionId] = useState<string | null>(null)
+  const [, setCurrentQuestionId] = useState<string | null>(null)
 
   // Estado intermediário de confirmação de cores do logo
   const [logoConfirm,      setLogoConfirm]      = useState<LogoConfirmState | null>(null)

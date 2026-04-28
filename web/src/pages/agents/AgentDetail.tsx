@@ -69,7 +69,7 @@ interface CTAProps {
   planSlug: string
 }
 
-function AgentCTA({ state, slug, moduleId, planSlug }: CTAProps) {
+function AgentCTA({ state, slug, moduleId }: CTAProps) {
   const { adicionarAoPlano, falarComConsultor, loadingAddon, loadingConsultor } = useAddonActions()
   const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null)
 

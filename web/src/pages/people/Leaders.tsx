@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Users2, Building2, Network, Search } from 'lucide-react'
+import { Users2, Building2, Network } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
@@ -11,7 +11,7 @@ interface Leader {
   name: string
   email: string | null
   phone: string | null
-  photo_url: string | null
+  avatar_url: string | null
   roles: { type: 'celula' | 'coleider' | 'ministerio'; name: string }[]
 }
 
@@ -44,7 +44,7 @@ function RoleBadge({ type, name }: { type: 'celula' | 'coleider' | 'ministerio';
 function LeaderCard({ leader }: { leader: Leader }) {
   return (
     <div className="bg-white rounded-2xl border border-black/10 p-4 flex gap-3">
-      <LeaderAvatar name={leader.name} photoUrl={leader.photo_url} />
+      <LeaderAvatar name={leader.name} photoUrl={leader.avatar_url} />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-ekthos-black text-sm truncate">{leader.name}</p>
         {leader.email && (
@@ -119,7 +119,7 @@ export default function Leaders() {
 
       const { data: people } = await supabase
         .from('people')
-        .select('id, name, email, phone, photo_url')
+        .select('id, name, email, phone, avatar_url')
         .in('id', Array.from(personIds))
 
       if (!people) return []

@@ -69,7 +69,8 @@ export function Dados() {
     mutationFn: async (data: ChurchDados) => {
       const { error } = await supabase
         .from('churches')
-        .update(data)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(data as any)
         .eq('id', churchId!)
       if (error) throw error
     },

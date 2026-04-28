@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Check, ChevronDown, Menu, X, Star, Zap, Crown,
-  Users, BarChart2, CalendarRange,
+  Users, BarChart2,
   Bot, MessageCircle, Bell, Shield, TrendingUp,
   UserPlus, ShieldCheck, Smartphone,
 } from 'lucide-react'
@@ -901,7 +901,7 @@ export default function Landing() {
                 ['Relatórios automáticos',               false, true,  true],
                 ['Aplicativo próprio da igreja',         false, false, true],
                 ['Suporte em português',                 false, false, true],
-              ].map(([label, col1, col2, col3], i) => (
+              ].map(([label, col1, col2, col3]) => (
                 <tr key={String(label)} style={{ borderTop: '1px solid #f0f0f0' }}>
                   <td className="p-4 text-[#161616]">{label}</td>
                   <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
