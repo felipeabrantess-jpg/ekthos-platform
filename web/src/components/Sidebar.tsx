@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutGrid, Bot, Package, Settings, LogOut,
   CheckCircle2, Lock, ChevronRight, Sparkles,
@@ -419,7 +419,14 @@ function ConfigSubPanel() {
 
 // ── Componente principal ─────────────────────────────────────────────────────
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Mobile only: controla se o drawer está aberto */
+  isMobileOpen?: boolean
+  /** Mobile only: callback para fechar o drawer */
+  onMobileClose?: () => void
+}
+
+export default function Sidebar({ isMobileOpen = false, onMobileClose }: SidebarProps) {
   const { user, role } = useAuth()
   const logout = useLogout()
   const location = useLocation()
@@ -434,7 +441,7 @@ export default function Sidebar() {
     return stored ?? inferCategory(location.pathname)
   })
 
-  // Sincroniza categoria com URL ao navegar
+  // Sincroniza categoria com URL ao navegar (e fecha drawer mobile)
   useEffect(() => {
     const inferred = inferCategory(location.pathname)
     setActiveCategory(inferred)
@@ -444,6 +451,11 @@ export default function Sidebar() {
   function handleSelectCategory(cat: Category) {
     setActiveCategory(cat)
     localStorage.setItem(STORAGE_KEY, cat)
+  }
+
+  function handleLogout() {
+    onMobileClose?.()
+    logout()
   }
 
   const displayName =
@@ -460,8 +472,9 @@ export default function Sidebar() {
     config:  'Configurações',
   }
 
-  return (
-    <aside className="flex h-screen sticky top-0 shrink-0">
+  // Sidebar content (shared between desktop and mobile drawer)
+  const sidebarContent = (
+    <>
       {/* ── Coluna 1: Rail 64px ─────────────────────────────── */}
       <SidebarRail
         active={activeCategory}
@@ -469,7 +482,7 @@ export default function Sidebar() {
         churchLogoUrl={church?.logo_url ?? undefined}
         churchName={church?.name ?? undefined}
         userInitial={userInitial}
-        onLogout={logout}
+        onLogout={handleLogout}
       />
 
       {/* ── Coluna 2: Sub-painel 240px ──────────────────────── */}
@@ -538,6 +551,36 @@ export default function Sidebar() {
           )}
         </div>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* ── Desktop (md+): sidebar inline sempre visível ──────── */}
+      <aside className="hidden md:flex h-screen sticky top-0 shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* ── Mobile (<md): drawer overlay ─────────────────────── */}
+      {isMobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/50"
+            onClick={onMobileClose}
+            aria-hidden="true"
+          />
+          {/* Drawer */}
+          <aside
+            className="md:hidden fixed left-0 top-0 bottom-0 z-50 flex"
+            style={{ width: 304 }}
+          >
+            {sidebarContent}
+          </aside>
+        </>
+      )}
+    </>
   )
 }
+
+

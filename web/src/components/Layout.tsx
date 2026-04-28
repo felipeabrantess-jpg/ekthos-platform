@@ -1,7 +1,8 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
+import MobileHeader from './MobileHeader'
 import { useChurch } from '@/hooks/useChurch'
 
 interface ImpersonatingState {
@@ -35,8 +36,15 @@ function ImpersonateBanner({ state, onExit }: {
 
 export default function Layout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [impersonating, setImpersonating] = useState<ImpersonatingState | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: church } = useChurch()
+
+  // Fecha drawer ao navegar
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
 
   // Inject church CSS variables globally so all components can use them
   useEffect(() => {
@@ -69,13 +77,19 @@ export default function Layout() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
+      {/* Mobile-only top header */}
+      <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
       {impersonating && (
         <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
       )}
+
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto" style={{ background: '#f9eedc' }}>
-          <div className="max-w-7xl mx-auto px-6 py-8 page-content">
+        <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
+
+        {/* Main content — pt-14 in mobile to clear fixed MobileHeader */}
+        <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
             <Outlet />
           </div>
         </main>
