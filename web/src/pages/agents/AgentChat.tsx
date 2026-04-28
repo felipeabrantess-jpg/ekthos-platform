@@ -156,7 +156,7 @@ export default function AgentChat() {
     const targetId = sessionId ?? currentSession?.id
     if (!targetId) return
 
-    const updates: Record<string, string> = { last_message_at: new Date().toISOString() }
+    const updates: { last_message_at: string; title?: string } = { last_message_at: new Date().toISOString() }
 
     // Atualiza título se ainda está default e temos o texto da primeira mensagem
     if (firstMsg) {

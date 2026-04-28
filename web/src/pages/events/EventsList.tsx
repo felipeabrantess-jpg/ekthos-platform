@@ -147,10 +147,6 @@ export default function EventsList() {
     setDeletingEvent(null)
   }
 
-  const upcomingCount = events.filter(
-    e => new Date(e.start_datetime) >= new Date() || (e.recurrence_type && e.recurrence_type !== 'none')
-  ).length
-
   return (
     <div className="space-y-6">
       {/* Header */}

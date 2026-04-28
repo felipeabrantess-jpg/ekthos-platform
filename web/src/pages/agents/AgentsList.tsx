@@ -16,7 +16,6 @@ import { Link } from 'react-router-dom'
 import { Lock, Sparkles, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { usePlan } from '@/hooks/usePlan'
 import { AGENTS_CONTENT, type AgentContent } from '@/lib/agents-content'
-import { MODULE_ADDONS } from '@/lib/navigation'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

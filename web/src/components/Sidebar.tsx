@@ -23,7 +23,6 @@ import {
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
-import { AgentChatButton } from './AgentChatWidget'
 import { usePlan } from '@/hooks/usePlan'
 import { useChurch, DEFAULT_MODULES } from '@/hooks/useChurch'
 import { IGREJA_NAV } from '@/lib/navigation'
@@ -164,7 +163,7 @@ function IgrejaSubPanel({ role, enabledModules }: IgrejaSubProps) {
   const roleFilteredItems = IGREJA_NAV.filter(item => {
     if (!role) return false
     const allowed = ROUTE_PERMISSIONS[item.path]
-    return allowed?.includes(role) ?? true
+    return (allowed as string[] | undefined)?.includes(role) ?? true
   })
 
   const enabledItems  = roleFilteredItems.filter(i => !i.moduleKey || enabledModules[i.moduleKey] !== false)

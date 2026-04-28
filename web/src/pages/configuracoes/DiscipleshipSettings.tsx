@@ -373,7 +373,7 @@ export function DiscipleshipSettings() {
         .select('slug, name, description, stages')
         .order('slug')
       if (error) throw error
-      return (data ?? []) as Template[]
+      return (data ?? []) as unknown as Template[]
     },
   })
 
@@ -392,7 +392,7 @@ export function DiscipleshipSettings() {
   const applyTemplateMutation = useMutation({
     mutationFn: async (slug: string) => {
       const { error } = await supabase.rpc('apply_discipleship_template', {
-        p_church_id: churchId,
+        p_church_id: churchId!,
         p_template_slug: slug,
       })
       if (error) throw error
@@ -424,10 +424,8 @@ export function DiscipleshipSettings() {
       } else {
         const { error } = await supabase
           .from('pipeline_stages')
-          .insert({
-            church_id: churchId,
-            ...payload,
-          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert({ church_id: churchId, ...payload } as any)
         if (error) throw error
       }
     },

@@ -15,7 +15,6 @@ export default function PaymentPending() {
   const [loading, setLoading]     = useState(false)
   const [checking, setChecking]   = useState(false)
   const [planSlug, setPlanSlug]   = useState<string | null>(null)
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
   const [error, setError]         = useState<string | null>(null)
 
   // Busca plan_slug e checkout_url existente da subscription
