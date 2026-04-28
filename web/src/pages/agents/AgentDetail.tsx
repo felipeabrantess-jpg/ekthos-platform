@@ -87,14 +87,21 @@ function AgentCTA({ state, slug, moduleId, planSlug }: CTAProps) {
 
   if (state === 'active') {
     return (
-      <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl">
-        <CheckCircle2 size={20} className="text-green-500 shrink-0" strokeWidth={2} />
-        <div>
-          <p className="text-sm font-semibold text-green-800">Agente ativo</p>
-          <p className="text-xs text-green-600 mt-0.5">
-            Clique no agente na barra lateral para abrir o chat.
-          </p>
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl">
+          <CheckCircle2 size={20} className="text-green-500 shrink-0" strokeWidth={2} />
+          <div>
+            <p className="text-sm font-semibold text-green-800">Agente ativo</p>
+            <p className="text-xs text-green-600 mt-0.5">
+              Converse com este agente agora.
+            </p>
+          </div>
         </div>
+        <Link to={`/agentes/${slug}/conversar`}>
+          <Button variant="primary" className="w-full">
+            Conversar com agente →
+          </Button>
+        </Link>
       </div>
     )
   }

@@ -248,16 +248,17 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, plan
         </span>
       </div>
 
-      {/* ATIVOS */}
+      {/* ATIVOS — link direto para o chat */}
       {activeContent.length > 0 && (
         <>
           <p className={SECTION_LABEL} style={SECTION_COLOR}>Ativos</p>
           {activeContent.map(c => (
             <NavLink
               key={c.slug}
-              to={`/agentes/${c.slug}`}
+              to={`/agentes/${c.slug}/conversar`}
               className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
               style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+              title={`Conversar com ${c.name}`}
             >
               <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
               <span className="flex-1 truncate">{c.name}</span>
