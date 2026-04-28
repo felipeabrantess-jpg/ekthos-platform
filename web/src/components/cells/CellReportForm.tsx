@@ -74,7 +74,7 @@ export default function CellReportForm({ groupId, onClose, editReport }: CellRep
       const payload = {
         church_id:       churchId!,
         cell_id:         groupId,
-        leader_id:       user?.id ?? null,
+        leader_id:       null,              // FK target desconhecido — usar reported_by
         reported_by:     user?.id ?? null,
         meeting_date:    form.meeting_date,
         total_present:   form.total_present,

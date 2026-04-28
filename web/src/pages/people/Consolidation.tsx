@@ -86,43 +86,26 @@ export default function Consolidation() {
     queryKey: ['consolidation', churchId],
     enabled: !!churchId,
     queryFn: async () => {
-      // Get entry point stages for this church
-      const { data: stages } = await supabase
-        .from('pipeline_stages')
-        .select('id, name')
-        .eq('church_id', churchId!)
-        .eq('is_entry_point', true)
-        .eq('is_active', true)
-
-      const entryStageIds = stages?.map(s => s.id) ?? []
-      const stageMap = Object.fromEntries((stages ?? []).map(s => [s.id, s.name]))
-
-      // Get people in entry stages OR with recent conversion date (last 90 days) in any stage
+      // Get people with recent conversion or first visit (last 90 days)
+      // Note: person_stage is an ENUM (visitante/contato/…), not a UUID FK to pipeline_stages.
+      // The two systems aren't linked yet — filter only by conversion_date.
       const ninetyDaysAgo = new Date()
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
 
-      let query = supabase
+      const query = supabase
         .from('people')
-        .select('id, name, email, phone, photo_url, conversion_date, first_visit_date, person_stage, stage_entered_at')
+        .select('id, name, email, phone, photo_url, conversion_date, first_visit_date, person_stage')
         .eq('church_id', churchId!)
-        .eq('is_active', true)
-
-      // Filter: in entry stages OR recently converted
-      if (entryStageIds.length > 0) {
-        query = query.or(
-          `person_stage.in.(${entryStageIds.join(',')}),conversion_date.gte.${ninetyDaysAgo.toISOString().split('T')[0]}`
-        )
-      } else {
-        query = query.gte('conversion_date', ninetyDaysAgo.toISOString().split('T')[0])
-      }
+        .gte('conversion_date', ninetyDaysAgo.toISOString().split('T')[0])
 
       const { data } = await query.order('conversion_date', { ascending: false })
 
       return (data ?? []).map(p => {
-        // Days since person entered current stage (or since first_visit as fallback)
-        const refDate = (p as any).stage_entered_at ?? p.first_visit_date ?? p.conversion_date
+        // Days since conversion (or first visit as fallback)
+        const refDate = p.first_visit_date ?? p.conversion_date
         const days = daysSince(refDate)
-        const stageName = p.person_stage ? (stageMap[p.person_stage] ?? null) : null
+        // person_stage is ENUM — show its value as label directly
+        const stageName = p.person_stage as string | null
 
         return {
           ...p,
