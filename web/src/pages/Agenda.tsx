@@ -1,304 +1,281 @@
 /**
- * Agenda.tsx — Fase 2: renomeado para "Eventos" + tabs
+ * Agenda.tsx — Calendário principal com FullCalendar v6
  *
- * Tabs:
- *  - Calendário  → eventos próximos (default)
- *  - Lista       → todos os eventos sem filtro de data
- *  - Inscrições  → TODO Fase 3 (placeholder)
+ * Views: Mês (dayGridMonth) | Semana (timeGridWeek) | Lista (listWeek)
+ * Mobile padrão: listMonth
+ * Filtro: ministério
+ * Click: abre EventDetailModal
+ * Novo evento / Gerenciar Eventos: botões no header
  */
 
-import { useState } from 'react'
-import { ClipboardList } from 'lucide-react'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import listPlugin from '@fullcalendar/list'
+import interactionPlugin from '@fullcalendar/interaction'
+import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
+import ptBrLocale from '@fullcalendar/core/locales/pt-br'
+import { Calendar, Plus, List, LayoutGrid, Rows3 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+
 import { useAuth } from '@/hooks/useAuth'
-import { useAgenda, useCreateEvent, useDeleteEvent } from '@/features/agenda/hooks/useAgenda'
-import Spinner from '@/components/ui/Spinner'
-import EmptyState from '@/components/ui/EmptyState'
-import ErrorState from '@/components/ui/ErrorState'
+import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
-import Badge from '@/components/ui/Badge'
-import Modal from '@/components/ui/Modal'
-import Input from '@/components/ui/Input'
-import type { EventType, ChurchEvent } from '@/lib/types/joins'
+import Spinner from '@/components/ui/Spinner'
+import EventDetailModal from '@/components/agenda/EventDetailModal'
+import EventForm from '@/pages/events/EventForm'
+import {
+  useEventOccurrences,
+  type EventOccurrence,
+  type ChurchEventFull,
+} from '@/features/agenda/hooks/useEvents'
 
-type AgendaTab = 'calendario' | 'lista' | 'inscricoes'
+// ── View types ────────────────────────────────────────────────────────────────
 
-const TABS: { id: AgendaTab; label: string }[] = [
-  { id: 'calendario', label: 'Calendário'  },
-  { id: 'lista',      label: 'Lista'       },
-  { id: 'inscricoes', label: 'Inscrições'  },
+type CalendarView = 'dayGridMonth' | 'timeGridWeek' | 'listWeek'
+
+const VIEW_BUTTONS: { view: CalendarView; icon: React.ReactNode; label: string }[] = [
+  { view: 'dayGridMonth', icon: <LayoutGrid className="w-4 h-4" />, label: 'Mês'   },
+  { view: 'timeGridWeek', icon: <Rows3      className="w-4 h-4" />, label: 'Semana' },
+  { view: 'listWeek',     icon: <List       className="w-4 h-4" />, label: 'Lista'  },
 ]
 
-type BadgeVariant = 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple'
+// ── Helper: initial range (current month ±1) ─────────────────────────────────
+function initialRange() {
+  const now = new Date()
+  const from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const to   = new Date(now.getFullYear(), now.getMonth() + 3, 0)
+  return { from, to }
+}
 
-function eventTypeBadgeVariant(type: EventType): BadgeVariant {
-  const map: Record<EventType, BadgeVariant> = {
-    culto: 'blue', reuniao: 'gray', celula: 'green', retiro: 'purple',
-    conferencia: 'yellow', batismo: 'blue', casamento: 'purple',
-    treinamento: 'green', social: 'yellow', outro: 'gray',
+// ── Calendar CSS overrides (inlined) ─────────────────────────────────────────
+const calendarStyles = `
+  .fc { font-family: 'DM Sans', sans-serif; }
+  .fc .fc-button {
+    background: transparent !important;
+    border: none !important;
+    color: #1a1a2e !important;
+    box-shadow: none !important;
+    font-size: 0.875rem !important;
   }
-  return map[type]
-}
+  .fc .fc-button:hover { background: #f5f0e8 !important; border-radius: 0.5rem; }
+  .fc .fc-button-primary:not(.fc-button-active) { padding: 0.375rem 0.625rem !important; }
+  .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700 !important; color: #1a1a2e; }
+  .fc .fc-daygrid-day.fc-day-today { background: #fdf8f2 !important; }
+  .fc .fc-daygrid-day-number { color: #1a1a2e; font-size: 0.8rem; }
+  .fc .fc-col-header-cell-cushion { color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .fc .fc-event { border-radius: 6px !important; border: none !important; padding: 1px 4px !important; font-size: 0.75rem !important; cursor: pointer; }
+  .fc .fc-event:hover { opacity: 0.85; }
+  .fc .fc-list-event:hover td { background: #fdf8f2 !important; cursor: pointer; }
+  .fc .fc-list-day-cushion { background: #f9fafb !important; }
+  .fc .fc-timegrid-event { border-radius: 6px !important; border: none !important; }
+  .fc .fc-scrollgrid { border-radius: 1rem; overflow: hidden; }
+  .fc .fc-scrollgrid td, .fc .fc-scrollgrid th { border-color: rgba(0,0,0,0.07) !important; }
+`
 
-function eventTypeLabel(type: EventType): string {
-  const map: Record<EventType, string> = {
-    culto: 'Culto', reuniao: 'Reunião', celula: 'Célula', retiro: 'Retiro',
-    conferencia: 'Conferência', batismo: 'Batismo', casamento: 'Casamento',
-    treinamento: 'Treinamento', social: 'Social', outro: 'Outro',
-  }
-  return map[type]
-}
-
-function isToday(dateStr: string): boolean {
-  const d = new Date(dateStr); const now = new Date()
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
-}
-
-function isTomorrow(dateStr: string): boolean {
-  const d = new Date(dateStr); const now = new Date()
-  const tomorrow = new Date(now); tomorrow.setDate(now.getDate() + 1)
-  return d.getFullYear() === tomorrow.getFullYear() && d.getMonth() === tomorrow.getMonth() && d.getDate() === tomorrow.getDate()
-}
-
-function DateBadge({ dateStr }: { dateStr: string }) {
-  const d = new Date(dateStr)
-  const day = d.getDate()
-  const month = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
-  const today = isToday(dateStr)
-  const tomorrow = isTomorrow(dateStr)
-  return (
-    <div className={`flex flex-col items-center justify-center rounded-xl w-12 h-14 shrink-0 ${today ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
-      <span className={`text-lg font-bold leading-tight ${today ? 'text-white' : 'text-gray-900'}`}>{day}</span>
-      <span className={`text-xs uppercase ${today ? 'text-blue-100' : 'text-gray-500'}`}>{month}</span>
-      {tomorrow && !today && <span className="text-xs text-orange-500 font-medium">amanhã</span>}
-    </div>
-  )
-}
-
-function EventItem({ event, onDelete }: { event: ChurchEvent; onDelete: (e: ChurchEvent) => void }) {
-  const today = isToday(event.start_datetime)
-  const time = new Date(event.start_datetime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  return (
-    <div className="flex items-start gap-4 p-4 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-      <DateBadge dateStr={event.start_datetime} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-sm font-semibold text-gray-900">{event.title}</h3>
-          {today && <span className="text-xs font-medium text-white bg-green-500 rounded-full px-2 py-0.5">Hoje</span>}
-          <Badge label={eventTypeLabel(event.event_type as EventType)} variant={eventTypeBadgeVariant(event.event_type as EventType)} />
-          {!event.is_public && <Badge label="Privado" variant="gray" />}
-        </div>
-        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
-          <span>{time}</span>
-          {event.location && <span>· {event.location}</span>}
-          {event.description && <span className="truncate max-w-xs">· {event.description}</span>}
-        </div>
-      </div>
-      <button onClick={() => onDelete(event)} className="text-xs text-red-400 hover:text-red-600 font-medium shrink-0">Excluir</button>
-    </div>
-  )
-}
-
-function CreateEventModal({ open, onClose, churchId }: { open: boolean; onClose: () => void; churchId: string }) {
-  const createEvent = useCreateEvent()
-  const [form, setForm] = useState({
-    title: '', event_type: 'culto' as EventType,
-    start_datetime: '', end_datetime: '', location: '', description: '', is_public: true,
-  })
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.title.trim() || !form.start_datetime) return
-    setSubmitting(true); setError(null)
-    try {
-      await createEvent.mutateAsync({
-        church_id: churchId, title: form.title.trim(), event_type: form.event_type,
-        start_datetime: new Date(form.start_datetime).toISOString(),
-        end_datetime: form.end_datetime ? new Date(form.end_datetime).toISOString() : null,
-        location: form.location.trim() || null, description: form.description.trim() || null,
-        is_public: form.is_public,
-      })
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao criar evento')
-    } finally { setSubmitting(false) }
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Novo Evento">
-      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
-          <Input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Ex: Culto de Domingo" required />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
-          <select value={form.event_type} onChange={e => setForm(p => ({ ...p, event_type: e.target.value as EventType }))}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500" required>
-            <option value="culto">Culto</option>
-            <option value="reuniao">Reunião</option>
-            <option value="celula">Célula</option>
-            <option value="retiro">Retiro</option>
-            <option value="conferencia">Conferência</option>
-            <option value="treinamento">Treinamento</option>
-            <option value="outro">Outro</option>
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Início *</label>
-            <Input type="datetime-local" value={form.start_datetime} onChange={e => setForm(p => ({ ...p, start_datetime: e.target.value }))} required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fim (opcional)</label>
-            <Input type="datetime-local" value={form.end_datetime} onChange={e => setForm(p => ({ ...p, end_datetime: e.target.value }))} />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Local</label>
-          <Input value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="Ex: Templo principal, Sala 3..." />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
-          <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Informações adicionais..." />
-        </div>
-        <div className="flex items-center gap-2">
-          <input type="checkbox" id="is_public" checked={form.is_public} onChange={e => setForm(p => ({ ...p, is_public: e.target.checked }))} className="rounded border-gray-300" />
-          <label htmlFor="is_public" className="text-sm text-gray-700">Evento público</label>
-        </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={submitting || !form.title.trim() || !form.start_datetime}>
-            {submitting ? 'Criando...' : 'Criar Evento'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  )
-}
-
-// ── Tab: Inscrições (placeholder) ────────────────────────────────────
-function InscricoesTab() {
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-12 h-12 rounded-2xl bg-cream-dark/60 flex items-center justify-center mb-4">
-        <ClipboardList size={22} className="text-ekthos-black/30" strokeWidth={1.5} />
-      </div>
-      <h2 className="font-display text-lg font-semibold text-ekthos-black/60 mb-1">Inscrições em breve</h2>
-      <p className="text-sm text-ekthos-black/40 max-w-xs">
-        Gestão de inscrições para eventos estará disponível na Fase 3.
-      </p>
-      {/* TODO Fase 3: implementar inscrições de eventos — formulário público + lista de inscritos */}
-    </div>
-  )
-}
-
-// ── Página principal ─────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function Agenda() {
   const { churchId } = useAuth()
-  const [activeTab, setActiveTab] = useState<AgendaTab>('calendario')
-  const [filterType, setFilterType] = useState<EventType | ''>('')
-  const [createOpen, setCreateOpen] = useState(false)
-  const deleteEvent = useDeleteEvent()
+  const navigate = useNavigate()
+  const calendarRef = useRef<InstanceType<typeof FullCalendar>>(null)
 
-  // Calendário = upcoming, Lista = todos
-  const upcoming = activeTab === 'calendario'
+  // Detect mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
 
-  const { data: events, isLoading, isError, refetch } = useAgenda(
+  const [currentView, setCurrentView] = useState<CalendarView>(
+    isMobile ? 'listWeek' : 'dayGridMonth'
+  )
+  const [calendarRange, setCalendarRange] = useState(initialRange)
+  const [ministryFilter, setMinistryFilter] = useState<string>('')
+  const [selectedOccurrence, setSelectedOccurrence] = useState<EventOccurrence | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingEvent, setEditingEvent] = useState<ChurchEventFull | null>(null)
+
+  // Ministries for filter dropdown
+  const { data: ministries = [] } = useQuery({
+    queryKey: ['ministries_list', churchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('ministries')
+        .select('id, name')
+        .eq('church_id', churchId!)
+        .eq('is_active', true)
+        .order('name')
+      return data ?? []
+    },
+    enabled: Boolean(churchId),
+  })
+
+  // Occurrences for the visible calendar range
+  const {
+    data: occurrences = [],
+    isLoading,
+  } = useEventOccurrences(
     churchId ?? '',
-    { upcoming, type: filterType || undefined }
+    calendarRange.from,
+    calendarRange.to,
+    ministryFilter || null,
   )
 
-  if (!churchId) return <ErrorState message="Igreja não identificada." />
+  // Map occurrences → FullCalendar EventInput
+  const fcEvents = occurrences.map(occ => ({
+    id: occ.id,
+    title: occ.override_title ?? occ.church_events?.title ?? 'Evento',
+    start: occ.start_datetime,
+    end: occ.end_datetime ?? undefined,
+    allDay: occ.church_events?.all_day ?? false,
+    backgroundColor: occ.church_events?.color ?? '#7C3AED',
+    borderColor: 'transparent',
+    textColor: '#ffffff',
+    extendedProps: { occurrence: occ },
+  }))
 
-  async function handleDelete(event: ChurchEvent) {
-    if (!confirm(`Excluir "${event.title}"?`)) return
-    await deleteEvent.mutateAsync({ id: event.id, churchId: churchId! })
+  const handleDatesSet = useCallback((arg: DatesSetArg) => {
+    setCalendarRange({ from: arg.start, to: arg.end })
+  }, [])
+
+  const handleEventClick = useCallback((arg: EventClickArg) => {
+    const occ = arg.event.extendedProps.occurrence as EventOccurrence
+    setSelectedOccurrence(occ)
+  }, [])
+
+  function switchView(view: CalendarView) {
+    setCurrentView(view)
+    calendarRef.current?.getApi().changeView(view)
   }
 
+  function handleEdit(ev: ChurchEventFull) {
+    setSelectedOccurrence(null)
+    setEditingEvent(ev)
+    setFormOpen(true)
+  }
+
+  function handleCreate() {
+    setEditingEvent(null)
+    setFormOpen(true)
+  }
+
+  if (!churchId) return null
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      <style>{calendarStyles}</style>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ekthos-black">Eventos</h1>
-          <p className="text-sm text-ekthos-black/50 mt-1">
-            {events ? `${events.length} evento${events.length !== 1 ? 's' : ''}` : 'Carregando...'}
-          </p>
-        </div>
-        <Button onClick={() => setCreateOpen(true)}>+ Novo Evento</Button>
-      </div>
-
-      {/* ── Tabs ─────────────────────────────────────────────────── */}
-      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-brand-600 text-brand-700'
-                : 'border-transparent text-ekthos-black/50 hover:text-ekthos-black/80 hover:border-cream-dark'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Inscrições: placeholder */}
-      {activeTab === 'inscricoes' ? (
-        <InscricoesTab />
-      ) : (
-        <>
-          {/* Filtro de tipo (Calendário e Lista) */}
-          <div className="flex flex-wrap gap-3 items-center">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as EventType | '')}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-            >
-              <option value="">Todos os tipos</option>
-              <option value="culto">Culto</option>
-              <option value="reuniao">Reunião</option>
-              <option value="celula">Célula</option>
-              <option value="retiro">Retiro</option>
-              <option value="conferencia">Conferência</option>
-              <option value="treinamento">Treinamento</option>
-              <option value="outro">Outro</option>
-            </select>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+            <Calendar className="w-5 h-5 text-brand-600" />
           </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-ekthos-black">Eventos</h1>
+            <p className="text-sm text-gray-500">Calendário da igreja</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/eventos')}
+            className="text-xs"
+          >
+            Gerenciar
+          </Button>
+          <Button onClick={handleCreate}>
+            <Plus className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">Novo Evento</span>
+            <span className="sm:hidden">Novo</span>
+          </Button>
+        </div>
+      </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center h-48"><Spinner size="lg" /></div>
-          ) : isError ? (
-            <ErrorState message="Não foi possível carregar os eventos." onRetry={() => void refetch()} />
-          ) : (events ?? []).length === 0 ? (
-            <EmptyState
-              title={upcoming ? 'Nenhum evento próximo' : 'Nenhum evento cadastrado'}
-              description={upcoming ? 'Todos os eventos foram realizados ou nenhum foi criado.' : 'Crie o primeiro evento clicando em "Novo Evento".'}
-              action={<Button onClick={() => setCreateOpen(true)}>+ Novo Evento</Button>}
-            />
-          ) : (
-            <div className="space-y-3">
-              {(events ?? []).map(event => (
-                <EventItem key={event.id} event={event} onDelete={handleDelete} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+      {/* Controls: view toggle + ministry filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        {/* View switcher */}
+        <div className="flex border border-black/10 rounded-xl overflow-hidden shrink-0">
+          {VIEW_BUTTONS.map(({ view, icon, label }) => (
+            <button
+              key={view}
+              onClick={() => switchView(view)}
+              title={label}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                currentView === view
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-gray-500 hover:bg-cream'
+              }`}
+            >
+              {icon}
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
 
-      {createOpen && (
-        <CreateEventModal
-          open={createOpen}
-          onClose={() => setCreateOpen(false)}
-          churchId={churchId}
+        {/* Ministry filter */}
+        {ministries.length > 0 && (
+          <select
+            value={ministryFilter}
+            onChange={e => setMinistryFilter(e.target.value)}
+            className="rounded-xl border border-black/10 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option value="">Todos os ministérios</option>
+            {ministries.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        )}
+
+        {isLoading && <Spinner size="sm" />}
+      </div>
+
+      {/* Calendar */}
+      <div className="bg-white rounded-2xl border border-black/10 p-4">
+        <FullCalendar
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
+          locale={ptBrLocale}
+          initialView={isMobile ? 'listWeek' : 'dayGridMonth'}
+          headerToolbar={{
+            left:   'prev,next today',
+            center: 'title',
+            right:  '',
+          }}
+          events={fcEvents}
+          datesSet={handleDatesSet}
+          eventClick={handleEventClick}
+          height="auto"
+          dayMaxEvents={3}
+          moreLinkText={(n) => `+${n} mais`}
+          noEventsText="Nenhum evento neste período"
+          listDayFormat={{ weekday: 'long', day: '2-digit', month: 'long' }}
+          listDaySideFormat={false}
+          eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false }}
+          slotMinTime="07:00:00"
+          slotMaxTime="23:00:00"
+          allDayText="Dia inteiro"
+          fixedWeekCount={false}
         />
-      )}
+      </div>
+
+      {/* Event detail modal */}
+      <EventDetailModal
+        occurrence={selectedOccurrence}
+        onClose={() => setSelectedOccurrence(null)}
+        onEdit={handleEdit}
+      />
+
+      {/* Create / Edit form */}
+      <EventForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditingEvent(null) }}
+        editEvent={editingEvent}
+      />
     </div>
   )
 }
