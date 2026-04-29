@@ -78,7 +78,7 @@ export default function Signup() {
                 onChange={field('name')}
                 placeholder="Pastor João Silva"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 autoComplete="name"
                 required
               />

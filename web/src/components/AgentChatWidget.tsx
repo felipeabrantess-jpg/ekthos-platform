@@ -254,7 +254,7 @@ export default function AgentChatWidget({
           <div className="flex items-center gap-2.5">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: '#e13500' }}
+              style={{ background: 'var(--color-primary)' }}
             >
               <Bot size={14} strokeWidth={1.75} className="text-white" />
             </div>
@@ -289,10 +289,10 @@ export default function AgentChatWidget({
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f9eedc' }}>
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: 'var(--bg-primary)' }}>
           {histLoading && (
             <div className="flex items-center justify-center h-20">
-              <Loader size={18} strokeWidth={1.75} className="animate-spin" style={{ color: '#e13500' }} />
+              <Loader size={18} strokeWidth={1.75} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
             </div>
           )}
 
@@ -304,7 +304,7 @@ export default function AgentChatWidget({
               {msg.role === 'assistant' && (
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mr-2 mt-0.5"
-                  style={{ background: '#e13500' }}
+                  style={{ background: 'var(--color-primary)' }}
                 >
                   <Bot size={11} strokeWidth={2} className="text-white" />
                 </div>
@@ -316,7 +316,7 @@ export default function AgentChatWidget({
                     : 'rounded-tl-sm text-gray-800 border border-black/[0.06]'
                 }`}
                 style={msg.role === 'user'
-                  ? { background: '#e13500' }
+                  ? { background: 'var(--color-primary)' }
                   : { background: '#FFFFFF' }
                 }
               >
@@ -328,11 +328,11 @@ export default function AgentChatWidget({
                     </span>
                   ))
                   : msg.streaming
-                    ? <span className="inline-block w-2 h-4 animate-pulse rounded-sm" style={{ background: '#e13500', opacity: 0.5 }} />
+                    ? <span className="inline-block w-2 h-4 animate-pulse rounded-sm" style={{ background: 'var(--color-primary)', opacity: 0.5 }} />
                     : null
                 }
                 {msg.streaming && msg.content && (
-                  <span className="inline-block w-1.5 h-3.5 ml-0.5 animate-pulse rounded-sm align-middle" style={{ background: '#e13500', opacity: 0.6 }} />
+                  <span className="inline-block w-1.5 h-3.5 ml-0.5 animate-pulse rounded-sm align-middle" style={{ background: 'var(--color-primary)', opacity: 0.6 }} />
                 )}
               </div>
             </div>
@@ -354,7 +354,7 @@ export default function AgentChatWidget({
               className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-50"
               style={{
                 maxHeight: '120px',
-                '--tw-ring-color': '#e13500',
+                '--tw-ring-color': 'var(--color-primary)',
               } as React.CSSProperties}
               onInput={e => {
                 const el = e.currentTarget
@@ -366,7 +366,7 @@ export default function AgentChatWidget({
               onClick={() => void sendMessage()}
               disabled={loading || !input.trim()}
               className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-              style={{ background: '#e13500' }}
+              style={{ background: 'var(--color-primary)' }}
             >
               {loading
                 ? <Loader size={15} strokeWidth={2} className="text-white animate-spin" />

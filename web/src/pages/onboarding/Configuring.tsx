@@ -546,7 +546,7 @@ export default function OnboardingConfiguring() {
         city:              (tenant.city  as string) ?? '',
         state:             (tenant.state as string) ?? '',
         logoUrl:           (tenant.logo_url      as string | null) ?? null,
-        primaryColor:      (tenant.primary_color  as string) ?? '#E13500',
+        primaryColor:      (tenant.primary_color  as string) ?? 'var(--color-primary)',
         secondaryColor:    (tenant.secondary_color as string) ?? '#670000',
         ministries:        depts.map(d => d.name),
         cells,
@@ -631,7 +631,7 @@ export default function OnboardingConfiguring() {
               </span>
               <span
                 className="text-sm font-bold tabular-nums shrink-0 transition-colors duration-500"
-                style={{ color: isDone ? '#2D7A4F' : '#E13500' }}
+                style={{ color: isDone ? '#2D7A4F' : 'var(--color-primary)' }}
               >
                 {progressPct}%
               </span>
@@ -641,7 +641,7 @@ export default function OnboardingConfiguring() {
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width:      `${progressPct}%`,
-                  background: isDone ? '#2D7A4F' : '#E13500',
+                  background: isDone ? '#2D7A4F' : 'var(--color-primary)',
                 }}
               />
             </div>

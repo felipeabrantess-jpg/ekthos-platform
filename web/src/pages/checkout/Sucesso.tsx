@@ -116,7 +116,7 @@ export default function CheckoutSucesso() {
             {NEXT_STEPS.map((step, i) => (
               <div key={i} className="flex gap-4">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: i === 0 ? '#e13500' : 'rgba(225,53,0,0.08)', color: i === 0 ? '#fff' : '#e13500' }}>
+                  style={{ background: i === 0 ? 'var(--color-primary)' : 'rgba(225,53,0,0.08)', color: i === 0 ? '#fff' : 'var(--color-primary)' }}>
                   {step.icon}
                 </div>
                 <div>
@@ -132,7 +132,7 @@ export default function CheckoutSucesso() {
         <div className="space-y-3">
           <Link to="/login"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: '#e13500' }}>
+            style={{ background: 'var(--color-primary)' }}>
             Acessar a plataforma
             <ArrowRight size={18} strokeWidth={2} />
           </Link>

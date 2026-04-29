@@ -141,7 +141,7 @@ export function AgentChatHistory({
               className="w-full text-left px-3 py-2.5 rounded-xl transition-all"
               style={{
                 background: isActive ? 'rgba(225,53,0,0.06)' : 'transparent',
-                borderLeft: isActive ? '2px solid var(--church-primary, #e13500)' : '2px solid transparent',
+                borderLeft: isActive ? '2px solid var(--church-primary, var(--color-primary))' : '2px solid transparent',
               }}
               onMouseEnter={e => {
                 if (!isActive) e.currentTarget.style.background = 'rgba(0,0,0,0.03)'
@@ -152,7 +152,7 @@ export function AgentChatHistory({
             >
               <p
                 className="text-[12px] font-medium leading-tight truncate"
-                style={{ color: isActive ? '#e13500' : 'rgba(0,0,0,0.75)' }}
+                style={{ color: isActive ? 'var(--color-primary)' : 'rgba(0,0,0,0.75)' }}
               >
                 {session.title}
               </p>

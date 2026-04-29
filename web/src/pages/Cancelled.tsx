@@ -152,8 +152,8 @@ export default function Cancelled() {
             <div
               className="mt-3 px-4 py-2 rounded-lg text-xs font-medium"
               style={{
-                background: daysLeft <= 7 ? '#e1350012' : '#6700000a',
-                color: daysLeft <= 7 ? '#e13500' : '#670000',
+                background: daysLeft <= 7 ? 'var(--color-primary)12' : '#6700000a',
+                color: daysLeft <= 7 ? 'var(--color-primary)' : '#670000',
               }}
             >
               {daysLeft > 0

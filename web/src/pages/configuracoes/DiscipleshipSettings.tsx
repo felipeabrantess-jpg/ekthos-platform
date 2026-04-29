@@ -58,7 +58,7 @@ const COLOR_OPTIONS = [
   { value: '#3b82f6', label: 'Azul'    },
   { value: '#10b981', label: 'Verde'   },
   { value: '#a78bfa', label: 'Violeta' },
-  { value: '#e13500', label: 'Brand'   },
+  { value: 'var(--color-primary)', label: 'Brand'   },
   { value: '#fbbf24', label: 'Dourado' },
   { value: '#60a5fa', label: 'Celeste' },
   { value: '#f472b6', label: 'Rosa'    },

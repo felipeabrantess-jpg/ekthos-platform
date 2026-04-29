@@ -38,7 +38,7 @@ interface LogoConfirmState {
 // ── Constantes ─────────────────────────────────────────────
 
 const COLOR_PALETTES: ColorPaletteOption[] = [
-  { label: 'Fogo e Paixão',          primary: '#E13500', secondary: '#670000', emoji: '🔥' },
+  { label: 'Fogo e Paixão',          primary: 'var(--color-primary)', secondary: '#670000', emoji: '🔥' },
   { label: 'Céu e Mar',              primary: '#2563EB', secondary: '#1E3A5F', emoji: '🌊' },
   { label: 'Vida e Esperança',        primary: '#059669', secondary: '#064E3B', emoji: '🌿' },
   { label: 'Realeza e Unção',        primary: '#7C3AED', secondary: '#4C1D95', emoji: '👑' },
@@ -86,7 +86,7 @@ async function extractDominantColors(file: File): Promise<{ primary: string; sec
           toHex(Math.round(r * factor), Math.round(g * factor), Math.round(b * factor))
 
         if (buckets.length === 0) {
-          resolve({ primary: '#E13500', secondary: '#670000' })
+          resolve({ primary: 'var(--color-primary)', secondary: '#670000' })
         } else {
           const top = buckets[0]
           resolve({
@@ -95,12 +95,12 @@ async function extractDominantColors(file: File): Promise<{ primary: string; sec
           })
         }
       } catch {
-        resolve({ primary: '#E13500', secondary: '#670000' })
+        resolve({ primary: 'var(--color-primary)', secondary: '#670000' })
       } finally {
         URL.revokeObjectURL(url)
       }
     }
-    img.onerror = () => { URL.revokeObjectURL(url); resolve({ primary: '#E13500', secondary: '#670000' }) }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve({ primary: 'var(--color-primary)', secondary: '#670000' }) }
     img.src = url
   })
 }
@@ -428,7 +428,7 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
     return (
       <div className="px-5 py-3 bg-white border-t border-black/[0.06] space-y-2">
         <label
-          className={`flex items-center gap-3 cursor-pointer rounded-2xl border border-dashed px-4 py-3 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : 'hover:border-[#E13500]'}`}
+          className={`flex items-center gap-3 cursor-pointer rounded-2xl border border-dashed px-4 py-3 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : 'hover:border-[var(--color-primary)]'}`}
           style={{ borderColor: '#DDD', background: '#FAFAFA' }}
         >
           {uploading
@@ -483,7 +483,7 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
         <div className="flex flex-wrap gap-2">
           {widget.options.map(opt => (
             <button key={opt} onClick={() => onSelect(opt)}
-              className="text-sm px-4 py-2 rounded-xl border font-medium transition-all hover:border-[#E13500] hover:text-[#E13500]"
+              className="text-sm px-4 py-2 rounded-xl border font-medium transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
               style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}>
               {opt}
             </button>
@@ -505,9 +505,9 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
               }}
               className="text-sm px-3.5 py-1.5 rounded-full border font-medium transition-all"
               style={{
-                background:  selected.includes(opt) ? '#E13500' : '#FAFAFA',
+                background:  selected.includes(opt) ? 'var(--color-primary)' : '#FAFAFA',
                 color:       selected.includes(opt) ? 'white' : '#5A5A5A',
-                borderColor: selected.includes(opt) ? '#E13500' : '#E8E8E8',
+                borderColor: selected.includes(opt) ? 'var(--color-primary)' : '#E8E8E8',
               }}>
               {opt}
             </button>
@@ -912,7 +912,7 @@ export default function Onboarding() {
                   onClick={() => sendMessage('__UNDO__')}
                   disabled={loading || uploading || blockIndex <= 1}
                   title="Voltar à pergunta anterior"
-                  className="w-11 h-11 flex items-center justify-center rounded-xl border transition-all hover:border-[#E13500] hover:text-[#E13500] disabled:opacity-30 shrink-0"
+                  className="w-11 h-11 flex items-center justify-center rounded-xl border transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-30 shrink-0"
                   style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
                 >
                   <ArrowLeft size={18} strokeWidth={1.75} />

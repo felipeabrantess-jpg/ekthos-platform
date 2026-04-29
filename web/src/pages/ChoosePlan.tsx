@@ -48,7 +48,7 @@ const PLANS: Plan[] = [
     description:    'Para igrejas em crescimento que querem automação inteligente.',
     icon:           <Zap size={24} strokeWidth={1.75} />,
     badge:          'Mais escolhido',
-    color:          '#e13500',
+    color:          'var(--color-primary)',
     features: [
       'Até 3 usuários',
       'Agente Suporte 24h (grátis)',

@@ -92,7 +92,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-function MetricMini({ label, value, color = '#e13500' }: {
+function MetricMini({ label, value, color = 'var(--color-primary)' }: {
   label: string
   value: string | number
   color?: string
@@ -106,7 +106,7 @@ function MetricMini({ label, value, color = '#e13500' }: {
 }
 
 function HealthBar({ score, label }: { score: number; label: string }) {
-  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : 'var(--color-primary)'
   return (
     <div className="flex items-center gap-3 py-2">
       <span className="text-xs text-gray-500 w-36 shrink-0">{label}</span>
@@ -134,8 +134,8 @@ function TabResumo({ data }: { data: ChurchDetail }) {
           <span
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
             style={{
-              background: data.status === 'configured' ? '#2D7A4F18' : '#e1350018',
-              color:      data.status === 'configured' ? '#2D7A4F'   : '#e13500',
+              background: data.status === 'configured' ? '#2D7A4F18' : 'var(--color-primary)18',
+              color:      data.status === 'configured' ? '#2D7A4F'   : 'var(--color-primary)',
             }}
           >
             {data.status === 'configured' ? 'Ativa' : data.status}
@@ -168,7 +168,7 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
         <InfoRow label="Plano" value={PLAN_NAMES[data.plan_slug ?? ''] ?? data.plan_slug ?? '—'} />
         <InfoRow label="Status" value={data.subscription_status ?? '—'} />
         <InfoRow label="Renovação" value={relDate(data.current_period_end)} />
-        <InfoRow label="MRR" value={<span className="font-mono-ekthos font-bold" style={{ color: '#e13500' }}>{fmt(data.mrr)}</span>} />
+        <InfoRow label="MRR" value={<span className="font-mono-ekthos font-bold" style={{ color: 'var(--color-primary)' }}>{fmt(data.mrr)}</span>} />
       </div>
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">Usuários ({data.users.length})</h3>
@@ -180,7 +180,7 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
               <div key={u.id} className="flex items-center gap-3 py-2">
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                  style={{ background: '#e13500' }}
+                  style={{ background: 'var(--color-primary)' }}
                 >
                   {u.email.charAt(0).toUpperCase()}
                 </div>
@@ -238,7 +238,7 @@ function TabOperacao({ data }: { data: ChurchDetail }) {
 
 function TabSaude({ data }: { data: ChurchDetail }) {
   const score = data.health_score ?? 0
-  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : 'var(--color-primary)'
 
   const COMPONENT_LABELS: Record<string, string> = {
     consolidacao: 'Taxa de Consolidação',
@@ -290,7 +290,7 @@ function TabFinanceiro({ data }: { data: ChurchDetail }) {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 text-center">
-          <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#e13500' }}>{fmt(data.mrr)}</p>
+          <p className="font-mono-ekthos text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>{fmt(data.mrr)}</p>
           <p className="text-xs text-gray-400 mt-1">MRR (plano base)</p>
         </div>
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 text-center">
@@ -432,7 +432,7 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
               onChange={e => setPlanVal(e.target.value)}
               placeholder="Ex: 299,00  (vazio = usa tabela)"
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono-ekthos focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+              style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
             />
           </div>
 
@@ -447,7 +447,7 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
               onChange={e => setUserVal(e.target.value)}
               placeholder="Ex: 19,90  (vazio = usa tabela)"
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono-ekthos focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+              style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
             />
           </div>
 
@@ -462,7 +462,7 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
               onChange={e => setAgentVal(e.target.value)}
               placeholder="Ex: 39,90  (vazio = usa tabela)"
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-mono-ekthos focus:outline-none focus:ring-2 focus:border-transparent"
-              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+              style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
             />
           </div>
 
@@ -477,7 +477,7 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
               placeholder="Ex: Desconto parceiro estratégico — aprovado por Felipe em 15/04/2026"
               rows={2}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none"
-              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+              style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
             />
           </div>
         </div>
@@ -487,7 +487,7 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
             onClick={() => void save()}
             disabled={saving}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             {saving
               ? <Loader size={14} strokeWidth={2} className="animate-spin" />
@@ -505,7 +505,7 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">MRR atual desta conta</h3>
         <div className="text-center py-4">
-          <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#e13500' }}>
+          <p className="font-mono-ekthos text-3xl font-bold" style={{ color: 'var(--color-primary)' }}>
             {fmt(data.mrr)}
           </p>
           <p className="text-xs text-gray-400 mt-1">
@@ -585,7 +585,7 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
           placeholder="Escreva sua observação sobre esta conta..."
           rows={3}
           className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none"
-          style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+          style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
         />
         <div className="flex items-center justify-between mt-3">
           <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer select-none">
@@ -601,7 +601,7 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
             onClick={() => void addNote()}
             disabled={submitting || !newBody.trim()}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             {submitting && <Loader size={13} strokeWidth={2} className="animate-spin" />}
             <StickyNote size={13} strokeWidth={2} />
@@ -622,13 +622,13 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
             <div
               key={note.id}
               className="bg-white rounded-2xl border shadow-sm p-4"
-              style={{ borderColor: note.pinned ? '#e1350030' : 'rgba(0,0,0,0.05)' }}
+              style={{ borderColor: note.pinned ? 'var(--color-primary)30' : 'rgba(0,0,0,0.05)' }}
             >
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   {note.pinned && (
                     <span className="text-[10px] font-bold uppercase tracking-wider mb-1 block"
-                      style={{ color: '#e13500' }}>
+                      style={{ color: 'var(--color-primary)' }}>
                       📌 Fixada
                     </span>
                   )}
@@ -753,7 +753,7 @@ export default function AdminChurch() {
           ) : (
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-              style={{ background: '#e13500' }}
+              style={{ background: 'var(--color-primary)' }}
             >
               {data.name.charAt(0)}
             </div>
@@ -787,7 +787,7 @@ export default function AdminChurch() {
                 ? 'text-white'
                 : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
             }`}
-            style={tab === t.id ? { background: '#e13500' } : undefined}
+            style={tab === t.id ? { background: 'var(--color-primary)' } : undefined}
           >
             {t.icon}
             {t.label}

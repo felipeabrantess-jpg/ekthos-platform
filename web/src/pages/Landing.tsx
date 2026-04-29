@@ -1,7 +1,7 @@
 // ============================================================
 // Landing Page — Ekthos Church
 // Skills: ekthos-frontend + landing-page-ekthos
-// Design: bg-white, cream sections, vermelho #e13500
+// Design: bg-white, cream sections, vermelho var(--color-primary)
 // Rebuilt 2026-04-22: alternating layouts, no icon circles,
 // no CSS mockups, no fake numbers, Preview MCP validated
 // ============================================================
@@ -24,7 +24,7 @@ const EKTHOS_CROSS = (
   <svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
     {/* Linha externa da cruz */}
     <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z"
-      stroke="#e13500" strokeWidth="2.5" strokeLinejoin="round"/>
+      stroke="var(--color-primary)" strokeWidth="2.5" strokeLinejoin="round"/>
     {/* Linha interna — cria o canal duplo característico */}
     <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
       stroke="#c42e00" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
@@ -604,7 +604,7 @@ export default function Landing() {
             {/* Copy */}
             <div className="flex-1 text-center lg:text-left">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold mb-6 border"
-                style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500', borderColor: 'rgba(225,53,0,0.25)' }}>
+                style={{ background: 'rgba(225,53,0,0.15)', color: 'var(--color-primary)', borderColor: 'rgba(225,53,0,0.25)' }}>
                 <Smartphone size={12} /> Exclusivo do plano Avivamento
               </span>
               <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#f9eedc' }}>
@@ -717,7 +717,7 @@ export default function Landing() {
                   onClick={() => handleCheckout('chamado')}
                   disabled={checkoutPlan === 'chamado'}
                   className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
+                  style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)', minHeight: 52 }}>
                   {checkoutPlan === 'chamado' ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -730,7 +730,7 @@ export default function Landing() {
             </div>
 
             {/* ── MISSÃO (popular) ── */}
-            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-xl scale-[1.02] flex flex-col">
+            <div className="relative bg-[#161616] rounded-2xl border-2 border-[var(--color-primary)] shadow-xl scale-[1.02] flex flex-col">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
                   style={{ background: 'var(--color-primary)' }}>Mais popular</span>
@@ -859,7 +859,7 @@ export default function Landing() {
                 { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional',   price: 'Sob consulta', desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
               ].map((a, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
-                  <span style={{ color: '#e13500', marginTop: 2 }}>{a.icon}</span>
+                  <span style={{ color: 'var(--color-primary)', marginTop: 2 }}>{a.icon}</span>
                   <div>
                     <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
                     <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--color-primary)' }}>{a.price}</p>
@@ -887,7 +887,7 @@ export default function Landing() {
                 <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
                 <th className="p-4 text-center font-semibold text-gray-400">Planilhas</th>
                 <th className="p-4 text-center font-semibold text-gray-400">CRM Genérico</th>
-                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
+                <th className="p-4 text-center font-semibold" style={{ color: 'var(--color-primary)', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
               </tr>
             </thead>
             <tbody>
@@ -906,7 +906,7 @@ export default function Landing() {
                   <td className="p-4 text-[#161616]">{label}</td>
                   <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                   <td className="p-4 text-center">{col2 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
-                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: '#e13500', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: 'var(--color-primary)', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                 </tr>
               ))}
             </tbody>
@@ -935,7 +935,7 @@ export default function Landing() {
             ].map((t, i) => (
               <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(249,238,220,0.04)', borderColor: 'rgba(249,238,220,0.08)' }}>
                 <div className="flex gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="#e13500" style={{ color: 'var(--color-primary)' }} />)}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="var(--color-primary)" style={{ color: 'var(--color-primary)' }} />)}
                 </div>
                 <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(249,238,220,0.75)' }}>"{t.text}"</p>
                 <div>
@@ -980,7 +980,7 @@ export default function Landing() {
 
       {/* ── 13. CTA FINAL ─────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 w-full"
-        style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #670000 100%)' }}>
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-sm font-semibold uppercase tracking-widest mb-4 text-white/60">Comece hoje mesmo</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-5">
@@ -995,7 +995,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={scrollToPricing}
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
-              style={{ color: '#e13500', minHeight: 56 }}>
+              style={{ color: 'var(--color-primary)', minHeight: 56 }}>
               Ver planos
             </button>
             <a href={waHref} target="_blank" rel="noopener noreferrer"
@@ -1209,7 +1209,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
                   </label>
                   <input name={f.name} type={f.type} value={form[f.name as keyof typeof form]}
                     onChange={handleChange} required={f.required} placeholder={f.placeholder}
-                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                     style={{ background: '#fafafa' }} />
                 </div>
               ))}
@@ -1217,7 +1217,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
               <div>
                 <label className="block text-xs font-semibold text-[#161616] mb-1.5">Quantidade de membros</label>
                 <select name="estimated_members" value={form.estimated_members} onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                   style={{ background: '#fafafa' }}>
                   <option value="">Selecione</option>
                   <option value="Até 100">Até 100</option>

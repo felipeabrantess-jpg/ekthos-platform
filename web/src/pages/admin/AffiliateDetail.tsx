@@ -246,7 +246,7 @@ function NewCouponModal({ affiliateId, affiliateName, onClose, onCreated }: {
           <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 border border-black/5">Cancelar</button>
           <button onClick={() => void save()} disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-            style={{ background: '#e13500' }}>
+            style={{ background: 'var(--color-primary)' }}>
             {saving ? <><Loader size={14} strokeWidth={2} className="animate-spin" />Criando…</> : 'Criar cupom'}
           </button>
         </div>
@@ -259,7 +259,7 @@ function NewCouponModal({ affiliateId, affiliateName, onClose, onCreated }: {
 
 function conversionBadge(s: string) {
   if (s === 'active')  return { bg: '#2D7A4F18', c: '#2D7A4F', l: 'Ativa' }
-  if (s === 'churned') return { bg: '#e1350018', c: '#e13500', l: 'Churn' }
+  if (s === 'churned') return { bg: 'var(--color-primary)18', c: 'var(--color-primary)', l: 'Churn' }
   if (s === 'refunded') return { bg: '#C4841D18', c: '#C4841D', l: 'Reemb.' }
   return { bg: '#00000010', c: '#8A8A8A', l: 'Maturada' }
 }
@@ -381,7 +381,7 @@ export default function AffiliateDetail() {
               onKeyDown={e => { if (e.key === 'Enter') void saveField(field, editValue); if (e.key === 'Escape') setEditingField(null) }} />
             <button onClick={() => void saveField(field, editValue)} disabled={savingField}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
-              style={{ background: '#e13500' }}>
+              style={{ background: 'var(--color-primary)' }}>
               {savingField ? <Loader size={12} strokeWidth={2} className="animate-spin" /> : 'OK'}
             </button>
             <button onClick={() => setEditingField(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X size={12} strokeWidth={2} /></button>
@@ -448,7 +448,7 @@ export default function AffiliateDetail() {
             <h3 className="text-sm font-semibold text-gray-800">Cupons ({coupons.length})</h3>
             <button onClick={() => setShowNewCoupon(true)}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
-              style={{ background: '#e13500' }}>
+              style={{ background: 'var(--color-primary)' }}>
               <Plus size={12} strokeWidth={2} /> Novo
             </button>
           </div>
