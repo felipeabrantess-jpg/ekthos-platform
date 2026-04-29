@@ -89,10 +89,6 @@ verify_jwt = false   # público — dados mínimos da church para landing de vis
 [functions.dispatch-person-event]
 verify_jwt = false   # interno — autenticado via service_role Bearer pelo chamador
 
-# ── Frente N — Notificações operacionais ─────────────────────────────────────
-[functions.notification-create]
-verify_jwt = false   # interno — autenticado via service_role Bearer pelo chamador
-
 # ── Frente M — Camada de transporte de mensagens ─────────────────────────────
 [functions.message-enqueue]
 verify_jwt = false   # interno — autenticado via service_role Bearer pelo chamador
