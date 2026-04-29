@@ -29,12 +29,12 @@ export const STAGE_LABELS: Record<string, string> = {
 
 // Stage → cor (brand tokens do design system)
 export const STAGE_COLORS: Record<string, { bg: string; text: string; bar: string }> = {
-  visitante:    { bg: 'bg-cream-dark/60',  text: 'text-ekthos-black/50', bar: '#EDE0CC' },
-  contato:      { bg: 'bg-warning-bg',     text: 'text-warning',         bar: '#C4841D' },
-  frequentador: { bg: 'bg-brand-50',       text: 'text-brand-700',       bar: '#F25830' },
-  consolidado:  { bg: 'bg-brand-50',       text: 'text-brand-600',       bar: '#e13500' },
-  discipulo:    { bg: 'bg-success-bg',     text: 'text-success',         bar: '#2D7A4F' },
-  lider:        { bg: 'bg-success-bg',     text: 'text-success',         bar: '#1B5E35' },
+  visitante:    { bg: 'bg-bg-hover',    text: 'text-text-tertiary',    bar: '#B3F0FF' },
+  contato:      { bg: 'bg-warning-bg',  text: 'text-warning',          bar: '#C4841D' },
+  frequentador: { bg: 'bg-bg-hover',    text: 'text-text-secondary',   bar: '#7BE7FF' },
+  consolidado:  { bg: 'bg-bg-hover',    text: 'text-primary',          bar: '#29B6FF' },
+  discipulo:    { bg: 'bg-success-bg',  text: 'text-success',          bar: '#0F6E56' },
+  lider:        { bg: 'bg-success-bg',  text: 'text-success',          bar: '#4CEAD8' },
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────

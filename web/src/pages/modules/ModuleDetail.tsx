@@ -206,7 +206,7 @@ export default function ModuleDetail() {
       <div className="flex items-start gap-5">
         <div
           className="h-14 w-14 rounded-2xl border flex items-center justify-center shrink-0"
-          style={{ background: 'rgba(225,53,0,0.06)', borderColor: 'rgba(225,53,0,0.12)' }}
+          style={{ background: 'var(--color-primary-bg, var(--bg-hover))', borderColor: 'var(--border-default)' }}
         >
           <Icon size={26} className="text-brand-600" strokeWidth={1.75} />
         </div>
