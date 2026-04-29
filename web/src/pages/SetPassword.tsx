@@ -50,7 +50,7 @@ function Criterion({ ok, label }: { ok: boolean; label: string }) {
   return (
     <li className="flex items-center gap-2 text-sm">
       {ok
-        ? <Check size={14} className="shrink-0" style={{ color: '#16a34a' }} />
+        ? <Check size={14} className="shrink-0" style={{ color: 'var(--color-success)' }} />
         : <X     size={14} className="shrink-0 text-gray-300" />
       }
       <span style={{ color: ok ? '#16a34a' : '#9ca3af' }}>{label}</span>
@@ -131,7 +131,7 @@ export default function SetPassword() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: '#f9eedc' }}
+      style={{ background: 'var(--bg-primary)' }}
     >
       <div className="w-full max-w-[480px] animate-fade-in-up">
 

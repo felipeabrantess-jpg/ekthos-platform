@@ -110,7 +110,7 @@ async function extractDominantColors(file: File): Promise<{ primary: string; sec
 function EkthosAvatar() {
   return (
     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-bold text-base select-none shadow-sm"
-      style={{ background: '#E13500', color: 'white' }}>
+      style={{ background: 'var(--color-primary)', color: 'white' }}>
       E
     </div>
   )
@@ -143,7 +143,7 @@ function MessageBubble({ msg, userInitial }: { msg: Message; userInitial: string
               ? 'bg-white border border-black/[0.07] rounded-3xl rounded-tl-xl text-gray-800'
               : 'rounded-3xl rounded-tr-xl text-white'
           }`}
-          style={isBot ? {} : { background: '#E13500' }}
+          style={isBot ? {} : { background: 'var(--color-primary)' }}
         >
           {msg.content.split('\n').map((line, i, arr) => {
             const contextMatch = line.match(/^_(.+)_$/)
@@ -183,7 +183,7 @@ function StreamingBubble({ content }: { content: string }) {
           {content.split('\n').map((line, i, arr) => (
             <span key={i}>{line || '\u00A0'}{i < arr.length - 1 && <br />}</span>
           ))}
-          <span className="inline-block w-0.5 h-[1em] ml-0.5 align-middle animate-pulse" style={{ background: '#E13500' }} />
+          <span className="inline-block w-0.5 h-[1em] ml-0.5 align-middle animate-pulse" style={{ background: 'var(--color-primary)' }} />
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ function LoadingDots() {
         <div className="flex gap-1.5 items-center h-5">
           {[0, 1, 2].map(i => (
             <div key={i} className="w-2 h-2 rounded-full animate-bounce"
-              style={{ background: '#E13500', animationDelay: `${i * 140}ms` }} />
+              style={{ background: 'var(--color-primary)', animationDelay: `${i * 140}ms` }} />
           ))}
         </div>
       </div>
@@ -214,11 +214,11 @@ function ProgressBar({ questionNumber, totalQuestions }: { questionNumber: numbe
     <div className="px-6 py-4 border-b border-black/[0.06] bg-white shrink-0">
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-xs font-semibold text-gray-700">Pergunta {questionNumber} de {totalQuestions}</span>
-        <span className="text-xs font-bold tabular-nums" style={{ color: '#E13500' }}>{pct}%</span>
+        <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--color-primary)' }}>{pct}%</span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#EBEBEB' }}>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-default)' }}>
         <div className="h-full rounded-full transition-all duration-700 ease-out"
-          style={{ width: `${pct}%`, background: '#E13500' }} />
+          style={{ width: `${pct}%`, background: 'var(--color-primary)' }} />
       </div>
     </div>
   )
@@ -295,7 +295,7 @@ function OnboardingPreview({ preview }: { preview: PreviewState }) {
           <div className="flex flex-wrap gap-1.5">
             {preview.departments.map((d, i) => (
               <span key={i} className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-                style={{ background: '#F9EEDC', color: '#5A5A5A' }}>{d}</span>
+                style={{ background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>{d}</span>
             ))}
           </div>
         </div>
@@ -304,7 +304,7 @@ function OnboardingPreview({ preview }: { preview: PreviewState }) {
       {preview.cells > 0 && (
         <div className="bg-white rounded-2xl border border-black/[0.06] p-4">
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">Células</p>
-          <p className="text-3xl font-bold mt-1" style={{ color: '#E13500' }}>{preview.cells}</p>
+          <p className="text-3xl font-bold mt-1" style={{ color: 'var(--color-primary)' }}>{preview.cells}</p>
         </div>
       )}
 
@@ -357,7 +357,7 @@ function ColorConfirmWidget({
         <button
           onClick={onConfirm}
           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-          style={{ background: '#E13500' }}
+          style={{ background: 'var(--color-primary)' }}
         >
           <Check size={14} strokeWidth={2.5} />
           Usar estas cores
@@ -432,8 +432,8 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
           style={{ borderColor: '#DDD', background: '#FAFAFA' }}
         >
           {uploading
-            ? <Loader size={18} strokeWidth={1.75} style={{ color: '#E13500' }} className="animate-spin" />
-            : <Upload size={18} strokeWidth={1.75} style={{ color: '#E13500' }} />
+            ? <Loader size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} className="animate-spin" />
+            : <Upload size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
           }
           <span className="text-sm text-gray-600 flex-1">
             {uploading ? 'Enviando logo...' : (uploadLabel ?? 'Clique para enviar a logo da sua igreja')}
@@ -827,7 +827,7 @@ export default function Onboarding() {
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-black/[0.06] shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-sm"
-            style={{ background: '#E13500' }}>E</div>
+            style={{ background: 'var(--color-primary)' }}>E</div>
           <div className="leading-none">
             <span className="font-semibold text-gray-900 text-sm">Ekthos</span>
             <span className="text-gray-300 text-sm"> · </span>
@@ -835,7 +835,7 @@ export default function Onboarding() {
           </div>
         </div>
         <span className="text-xs font-semibold px-3 py-1.5 rounded-full"
-          style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}>
+          style={{ background: 'rgba(225,53,0,0.08)', color: 'var(--color-primary)' }}>
           Configuração
         </span>
       </div>
@@ -892,7 +892,7 @@ export default function Onboarding() {
               <button
                 onClick={startConfiguration}
                 className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
-                style={{ background: '#E13500' }}
+                style={{ background: 'var(--color-primary)' }}
               >
                 <span>✦</span>
                 Configurar meu CRM agora
@@ -932,7 +932,7 @@ export default function Onboarding() {
                   onClick={() => sendMessage()}
                   disabled={loading || uploading || !input.trim()}
                   className="w-11 h-11 flex items-center justify-center rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-40 shrink-0"
-                  style={{ background: '#E13500' }}
+                  style={{ background: 'var(--color-primary)' }}
                 >
                   {loading
                     ? <Loader size={18} strokeWidth={1.75} className="animate-spin" />
