@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
 import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
+import { NotificationsProvider } from '@/features/notifications/context/NotificationsContext'
 
 interface ImpersonatingState {
   church_id:   string
@@ -77,6 +78,7 @@ export default function Layout() {
   }
 
   return (
+    <NotificationsProvider>
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
       {/* Mobile-only top header */}
       <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
@@ -99,5 +101,6 @@ export default function Layout() {
         </main>
       </div>
     </div>
+    </NotificationsProvider>
   )
 }

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Bell } from 'lucide-react'
-import { useNotifications } from '../hooks/useNotifications'
+import { useNotificationsContext } from '../context/NotificationsContext'
 import NotificationPanel from './NotificationPanel'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function NotificationBell() {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  const { notifications, loading, unreadCount } = useNotifications(user?.id)
+  const { notifications, loading, unreadCount } = useNotificationsContext()
 
   return (
     <div className="relative">
