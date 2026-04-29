@@ -27,7 +27,7 @@ const EKTHOS_CROSS = (
       stroke="var(--color-primary)" strokeWidth="2.5" strokeLinejoin="round"/>
     {/* Linha interna — cria o canal duplo característico */}
     <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
-      stroke="#c42e00" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
+      stroke="var(--color-primary-dark)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
   </svg>
 )
 
@@ -149,7 +149,7 @@ export default function Landing() {
   const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%21+Quero+conhecer+o+Ekthos+Church`
 
   return (
-    <div className="min-h-screen font-body antialiased text-[#161616] overflow-x-hidden" style={{ background: '#FCFAF7' }}>
+    <div className="min-h-screen font-body antialiased text-[#161616] overflow-x-hidden" style={{ background: 'var(--bg-primary)' }}>
 
       {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md border-b border-gray-100 ${scrolled ? 'shadow-sm' : ''}`}>
@@ -233,7 +233,7 @@ export default function Landing() {
               cuidar da sua comunidade.
             </p>
 
-            <p className="text-sm italic mb-8" style={{ color: 'rgba(225,53,0,0.7)' }}>
+            <p className="text-sm italic mb-8" style={{ color: 'var(--color-primary-text)' }}>
               "Conhece o estado do teu rebanho e põe o coração nos teus gados." — Pv 27:23
             </p>
 
@@ -404,7 +404,7 @@ export default function Landing() {
       </section>
 
       {/* ── 6. FUNCIONALIDADES (ALTERNATING) ──────────────────── */}
-      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
@@ -873,7 +873,7 @@ export default function Landing() {
       </section>
 
       {/* ── 10. COMPARATIVO ───────────────────────────────────── */}
-      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
         <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
           <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[#161616]">

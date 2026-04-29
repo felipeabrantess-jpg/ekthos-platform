@@ -15,8 +15,8 @@ export default function AppHeader() {
     <header
       className="hidden md:flex items-center justify-between px-6 h-14 shrink-0"
       style={{
-        background: 'rgba(249,238,220,0.95)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--border-default)',
         backdropFilter: 'blur(8px)',
       }}
     >
