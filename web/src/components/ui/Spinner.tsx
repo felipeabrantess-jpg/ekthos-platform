@@ -3,16 +3,13 @@ interface SpinnerProps {
   className?: string
 }
 
-const sizes = {
-  sm: 'h-4 w-4',
-  md: 'h-6 w-6',
-  lg: 'h-10 w-10',
-}
+const sizes = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' }
 
 export default function Spinner({ size = 'md', className = '' }: SpinnerProps) {
   return (
     <div
-      className={`animate-spin rounded-full border-2 border-cream-dark border-t-brand-600 ${sizes[size]} ${className}`}
+      className={`animate-spin rounded-full border-2 ${sizes[size]} ${className}`}
+      style={{ borderColor: 'var(--border-default)', borderTopColor: 'var(--color-primary)' }}
       role="status"
       aria-label="Carregando"
     />

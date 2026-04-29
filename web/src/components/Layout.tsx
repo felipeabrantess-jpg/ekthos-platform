@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react'
 import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
+import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
+import { NotificationsProvider } from '@/features/notifications/context/NotificationsContext'
 
 interface ImpersonatingState {
   church_id:   string
@@ -17,7 +19,7 @@ function ImpersonateBanner({ state, onExit }: {
   return (
     <div
       className="w-full flex items-center justify-between px-6 py-2 shrink-0 z-50"
-      style={{ background: '#670000' }}
+      style={{ background: 'var(--color-danger)', color: '#fff' }}
     >
       <div className="flex items-center gap-2 text-xs text-white/80">
         <Eye size={13} strokeWidth={2} />
@@ -41,15 +43,14 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: church } = useChurch()
 
-  // Fecha drawer ao navegar
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
 
-  // Inject church CSS variables globally so all components can use them
+  // Injetar CSS vars de branding da igreja
   useEffect(() => {
-    const primary   = church?.primary_color   ?? '#E13500'
-    const secondary = church?.secondary_color ?? '#670000'
+    const primary   = church?.primary_color   ?? '#29B6FF'
+    const secondary = church?.secondary_color ?? '#1FA8F0'
     document.documentElement.style.setProperty('--church-primary',   primary)
     document.documentElement.style.setProperty('--church-secondary', secondary)
     return () => {
@@ -76,24 +77,34 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
-      {/* Mobile-only top header */}
-      <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+    <NotificationsProvider>
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+        {/* Mobile: fixed top header */}
+        <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
 
-      {impersonating && (
-        <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
-      )}
-
-      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar esquerda */}
         <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-        {/* Main content — pt-14 in mobile to clear fixed MobileHeader */}
-        <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
-            <Outlet />
-          </div>
-        </main>
+        {/* Coluna direita: AppHeader + conteúdo */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {impersonating && (
+            <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
+          )}
+
+          {/* AppHeader desktop (sino + ThemeToggle + avatar) */}
+          <AppHeader />
+
+          {/* Main content — pt-14 mobile para limpar MobileHeader fixo */}
+          <main
+            className="flex-1 overflow-y-auto pt-14 md:pt-0"
+            style={{ background: 'var(--bg-primary)' }}
+          >
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </NotificationsProvider>
   )
 }
