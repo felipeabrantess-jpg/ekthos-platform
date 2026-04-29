@@ -107,14 +107,6 @@ Deno.serve(async (req: Request) => {
 
     const churchId = person.church_id as string
 
-    // ── 1b. Notificar admins para cadastros via QR Code ───
-    // Passa o mesmo sb do handler — cliente já autenticado e funcional
-    if (person.source === 'qr_code') {
-      await notifyAdminsQrCapture(sb, churchId, person as {
-        id: string; name: string | null; church_id: string
-      })
-    }
-
     // ── 2. Verificar elegibilidade ────────────────────────
 
     // 2a. Source elegível?
@@ -251,65 +243,6 @@ Deno.serve(async (req: Request) => {
     return ok()
   }
 })
-
-// ============================================================
-// Helper: notificar admins da igreja sobre cadastro via QR Code
-// Recebe sb do handler (cliente já autenticado) — sem nova instância
-// tem try/catch próprio — nunca propaga erro
-// ============================================================
-async function notifyAdminsQrCapture(
-  sb: ReturnType<typeof createClient>,
-  churchId: string,
-  person: { id: string; name: string | null; church_id: string }
-): Promise<void> {
-  try {
-    // Buscar admins usando o mesmo cliente autenticado do handler
-    const { data: admins, error: adminsErr } = await sb
-      .from('user_roles')
-      .select('user_id')
-      .eq('church_id', churchId)
-      .in('role', ['admin', 'pastor_celulas'])
-
-    console.log('[dispatch-person-event] notifyAdmins: admins=', JSON.stringify(admins), 'err=', adminsErr?.message)
-
-    if (adminsErr || !admins || admins.length === 0) {
-      console.log('[dispatch-person-event] Nenhum admin para notificar (church_id:', churchId, ')')
-      return
-    }
-
-    const personName = (person.name ?? 'Visitante').trim()
-
-    // INSERT na tabela notifications via mesmo cliente
-    for (const admin of admins) {
-      const { error: notifErr } = await sb
-        .from('notifications')
-        .insert({
-          church_id:       churchId,
-          user_id:         admin.user_id,
-          title:           'Novo cadastro via QR Code',
-          body:            `${personName} acabou de se cadastrar como visitante.`,
-          type:            'success',
-          read:            false,
-          link:            '/pessoas?tab=novos',
-          automation_name: 'qr_code_visitor',
-          person_id:       person.id,
-        })
-
-      if (notifErr) {
-        console.error('[dispatch-person-event] notification INSERT error:', notifErr.message)
-      } else {
-        console.log('[dispatch-person-event] notification INSERT ok para user:', admin.user_id)
-      }
-    }
-
-    console.log(`[dispatch-person-event] Notificações QR processadas para ${admins.length} admin(s)`)
-  } catch (err) {
-    console.error('[CRITICAL] notifyAdminsQrCapture failed:', err)
-    console.error('Stack:', err instanceof Error ? err.stack : String(err))
-    console.error('Context:', { person_id: person.id, church_id: churchId })
-    // NÃO relança — não bloqueia request principal
-  }
-}
 
 // ============================================================
 // Helper: escrever audit_log de forma segura (falha silenciosa)

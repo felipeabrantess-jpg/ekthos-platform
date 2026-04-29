@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
+import NotificationBell from '@/features/notifications/components/NotificationBell'
 import { usePlan } from '@/hooks/usePlan'
 import { useChurch, DEFAULT_MODULES } from '@/hooks/useChurch'
 import { IGREJA_NAV } from '@/lib/navigation'
@@ -126,8 +127,9 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, userInitial,
         })}
       </nav>
 
-      {/* Rodapé: avatar + logout */}
+      {/* Rodapé: avatar + sino + logout */}
       <div className="flex flex-col items-center gap-2 pb-3 border-t border-white/[0.04] pt-3">
+        <NotificationBell />
         <div
           className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
           style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
