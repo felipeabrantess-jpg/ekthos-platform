@@ -15,6 +15,7 @@ import {
   UserPlus, ShieldCheck, Smartphone,
 } from 'lucide-react'
 import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
+import LogoEkthos from '@/components/LogoEkthos'
 
 // ── Env ────────────────────────────────────────────────────
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
@@ -348,11 +349,8 @@ export default function Landing() {
       {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md border-b border-gray-100 ${scrolled ? 'shadow-sm' : ''}`}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3 shrink-0">
-            {EKTHOS_CROSS}
-            <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
-              Ekthos <span style={{ color: 'var(--color-primary)' }}>Church</span>
-            </span>
+          <a href="/" className="flex items-center shrink-0">
+            <LogoEkthos height={28} color="#161616" showChurch={true} />
           </a>
 
           <nav className="hidden md:flex items-center gap-7">

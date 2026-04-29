@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import LogoEkthos from '@/components/LogoEkthos'
 import { Link, Navigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,11 +35,9 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-full max-w-sm animate-fade-in-up">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="font-display text-4xl font-bold" style={{ color: 'var(--color-primary)' }}>
-            Ekthos
-          </h1>
-          <p className="text-sm text-gray-500 mt-2 font-body">
+        <div className="flex flex-col items-center mb-8">
+          <LogoEkthos height={40} color="var(--text-primary)" showChurch={true} />
+          <p className="text-sm text-gray-500 mt-3 font-body">
             Plataforma operacional para igrejas
           </p>
         </div>
