@@ -28,10 +28,10 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f9eedc]">
+        <div className="min-h-screen flex items-center justify-center bg-bg-primary">
           <div className="bg-white rounded-2xl shadow-sm border border-black/6 p-8 max-w-md w-full text-center">
             <div className="w-12 h-12 rounded-full bg-[#FDE8E0] flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-[#e13500]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -41,7 +41,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-[#e13500] text-white rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-[#FF4D1A] transition-colors"
+              className="bg-primary text-white rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-[var(--color-primary-hover)] transition-colors"
             >
               Recarregar página
             </button>

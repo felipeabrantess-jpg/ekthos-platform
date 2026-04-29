@@ -11,31 +11,31 @@ const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string || '55119
 export default function CheckoutCancelado() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-5 py-16"
-      style={{ background: '#f9eedc' }}>
+      style={{ background: 'var(--bg-primary)' }}>
 
       <div className="w-full max-w-md text-center">
         {/* Ícone */}
         <div className="text-5xl mb-6">🕊️</div>
 
-        <h1 className="font-display text-3xl font-bold mb-3" style={{ color: '#161616' }}>
+        <h1 className="font-display text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
           Tudo bem, sem pressa.
         </h1>
-        <p className="text-base leading-relaxed mb-8" style={{ color: '#5A5A5A' }}>
+        <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--text-secondary)' }}>
           Você fechou o pagamento. Se tiver alguma dúvida ou quiser conversar antes de decidir,
           nossa equipe está disponível para ajudar.
         </p>
 
         {/* Card de contorno de objeção */}
-        <div className="bg-white rounded-2xl border p-6 mb-8 text-left" style={{ borderColor: '#f0e0c8' }}>
-          <p className="font-semibold text-sm mb-4" style={{ color: '#161616' }}>Posso te ajudar com alguma dúvida?</p>
+        <div className="bg-white rounded-2xl border p-6 mb-8 text-left" style={{ borderColor: 'var(--border-default)' }}>
+          <p className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Posso te ajudar com alguma dúvida?</p>
           <ul className="space-y-2.5">
             {[
               'Quer entender melhor qual plano faz sentido pra sua igreja?',
               'Tem dúvida sobre como funciona o pagamento ou a migração?',
               'Precisa ver uma demonstração antes de decidir?',
             ].map((q, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: '#5A5A5A' }}>
-                <span style={{ color: '#e13500', flexShrink: 0 }}>→</span>
+              <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <span style={{ color: 'var(--color-primary)', flexShrink: 0 }}>→</span>
                 {q}
               </li>
             ))}
@@ -54,13 +54,13 @@ export default function CheckoutCancelado() {
 
           <Link to="/#pricing"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold border-2 transition-all hover:shadow-md"
-            style={{ borderColor: '#e13500', color: '#e13500' }}>
+            style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}>
             <ArrowLeft size={18} strokeWidth={2} />
             Voltar para os planos
           </Link>
         </div>
 
-        <p className="text-xs mt-8" style={{ color: '#AAA' }}>
+        <p className="text-xs mt-8" style={{ color: 'var(--text-tertiary)' }}>
           Sem pressão. Quando estiver pronto, estaremos aqui. 🙏
         </p>
       </div>

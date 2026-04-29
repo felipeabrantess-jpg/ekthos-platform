@@ -33,11 +33,11 @@ const STATUS_CONFIG: Record<Lead['status'], { label: string; color: string; bg: 
   contacted:   { label: 'Contatado',   color: '#2B6CB0', bg: 'rgba(43,108,176,0.1)' },
   negotiating: { label: 'Negociando',  color: '#C4841D', bg: 'rgba(196,132,29,0.1)' },
   closed:      { label: 'Fechado',     color: '#1a5c38', bg: 'rgba(26,92,56,0.15)' },
-  lost:        { label: 'Perdido',     color: '#e13500', bg: 'rgba(225,53,0,0.1)' },
+  lost:        { label: 'Perdido',     color: 'var(--color-primary)', bg: 'rgba(225,53,0,0.1)' },
 }
 
 const PLAN_COLORS: Record<string, string> = {
-  'Missão':    '#e13500',
+  'Missão':    'var(--color-primary)',
   'Avivamento':'#670000',
 }
 
@@ -114,13 +114,13 @@ export default function AdminLeads() {
   const countByStatus = (s: Lead['status']) => leads.filter(l => l.status === s).length
 
   return (
-    <div className="min-h-screen" style={{ background: '#f9eedc' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
       <div className="px-6 lg:px-10 pt-8 pb-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500' }}>
+              style={{ background: 'rgba(225,53,0,0.1)', color: 'var(--color-primary)' }}>
               <UserPlus size={20} />
             </div>
             <div>
@@ -185,7 +185,7 @@ export default function AdminLeads() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: '#f9eedc' }}>
+                <tr style={{ background: 'var(--bg-primary)' }}>
                   <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Pastor / Igreja</th>
                   <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Plano</th>
                   <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden lg:table-cell">Telefone</th>
@@ -277,12 +277,12 @@ export default function AdminLeads() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">Contato</p>
                 <div className="space-y-2.5">
                   <a href={`mailto:${selected.email}`}
-                    className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[#e13500] transition-colors">
+                    className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[var(--color-primary)] transition-colors">
                     <Mail size={15} className="text-gray-400" /> {selected.email}
                   </a>
                   {selected.phone && (
                     <a href={`https://wa.me/55${selected.phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[#e13500] transition-colors">
+                      className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[var(--color-primary)] transition-colors">
                       <Phone size={15} className="text-gray-400" /> {selected.phone}
                     </a>
                   )}
@@ -355,7 +355,7 @@ export default function AdminLeads() {
                     onClick={() => void saveNotes()}
                     disabled={saving || notes === (selected.notes ?? '')}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all disabled:opacity-40"
-                    style={{ background: '#e13500', color: '#fff' }}>
+                    style={{ background: 'var(--color-primary)', color: '#fff' }}>
                     {saving ? (
                       <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
                     ) : <Check size={12} />}
@@ -367,7 +367,7 @@ export default function AdminLeads() {
                   onChange={e => setNotes(e.target.value)}
                   rows={5}
                   placeholder="Adicione notas sobre este lead, histórico de contato, próximos passos..."
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors resize-none"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[var(--color-primary)] transition-colors resize-none"
                   style={{ background: '#fafafa' }}
                 />
               </div>
@@ -384,8 +384,8 @@ export default function AdminLeads() {
                   </a>
                 )}
                 <a href={`mailto:${selected.email}?subject=Sua+solicitação+do+plano+${encodeURIComponent(selected.plan_interest)}&body=Olá+${encodeURIComponent(selected.name)}!`}
-                  className="flex items-center gap-2 flex-1 justify-center py-3 rounded-xl text-sm font-semibold border-2 transition-all hover:bg-[#e13500]/5"
-                  style={{ borderColor: '#e13500', color: '#e13500' }}>
+                  className="flex items-center gap-2 flex-1 justify-center py-3 rounded-xl text-sm font-semibold border-2 transition-all hover:bg-[var(--color-primary)]/5"
+                  style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}>
                   <Mail size={16} /> Email
                 </a>
               </div>

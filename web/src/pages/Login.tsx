@@ -31,11 +31,11 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-full max-w-sm animate-fade-in-up">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>
+          <h1 className="font-display text-4xl font-bold" style={{ color: 'var(--color-primary)' }}>
             Ekthos
           </h1>
           <p className="text-sm text-gray-500 mt-2 font-body">

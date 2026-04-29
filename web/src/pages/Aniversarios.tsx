@@ -107,7 +107,7 @@ function PersonCard({
       {/* Avatar */}
       <div
         className="h-11 w-11 rounded-full flex items-center justify-center shrink-0 text-base font-bold text-white"
-        style={{ background: 'var(--church-primary, #e13500)' }}
+        style={{ background: 'var(--church-primary, var(--color-primary))' }}
       >
         {getInitial(person.name)}
       </div>

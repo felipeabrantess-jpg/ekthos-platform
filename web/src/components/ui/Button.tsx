@@ -4,10 +4,10 @@ import Spinner from './Spinner'
 type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'wine'
 
 const variants: Record<ButtonVariant, string> = {
-  primary:   'bg-brand-600 text-white hover:bg-brand-500 focus:ring-brand-600 active:bg-brand-700',
-  secondary: 'bg-white text-ekthos-black border border-black/10 hover:border-brand-600 hover:text-brand-600 focus:ring-brand-600',
-  danger:    'bg-brand-600 text-white hover:bg-brand-500 focus:ring-brand-600',
-  ghost:     'text-ekthos-black hover:text-brand-600 hover:bg-brand-50 focus:ring-brand-600',
+  primary:   'bg-primary text-white hover:bg-[var(--color-primary-hover)] active:bg-[var(--color-primary-dark)] focus:ring-primary',
+  secondary: 'bg-bg-surface text-text-primary border border-border-default hover:border-primary hover:text-primary focus:ring-primary',
+  danger:    'bg-[var(--color-danger)] text-white hover:opacity-90 focus:ring-[var(--color-danger)]',
+  ghost:     'text-text-secondary hover:text-primary hover:bg-bg-hover focus:ring-primary',
   wine:      'bg-wine text-wine-bg hover:bg-wine-light focus:ring-wine border-0',
 }
 

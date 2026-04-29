@@ -19,7 +19,7 @@ interface Task {
 }
 
 const PRIORITY_CONFIG = {
-  urgent: { label: 'Urgente', color: '#e13500', bg: '#e1350018' },
+  urgent: { label: 'Urgente', color: 'var(--color-primary)', bg: 'var(--color-primary)18' },
   high:   { label: 'Alta',    color: '#C4841D', bg: '#C4841D18' },
   medium: { label: 'Média',   color: '#4F6EE1', bg: '#4F6EE118' },
   low:    { label: 'Baixa',   color: '#8A8A8A', bg: '#8A8A8A18' },
@@ -141,7 +141,7 @@ export default function AdminTasks() {
           <button
             onClick={() => setShowForm(s => !s)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             <Plus size={15} strokeWidth={2} />
             Nova tarefa
@@ -159,7 +159,7 @@ export default function AdminTasks() {
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
           />
           <textarea
             placeholder="Descrição (opcional)..."
@@ -167,7 +167,7 @@ export default function AdminTasks() {
             onChange={e => setNewDesc(e.target.value)}
             rows={2}
             className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent resize-none"
-            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
           />
           <div className="flex items-center gap-3">
             <div className="flex-1">
@@ -204,7 +204,7 @@ export default function AdminTasks() {
               onClick={() => void createTask()}
               disabled={submitting || !newTitle.trim()}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
-              style={{ background: '#e13500' }}
+              style={{ background: 'var(--color-primary)' }}
             >
               {submitting && <Loader size={13} strokeWidth={2} className="animate-spin" />}
               Criar tarefa
@@ -222,7 +222,7 @@ export default function AdminTasks() {
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               filter === f ? 'text-white' : 'text-gray-500 hover:text-gray-800'
             }`}
-            style={filter === f ? { background: '#e13500' } : undefined}
+            style={filter === f ? { background: 'var(--color-primary)' } : undefined}
           >
             {f === 'open' ? 'Abertas' : f === 'in_progress' ? 'Em andamento' : 'Todas'}
           </button>
@@ -246,7 +246,7 @@ export default function AdminTasks() {
         <div className="space-y-4">
           {urgent.length > 0 && (
             <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#e13500' }}>
+              <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-primary)' }}>
                 Urgentes
               </h2>
               <TaskList tasks={urgent} onUpdateStatus={updateStatus} />
@@ -309,7 +309,7 @@ function TaskList({ tasks, onUpdateStatus }: {
                 {task.due_date && (
                   <span
                     className="flex items-center gap-1 text-[10px]"
-                    style={{ color: isOverdue ? '#e13500' : '#8A8A8A' }}
+                    style={{ color: isOverdue ? 'var(--color-primary)' : '#8A8A8A' }}
                   >
                     <Clock size={10} strokeWidth={2} />
                     {relDate(task.due_date)}

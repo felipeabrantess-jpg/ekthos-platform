@@ -48,7 +48,7 @@ const PLANS: Plan[] = [
     description:    'Para igrejas em crescimento que querem automação inteligente.',
     icon:           <Zap size={24} strokeWidth={1.75} />,
     badge:          'Mais escolhido',
-    color:          '#e13500',
+    color:          'var(--color-primary)',
     features: [
       'Até 3 usuários',
       'Agente Suporte 24h (grátis)',
@@ -126,11 +126,11 @@ export default function ChoosePlan() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-4" style={{ background: '#f9eedc' }}>
+    <div className="min-h-screen py-12 px-4" style={{ background: 'var(--bg-primary)' }}>
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
-          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
+          <h1 className="font-display text-4xl font-bold" style={{ color: 'var(--color-primary)' }}>Ekthos</h1>
           <h2 className="font-display text-2xl font-semibold text-gray-800 mt-4">Escolha seu plano</h2>
           <p className="text-gray-500 mt-2 text-sm">
             Todos os planos incluem o Agente Suporte 24h gratuitamente.
@@ -225,11 +225,11 @@ export default function ChoosePlan() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Complementos disponíveis em qualquer plano</h3>
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1.5">
-              <Check size={14} strokeWidth={2} style={{ color: '#e13500' }} />
+              <Check size={14} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
               Usuário extra: <strong>R$69,90/mês</strong>
             </span>
             <span className="flex items-center gap-1.5">
-              <Check size={14} strokeWidth={2} style={{ color: '#e13500' }} />
+              <Check size={14} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
               Agente de IA adicional: <strong>a partir de R$97,89/mês</strong>
             </span>
           </div>

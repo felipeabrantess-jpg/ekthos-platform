@@ -1,7 +1,7 @@
 // ============================================================
 // Landing Page — Ekthos Church
 // Skills: ekthos-frontend + landing-page-ekthos
-// Design: bg-white, cream sections, vermelho #e13500
+// Design: bg-white, cream sections, vermelho var(--color-primary)
 // Rebuilt 2026-04-22: alternating layouts, no icon circles,
 // no CSS mockups, no fake numbers, Preview MCP validated
 // ============================================================
@@ -24,7 +24,7 @@ const EKTHOS_CROSS = (
   <svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
     {/* Linha externa da cruz */}
     <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z"
-      stroke="#e13500" strokeWidth="2.5" strokeLinejoin="round"/>
+      stroke="var(--color-primary)" strokeWidth="2.5" strokeLinejoin="round"/>
     {/* Linha interna — cria o canal duplo característico */}
     <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
       stroke="#c42e00" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
@@ -157,7 +157,7 @@ export default function Landing() {
           <a href="/" className="flex items-center gap-3 shrink-0">
             {EKTHOS_CROSS}
             <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
-              Ekthos <span style={{ color: '#e13500' }}>Church</span>
+              Ekthos <span style={{ color: 'var(--color-primary)' }}>Church</span>
             </span>
           </a>
 
@@ -182,7 +182,7 @@ export default function Landing() {
             </Link>
             <button onClick={scrollToPricing}
               className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: '#e13500' }}>
+              style={{ background: 'var(--color-primary)' }}>
               Ver planos
             </button>
           </div>
@@ -207,7 +207,7 @@ export default function Landing() {
               </Link>
               <button onClick={scrollToPricing}
                 className="flex-1 text-sm font-semibold py-2.5 rounded-xl text-white"
-                style={{ background: '#e13500' }}>
+                style={{ background: 'var(--color-primary)' }}>
                 Ver planos
               </button>
             </div>
@@ -224,7 +224,7 @@ export default function Landing() {
             <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[#161616]"
               style={{ letterSpacing: '-0.02em' }}>
               Sua igreja merece uma gestão{' '}
-              <span style={{ color: '#e13500' }}>à altura do chamado</span>
+              <span style={{ color: 'var(--color-primary)' }}>à altura do chamado</span>
             </h1>
 
             <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0 text-gray-500">
@@ -239,8 +239,8 @@ export default function Landing() {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <button onClick={scrollToPricing}
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[#c42e00] active:scale-[0.98] shadow-lg shadow-[#e13500]/20"
-                style={{ background: '#e13500', minHeight: 56 }}>
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[var(--color-primary-dark)] active:scale-[0.98] shadow-lg shadow-primary/20"
+                style={{ background: 'var(--color-primary)', minHeight: 56 }}>
                 Começar agora →
               </button>
               <a href={waHref} target="_blank" rel="noopener noreferrer"
@@ -321,7 +321,7 @@ export default function Landing() {
       {/* ── 4. PROBLEMA ───────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
             A realidade de muitas igrejas
           </p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
@@ -335,22 +335,22 @@ export default function Landing() {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             {
-              icon: <Users size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+              icon: <Users size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
               title: 'Membros se afastando em silêncio',
               body: 'Você só percebe que alguém saiu quando já foi embora. Sem dados, sem alertas, sem acompanhamento sistemático.',
             },
             {
-              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
               title: 'Horas perdidas em tarefas manuais',
               body: 'Planilhas, WhatsApp, cadernos. O pastor gasta mais tempo organizando do que pastoreando.',
             },
             {
-              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
               title: 'Decisões sem dados reais',
               body: 'Sem métricas, você navega por intuição. Quantos visitantes voltaram? Qual ministério está em queda?',
             },
           ].map((p, i) => (
-            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 hover:border-[#e13500]/30 transition-all duration-200">
+            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 hover:border-primary/30 transition-all duration-200">
               <div className="flex items-center gap-2.5 mb-4">
                 {p.icon}
                 <h3 className="font-semibold text-base text-[#161616]">{p.title}</h3>
@@ -407,7 +407,7 @@ export default function Landing() {
       <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
               Tudo que sua operação pastoral precisa
             </p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
@@ -482,7 +482,7 @@ export default function Landing() {
             >
               {/* Text */}
               <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
                   {feat.label}
                 </p>
                 <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
@@ -492,7 +492,7 @@ export default function Landing() {
                 <ul className="space-y-3">
                   {feat.items.map(item => (
                     <li key={item} className="flex items-start gap-3 text-sm text-[#161616]">
-                      <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }} />
+                      <Check size={16} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
                       {item}
                     </li>
                   ))}
@@ -519,7 +519,7 @@ export default function Landing() {
       <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
               Soluções especializadas
             </p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
@@ -535,7 +535,7 @@ export default function Landing() {
             <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-start justify-between mb-5">
                 <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
-                  <UserPlus size={20} strokeWidth={1.75} style={{ color: '#e13500' }} />
+                  <UserPlus size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   Gestão de Voluntários e Escalas
                 </h3>
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
@@ -604,12 +604,12 @@ export default function Landing() {
             {/* Copy */}
             <div className="flex-1 text-center lg:text-left">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold mb-6 border"
-                style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500', borderColor: 'rgba(225,53,0,0.25)' }}>
+                style={{ background: 'rgba(225,53,0,0.15)', color: 'var(--color-primary)', borderColor: 'rgba(225,53,0,0.25)' }}>
                 <Smartphone size={12} /> Exclusivo do plano Avivamento
               </span>
               <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#f9eedc' }}>
                 Sua igreja com{' '}
-                <span style={{ color: '#e13500' }}>aplicativo próprio</span>
+                <span style={{ color: 'var(--color-primary)' }}>aplicativo próprio</span>
               </h2>
               <p className="text-lg leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(249,238,220,0.7)' }}>
                 No plano Avivamento, sua igreja ganha um aplicativo exclusivo com a identidade,
@@ -624,7 +624,7 @@ export default function Landing() {
                   ['Conteúdo devocional e materiais',               'Devocionais, estudos e avisos'],
                 ].map(([main, sub]) => (
                   <li key={main} className="flex items-start gap-3">
-                    <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 3 }} />
+                    <Check size={16} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 3 }} />
                     <div>
                       <p className="text-sm font-medium" style={{ color: 'rgba(249,238,220,0.9)' }}>{main}</p>
                       <p className="text-xs mt-0.5" style={{ color: 'rgba(249,238,220,0.45)' }}>{sub}</p>
@@ -634,7 +634,7 @@ export default function Landing() {
               </ul>
               <button onClick={() => setLeadModal('avivamento')}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: '#e13500', minHeight: 52 }}>
+                style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                 Solicitar contato sobre o Avivamento →
               </button>
             </div>
@@ -663,7 +663,7 @@ export default function Landing() {
         className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: '#F0EAE0' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Planos</p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
               Investimento que se paga com o primeiro membro retido
             </h2>
@@ -717,7 +717,7 @@ export default function Landing() {
                   onClick={() => handleCheckout('chamado')}
                   disabled={checkoutPlan === 'chamado'}
                   className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
+                  style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)', minHeight: 52 }}>
                   {checkoutPlan === 'chamado' ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -730,15 +730,15 @@ export default function Landing() {
             </div>
 
             {/* ── MISSÃO (popular) ── */}
-            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-xl scale-[1.02] flex flex-col">
+            <div className="relative bg-[#161616] rounded-2xl border-2 border-[var(--color-primary)] shadow-xl scale-[1.02] flex flex-col">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#e13500' }}>Mais popular</span>
+                  style={{ background: 'var(--color-primary)' }}>Mais popular</span>
               </div>
 
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
-                  <Zap size={18} strokeWidth={1.75} style={{ color: '#e13500' }} />
+                  <Zap size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   <div>
                     <p className="font-semibold text-base" style={{ color: '#f9eedc' }}>Missão</p>
                     <p className="text-xs" style={{ color: 'rgba(249,238,220,0.5)' }}>Igrejas de até 1.000 membros</p>
@@ -774,7 +774,7 @@ export default function Landing() {
                 <button
                   onClick={() => setLeadModal('missao')}
                   className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: '#e13500', minHeight: 52 }}>
+                  style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                   Solicitar contato →
                 </button>
                 <p className="text-center text-xs mt-2" style={{ color: 'rgba(249,238,220,0.35)' }}>
@@ -839,7 +839,7 @@ export default function Landing() {
                 <button
                   onClick={() => setLeadModal('avivamento')}
                   className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: '#e13500', minHeight: 52 }}>
+                  style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                   Solicitar contato →
                 </button>
                 <p className="text-center text-xs mt-2 text-gray-400">Acompanhamento dedicado</p>
@@ -859,10 +859,10 @@ export default function Landing() {
                 { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional',   price: 'Sob consulta', desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
               ].map((a, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
-                  <span style={{ color: '#e13500', marginTop: 2 }}>{a.icon}</span>
+                  <span style={{ color: 'var(--color-primary)', marginTop: 2 }}>{a.icon}</span>
                   <div>
                     <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
-                    <p className="text-xs font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
+                    <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--color-primary)' }}>{a.price}</p>
                     <p className="text-xs mt-0.5 text-gray-400">{a.desc}</p>
                   </div>
                 </div>
@@ -887,7 +887,7 @@ export default function Landing() {
                 <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
                 <th className="p-4 text-center font-semibold text-gray-400">Planilhas</th>
                 <th className="p-4 text-center font-semibold text-gray-400">CRM Genérico</th>
-                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
+                <th className="p-4 text-center font-semibold" style={{ color: 'var(--color-primary)', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
               </tr>
             </thead>
             <tbody>
@@ -906,7 +906,7 @@ export default function Landing() {
                   <td className="p-4 text-[#161616]">{label}</td>
                   <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                   <td className="p-4 text-center">{col2 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
-                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: '#e13500', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: 'var(--color-primary)', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                 </tr>
               ))}
             </tbody>
@@ -935,7 +935,7 @@ export default function Landing() {
             ].map((t, i) => (
               <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(249,238,220,0.04)', borderColor: 'rgba(249,238,220,0.08)' }}>
                 <div className="flex gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="#e13500" style={{ color: '#e13500' }} />)}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="var(--color-primary)" style={{ color: 'var(--color-primary)' }} />)}
                 </div>
                 <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(249,238,220,0.75)' }}>"{t.text}"</p>
                 <div>
@@ -952,7 +952,7 @@ export default function Landing() {
       <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
         <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Dúvidas frequentes</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
             Respondemos antes de você perguntar
           </h2>
@@ -965,7 +965,7 @@ export default function Landing() {
                 className="w-full flex items-center justify-between px-6 py-5 text-left">
                 <span className="font-semibold text-base pr-4 text-[#161616]">{item.q}</span>
                 <ChevronDown size={18} strokeWidth={2}
-                  style={{ color: '#e13500', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
+                  style={{ color: 'var(--color-primary)', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
               </button>
               {faqOpen === i && (
                 <div className="px-6 pb-5">
@@ -980,7 +980,7 @@ export default function Landing() {
 
       {/* ── 13. CTA FINAL ─────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 w-full"
-        style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #670000 100%)' }}>
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-sm font-semibold uppercase tracking-widest mb-4 text-white/60">Comece hoje mesmo</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-5">
@@ -995,7 +995,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={scrollToPricing}
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
-              style={{ color: '#e13500', minHeight: 56 }}>
+              style={{ color: 'var(--color-primary)', minHeight: 56 }}>
               Ver planos
             </button>
             <a href={waHref} target="_blank" rel="noopener noreferrer"
@@ -1021,7 +1021,7 @@ export default function Landing() {
                     stroke="rgba(249,238,220,0.5)" strokeWidth="1.5" strokeLinejoin="round"/>
                 </svg>
                 <span className="font-display text-2xl font-bold text-white tracking-tight">
-                  Ekthos <span style={{ color: '#e13500' }}>Church</span>
+                  Ekthos <span style={{ color: 'var(--color-primary)' }}>Church</span>
                 </span>
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.45)' }}>
@@ -1167,7 +1167,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
           </button>
           <div className="flex items-center gap-3 mb-1">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
-              style={{ background: '#e13500' }}>
+              style={{ background: 'var(--color-primary)' }}>
               <UserPlus size={12} /> Plano {planLabel}
             </span>
           </div>
@@ -1191,7 +1191,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
               </p>
               <button onClick={onClose}
                 className="mt-6 px-8 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
-                style={{ background: '#e13500' }}>
+                style={{ background: 'var(--color-primary)' }}>
                 Fechar
               </button>
             </div>
@@ -1205,11 +1205,11 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
               ].map(f => (
                 <div key={f.name}>
                   <label className="block text-xs font-semibold text-[#161616] mb-1.5">
-                    {f.label} {f.required && <span style={{ color: '#e13500' }}>*</span>}
+                    {f.label} {f.required && <span style={{ color: 'var(--color-primary)' }}>*</span>}
                   </label>
                   <input name={f.name} type={f.type} value={form[f.name as keyof typeof form]}
                     onChange={handleChange} required={f.required} placeholder={f.placeholder}
-                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                     style={{ background: '#fafafa' }} />
                 </div>
               ))}
@@ -1217,7 +1217,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
               <div>
                 <label className="block text-xs font-semibold text-[#161616] mb-1.5">Quantidade de membros</label>
                 <select name="estimated_members" value={form.estimated_members} onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                   style={{ background: '#fafafa' }}>
                   <option value="">Selecione</option>
                   <option value="Até 100">Até 100</option>
@@ -1241,7 +1241,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
 
               <button type="submit" disabled={sending}
                 className="w-full py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 mt-2"
-                style={{ background: '#e13500', minHeight: 52 }}>
+                style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                 {sending ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

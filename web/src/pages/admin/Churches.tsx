@@ -34,7 +34,7 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_COLOR: Record<string, string> = {
   onboarding: '#C4841D',
   configured:  '#2D7A4F',
-  suspended:   '#e13500',
+  suspended:   'var(--color-primary)',
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -45,7 +45,7 @@ const PLAN_LABEL: Record<string, string> = {
 
 function HealthBar({ score }: { score: number | null }) {
   if (score === null) return <span className="text-xs text-gray-300">—</span>
-  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : 'var(--color-primary)'
   return (
     <div className="flex items-center gap-2">
       <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -76,7 +76,7 @@ function PlanBadge({ slug }: { slug: string | null }) {
   if (!slug) return <span className="text-xs text-gray-300">—</span>
   const colors: Record<string, string> = {
     chamado:    '#5A5A5A',
-    missao:     '#e13500',
+    missao:     'var(--color-primary)',
     avivamento: '#670000',
   }
   const color = colors[slug] ?? '#8A8A8A'
@@ -113,7 +113,7 @@ function ChurchAvatar({ name, logo_url }: { name: string; logo_url: string | nul
   return (
     <div
       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-white text-xs font-bold"
-      style={{ background: '#e13500' }}
+      style={{ background: 'var(--color-primary)' }}
     >
       {name.charAt(0).toUpperCase()}
     </div>
@@ -263,7 +263,7 @@ export default function AdminChurches() {
         <button
           onClick={() => { setShowModal(true); setCreateError('') }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-          style={{ background: '#e13500' }}
+          style={{ background: 'var(--color-primary)' }}
         >
           <Plus size={15} strokeWidth={2} />
           Nova Igreja
@@ -288,7 +288,7 @@ export default function AdminChurches() {
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nome, cidade..."
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+            style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
           />
         </div>
 
@@ -304,7 +304,7 @@ export default function AdminChurches() {
                   ? 'text-white'
                   : 'text-gray-500 hover:bg-gray-100'
               }`}
-              style={status === s ? { background: '#e13500' } : undefined}
+              style={status === s ? { background: 'var(--color-primary)' } : undefined}
             >
               {s === 'all' ? 'Todos' : STATUS_LABEL[s]}
             </button>
@@ -478,7 +478,7 @@ export default function AdminChurches() {
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="Igreja Batista da Graça"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 />
               </div>
 
@@ -491,7 +491,7 @@ export default function AdminChurches() {
                   onChange={e => setForm(f => ({ ...f, admin_email: e.target.value }))}
                   placeholder="pastor@igrejagrace.com.br"
                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                  style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 />
                 <p className="text-[10px] text-gray-400 mt-1">Um convite será enviado para este email.</p>
               </div>
@@ -506,7 +506,7 @@ export default function AdminChurches() {
                     onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
                     placeholder="São Paulo"
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                   />
                 </div>
                 <div>
@@ -518,7 +518,7 @@ export default function AdminChurches() {
                     placeholder="SP"
                     maxLength={2}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                    style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                   />
                 </div>
               </div>
@@ -555,7 +555,7 @@ export default function AdminChurches() {
                 onClick={() => void createChurch()}
                 disabled={creating}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all"
-                style={{ background: '#e13500' }}
+                style={{ background: 'var(--color-primary)' }}
               >
                 {creating && <Loader size={14} strokeWidth={2} className="animate-spin" />}
                 {creating ? 'Criando...' : 'Criar Igreja'}

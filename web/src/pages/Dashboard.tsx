@@ -16,15 +16,15 @@ import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
-const BRAND   = '#e13500'
-const BRAND_L = '#F9A890'
-const SUCCESS = '#2D7A4F'
-const WARN    = '#C4841D'
+const BRAND   = '#29B6FF'
+const BRAND_L = '#7BE7FF'
+const SUCCESS = '#0F6E56'
+const WARN    = '#854F0B'
 
 const STAGE_COLORS = [
-  '#e13500', '#F25830', '#F9A890', '#FCCFBF',
-  '#2D7A4F', '#4DA070', '#C4841D', '#D9A84F',
-  '#670000', '#8B1A1A', '#B85C00',
+  '#29B6FF', '#50C4FF', '#7BE7FF', '#B3F0FF',
+  '#0F6E56', '#4CEAD8', '#854F0B', '#C4841D',
+  '#185FA5', '#2B6CB0', '#0891B2',
 ]
 
 const STAGE_LABELS: Record<string, string> = {
@@ -215,7 +215,7 @@ function ChartCard({ title, sub, children, height = 220 }: {
 function ChartEmptyState({ message = 'Nenhum dado no período' }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-3">
-      <BarChart2 size={36} strokeWidth={1.25} style={{ color: '#EDE0CC' }} />
+      <BarChart2 size={36} strokeWidth={1.25} style={{ color: 'var(--border-default)' }} />
       <p className="text-sm text-gray-400">{message}</p>
     </div>
   )
@@ -376,7 +376,7 @@ export default function Dashboard() {
         {/* Distribuição por estágio */}
         {consolidacao && consolidacao.porStage.length > 0 && (
           <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5">
-            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(30,20,10,0.4)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-tertiary)' }}>
               Distribuição por Estágio
             </p>
             <div className="space-y-2.5">
@@ -390,7 +390,7 @@ export default function Dashboard() {
                 return (
                   <div key={stage} className="flex items-center gap-3">
                     <span className={`text-xs font-medium w-24 shrink-0 ${colors.text}`}>{label}</span>
-                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#EDE0CC' }}>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--border-default)' }}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${pct}%`, background: colors.bar }}
@@ -441,7 +441,7 @@ export default function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.caminhoDiscipulado} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
                   <XAxis type="number" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={120} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -462,7 +462,7 @@ export default function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.evolucaoMembros} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-hover)" />
                   <XAxis dataKey="mes" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={36} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -485,7 +485,7 @@ export default function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.crescimentoCelulas} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-hover)" vertical={false} />
                   <XAxis dataKey="periodo" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -503,7 +503,7 @@ export default function Dashboard() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.voluntariosPorDept} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -520,7 +520,7 @@ export default function Dashboard() {
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={data.topCelulas} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -539,7 +539,7 @@ export default function Dashboard() {
           <ChartCard title="Células com Mais Membros" sub="Top células por número de membros cadastrados" height={220}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.topCelulas} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
                 <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
                 {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

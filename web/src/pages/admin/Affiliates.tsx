@@ -163,7 +163,7 @@ function NewAffiliateModal({ onClose, onCreated }: { onClose: () => void; onCrea
           <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 border border-black/5">Cancelar</button>
           <button onClick={() => void save()} disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-            style={{ background: '#e13500' }}>
+            style={{ background: 'var(--color-primary)' }}>
             {saving ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</> : 'Criar afiliado'}
           </button>
         </div>
@@ -206,7 +206,7 @@ function AffiliatesTab({ toast }: { toast: (m: string, t: 'success' | 'error') =
       <div className="flex justify-end mb-4">
         <button onClick={() => setShowNew(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-          style={{ background: '#e13500' }}>
+          style={{ background: 'var(--color-primary)' }}>
           <Plus size={14} strokeWidth={2} /> Novo Afiliado
         </button>
       </div>
@@ -381,7 +381,7 @@ function CommissionsTab({ toast }: { toast: (m: string, t: 'success' | 'error') 
           </button>
           <button onClick={() => void exportCSV()} disabled={exporting || approved.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-40 transition"
-            style={{ background: '#e13500' }}>
+            style={{ background: 'var(--color-primary)' }}>
             {exporting ? <Loader size={12} strokeWidth={2} className="animate-spin" /> : <Download size={12} strokeWidth={2} />}
             Exportar CSV ({approved.length})
           </button>
@@ -528,7 +528,7 @@ function PerformanceTab() {
           <div key={m.label} className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs text-gray-400">{m.label}</p>
-              <span style={{ color: '#e13500' }}>{m.icon}</span>
+              <span style={{ color: 'var(--color-primary)' }}>{m.icon}</span>
             </div>
             <p className="font-mono-ekthos text-2xl font-bold text-gray-900">{m.value}</p>
           </div>
@@ -590,7 +590,7 @@ export default function AdminAffiliates() {
     <div className="space-y-6 pb-8">
       <div>
         <h1 className="font-display text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <Users size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+          <Users size={26} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
           Afiliados
         </h1>
         <p className="text-sm text-gray-400 mt-1">
@@ -604,7 +604,7 @@ export default function AdminAffiliates() {
             className={`px-4 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px ${
               tab === t.id ? 'border-red-600 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-700'
             }`}
-            style={tab === t.id ? { borderColor: '#e13500' } : {}}>
+            style={tab === t.id ? { borderColor: 'var(--color-primary)' } : {}}>
             {t.label}
           </button>
         ))}

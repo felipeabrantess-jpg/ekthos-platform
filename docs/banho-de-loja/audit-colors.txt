@@ -1,0 +1,638 @@
+web/src/components/AdminLayout.tsx:    <div className="min-h-screen flex flex-col" style={{ background: '#f9eedc' }}>
+web/src/components/AdminLayout.tsx:        style={{ background: '#670000' }}
+web/src/components/AdminLayout.tsx:          style={{ background: '#161616' }}
+web/src/components/agenda/EventDetailModal.tsx:  const color    = ev?.color ?? '#7C3AED'
+web/src/components/AgentChatWidget.tsx:        style={{ background: '#FFFFFF' }}
+web/src/components/AgentChatWidget.tsx:          style={{ background: '#161616' }}
+web/src/components/AgentChatWidget.tsx:              style={{ background: '#e13500' }}
+web/src/components/AgentChatWidget.tsx:        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f9eedc' }}>
+web/src/components/AgentChatWidget.tsx:              <Loader size={18} strokeWidth={1.75} className="animate-spin" style={{ color: '#e13500' }} />
+web/src/components/AgentChatWidget.tsx:                  style={{ background: '#e13500' }}
+web/src/components/AgentChatWidget.tsx:                  ? { background: '#e13500' }
+web/src/components/AgentChatWidget.tsx:                  : { background: '#FFFFFF' }
+web/src/components/AgentChatWidget.tsx:                    ? <span className="inline-block w-2 h-4 animate-pulse rounded-sm" style={{ background: '#e13500', opacity: 0.5 }} />
+web/src/components/AgentChatWidget.tsx:                  <span className="inline-block w-1.5 h-3.5 ml-0.5 animate-pulse rounded-sm align-middle" style={{ background: '#e13500', opacity: 0.6 }} />
+web/src/components/AgentChatWidget.tsx:                '--tw-ring-color': '#e13500',
+web/src/components/AgentChatWidget.tsx:              style={{ background: '#e13500' }}
+web/src/components/AgentChatWidget.tsx:          color:      isOpen ? '#fff' : 'rgba(249,238,220,0.5)',
+web/src/components/AgentChatWidget.tsx:          style={{ background: isConnected ? '#4ade80' : 'rgba(255,255,255,0.2)' }}
+web/src/components/agents/AgentChatHistory.tsx:        background: '#fafaf9',
+web/src/components/agents/AgentChatHistory.tsx:                borderLeft: isActive ? '2px solid var(--church-primary, #e13500)' : '2px solid transparent',
+web/src/components/agents/AgentChatHistory.tsx:                style={{ color: isActive ? '#e13500' : 'rgba(0,0,0,0.75)' }}
+web/src/components/agents/AgentChatInterface.tsx:            style={{ background: '#fff1f0', border: '1px solid #fca5a5' }}
+web/src/components/ErrorBoundary.tsx:        <div className="min-h-screen flex items-center justify-center bg-[#f9eedc]">
+web/src/components/ErrorBoundary.tsx:            <div className="w-12 h-12 rounded-full bg-[#FDE8E0] flex items-center justify-center mx-auto mb-4">
+web/src/components/ErrorBoundary.tsx:              <svg className="w-6 h-6 text-[#e13500]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+web/src/components/ErrorBoundary.tsx:            <h2 className="text-lg font-semibold text-[#161616] mb-2">Algo deu errado</h2>
+web/src/components/ErrorBoundary.tsx:            <p className="text-sm text-[#5A5A5A] mb-6">
+web/src/components/ErrorBoundary.tsx:              className="bg-[#e13500] text-white rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-[#FF4D1A] transition-colors"
+web/src/components/Layout.tsx:      style={{ background: '#670000' }}
+web/src/components/Layout.tsx:    const primary   = church?.primary_color   ?? '#E13500'
+web/src/components/Layout.tsx:    const secondary = church?.secondary_color ?? '#670000'
+web/src/components/Layout.tsx:    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
+web/src/components/Layout.tsx:        <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
+web/src/components/MobileHeader.tsx:      style={{ background: '#0f0f0f', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
+web/src/components/MobileHeader.tsx:            style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/components/MobileHeader.tsx:          background: 'var(--church-primary, #e13500)',
+web/src/components/Sidebar.tsx:      style={{ width: 64, background: '#0f0f0f', borderRight: '1px solid rgba(255,255,255,0.04)' }}
+web/src/components/Sidebar.tsx:            style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
+web/src/components/Sidebar.tsx:                  color: isActive ? '#fff' : 'rgba(255,255,255,0.35)',
+web/src/components/Sidebar.tsx:                  borderRight: isActive ? '2px solid var(--church-primary, #e13500)' : '2px solid transparent',
+web/src/components/Sidebar.tsx:                style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)' }}
+web/src/components/Sidebar.tsx:          style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
+web/src/components/Sidebar.tsx:            isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}
+web/src/components/Sidebar.tsx:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:          style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:      style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:          background: '#161616',
+web/src/features/agenda/hooks/useEvents.ts:        color:                  input.color ?? '#7C3AED',
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:  visitante:    { bg: 'bg-cream-dark/60',  text: 'text-ekthos-black/50', bar: '#EDE0CC' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:  contato:      { bg: 'bg-warning-bg',     text: 'text-warning',         bar: '#C4841D' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:  frequentador: { bg: 'bg-brand-50',       text: 'text-brand-700',       bar: '#F25830' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:  consolidado:  { bg: 'bg-brand-50',       text: 'text-brand-600',       bar: '#e13500' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:  discipulo:    { bg: 'bg-success-bg',     text: 'text-success',         bar: '#2D7A4F' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:  lider:        { bg: 'bg-success-bg',     text: 'text-success',         bar: '#1B5E35' },
+web/src/features/notifications/components/NotificationBell.tsx:            style={{ background: '#e13500' }}
+web/src/features/people/components/PersonDetailPanel.tsx:              style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/features/qr-visitor/components/QrCodeModal.tsx:    color: { dark: '#1a1a1a', light: '#ffffff' },
+web/src/features/qr-visitor/components/QrCodeModal.tsx:    color: { dark: '#1a1a1a', light: '#ffffff' },
+web/src/features/qr-visitor/components/QrCodeModal.tsx:      color: { dark: '#1a1a1a', light: '#ffffff' },
+web/src/index.css:    --church-primary:   #E13500;
+web/src/index.css:    --church-secondary: #670000;
+web/src/index.css:    --ekthos-cream:       #f9eedc;
+web/src/index.css:    --ekthos-cream-light: #FDF6EB;
+web/src/index.css:    --ekthos-cream-dark:  #EDE0CC;
+web/src/index.css:    --ekthos-red:         #e13500;
+web/src/index.css:    --ekthos-red-light:   #FF4D1A;
+web/src/index.css:    --ekthos-red-dark:    #C42E00;
+web/src/index.css:    --ekthos-red-bg:      #FDE8E0;
+web/src/index.css:    --ekthos-wine:        #670000;
+web/src/index.css:    --ekthos-wine-light:  #8B1A1A;
+web/src/index.css:    --ekthos-wine-bg:     #F5E0E0;
+web/src/index.css:    --ekthos-black:       #161616;
+web/src/index.css:    --ekthos-black-light: #2A2A2A;
+web/src/index.css:    --surface-primary:    #FFFFFF;
+web/src/index.css:    --surface-secondary:  #f9eedc;
+web/src/index.css:    --surface-tertiary:   #F5E8D4;
+web/src/index.css:    --success:            #2D7A4F;
+web/src/index.css:    --success-bg:         #E8F5E9;
+web/src/index.css:    --warning:            #C4841D;
+web/src/index.css:    --warning-bg:         #FFF3E0;
+web/src/index.css:    --text-primary:       #161616;
+web/src/index.css:    --text-secondary:     #5A5A5A;
+web/src/index.css:    --text-tertiary:      #8A8A8A;
+web/src/index.css:    background: #FFFFFF;
+web/src/pages/admin/AdminComunicacao.tsx:              style={{ backgroundColor: '#25D366' }}
+web/src/pages/admin/AffiliateDetail.tsx:        background: type === 'success' ? '#f0fdf4' : '#fef2f2',
+web/src/pages/admin/AffiliateDetail.tsx:        borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
+web/src/pages/admin/AffiliateDetail.tsx:        color: type === 'success' ? '#166534' : '#991b1b',
+web/src/pages/admin/AffiliateDetail.tsx:        ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+web/src/pages/admin/AffiliateDetail.tsx:        : <XCircle    size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />}
+web/src/pages/admin/AffiliateDetail.tsx:            style={{ background: '#e13500' }}>
+web/src/pages/admin/AffiliateDetail.tsx:  if (s === 'active')  return { bg: '#2D7A4F18', c: '#2D7A4F', l: 'Ativa' }
+web/src/pages/admin/AffiliateDetail.tsx:  if (s === 'churned') return { bg: '#e1350018', c: '#e13500', l: 'Churn' }
+web/src/pages/admin/AffiliateDetail.tsx:  if (s === 'refunded') return { bg: '#C4841D18', c: '#C4841D', l: 'Reemb.' }
+web/src/pages/admin/AffiliateDetail.tsx:  return { bg: '#00000010', c: '#8A8A8A', l: 'Maturada' }
+web/src/pages/admin/AffiliateDetail.tsx:  if (s === 'approved') return { bg: '#2D7A4F18', c: '#2D7A4F', l: 'Aprovada' }
+web/src/pages/admin/AffiliateDetail.tsx:  if (s === 'paid')     return { bg: '#16357218', c: '#163572', l: 'Paga' }
+web/src/pages/admin/AffiliateDetail.tsx:  if (s === 'cancelled') return { bg: '#00000010', c: '#8A8A8A', l: 'Cancelada' }
+web/src/pages/admin/AffiliateDetail.tsx:  return { bg: '#C4841D18', c: '#C4841D', l: 'Pendente' }
+web/src/pages/admin/AffiliateDetail.tsx:              style={{ background: '#e13500' }}>
+web/src/pages/admin/AffiliateDetail.tsx:            ? { background: '#2D7A4F18', color: '#2D7A4F' }
+web/src/pages/admin/AffiliateDetail.tsx:            : { background: '#C4841D18', color: '#C4841D' }}>
+web/src/pages/admin/AffiliateDetail.tsx:              style={{ background: '#e13500' }}>
+web/src/pages/admin/AffiliateDetail.tsx:                      style={c.active ? { background: '#2D7A4F18', color: '#2D7A4F' } : { background: '#00000010', color: '#8A8A8A' }}>
+web/src/pages/admin/AffiliateDetail.tsx:                      ? <ToggleRight size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+web/src/pages/admin/Affiliates.tsx:        background: type === 'success' ? '#f0fdf4' : '#fef2f2',
+web/src/pages/admin/Affiliates.tsx:        borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
+web/src/pages/admin/Affiliates.tsx:        color: type === 'success' ? '#166534' : '#991b1b',
+web/src/pages/admin/Affiliates.tsx:      {type === 'success' ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+web/src/pages/admin/Affiliates.tsx:        : <XCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />}
+web/src/pages/admin/Affiliates.tsx:            style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:    if (s === 'active')  return { background: '#2D7A4F18', color: '#2D7A4F', label: 'Ativo' }
+web/src/pages/admin/Affiliates.tsx:    if (s === 'paused')  return { background: '#C4841D18', color: '#C4841D', label: 'Pausado' }
+web/src/pages/admin/Affiliates.tsx:    return { background: '#00000010', color: '#8A8A8A', label: 'Banido' }
+web/src/pages/admin/Affiliates.tsx:          style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:    if (s === 'approved') return { background: '#2D7A4F18', color: '#2D7A4F', label: 'Aprovada' }
+web/src/pages/admin/Affiliates.tsx:    if (s === 'paid')     return { background: '#16357218', color: '#163572', label: 'Paga' }
+web/src/pages/admin/Affiliates.tsx:    if (s === 'cancelled') return { background: '#00000010', color: '#8A8A8A', label: 'Cancelada' }
+web/src/pages/admin/Affiliates.tsx:    return { background: '#C4841D18', color: '#C4841D', label: 'Pendente' }
+web/src/pages/admin/Affiliates.tsx:            style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:          { label: 'Pendentes', value: pending.length, icon: <Clock size={16} strokeWidth={1.75} />, color: '#C4841D' },
+web/src/pages/admin/Affiliates.tsx:          { label: 'Aprovadas', value: `${approved.length} · ${fmt(totalApproved)}`, icon: <CheckCircle size={16} strokeWidth={1.75} />, color: '#2D7A4F' },
+web/src/pages/admin/Affiliates.tsx:          { label: 'Pagas', value: paid.length, icon: <DollarSign size={16} strokeWidth={1.75} />, color: '#163572' },
+web/src/pages/admin/Affiliates.tsx:            style={{ background: '#163572' }}>
+web/src/pages/admin/Affiliates.tsx:              <span style={{ color: '#e13500' }}>{m.icon}</span>
+web/src/pages/admin/Affiliates.tsx:          <Users size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+web/src/pages/admin/Affiliates.tsx:            style={tab === t.id ? { borderColor: '#e13500' } : {}}>
+web/src/pages/admin/Church.tsx:function MetricMini({ label, value, color = '#e13500' }: {
+web/src/pages/admin/Church.tsx:  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+web/src/pages/admin/Church.tsx:              background: data.status === 'configured' ? '#2D7A4F18' : '#e1350018',
+web/src/pages/admin/Church.tsx:              color:      data.status === 'configured' ? '#2D7A4F'   : '#e13500',
+web/src/pages/admin/Church.tsx:          <MetricMini label="Membros" value={data.members_count} color="#670000" />
+web/src/pages/admin/Church.tsx:          <MetricMini label="Células" value={data.cells_count} color="#2D7A4F" />
+web/src/pages/admin/Church.tsx:          <MetricMini label="Ministérios" value={data.ministries_count} color="#C4841D" />
+web/src/pages/admin/Church.tsx:          <MetricMini label="Etapas pipeline" value={data.pipeline_stages} color="#4F6EE1" />
+web/src/pages/admin/Church.tsx:        <InfoRow label="MRR" value={<span className="font-mono-ekthos font-bold" style={{ color: '#e13500' }}>{fmt(data.mrr)}</span>} />
+web/src/pages/admin/Church.tsx:                  style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:        <MetricMini label="Células" value={data.cells_count} color="#2D7A4F" />
+web/src/pages/admin/Church.tsx:        <MetricMini label="Ministérios" value={data.ministries_count} color="#C4841D" />
+web/src/pages/admin/Church.tsx:        <MetricMini label="Etapas" value={data.pipeline_stages} color="#4F6EE1" />
+web/src/pages/admin/Church.tsx:  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+web/src/pages/admin/Church.tsx:          <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#e13500' }}>{fmt(data.mrr)}</p>
+web/src/pages/admin/Church.tsx:            style={{ background: '#670000' }}
+web/src/pages/admin/Church.tsx:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:          <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#e13500' }}>
+web/src/pages/admin/Church.tsx:          style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:              style={{ borderColor: note.pinned ? '#e1350030' : 'rgba(0,0,0,0.05)' }}
+web/src/pages/admin/Church.tsx:                      style={{ color: '#e13500' }}>
+web/src/pages/admin/Church.tsx:              style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:          style={{ background: '#670000' }}
+web/src/pages/admin/Church.tsx:            style={tab === t.id ? { background: '#e13500' } : undefined}
+web/src/pages/admin/Churches.tsx:  onboarding: '#C4841D',
+web/src/pages/admin/Churches.tsx:  configured:  '#2D7A4F',
+web/src/pages/admin/Churches.tsx:  suspended:   '#e13500',
+web/src/pages/admin/Churches.tsx:  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+web/src/pages/admin/Churches.tsx:  const color = STATUS_COLOR[status] ?? '#8A8A8A'
+web/src/pages/admin/Churches.tsx:    chamado:    '#5A5A5A',
+web/src/pages/admin/Churches.tsx:    missao:     '#e13500',
+web/src/pages/admin/Churches.tsx:    avivamento: '#670000',
+web/src/pages/admin/Churches.tsx:  const color = colors[slug] ?? '#8A8A8A'
+web/src/pages/admin/Churches.tsx:      style={{ background: '#e13500' }}
+web/src/pages/admin/Churches.tsx:          style={{ background: '#e13500' }}
+web/src/pages/admin/Churches.tsx:            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:              style={status === s ? { background: '#e13500' } : undefined}
+web/src/pages/admin/Churches.tsx:              style={plan === p ? { background: '#670000' } : undefined}
+web/src/pages/admin/Churches.tsx:                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:                style={{ background: '#e13500' }}
+web/src/pages/admin/Cockpit.tsx:  label, value, sub, trend, color = '#e13500', icon,
+web/src/pages/admin/Cockpit.tsx:        <p className="text-xs font-medium" style={{ color: '#8A8A8A' }}>{label}</p>
+web/src/pages/admin/Cockpit.tsx:      <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#161616' }}>{value}</p>
+web/src/pages/admin/Cockpit.tsx:    warn:  { bg: '#FFF8EC', border: '#C4841D', text: '#C4841D' },
+web/src/pages/admin/Cockpit.tsx:    error: { bg: '#FFF0EC', border: '#e13500', text: '#e13500' },
+web/src/pages/admin/Cockpit.tsx:    info:  { bg: '#F0F4FF', border: '#4F6EE1', text: '#4F6EE1' },
+web/src/pages/admin/Cockpit.tsx:                color="#2D7A4F"
+web/src/pages/admin/Cockpit.tsx:                color={data.churn_rate > 5 ? '#e13500' : '#2D7A4F'}
+web/src/pages/admin/Cockpit.tsx:                color="#670000"
+web/src/pages/admin/Cockpit.tsx:                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#C4841D' }}>{data.churches_onboarding}</p>
+web/src/pages/admin/Cockpit.tsx:                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#e13500' }}>{data.churches_suspended}</p>
+web/src/pages/admin/Cockpit.tsx:                      <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
+web/src/pages/admin/Cockpit.tsx:                      <Line type="monotone" dataKey="mrr" stroke="#e13500" strokeWidth={2.5} dot={{ fill: '#e13500', r: 3 }} activeDot={{ r: 5 }} />
+web/src/pages/admin/Cockpit.tsx:        style={{ background: '#f9eedc', color: '#e13500' }}
+web/src/pages/admin/Leads.tsx:  new:         { label: 'Novo',        color: '#2D7A4F', bg: 'rgba(45,122,79,0.1)' },
+web/src/pages/admin/Leads.tsx:  contacted:   { label: 'Contatado',   color: '#2B6CB0', bg: 'rgba(43,108,176,0.1)' },
+web/src/pages/admin/Leads.tsx:  negotiating: { label: 'Negociando',  color: '#C4841D', bg: 'rgba(196,132,29,0.1)' },
+web/src/pages/admin/Leads.tsx:  closed:      { label: 'Fechado',     color: '#1a5c38', bg: 'rgba(26,92,56,0.15)' },
+web/src/pages/admin/Leads.tsx:  lost:        { label: 'Perdido',     color: '#e13500', bg: 'rgba(225,53,0,0.1)' },
+web/src/pages/admin/Leads.tsx:  'Missão':    '#e13500',
+web/src/pages/admin/Leads.tsx:  'Avivamento':'#670000',
+web/src/pages/admin/Leads.tsx:    <div className="min-h-screen" style={{ background: '#f9eedc' }}>
+web/src/pages/admin/Leads.tsx:              style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500' }}>
+web/src/pages/admin/Leads.tsx:              <h1 className="font-display text-2xl font-bold text-[#161616]">Leads</h1>
+web/src/pages/admin/Leads.tsx:                background:   filterStatus === s ? cfg.bg : '#ffffff',
+web/src/pages/admin/Leads.tsx:                background:   filterPlan === p ? (p === 'all' ? '#161616' : PLAN_COLORS[p]) : '#ffffff',
+web/src/pages/admin/Leads.tsx:                color:        filterPlan === p ? '#ffffff' : '#5A5A5A',
+web/src/pages/admin/Leads.tsx:                borderColor:  filterPlan === p ? 'transparent' : '#e5e5e5',
+web/src/pages/admin/Leads.tsx:                <tr style={{ background: '#f9eedc' }}>
+web/src/pages/admin/Leads.tsx:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Pastor / Igreja</th>
+web/src/pages/admin/Leads.tsx:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Plano</th>
+web/src/pages/admin/Leads.tsx:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden lg:table-cell">Telefone</th>
+web/src/pages/admin/Leads.tsx:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden lg:table-cell">Membros</th>
+web/src/pages/admin/Leads.tsx:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Status</th>
+web/src/pages/admin/Leads.tsx:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden xl:table-cell">Data</th>
+web/src/pages/admin/Leads.tsx:                      className="cursor-pointer hover:bg-[#f9eedc]/40 transition-colors"
+web/src/pages/admin/Leads.tsx:                      style={{ borderTop: i > 0 ? '1px solid #f0f0f0' : undefined }}
+web/src/pages/admin/Leads.tsx:                        <p className="font-semibold text-[#161616] truncate max-w-[160px]">{lead.name}</p>
+web/src/pages/admin/Leads.tsx:                          style={{ background: PLAN_COLORS[lead.plan_interest] ?? '#5A5A5A' }}>
+web/src/pages/admin/Leads.tsx:                  <h2 className="font-display text-xl font-bold text-[#161616]">{selected.name}</h2>
+web/src/pages/admin/Leads.tsx:                style={{ background: PLAN_COLORS[selected.plan_interest] ?? '#5A5A5A' }}>
+web/src/pages/admin/Leads.tsx:                    className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[#e13500] transition-colors">
+web/src/pages/admin/Leads.tsx:                      className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[#e13500] transition-colors">
+web/src/pages/admin/Leads.tsx:                  <div className="flex items-center gap-2 text-sm text-[#161616]">
+web/src/pages/admin/Leads.tsx:                  <div className="flex items-center gap-2 text-sm text-[#161616]">
+web/src/pages/admin/Leads.tsx:                        style={{ background: '#f3f3f3' }}>{tag}</span>
+web/src/pages/admin/Leads.tsx:                <p className="text-sm text-[#161616]">{fmtDate(selected.created_at)}</p>
+web/src/pages/admin/Leads.tsx:                        background:  selected.status === s ? cfg.bg : '#fff',
+web/src/pages/admin/Leads.tsx:                        borderColor: selected.status === s ? cfg.color : '#e5e5e5',
+web/src/pages/admin/Leads.tsx:                    style={{ background: '#e13500', color: '#fff' }}>
+web/src/pages/admin/Leads.tsx:                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors resize-none"
+web/src/pages/admin/Leads.tsx:                  style={{ background: '#fafafa' }}
+web/src/pages/admin/Leads.tsx:                    style={{ background: '#25D366' }}>
+web/src/pages/admin/Leads.tsx:                  className="flex items-center gap-2 flex-1 justify-center py-3 rounded-xl text-sm font-semibold border-2 transition-all hover:bg-[#e13500]/5"
+web/src/pages/admin/Leads.tsx:                  style={{ borderColor: '#e13500', color: '#e13500' }}>
+web/src/pages/admin/Onboardings.tsx:                style={{ background: '#e1350018', color: '#e13500' }}>
+web/src/pages/admin/Onboardings.tsx:          <h2 className="font-display text-lg font-semibold mb-3" style={{ color: '#e13500' }}>
+web/src/pages/admin/Onboardings.tsx:                      style={{ background: '#e13500' }}
+web/src/pages/admin/Onboardings.tsx:                      ? { background: '#e1350018', color: '#e13500' }
+web/src/pages/admin/Onboardings.tsx:                      : { background: '#C4841D18', color: '#C4841D' }
+web/src/pages/admin/Pricing.tsx:        background: type === 'success' ? '#f0fdf4' : '#fef2f2',
+web/src/pages/admin/Pricing.tsx:        borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
+web/src/pages/admin/Pricing.tsx:        color: type === 'success' ? '#166534' : '#991b1b',
+web/src/pages/admin/Pricing.tsx:        ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+web/src/pages/admin/Pricing.tsx:        : <XCircle    size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
+web/src/pages/admin/Pricing.tsx:        style={{ background: checked ? '#2D7A4F' : '#d1d5db' }}
+web/src/pages/admin/Pricing.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Pricing.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Pricing.tsx:                      ? { background: '#2D7A4F18', color: '#2D7A4F' }
+web/src/pages/admin/Pricing.tsx:                      : { background: '#00000010', color: '#8A8A8A' }
+web/src/pages/admin/Pricing.tsx:                      ? { background: '#2D7A4F18', color: '#2D7A4F' }
+web/src/pages/admin/Pricing.tsx:                      : { background: '#00000010', color: '#8A8A8A' }
+web/src/pages/admin/Pricing.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Pricing.tsx:                      ? { background: '#2D7A4F18', color: '#2D7A4F' }
+web/src/pages/admin/Pricing.tsx:                      : { background: '#00000010', color: '#8A8A8A' }
+web/src/pages/admin/Pricing.tsx:          style={{ background: '#e1350012' }}
+web/src/pages/admin/Pricing.tsx:          <Gift size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+web/src/pages/admin/Pricing.tsx:          style={{ background: '#C4841D18', color: '#C4841D' }}>
+web/src/pages/admin/Pricing.tsx:            <Tag size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+web/src/pages/admin/Pricing.tsx:            style={tab === t.id ? { borderColor: '#e13500' } : {}}
+web/src/pages/admin/Pricing.tsx:                style={{ background: '#C4841D18', color: '#C4841D' }}>
+web/src/pages/admin/Revenue.tsx:  chamado:    '#5A5A5A',
+web/src/pages/admin/Revenue.tsx:  missao:     '#e13500',
+web/src/pages/admin/Revenue.tsx:  avivamento: '#670000',
+web/src/pages/admin/Revenue.tsx:const TYPE_COLORS = ['#e13500', '#C4841D', '#4F6EE1']
+web/src/pages/admin/Revenue.tsx:        <p className="text-xs font-medium" style={{ color: '#8A8A8A' }}>{label}</p>
+web/src/pages/admin/Revenue.tsx:        {icon && <span style={{ color: '#e13500' }}>{icon}</span>}
+web/src/pages/admin/Revenue.tsx:        style={{ color: color ?? (bold ? '#161616' : '#8A8A8A') }}
+web/src/pages/admin/Revenue.tsx:            <Zap size={15} strokeWidth={1.75} style={{ color: '#e13500' }} />
+web/src/pages/admin/Revenue.tsx:            style={{ background: '#2D7A4F18', color: '#2D7A4F' }}>
+web/src/pages/admin/Revenue.tsx:            style={{ background: '#C4841D18', color: '#C4841D' }}>
+web/src/pages/admin/Revenue.tsx:            style={{ background: '#2D7A4F10', color: '#2D7A4F' }}>
+web/src/pages/admin/Revenue.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Revenue.tsx:                        style={{ background: PLAN_COLORS[p.plan] ?? '#8A8A8A' }}
+web/src/pages/admin/Revenue.tsx:                            background: PLAN_COLORS[p.plan] ?? '#8A8A8A',
+web/src/pages/admin/Revenue.tsx:                      <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
+web/src/pages/admin/Revenue.tsx:                <DreRow label="Descontos"        value={-data.dre.descontos}      indent color="#C4841D" />
+web/src/pages/admin/Revenue.tsx:                <DreRow label="Tarifas Stripe"   value={-data.dre.stripe_fees}    indent color="#C4841D" />
+web/src/pages/admin/Revenue.tsx:                  color={data.dre.resultado >= 0 ? '#2D7A4F' : '#e13500'}
+web/src/pages/admin/Tasks.tsx:  urgent: { label: 'Urgente', color: '#e13500', bg: '#e1350018' },
+web/src/pages/admin/Tasks.tsx:  high:   { label: 'Alta',    color: '#C4841D', bg: '#C4841D18' },
+web/src/pages/admin/Tasks.tsx:  medium: { label: 'Média',   color: '#4F6EE1', bg: '#4F6EE118' },
+web/src/pages/admin/Tasks.tsx:  low:    { label: 'Baixa',   color: '#8A8A8A', bg: '#8A8A8A18' },
+web/src/pages/admin/Tasks.tsx:  open:        { label: 'Aberta',       color: '#5A5A5A' },
+web/src/pages/admin/Tasks.tsx:  in_progress: { label: 'Em andamento', color: '#4F6EE1' },
+web/src/pages/admin/Tasks.tsx:  done:        { label: 'Concluída',    color: '#2D7A4F' },
+web/src/pages/admin/Tasks.tsx:  cancelled:   { label: 'Cancelada',    color: '#8A8A8A' },
+web/src/pages/admin/Tasks.tsx:            style={{ background: '#e13500' }}
+web/src/pages/admin/Tasks.tsx:            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Tasks.tsx:            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Tasks.tsx:              style={{ background: '#e13500' }}
+web/src/pages/admin/Tasks.tsx:            style={filter === f ? { background: '#e13500' } : undefined}
+web/src/pages/admin/Tasks.tsx:              <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#e13500' }}>
+web/src/pages/admin/Tasks.tsx:                ? <CheckSquare size={18} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+web/src/pages/admin/Tasks.tsx:                  ? <AlertCircle size={18} strokeWidth={1.75} style={{ color: '#4F6EE1' }} />
+web/src/pages/admin/Tasks.tsx:                    style={{ color: isOverdue ? '#e13500' : '#8A8A8A' }}
+web/src/pages/Agenda.tsx:    color: #1a1a2e !important;
+web/src/pages/Agenda.tsx:  .fc .fc-button:hover { background: #f5f0e8 !important; border-radius: 0.5rem; }
+web/src/pages/Agenda.tsx:  .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700 !important; color: #1a1a2e; }
+web/src/pages/Agenda.tsx:  .fc .fc-daygrid-day.fc-day-today { background: #fdf8f2 !important; }
+web/src/pages/Agenda.tsx:  .fc .fc-daygrid-day-number { color: #1a1a2e; font-size: 0.8rem; }
+web/src/pages/Agenda.tsx:  .fc .fc-col-header-cell-cushion { color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+web/src/pages/Agenda.tsx:  .fc .fc-list-event:hover td { background: #fdf8f2 !important; cursor: pointer; }
+web/src/pages/Agenda.tsx:  .fc .fc-list-day-cushion { background: #f9fafb !important; }
+web/src/pages/Agenda.tsx:    backgroundColor: occ.church_events?.color ?? '#7C3AED',
+web/src/pages/Agenda.tsx:    textColor: '#ffffff',
+web/src/pages/Aniversarios.tsx:        style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/pages/Blocked.tsx:      style={{ background: '#f9eedc' }}
+web/src/pages/Blocked.tsx:            style={{ background: '#e1350015' }}
+web/src/pages/Blocked.tsx:              style={{ color: '#e13500' }}
+web/src/pages/Blocked.tsx:          style={{ background: '#e13500' }}
+web/src/pages/Cancelled.tsx:      style={{ background: '#f9eedc' }}
+web/src/pages/Cancelled.tsx:            style={{ background: '#67000015' }}
+web/src/pages/Cancelled.tsx:              style={{ color: '#670000' }}
+web/src/pages/Cancelled.tsx:                background: daysLeft <= 7 ? '#e1350012' : '#6700000a',
+web/src/pages/Cancelled.tsx:                color: daysLeft <= 7 ? '#e13500' : '#670000',
+web/src/pages/Cancelled.tsx:            style={{ background: '#670000' }}
+web/src/pages/checkout/Cancelado.tsx:      style={{ background: '#f9eedc' }}>
+web/src/pages/checkout/Cancelado.tsx:        <h1 className="font-display text-3xl font-bold mb-3" style={{ color: '#161616' }}>
+web/src/pages/checkout/Cancelado.tsx:        <p className="text-base leading-relaxed mb-8" style={{ color: '#5A5A5A' }}>
+web/src/pages/checkout/Cancelado.tsx:        <div className="bg-white rounded-2xl border p-6 mb-8 text-left" style={{ borderColor: '#f0e0c8' }}>
+web/src/pages/checkout/Cancelado.tsx:          <p className="font-semibold text-sm mb-4" style={{ color: '#161616' }}>Posso te ajudar com alguma dúvida?</p>
+web/src/pages/checkout/Cancelado.tsx:              <li key={i} className="flex items-start gap-2.5 text-sm" style={{ color: '#5A5A5A' }}>
+web/src/pages/checkout/Cancelado.tsx:                <span style={{ color: '#e13500', flexShrink: 0 }}>→</span>
+web/src/pages/checkout/Cancelado.tsx:            style={{ background: '#25D366' }}>
+web/src/pages/checkout/Cancelado.tsx:            style={{ borderColor: '#e13500', color: '#e13500' }}>
+web/src/pages/checkout/Cancelado.tsx:        <p className="text-xs mt-8" style={{ color: '#AAA' }}>
+web/src/pages/checkout/Sucesso.tsx:      style={{ background: '#f9eedc' }}>
+web/src/pages/checkout/Sucesso.tsx:              style={{ background: '#2D7A4F' }}>
+web/src/pages/checkout/Sucesso.tsx:              style={{ background: '#2D7A4F' }} />
+web/src/pages/checkout/Sucesso.tsx:          <h1 className="font-display text-3xl font-bold mb-3" style={{ color: '#161616' }}>
+web/src/pages/checkout/Sucesso.tsx:          <p className="text-base leading-relaxed" style={{ color: '#5A5A5A' }}>
+web/src/pages/checkout/Sucesso.tsx:        <div className="bg-white rounded-2xl border p-6 mb-6" style={{ borderColor: '#f0e0c8' }}>
+web/src/pages/checkout/Sucesso.tsx:          <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: '#8A8A8A' }}>
+web/src/pages/checkout/Sucesso.tsx:                  style={{ background: i === 0 ? '#e13500' : 'rgba(225,53,0,0.08)', color: i === 0 ? '#fff' : '#e13500' }}>
+web/src/pages/checkout/Sucesso.tsx:                  <p className="font-semibold text-sm mb-0.5" style={{ color: '#161616' }}>{step.title}</p>
+web/src/pages/checkout/Sucesso.tsx:                  <p className="text-sm leading-relaxed" style={{ color: '#5A5A5A' }}>{step.body}</p>
+web/src/pages/checkout/Sucesso.tsx:            style={{ background: '#e13500' }}>
+web/src/pages/checkout/Sucesso.tsx:            style={{ borderColor: '#25D366', color: '#25D366' }}>
+web/src/pages/checkout/Sucesso.tsx:        <p className="text-center text-sm italic mt-8" style={{ color: '#8A8A8A' }}>
+web/src/pages/ChoosePlan.tsx:    color:          '#5A5A5A',
+web/src/pages/ChoosePlan.tsx:    color:          '#e13500',
+web/src/pages/ChoosePlan.tsx:    color:          '#670000',
+web/src/pages/ChoosePlan.tsx:    <div className="min-h-screen py-12 px-4" style={{ background: '#f9eedc' }}>
+web/src/pages/ChoosePlan.tsx:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
+web/src/pages/ChoosePlan.tsx:              <Check size={14} strokeWidth={2} style={{ color: '#e13500' }} />
+web/src/pages/ChoosePlan.tsx:              <Check size={14} strokeWidth={2} style={{ color: '#e13500' }} />
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#94a3b8', label: 'Cinza'    },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#f59e0b', label: 'Âmbar'   },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#3b82f6', label: 'Azul'    },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#10b981', label: 'Verde'   },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#a78bfa', label: 'Violeta' },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#e13500', label: 'Brand'   },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#fbbf24', label: 'Dourado' },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#60a5fa', label: 'Celeste' },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  { value: '#f472b6', label: 'Rosa'    },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:  const [color, setColor]             = useState(initial?.color ?? '#94a3b8')
+web/src/pages/configuracoes/QrVisitor.tsx:    color: { dark: '#1a1a1a', light: '#ffffff' },
+web/src/pages/configuracoes/QrVisitor.tsx:    color: { dark: '#1a1a1a', light: '#ffffff' },
+web/src/pages/configuracoes/QrVisitor.tsx:      color: { dark: '#1a1a1a', light: '#ffffff' },
+web/src/pages/Dashboard.tsx:const BRAND   = '#e13500'
+web/src/pages/Dashboard.tsx:const BRAND_L = '#F9A890'
+web/src/pages/Dashboard.tsx:const SUCCESS = '#2D7A4F'
+web/src/pages/Dashboard.tsx:const WARN    = '#C4841D'
+web/src/pages/Dashboard.tsx:  '#e13500', '#F25830', '#F9A890', '#FCCFBF',
+web/src/pages/Dashboard.tsx:  '#2D7A4F', '#4DA070', '#C4841D', '#D9A84F',
+web/src/pages/Dashboard.tsx:  '#670000', '#8B1A1A', '#B85C00',
+web/src/pages/Dashboard.tsx:      <BarChart2 size={36} strokeWidth={1.25} style={{ color: '#EDE0CC' }} />
+web/src/pages/Dashboard.tsx:                  bg: 'bg-cream-dark/40', text: 'text-ekthos-black/50', bar: '#EDE0CC',
+web/src/pages/Dashboard.tsx:                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: '#EDE0CC' }}>
+web/src/pages/Dashboard.tsx:                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
+web/src/pages/Dashboard.tsx:                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/events/EventForm.tsx:  '#7C3AED', // brand purple
+web/src/pages/events/EventForm.tsx:  '#2563EB', // blue
+web/src/pages/events/EventForm.tsx:  '#059669', // green
+web/src/pages/events/EventForm.tsx:  '#DC2626', // red
+web/src/pages/events/EventForm.tsx:  '#D97706', // amber
+web/src/pages/events/EventForm.tsx:  '#DB2777', // pink
+web/src/pages/events/EventForm.tsx:  '#0891B2', // cyan
+web/src/pages/events/EventForm.tsx:  '#65A30D', // lime
+web/src/pages/events/EventForm.tsx:      color:               ev.color ?? '#7C3AED',
+web/src/pages/events/EventForm.tsx:    color:               '#7C3AED',
+web/src/pages/events/EventsList.tsx:        style={{ backgroundColor: event.color ?? '#7C3AED' }}
+web/src/pages/ForgotPassword.tsx:      style={{ background: '#f9eedc' }}
+web/src/pages/ForgotPassword.tsx:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:// Design: bg-white, cream sections, vermelho #e13500
+web/src/pages/Landing.tsx:      stroke="#e13500" strokeWidth="2.5" strokeLinejoin="round"/>
+web/src/pages/Landing.tsx:      stroke="#c42e00" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
+web/src/pages/Landing.tsx:    <div className="min-h-screen font-body antialiased text-[#161616] overflow-x-hidden" style={{ background: '#FCFAF7' }}>
+web/src/pages/Landing.tsx:            <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
+web/src/pages/Landing.tsx:              Ekthos <span style={{ color: '#e13500' }}>Church</span>
+web/src/pages/Landing.tsx:                className="text-sm font-medium text-gray-500 hover:text-[#161616] transition-colors">
+web/src/pages/Landing.tsx:              className="text-sm font-medium px-4 py-2 rounded-xl text-gray-500 hover:text-[#161616] transition-colors">
+web/src/pages/Landing.tsx:              style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-[#161616]">
+web/src/pages/Landing.tsx:                style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[#161616]"
+web/src/pages/Landing.tsx:              <span style={{ color: '#e13500' }}>à altura do chamado</span>
+web/src/pages/Landing.tsx:                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[#c42e00] active:scale-[0.98] shadow-lg shadow-[#e13500]/20"
+web/src/pages/Landing.tsx:                style={{ background: '#e13500', minHeight: 56 }}>
+web/src/pages/Landing.tsx:                style={{ background: '#25D366', minHeight: 56 }}>
+web/src/pages/Landing.tsx:                background: 'linear-gradient(150deg, #EDE5D8 0%, #F4EDE4 45%, #E6DDD0 100%)',
+web/src/pages/Landing.tsx:      <section className="py-14 border-y w-full" style={{ background: '#F6F2EC', borderColor: '#E8E0D4' }}>
+web/src/pages/Landing.tsx:                <p className="font-display text-base font-bold mb-1 text-[#161616]">{s.label}</p>
+web/src/pages/Landing.tsx:          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+web/src/pages/Landing.tsx:              icon: <Users size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+web/src/pages/Landing.tsx:              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+web/src/pages/Landing.tsx:              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+web/src/pages/Landing.tsx:            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 hover:border-[#e13500]/30 transition-all duration-200">
+web/src/pages/Landing.tsx:                <h3 className="font-semibold text-base text-[#161616]">{p.title}</h3>
+web/src/pages/Landing.tsx:      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+web/src/pages/Landing.tsx:            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#f9eedc' }}>
+web/src/pages/Landing.tsx:                    <span style={{ color: '#f9eedc' }}>{a.icon}</span>
+web/src/pages/Landing.tsx:                    <h3 className="font-semibold" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
+web/src/pages/Landing.tsx:      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+web/src/pages/Landing.tsx:            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+web/src/pages/Landing.tsx:                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+web/src/pages/Landing.tsx:                    <li key={item} className="flex items-start gap-3 text-sm text-[#161616]">
+web/src/pages/Landing.tsx:                      <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }} />
+web/src/pages/Landing.tsx:                style={{ background: '#f4f4f5' }}>
+web/src/pages/Landing.tsx:      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
+web/src/pages/Landing.tsx:            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+web/src/pages/Landing.tsx:                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+web/src/pages/Landing.tsx:                  <UserPlus size={20} strokeWidth={1.75} style={{ color: '#e13500' }} />
+web/src/pages/Landing.tsx:                  style={{ background: '#670000' }}>Avivamento</span>
+web/src/pages/Landing.tsx:                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#161616]">
+web/src/pages/Landing.tsx:                    <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+web/src/pages/Landing.tsx:                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+web/src/pages/Landing.tsx:                  <ShieldCheck size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+web/src/pages/Landing.tsx:                  style={{ background: '#670000' }}>Avivamento</span>
+web/src/pages/Landing.tsx:                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#161616]">
+web/src/pages/Landing.tsx:                    <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+web/src/pages/Landing.tsx:      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+web/src/pages/Landing.tsx:                style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500', borderColor: 'rgba(225,53,0,0.25)' }}>
+web/src/pages/Landing.tsx:              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#f9eedc' }}>
+web/src/pages/Landing.tsx:                <span style={{ color: '#e13500' }}>aplicativo próprio</span>
+web/src/pages/Landing.tsx:                    <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 3 }} />
+web/src/pages/Landing.tsx:                style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: '#F0EAE0' }}>
+web/src/pages/Landing.tsx:            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
+web/src/pages/Landing.tsx:            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+web/src/pages/Landing.tsx:                  <Star size={18} strokeWidth={1.75} style={{ color: '#5A5A5A' }} />
+web/src/pages/Landing.tsx:                    <p className="font-semibold text-base text-[#161616]">Chamado</p>
+web/src/pages/Landing.tsx:                  <span className="font-mono font-bold text-4xl text-[#161616]">R$689,90</span>
+web/src/pages/Landing.tsx:                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+web/src/pages/Landing.tsx:                      <span className="text-[#161616]">{f}</span>
+web/src/pages/Landing.tsx:                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-xl scale-[1.02] flex flex-col">
+web/src/pages/Landing.tsx:                  style={{ background: '#e13500' }}>Mais popular</span>
+web/src/pages/Landing.tsx:                  <Zap size={18} strokeWidth={1.75} style={{ color: '#e13500' }} />
+web/src/pages/Landing.tsx:                    <p className="font-semibold text-base" style={{ color: '#f9eedc' }}>Missão</p>
+web/src/pages/Landing.tsx:                  <span className="font-display font-bold text-2xl" style={{ color: '#f9eedc' }}>Plano personalizado</span>
+web/src/pages/Landing.tsx:                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+web/src/pages/Landing.tsx:                  style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:                  style={{ background: '#670000' }}>Enterprise</span>
+web/src/pages/Landing.tsx:                  <Crown size={18} strokeWidth={1.75} style={{ color: '#670000' }} />
+web/src/pages/Landing.tsx:                    <p className="font-semibold text-base text-[#161616]">Avivamento</p>
+web/src/pages/Landing.tsx:                  <span className="font-display font-bold text-2xl text-[#161616]">Plano sob medida</span>
+web/src/pages/Landing.tsx:                  <p className="text-xs font-bold text-[#670000] mb-2">Inclui exclusivamente:</p>
+web/src/pages/Landing.tsx:                      <div key={d} className="flex items-center gap-2 text-xs font-medium text-[#161616]">
+web/src/pages/Landing.tsx:                        <Check size={13} strokeWidth={2.5} style={{ color: '#670000' }} />
+web/src/pages/Landing.tsx:                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+web/src/pages/Landing.tsx:                      <span className="text-[#161616]">{f}</span>
+web/src/pages/Landing.tsx:                  style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:            <p className="font-semibold text-center mb-6 text-[#161616]">
+web/src/pages/Landing.tsx:                <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
+web/src/pages/Landing.tsx:                  <span style={{ color: '#e13500', marginTop: 2 }}>{a.icon}</span>
+web/src/pages/Landing.tsx:                    <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
+web/src/pages/Landing.tsx:                    <p className="text-xs font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
+web/src/pages/Landing.tsx:      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+web/src/pages/Landing.tsx:          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[#161616]">
+web/src/pages/Landing.tsx:              <tr style={{ background: '#f9eedc' }}>
+web/src/pages/Landing.tsx:                <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
+web/src/pages/Landing.tsx:                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
+web/src/pages/Landing.tsx:                <tr key={String(label)} style={{ borderTop: '1px solid #f0f0f0' }}>
+web/src/pages/Landing.tsx:                  <td className="p-4 text-[#161616]">{label}</td>
+web/src/pages/Landing.tsx:                  <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+web/src/pages/Landing.tsx:                  <td className="p-4 text-center">{col2 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+web/src/pages/Landing.tsx:                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: '#e13500', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+web/src/pages/Landing.tsx:      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+web/src/pages/Landing.tsx:            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#f9eedc' }}>
+web/src/pages/Landing.tsx:                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="#e13500" style={{ color: '#e13500' }} />)}
+web/src/pages/Landing.tsx:                  <p className="font-semibold text-sm" style={{ color: '#f9eedc' }}>{t.name}</p>
+web/src/pages/Landing.tsx:      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
+web/src/pages/Landing.tsx:          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
+web/src/pages/Landing.tsx:          <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+web/src/pages/Landing.tsx:            <div key={i} className="rounded-2xl border shadow-sm overflow-hidden" style={{ background: '#FDFAF6', borderColor: '#E4DAD0' }}>
+web/src/pages/Landing.tsx:                <span className="font-semibold text-base pr-4 text-[#161616]">{item.q}</span>
+web/src/pages/Landing.tsx:                  style={{ color: '#e13500', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
+web/src/pages/Landing.tsx:        style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
+web/src/pages/Landing.tsx:              style={{ color: '#e13500', minHeight: 56 }}>
+web/src/pages/Landing.tsx:              style={{ background: '#25D366', minHeight: 56 }}>
+web/src/pages/Landing.tsx:      <footer className="bg-[#161616] w-full">
+web/src/pages/Landing.tsx:                  Ekthos <span style={{ color: '#e13500' }}>Church</span>
+web/src/pages/Landing.tsx:                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
+web/src/pages/Landing.tsx:                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
+web/src/pages/Landing.tsx:                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
+web/src/pages/Landing.tsx:          style={{ width: 56, height: 56, background: '#25D366', animation: 'waPulse 2s ease-in-out infinite' }}
+web/src/pages/Landing.tsx:              style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:          <h2 className="font-display text-xl font-bold text-[#161616]">Solicitar contato</h2>
+web/src/pages/Landing.tsx:                <Check size={32} strokeWidth={2.5} style={{ color: '#2D7A4F' }} />
+web/src/pages/Landing.tsx:              <h3 className="font-display text-xl font-bold text-[#161616] mb-2">Solicitação enviada!</h3>
+web/src/pages/Landing.tsx:                style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:                  <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+web/src/pages/Landing.tsx:                    {f.label} {f.required && <span style={{ color: '#e13500' }}>*</span>}
+web/src/pages/Landing.tsx:                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+web/src/pages/Landing.tsx:                    style={{ background: '#fafafa' }} />
+web/src/pages/Landing.tsx:                <label className="block text-xs font-semibold text-[#161616] mb-1.5">Quantidade de membros</label>
+web/src/pages/Landing.tsx:                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+web/src/pages/Landing.tsx:                  style={{ background: '#fafafa' }}>
+web/src/pages/Landing.tsx:                <label className="block text-xs font-semibold text-[#161616] mb-1.5">Plano de interesse</label>
+web/src/pages/Landing.tsx:                  style={{ background: '#f3f3f3' }} />
+web/src/pages/Landing.tsx:                style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Login.tsx:    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+web/src/pages/Login.tsx:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>
+web/src/pages/onboarding/Configuring.tsx:            <CheckCircle2 size={20} strokeWidth={2} style={{ color: '#2D7A4F' }} />
+web/src/pages/onboarding/Configuring.tsx:          <AlertCircle size={20} strokeWidth={2} style={{ color: '#E13500' }} />
+web/src/pages/onboarding/Configuring.tsx:            style={{ borderColor: '#E13500', borderTopColor: 'transparent' }}
+web/src/pages/onboarding/Configuring.tsx:          <Circle size={16} strokeWidth={1.5} style={{ color: '#DCDCDC' }} />
+web/src/pages/onboarding/Configuring.tsx:                style={{ background: '#E13500', animationDelay: `${i * 120}ms` }}
+web/src/pages/onboarding/Configuring.tsx:        style={isRunning ? { color: '#E13500' } : {}}
+web/src/pages/onboarding/Configuring.tsx:          style={{ background: '#F0FDF4' }}
+web/src/pages/onboarding/Configuring.tsx:          <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+web/src/pages/onboarding/Configuring.tsx:        style={{ background: '#F9EEDC' }}
+web/src/pages/onboarding/Configuring.tsx:          style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}
+web/src/pages/onboarding/Configuring.tsx:        style={{ background: '#F9EEDC' }}
+web/src/pages/onboarding/Configuring.tsx:              <Building2 size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+web/src/pages/onboarding/Configuring.tsx:              <Network size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+web/src/pages/onboarding/Configuring.tsx:              <GitBranch size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+web/src/pages/onboarding/Configuring.tsx:            <Users size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+web/src/pages/onboarding/Configuring.tsx:                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#E13500' }}>
+web/src/pages/onboarding/Configuring.tsx:                <CheckCircle2 size={14} strokeWidth={2} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+web/src/pages/onboarding/Configuring.tsx:                  <Sparkles size={12} strokeWidth={1.75} style={{ color: '#E13500' }} />
+web/src/pages/onboarding/Configuring.tsx:                <span className="text-[11px] font-semibold shrink-0" style={{ color: '#E13500' }}>
+web/src/pages/onboarding/Configuring.tsx:          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#E13500' }}>
+web/src/pages/onboarding/Configuring.tsx:              <Sparkles size={12} strokeWidth={1.75} style={{ color: '#E13500', flexShrink: 0 }} />
+web/src/pages/onboarding/Configuring.tsx:          style={{ background: '#E13500' }}
+web/src/pages/onboarding/Configuring.tsx:          style={{ color: '#9CA3AF' }}
+web/src/pages/onboarding/Configuring.tsx:        primaryColor:      (tenant.primary_color  as string) ?? '#E13500',
+web/src/pages/onboarding/Configuring.tsx:        secondaryColor:    (tenant.secondary_color as string) ?? '#670000',
+web/src/pages/onboarding/Configuring.tsx:        style={{ background: '#F9EEDC' }}
+web/src/pages/onboarding/Configuring.tsx:            style={{ background: '#E13500' }}
+web/src/pages/onboarding/Configuring.tsx:                style={{ color: isDone ? '#2D7A4F' : '#E13500' }}
+web/src/pages/onboarding/Configuring.tsx:            <div className="h-2 rounded-full overflow-hidden" style={{ background: '#F0F0F0' }}>
+web/src/pages/onboarding/Configuring.tsx:                  background: isDone ? '#2D7A4F' : '#E13500',
+web/src/pages/onboarding/Configuring.tsx:                  style={{ background: '#F0FDF4' }}
+web/src/pages/onboarding/Configuring.tsx:                  <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+web/src/pages/onboarding/Configuring.tsx:                style={{ background: '#E13500' }}
+web/src/pages/onboarding/Configuring.tsx:              style={{ background: '#FFF5F2' }}
+web/src/pages/onboarding/Configuring.tsx:                <AlertCircle size={18} strokeWidth={2} style={{ color: '#E13500', flexShrink: 0, marginTop: 1 }} />
+web/src/pages/Onboarding.tsx:  { label: 'Fogo e Paixão',          primary: '#E13500', secondary: '#670000', emoji: '🔥' },
+web/src/pages/Onboarding.tsx:  { label: 'Céu e Mar',              primary: '#2563EB', secondary: '#1E3A5F', emoji: '🌊' },
+web/src/pages/Onboarding.tsx:  { label: 'Vida e Esperança',        primary: '#059669', secondary: '#064E3B', emoji: '🌿' },
+web/src/pages/Onboarding.tsx:  { label: 'Realeza e Unção',        primary: '#7C3AED', secondary: '#4C1D95', emoji: '👑' },
+web/src/pages/Onboarding.tsx:  { label: 'Glória e Terra',         primary: '#D97706', secondary: '#78350F', emoji: '✨' },
+web/src/pages/Onboarding.tsx:  { label: 'Águas Tranquilas',       primary: '#0891B2', secondary: '#155E75', emoji: '💧' },
+web/src/pages/Onboarding.tsx:  { label: 'Amor e Graça',           primary: '#DB2777', secondary: '#831843', emoji: '🌸' },
+web/src/pages/Onboarding.tsx:  { label: 'Elegância e Sobriedade', primary: '#374151', secondary: '#111827', emoji: '🖤' },
+web/src/pages/Onboarding.tsx:          resolve({ primary: '#E13500', secondary: '#670000' })
+web/src/pages/Onboarding.tsx:        resolve({ primary: '#E13500', secondary: '#670000' })
+web/src/pages/Onboarding.tsx:    img.onerror = () => { URL.revokeObjectURL(url); resolve({ primary: '#E13500', secondary: '#670000' }) }
+web/src/pages/Onboarding.tsx:      style={{ background: '#E13500', color: 'white' }}>
+web/src/pages/Onboarding.tsx:      style={{ background: '#161616', color: 'white' }}>
+web/src/pages/Onboarding.tsx:          style={isBot ? {} : { background: '#E13500' }}
+web/src/pages/Onboarding.tsx:          <span className="inline-block w-0.5 h-[1em] ml-0.5 align-middle animate-pulse" style={{ background: '#E13500' }} />
+web/src/pages/Onboarding.tsx:              style={{ background: '#E13500', animationDelay: `${i * 140}ms` }} />
+web/src/pages/Onboarding.tsx:        <span className="text-xs font-bold tabular-nums" style={{ color: '#E13500' }}>{pct}%</span>
+web/src/pages/Onboarding.tsx:      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#EBEBEB' }}>
+web/src/pages/Onboarding.tsx:          style={{ width: `${pct}%`, background: '#E13500' }} />
+web/src/pages/Onboarding.tsx:                style={{ background: '#F9EEDC', color: '#5A5A5A' }}>{d}</span>
+web/src/pages/Onboarding.tsx:          <p className="text-3xl font-bold mt-1" style={{ color: '#E13500' }}>{preview.cells}</p>
+web/src/pages/Onboarding.tsx:              <Check size={12} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+web/src/pages/Onboarding.tsx:      <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#F9EEDC' }}>
+web/src/pages/Onboarding.tsx:          style={{ background: '#E13500' }}
+web/src/pages/Onboarding.tsx:          style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
+web/src/pages/Onboarding.tsx:            style={{ borderColor: '#E8E8E8', background: '#FAFAFA' }}
+web/src/pages/Onboarding.tsx:          className={`flex items-center gap-3 cursor-pointer rounded-2xl border border-dashed px-4 py-3 transition-colors ${uploading ? 'opacity-50 pointer-events-none' : 'hover:border-[#E13500]'}`}
+web/src/pages/Onboarding.tsx:          style={{ borderColor: '#DDD', background: '#FAFAFA' }}
+web/src/pages/Onboarding.tsx:            ? <Loader size={18} strokeWidth={1.75} style={{ color: '#E13500' }} className="animate-spin" />
+web/src/pages/Onboarding.tsx:            : <Upload size={18} strokeWidth={1.75} style={{ color: '#E13500' }} />
+web/src/pages/Onboarding.tsx:              style={{ borderColor: '#E8E8E8', background: '#FAFAFA' }}
+web/src/pages/Onboarding.tsx:              className="text-sm px-4 py-2 rounded-xl border font-medium transition-all hover:border-[#E13500] hover:text-[#E13500]"
+web/src/pages/Onboarding.tsx:              style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}>
+web/src/pages/Onboarding.tsx:                background:  selected.includes(opt) ? '#E13500' : '#FAFAFA',
+web/src/pages/Onboarding.tsx:                color:       selected.includes(opt) ? 'white' : '#5A5A5A',
+web/src/pages/Onboarding.tsx:                borderColor: selected.includes(opt) ? '#E13500' : '#E8E8E8',
+web/src/pages/Onboarding.tsx:              style={{ background: '#2D7A4F' }}>
+web/src/pages/Onboarding.tsx:    <div className="h-screen flex flex-col" style={{ background: '#F9EEDC' }}>
+web/src/pages/Onboarding.tsx:            style={{ background: '#E13500' }}>E</div>
+web/src/pages/Onboarding.tsx:          style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}>
+web/src/pages/Onboarding.tsx:                style={{ background: '#E13500' }}
+web/src/pages/Onboarding.tsx:                  className="w-11 h-11 flex items-center justify-center rounded-xl border transition-all hover:border-[#E13500] hover:text-[#E13500] disabled:opacity-30 shrink-0"
+web/src/pages/Onboarding.tsx:                  style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
+web/src/pages/Onboarding.tsx:                  style={{ borderColor: '#E8E8E8', background: '#FAFAFA' }}
+web/src/pages/Onboarding.tsx:                  style={{ background: '#E13500' }}
+web/src/pages/Onboarding.tsx:          style={{ background: '#F9EEDC' }}>
+web/src/pages/PaymentPending.tsx:      style={{ background: '#f0f4ff' }}
+web/src/pages/PaymentPending.tsx:            style={{ background: '#3b5bdb15' }}
+web/src/pages/PaymentPending.tsx:            <svg className="w-8 h-8" style={{ color: '#3b5bdb' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+web/src/pages/PaymentPending.tsx:            style={{ background: '#3b5bdb' }}
+web/src/pages/People.tsx:            style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/pages/People.tsx:        style={{ width: 56, height: 56, background: 'var(--church-primary, #e13500)' }}
+web/src/pages/Pipeline.tsx:            style={isActive ? { background: (stage as PipelineStage & { color?: string }).color ?? '#e13500' } : {}}
+web/src/pages/ResetPassword.tsx://   #access_token=...&refresh_token=...&type=recovery
+web/src/pages/ResetPassword.tsx:        ? <Check size={14} className="shrink-0" style={{ color: '#16a34a' }} />
+web/src/pages/ResetPassword.tsx:      <span style={{ color: ok ? '#16a34a' : '#9ca3af' }}>{label}</span>
+web/src/pages/ResetPassword.tsx:      style={{ background: '#f9eedc' }}
+web/src/pages/ResetPassword.tsx:                style={{ background: '#F0FDF4' }}
+web/src/pages/ResetPassword.tsx:                <Check size={24} style={{ color: '#16a34a' }} />
+web/src/pages/SetPassword.tsx:        ? <Check size={14} className="shrink-0" style={{ color: '#16a34a' }} />
+web/src/pages/SetPassword.tsx:      <span style={{ color: ok ? '#16a34a' : '#9ca3af' }}>{label}</span>
+web/src/pages/SetPassword.tsx:      style={{ background: '#f9eedc' }}
+web/src/pages/settings/Branding.tsx:  const [primary, setPrimary]     = useState('#E13500')
+web/src/pages/settings/Branding.tsx:  const [secondary, setSecondary] = useState('#670000')
+web/src/pages/settings/Branding.tsx:      setPrimary(church.primary_color ?? '#E13500')
+web/src/pages/settings/Branding.tsx:      setSecondary(church.secondary_color ?? '#670000')
+web/src/pages/settings/Branding.tsx:              <div className="w-36 shrink-0 flex flex-col gap-1 p-3" style={{ background: '#161616' }}>
+web/src/pages/settings/Branding.tsx:                        ? { borderColor: primary, background: 'rgba(255,255,255,0.06)', color: '#fff' }
+web/src/pages/settings/Branding.tsx:              <div className="flex-1 p-3" style={{ background: '#f9eedc' }}>
+web/src/pages/Signup.tsx:    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+web/src/pages/Signup.tsx:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
+web/src/pages/Signup.tsx:                style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/Signup.tsx:              style={{ background: '#e13500' }}
+web/src/pages/Signup.tsx:            <a href="#" className="underline" style={{ color: '#e13500' }}>Termos de Uso</a>
+web/src/pages/Signup.tsx:            <a href="#" className="underline" style={{ color: '#e13500' }}>Política de Privacidade</a>.
+web/src/pages/Signup.tsx:          <Link to="/login" className="font-semibold" style={{ color: '#e13500' }}>
+web/src/pages/VisitorLanding.tsx:  const brandColor = church?.primary_color ?? '#4F46E5'
+web/src/pages/VisitorLanding.tsx:      <div className="min-h-screen flex items-center justify-center bg-[#faf8f5]">
+web/src/pages/VisitorLanding.tsx:      <div className="min-h-screen flex flex-col items-center justify-center bg-[#faf8f5] px-6 text-center">
+web/src/pages/VisitorLanding.tsx:      <div className="min-h-screen flex flex-col items-center justify-center bg-[#faf8f5] px-6">
+web/src/pages/VisitorLanding.tsx:              style={{ backgroundColor: '#25D366' }}
+web/src/pages/VisitorLanding.tsx:    <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-start px-4 pt-8 pb-12">

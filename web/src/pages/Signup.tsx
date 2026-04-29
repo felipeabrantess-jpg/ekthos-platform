@@ -49,11 +49,11 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
+          <h1 className="font-display text-4xl font-bold" style={{ color: 'var(--color-primary)' }}>Ekthos</h1>
           <p className="text-sm text-gray-500 mt-1">CRM Pastoral Inteligente</p>
         </div>
 
@@ -78,7 +78,7 @@ export default function Signup() {
                 onChange={field('name')}
                 placeholder="Pastor João Silva"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all"
-                style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+                style={{ '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 autoComplete="name"
                 required
               />
@@ -153,7 +153,7 @@ export default function Signup() {
               type="submit"
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
-              style={{ background: '#e13500' }}
+              style={{ background: 'var(--color-primary)' }}
             >
               {loading && <Loader size={16} strokeWidth={1.75} className="animate-spin" />}
               {loading ? 'Criando conta...' : 'Criar conta'}
@@ -162,15 +162,15 @@ export default function Signup() {
 
           <p className="text-xs text-gray-400 text-center mt-6">
             Ao criar sua conta você concorda com os{' '}
-            <a href="#" className="underline" style={{ color: '#e13500' }}>Termos de Uso</a>
+            <a href="#" className="underline" style={{ color: 'var(--color-primary)' }}>Termos de Uso</a>
             {' '}e a{' '}
-            <a href="#" className="underline" style={{ color: '#e13500' }}>Política de Privacidade</a>.
+            <a href="#" className="underline" style={{ color: 'var(--color-primary)' }}>Política de Privacidade</a>.
           </p>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Já tem conta?{' '}
-          <Link to="/login" className="font-semibold" style={{ color: '#e13500' }}>
+          <Link to="/login" className="font-semibold" style={{ color: 'var(--color-primary)' }}>
             Entrar
           </Link>
         </p>

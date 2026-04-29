@@ -306,7 +306,7 @@ function PlanModal({ plan, onClose, onSaved }: PlanModalProps) {
             onClick={() => void save()}
             disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             {saving
               ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
@@ -411,7 +411,7 @@ function AddonModal({ addon, onClose, onSaved }: AddonModalProps) {
             onClick={() => void save()}
             disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             {saving
               ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
@@ -755,7 +755,7 @@ function AgentModal({ agent, onClose, onSaved }: AgentModalProps) {
             onClick={() => void save()}
             disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             {saving
               ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
@@ -885,9 +885,9 @@ function PromotionsTab() {
       <div className="px-6 py-16 flex flex-col items-center gap-4 text-center">
         <div
           className="w-14 h-14 rounded-2xl flex items-center justify-center"
-          style={{ background: '#e1350012' }}
+          style={{ background: 'var(--color-primary)12' }}
         >
-          <Gift size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+          <Gift size={26} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
         </div>
         <div>
           <p className="font-semibold text-gray-800 text-base">Promoções e Trials</p>
@@ -941,7 +941,7 @@ export default function AdminPricing() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Tag size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+            <Tag size={26} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
             Pricing
           </h1>
           <p className="text-sm text-gray-400 mt-1">
@@ -961,7 +961,7 @@ export default function AdminPricing() {
                 ? 'border-red-600 text-gray-900'
                 : 'border-transparent text-gray-400 hover:text-gray-700'
             }`}
-            style={tab === t.id ? { borderColor: '#e13500' } : {}}
+            style={tab === t.id ? { borderColor: 'var(--color-primary)' } : {}}
           >
             {t.label}
             {t.id === 'promocoes' && (

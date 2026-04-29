@@ -1,32 +1,42 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Bell } from 'lucide-react'
 import { useNotificationsContext } from '../context/NotificationsContext'
 import NotificationPanel from './NotificationPanel'
-import { useAuth } from '@/hooks/useAuth'
 
 export default function NotificationBell() {
-  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const { notifications, loading, unreadCount } = useNotificationsContext()
 
   return (
-    <div className="relative">
+    <div ref={bellRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={`Notificacoes${unreadCount > 0 ? ` - ${unreadCount} nao lidas` : ''}`}
-        className={`relative p-1.5 rounded-lg transition-colors ${
-          open
-            ? 'bg-white/10 text-white'
-            : 'text-white/40 hover:text-white/70 hover:bg-white/5'
-        }`}
+        aria-label={`Notificações${unreadCount > 0 ? ` — ${unreadCount} não lidas` : ''}`}
+        className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-all"
+        style={{
+          background: open ? 'var(--bg-hover)' : 'transparent',
+          color: open ? 'var(--color-primary)' : 'var(--text-secondary)',
+        }}
+        onMouseEnter={e => {
+          if (!open) {
+            e.currentTarget.style.background = 'var(--bg-hover)'
+            e.currentTarget.style.color = 'var(--text-primary)'
+          }
+        }}
+        onMouseLeave={e => {
+          if (!open) {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'var(--text-secondary)'
+          }
+        }}
       >
         <Bell size={18} strokeWidth={1.75} className={open ? 'animate-bell-ring' : ''} />
 
         {unreadCount > 0 && (
           <span
             className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white leading-none"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
             aria-hidden="true"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -34,11 +44,10 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {open && user && (
+      {open && (
         <NotificationPanel
           notifications={notifications}
           loading={loading}
-          userId={user.id}
           onClose={() => setOpen(false)}
         />
       )}

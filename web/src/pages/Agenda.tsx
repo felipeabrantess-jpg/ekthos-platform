@@ -56,23 +56,23 @@ const calendarStyles = `
   .fc .fc-button {
     background: transparent !important;
     border: none !important;
-    color: #1a1a2e !important;
+    color: var(--text-primary) !important;
     box-shadow: none !important;
     font-size: 0.875rem !important;
   }
-  .fc .fc-button:hover { background: #f5f0e8 !important; border-radius: 0.5rem; }
+  .fc .fc-button:hover { background: var(--bg-hover) !important; border-radius: 0.5rem; }
   .fc .fc-button-primary:not(.fc-button-active) { padding: 0.375rem 0.625rem !important; }
-  .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700 !important; color: #1a1a2e; }
-  .fc .fc-daygrid-day.fc-day-today { background: #fdf8f2 !important; }
-  .fc .fc-daygrid-day-number { color: #1a1a2e; font-size: 0.8rem; }
-  .fc .fc-col-header-cell-cushion { color: #6b7280; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700 !important; color: var(--text-primary); }
+  .fc .fc-daygrid-day.fc-day-today { background: var(--bg-hover) !important; }
+  .fc .fc-daygrid-day-number { color: var(--text-primary); font-size: 0.8rem; }
+  .fc .fc-col-header-cell-cushion { color: var(--text-secondary); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
   .fc .fc-event { border-radius: 6px !important; border: none !important; padding: 1px 4px !important; font-size: 0.75rem !important; cursor: pointer; }
   .fc .fc-event:hover { opacity: 0.85; }
-  .fc .fc-list-event:hover td { background: #fdf8f2 !important; cursor: pointer; }
-  .fc .fc-list-day-cushion { background: #f9fafb !important; }
+  .fc .fc-list-event:hover td { background: var(--bg-hover) !important; cursor: pointer; }
+  .fc .fc-list-day-cushion { background: var(--bg-surface) !important; }
   .fc .fc-timegrid-event { border-radius: 6px !important; border: none !important; }
   .fc .fc-scrollgrid { border-radius: 1rem; overflow: hidden; }
-  .fc .fc-scrollgrid td, .fc .fc-scrollgrid th { border-color: rgba(0,0,0,0.07) !important; }
+  .fc .fc-scrollgrid td, .fc .fc-scrollgrid th { border-color: var(--border-default) !important; }
 `
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ export default function Agenda() {
     start: occ.start_datetime,
     end: occ.end_datetime ?? undefined,
     allDay: occ.church_events?.all_day ?? false,
-    backgroundColor: occ.church_events?.color ?? '#7C3AED',
+    backgroundColor: occ.church_events?.color ?? 'var(--color-primary)',
     borderColor: 'transparent',
     textColor: '#ffffff',
     extendedProps: { occurrence: occ },
@@ -172,12 +172,12 @@ export default function Agenda() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-brand-600" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--bg-hover)' }}>
+            <Calendar className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold text-ekthos-black">Eventos</h1>
-            <p className="text-sm text-gray-500">Calendário da igreja</p>
+            <h1 className="font-display text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Eventos</h1>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Calendário da igreja</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -199,17 +199,17 @@ export default function Agenda() {
       {/* Controls: view toggle + ministry filter */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* View switcher */}
-        <div className="flex border border-black/10 rounded-xl overflow-hidden shrink-0">
+        <div className="flex rounded-xl overflow-hidden shrink-0" style={{ border: '1px solid var(--border-default)' }}>
           {VIEW_BUTTONS.map(({ view, icon, label }) => (
             <button
               key={view}
               onClick={() => switchView(view)}
               title={label}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
-                currentView === view
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-white text-gray-500 hover:bg-cream'
-              }`}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={currentView === view
+                ? { background: 'var(--color-primary)', color: '#fff' }
+                : { background: 'var(--bg-surface)', color: 'var(--text-secondary)' }
+              }
             >
               {icon}
               <span className="hidden sm:inline">{label}</span>
@@ -222,7 +222,8 @@ export default function Agenda() {
           <select
             value={ministryFilter}
             onChange={e => setMinistryFilter(e.target.value)}
-            className="rounded-xl border border-black/10 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="rounded-xl px-3 py-2 text-xs focus:outline-none"
+          style={{ border: '1px solid var(--border-default)', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
           >
             <option value="">Todos os ministérios</option>
             {ministries.map(m => (
@@ -235,7 +236,7 @@ export default function Agenda() {
       </div>
 
       {/* Calendar */}
-      <div className="bg-white rounded-2xl border border-black/10 p-4">
+      <div className="rounded-2xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}

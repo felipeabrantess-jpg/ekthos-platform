@@ -45,7 +45,7 @@ function Criterion({ ok, label }: { ok: boolean; label: string }) {
   return (
     <li className="flex items-center gap-2 text-sm">
       {ok
-        ? <Check size={14} className="shrink-0" style={{ color: '#16a34a' }} />
+        ? <Check size={14} className="shrink-0" style={{ color: 'var(--color-success)' }} />
         : <X     size={14} className="shrink-0 text-gray-300" />
       }
       <span style={{ color: ok ? '#16a34a' : '#9ca3af' }}>{label}</span>
@@ -122,7 +122,7 @@ export default function ResetPassword() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: '#f9eedc' }}
+      style={{ background: 'var(--bg-primary)' }}
     >
       <div className="w-full max-w-[480px] animate-fade-in-up">
 
@@ -165,9 +165,9 @@ export default function ResetPassword() {
             <div className="text-center space-y-3">
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center mx-auto"
-                style={{ background: '#F0FDF4' }}
+                style={{ background: 'var(--color-success-bg)' }}
               >
-                <Check size={24} style={{ color: '#16a34a' }} />
+                <Check size={24} style={{ color: 'var(--color-success)' }} />
               </div>
               <h2 className="font-display text-xl font-semibold text-ekthos-black">
                 Senha atualizada!

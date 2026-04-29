@@ -1,18 +1,6 @@
 import { useState, forwardRef, type InputHTMLAttributes } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 
-// ─────────────────────────────────────────────────────────────
-// PasswordInput — wrapper reutilizável sobre <input type="password">
-// com toggle de visibilidade (Eye / EyeOff).
-//
-// Aceita todas as props nativas de <input> (exceto `type`, que é
-// gerenciado internamente). Expõe as mesmas props extras de Input.tsx:
-// label, error, hint.
-//
-// Acessibilidade:
-//   aria-label muda dinamicamente: "Mostrar senha" / "Ocultar senha"
-// ─────────────────────────────────────────────────────────────
-
 interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string
   error?: string
@@ -26,7 +14,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-ekthos-black mb-1.5">
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
             {label}
           </label>
         )}
@@ -36,13 +24,24 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             ref={ref}
             type={show ? 'text' : 'password'}
             className={`
-              block w-full rounded-xl border px-3 py-2.5 text-sm pr-10
-              placeholder-gray-400 bg-white shadow-sm
-              focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600
-              disabled:bg-cream disabled:text-gray-500
-              ${error ? 'border-brand-600' : 'border-black/10'}
+              block w-full rounded-xl px-3 py-2.5 text-sm pr-10 shadow-sm
+              focus:outline-none transition-all duration-150
+              disabled:opacity-50 disabled:cursor-not-allowed
               ${className}
             `}
+            style={{
+              background: 'var(--bg-surface)',
+              border: `1.5px solid ${error ? 'var(--color-danger)' : 'var(--border-default)'}`,
+              color: 'var(--text-primary)',
+            } as React.CSSProperties}
+            onFocus={e => {
+              e.currentTarget.style.borderColor = error ? 'var(--color-danger)' : 'var(--border-focus)'
+              e.currentTarget.style.boxShadow = `0 0 0 3px ${error ? 'rgba(162,45,45,0.12)' : 'rgba(41,182,255,0.12)'}`
+            }}
+            onBlur={e => {
+              e.currentTarget.style.borderColor = error ? 'var(--color-danger)' : 'var(--border-default)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
             {...props}
           />
 
@@ -51,14 +50,17 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             onClick={() => setShow(v => !v)}
             aria-label={show ? 'Ocultar senha' : 'Mostrar senha'}
             tabIndex={-1}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+            style={{ color: 'var(--text-tertiary)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
           >
             {show ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
         </div>
 
-        {error && <p className="mt-1.5 text-xs text-brand-600 font-medium">{error}</p>}
-        {hint && !error && <p className="mt-1.5 text-xs text-gray-400">{hint}</p>}
+        {error && <p className="mt-1.5 text-xs font-medium" style={{ color: 'var(--color-danger)' }}>{error}</p>}
+        {hint && !error && <p className="mt-1.5 text-xs" style={{ color: 'var(--text-tertiary)' }}>{hint}</p>}
       </div>
     )
   }

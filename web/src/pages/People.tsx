@@ -116,7 +116,7 @@ function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
           {/* Avatar placeholder */}
           <div
             className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-            style={{ background: 'var(--church-primary, #e13500)' }}
+            style={{ background: 'var(--church-primary, var(--color-primary))' }}
           >
             {(person.name ?? '?').charAt(0).toUpperCase()}
           </div>
@@ -390,7 +390,7 @@ export default function People() {
       <button
         onClick={handleNewPerson}
         className="md:hidden fixed bottom-6 right-6 z-20 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform"
-        style={{ width: 56, height: 56, background: 'var(--church-primary, #e13500)' }}
+        style={{ width: 56, height: 56, background: 'var(--church-primary, var(--color-primary))' }}
         aria-label="Nova pessoa"
       >
         <span className="text-white text-2xl font-bold leading-none">+</span>

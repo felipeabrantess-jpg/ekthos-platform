@@ -1,0 +1,3 @@
+./supabase/templates/invite.html
+./supabase/templates/recovery.html
+./web/index.html

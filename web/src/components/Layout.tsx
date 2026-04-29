@@ -19,7 +19,7 @@ function ImpersonateBanner({ state, onExit }: {
   return (
     <div
       className="w-full flex items-center justify-between px-6 py-2 shrink-0 z-50"
-      style={{ background: '#670000' }}
+      style={{ background: 'var(--color-danger)', color: '#fff' }}
     >
       <div className="flex items-center gap-2 text-xs text-white/80">
         <Eye size={13} strokeWidth={2} />
@@ -43,15 +43,14 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: church } = useChurch()
 
-  // Fecha drawer ao navegar
   useEffect(() => {
     setSidebarOpen(false)
   }, [location.pathname])
 
-  // Inject church CSS variables globally so all components can use them
+  // Injetar CSS vars de branding da igreja
   useEffect(() => {
-    const primary   = church?.primary_color   ?? '#E13500'
-    const secondary = church?.secondary_color ?? '#670000'
+    const primary   = church?.primary_color   ?? '#29B6FF'
+    const secondary = church?.secondary_color ?? '#1FA8F0'
     document.documentElement.style.setProperty('--church-primary',   primary)
     document.documentElement.style.setProperty('--church-secondary', secondary)
     return () => {

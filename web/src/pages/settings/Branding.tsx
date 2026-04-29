@@ -10,7 +10,7 @@ export function Branding() {
   const { data: church, isLoading } = useChurch()
   const queryClient = useQueryClient()
 
-  const [primary, setPrimary]     = useState('#E13500')
+  const [primary, setPrimary]     = useState('var(--color-primary)')
   const [secondary, setSecondary] = useState('#670000')
   const [logoFile, setLogoFile]   = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -21,7 +21,7 @@ export function Branding() {
   // Sync state when church data loads
   useEffect(() => {
     if (church) {
-      setPrimary(church.primary_color ?? '#E13500')
+      setPrimary(church.primary_color ?? 'var(--color-primary)')
       setSecondary(church.secondary_color ?? '#670000')
     }
   }, [church])
@@ -250,7 +250,7 @@ export function Branding() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 p-3" style={{ background: '#f9eedc' }}>
+              <div className="flex-1 p-3" style={{ background: 'var(--bg-primary)' }}>
                 <div className="flex gap-2 mb-3">
                   <button
                     className="px-3 py-1 rounded-lg text-xs font-semibold text-white"
