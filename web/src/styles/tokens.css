@@ -1,0 +1,57 @@
+:root {
+  /* Backgrounds */
+  --bg-primary: #F5FAFF;
+  --bg-surface: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-hover: #E6F1FB;
+  --border-default: #DCE7F4;
+
+  /* Texts */
+  --text-primary: #07131F;
+  --text-secondary: #6E8398;
+  --text-tertiary: #4A5F75;
+
+  /* Brand */
+  --color-primary: #29B6FF;
+  --color-primary-text: #185FA5;
+  --color-secondary: #7BE7FF;
+  --color-aurora: #4CEAD8;
+  --color-gold: #F2C96B;
+
+  /* Badges semânticos */
+  --badge-visitante-text: #185FA5;
+  --badge-visitante-bg: #E6F1FB;
+  --badge-frequentador-text: #0F6E56;
+  --badge-frequentador-bg: #E1F5EE;
+  --badge-em-risco-text: #854F0B;
+  --badge-em-risco-bg: #FAEEDA;
+  --badge-erro-text: #A32D2D;
+  --badge-erro-bg: #FCEBEB;
+}
+
+.dark {
+  --bg-primary: #07131F;
+  --bg-surface: #0C1B2B;
+  --bg-sidebar: #0A1827;
+  --bg-hover: #10253A;
+  --border-default: #1E3953;
+
+  --text-primary: #F5FAFF;
+  --text-secondary: #A9BED3;
+  --text-tertiary: #6E8398;
+
+  --color-primary: #29B6FF;
+  --color-primary-text: #29B6FF;
+  --color-secondary: #7BE7FF;
+  --color-aurora: #4CEAD8;
+  --color-gold: #F2C96B;
+
+  --badge-visitante-text: #29B6FF;
+  --badge-visitante-bg: rgba(41,182,255,0.12);
+  --badge-frequentador-text: #4CEAD8;
+  --badge-frequentador-bg: rgba(76,234,216,0.12);
+  --badge-em-risco-text: #F2C96B;
+  --badge-em-risco-bg: rgba(242,201,107,0.12);
+  --badge-erro-text: #E24B4A;
+  --badge-erro-bg: rgba(226,75,74,0.12);
+}
