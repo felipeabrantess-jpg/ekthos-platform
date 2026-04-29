@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
+import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
 
 interface ImpersonatingState {
@@ -84,10 +85,13 @@ export default function Layout() {
         <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
       )}
 
+      {/* Desktop header — fora do main para não ficar dentro de overflow-y-auto */}
+      <AppHeader />
+
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-        {/* Main content — pt-14 in mobile to clear fixed MobileHeader */}
+        {/* Main content — pt-14 on mobile to clear fixed MobileHeader */}
         <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
             <Outlet />
