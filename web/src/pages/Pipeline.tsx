@@ -277,7 +277,7 @@ function MobileStagePicker({ stages, activeId, board, onSelect }: MobileStagePic
                 ? 'text-white shadow-sm'
                 : 'bg-cream-dark/50 text-ekthos-black/60 active:bg-cream-dark'
             }`}
-            style={isActive ? { background: (stage as PipelineStage & { color?: string }).color ?? '#e13500' } : {}}
+            style={isActive ? { background: (stage as PipelineStage & { color?: string }).color ?? 'var(--color-primary)' } : {}}
           >
             {stage.name}
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${

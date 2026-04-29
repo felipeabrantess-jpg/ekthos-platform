@@ -8,15 +8,21 @@ interface ErrorStateProps {
 export default function ErrorState({ message = 'Algo deu errado.', onRetry }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="h-12 w-12 rounded-full bg-brand-50 flex items-center justify-center mb-4">
-        <AlertCircle size={24} strokeWidth={1.5} className="text-brand-600" />
+      <div
+        className="h-12 w-12 rounded-full flex items-center justify-center mb-4"
+        style={{ background: 'var(--color-danger-bg)' }}
+      >
+        <AlertCircle size={24} strokeWidth={1.5} style={{ color: 'var(--color-danger)' }} />
       </div>
-      <p className="text-sm font-semibold text-ekthos-black">Erro ao carregar</p>
-      <p className="text-sm text-gray-500 mt-1">{message}</p>
+      <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Erro ao carregar</p>
+      <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}
-          className="mt-4 text-sm text-brand-600 hover:text-brand-700 font-semibold transition-colors"
+          className="mt-4 text-sm font-semibold transition-colors"
+          style={{ color: 'var(--color-primary)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-primary-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-primary)')}
         >
           Tentar novamente
         </button>

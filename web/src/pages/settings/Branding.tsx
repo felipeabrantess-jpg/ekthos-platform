@@ -250,7 +250,7 @@ export function Branding() {
               </div>
 
               {/* Content */}
-              <div className="flex-1 p-3" style={{ background: '#f9eedc' }}>
+              <div className="flex-1 p-3" style={{ background: 'var(--bg-primary)' }}>
                 <div className="flex gap-2 mb-3">
                   <button
                     className="px-3 py-1 rounded-lg text-xs font-semibold text-white"

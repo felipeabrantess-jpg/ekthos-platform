@@ -470,7 +470,7 @@ export default function AdminRevenue() {
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data.mrr_series} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-hover)" vertical={false} />
                       <XAxis dataKey="mes" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                       <YAxis
                         tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }}

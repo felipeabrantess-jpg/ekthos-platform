@@ -1,7 +1,5 @@
 /**
- * Sidebar.tsx — Rail + Sub-sidebar contextual
- *
- * Arquitetura premium inspirada em Linear / Notion / Stripe.
+ * Sidebar.tsx — Rail + Sub-sidebar contextual (dual-mode)
  *
  * ┌──────┬──────────────────────┐
  * │ RAIL │  SUB-PAINEL          │
@@ -11,7 +9,7 @@
  * Rail: 4 categorias (Igreja · Agentes IA · Módulos · Config)
  * Sub-painel: conteúdo contextual por categoria ativa
  * Estado: persiste em localStorage → ekthos_sidebar_category
- * Auto-sync: categoria inferida da URL ao navegar
+ * Sino: movido para AppHeader (desktop) e MobileHeader (mobile)
  */
 
 import { useState, useEffect } from 'react'
@@ -22,20 +20,15 @@ import {
 } from 'lucide-react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
-import NotificationBell from '@/features/notifications/components/NotificationBell'
 import { usePlan } from '@/hooks/usePlan'
 import { useChurch, DEFAULT_MODULES } from '@/hooks/useChurch'
 import { IGREJA_NAV } from '@/lib/navigation'
 import { AGENTS_CONTENT } from '@/lib/agents-content'
 import { MODULES_CONTENT } from '@/lib/modules-content'
 
-// ── Tipos ────────────────────────────────────────────────────────────────────
-
 type Category = 'igreja' | 'agentes' | 'modulos' | 'config'
 
 const STORAGE_KEY = 'ekthos_sidebar_category'
-
-// ── Inferir categoria a partir da URL ────────────────────────────────────────
 
 function inferCategory(pathname: string): Category {
   if (pathname.startsWith('/agentes')) return 'agentes'
@@ -44,17 +37,6 @@ function inferCategory(pathname: string): Category {
   return 'igreja'
 }
 
-// ── Estilos ──────────────────────────────────────────────────────────────────
-
-const NAV_ITEM = 'flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium rounded-lg transition-all duration-150'
-const NAV_ACTIVE = 'bg-white/[0.07] text-white border-l-2'
-const NAV_IDLE = 'text-white/45 border-l-2 border-transparent hover:text-white/70 hover:bg-white/[0.04]'
-
-const SECTION_LABEL = 'text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3 select-none'
-const SECTION_COLOR = { color: 'rgba(249,238,220,0.25)' }
-
-// ── Rail (64px) ──────────────────────────────────────────────────────────────
-
 const RAIL_ITEMS: { id: Category; Icon: typeof LayoutGrid; label: string }[] = [
   { id: 'igreja',  Icon: LayoutGrid, label: 'Igreja'     },
   { id: 'agentes', Icon: Bot,        label: 'Agentes IA' },
@@ -62,29 +44,37 @@ const RAIL_ITEMS: { id: Category; Icon: typeof LayoutGrid; label: string }[] = [
   { id: 'config',  Icon: Settings,   label: 'Config.'    },
 ]
 
+// ── Rail (64px) ──────────────────────────────────────────────────────────────
+
 interface RailProps {
   active: Category
   onSelect: (c: Category) => void
   churchLogoUrl?: string
   churchName?: string
-  userInitial: string
   onLogout: () => void
 }
 
-function SidebarRail({ active, onSelect, churchLogoUrl, churchName, userInitial, onLogout }: RailProps) {
+function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout }: RailProps) {
   return (
     <div
       className="flex flex-col h-full shrink-0"
-      style={{ width: 64, background: '#0f0f0f', borderRight: '1px solid rgba(255,255,255,0.04)' }}
+      style={{
+        width: 64,
+        background: 'var(--bg-sidebar)',
+        borderRight: '1px solid var(--border-default)',
+      }}
     >
       {/* Logo da igreja */}
-      <div className="flex items-center justify-center h-16 shrink-0 border-b border-white/[0.04]">
+      <div
+        className="flex items-center justify-center h-16 shrink-0"
+        style={{ borderBottom: '1px solid var(--border-default)' }}
+      >
         {churchLogoUrl ? (
           <img src={churchLogoUrl} alt={churchName ?? ''} className="h-8 w-8 object-contain rounded-lg" />
         ) : (
           <div
-            className="h-8 w-8 rounded-lg flex items-center justify-center font-display font-bold text-sm"
-            style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
+            className="h-8 w-8 rounded-lg flex items-center justify-center font-display font-bold text-sm text-white"
+            style={{ background: 'var(--church-primary, var(--color-primary))' }}
           >
             {(churchName ?? 'E').charAt(0).toUpperCase()}
           </div>
@@ -99,26 +89,39 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, userInitial,
             <div key={id} className="relative group">
               <button
                 onClick={() => onSelect(id)}
-                className="flex items-center justify-center rounded-xl transition-all duration-150"
+                className="flex items-center justify-center rounded-xl transition-all"
                 style={{
                   width: 40, height: 40,
-                  background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                  color: isActive ? '#fff' : 'rgba(255,255,255,0.35)',
-                  borderRight: isActive ? '2px solid var(--church-primary, #e13500)' : '2px solid transparent',
+                  background: isActive ? 'var(--bg-hover)' : 'transparent',
+                  color: isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
+                  borderRight: isActive
+                    ? '2px solid var(--color-primary)'
+                    : '2px solid transparent',
                 }}
                 onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.7)'
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'var(--bg-hover)'
+                    e.currentTarget.style.color = 'var(--text-primary)'
+                  }
                 }}
                 onMouseLeave={e => {
-                  if (!isActive) e.currentTarget.style.color = 'rgba(255,255,255,0.35)'
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = 'var(--text-secondary)'
+                  }
                 }}
               >
                 <Icon size={18} strokeWidth={1.75} />
               </button>
               {/* Tooltip */}
               <div
-                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 rounded-md text-[11px] font-medium text-white whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)' }}
+                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-primary)',
+                  boxShadow: 'var(--shadow-md)',
+                }}
               >
                 {label}
               </div>
@@ -127,23 +130,18 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, userInitial,
         })}
       </nav>
 
-      {/* Rodapé: avatar + sino + logout */}
-      <div className="flex flex-col items-center gap-2 pb-3 border-t border-white/[0.04] pt-3">
-        <NotificationBell />
-        <div
-          className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
-          style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
-          title="Perfil"
-        >
-          {userInitial}
-        </div>
+      {/* Rodapé: logout */}
+      <div
+        className="flex flex-col items-center gap-2 pb-3 pt-3"
+        style={{ borderTop: '1px solid var(--border-default)' }}
+      >
         <button
           onClick={onLogout}
           className="flex items-center justify-center rounded-lg transition-all"
-          style={{ width: 32, height: 32, color: 'rgba(255,255,255,0.25)' }}
+          style={{ width: 32, height: 32, color: 'var(--text-tertiary)' }}
           title="Sair"
-          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
         >
           <LogOut size={15} strokeWidth={1.75} />
         </button>
@@ -154,12 +152,7 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, userInitial,
 
 // ── Sub-painel: IGREJA ───────────────────────────────────────────────────────
 
-interface IgrejaSubProps {
-  role: string | null
-  enabledModules: Record<string, boolean>
-}
-
-function IgrejaSubPanel({ role, enabledModules }: IgrejaSubProps) {
+function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabledModules: Record<string, boolean> }) {
   const roleFilteredItems = IGREJA_NAV.filter(item => {
     if (!role) return false
     const allowed = ROUTE_PERMISSIONS[item.path]
@@ -169,19 +162,44 @@ function IgrejaSubPanel({ role, enabledModules }: IgrejaSubProps) {
   const enabledItems  = roleFilteredItems.filter(i => !i.moduleKey || enabledModules[i.moduleKey] !== false)
   const disabledItems = roleFilteredItems.filter(i => i.moduleKey && enabledModules[i.moduleKey] === false)
 
+  const navItemBase: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '6px 12px', fontSize: 13, fontWeight: 500,
+    borderRadius: 8, transition: 'all 150ms ease',
+    borderLeft: '2px solid transparent', cursor: 'pointer',
+    textDecoration: 'none', width: '100%',
+  }
+
   return (
     <div className="space-y-0.5">
-      <p className={SECTION_LABEL} style={SECTION_COLOR}>Principal</p>
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3"
+        style={{ color: 'var(--text-tertiary)' }}>
+        Principal
+      </p>
       {enabledItems.map(({ path, label, Icon }) => (
         <NavLink
           key={path}
           to={path}
-          className={({ isActive }) =>
-            `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`
-          }
-          style={({ isActive }) =>
-            isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}
-          }
+          style={({ isActive }) => ({
+            ...navItemBase,
+            background: isActive ? 'var(--bg-hover)' : 'transparent',
+            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+          })}
+          onMouseEnter={e => {
+            const el = e.currentTarget
+            if (!el.dataset.active) {
+              el.style.background = 'var(--bg-hover)'
+              el.style.color = 'var(--text-primary)'
+            }
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget
+            if (!el.dataset.active) {
+              el.style.background = 'transparent'
+              el.style.color = 'var(--text-secondary)'
+            }
+          }}
         >
           <Icon size={15} strokeWidth={1.75} className="shrink-0" />
           <span>{label}</span>
@@ -190,17 +208,20 @@ function IgrejaSubPanel({ role, enabledModules }: IgrejaSubProps) {
 
       {disabledItems.length > 0 && (
         <>
-          <p className={SECTION_LABEL} style={{ ...SECTION_COLOR, marginTop: 16 }}>Desabilitados</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+            style={{ color: 'var(--text-tertiary)', opacity: 0.6 }}>
+            Desabilitados
+          </p>
           {disabledItems.map(({ path, label, Icon }) => (
             <div
               key={path}
-              className={`${NAV_ITEM} border-l-2 border-transparent cursor-default select-none`}
-              style={{ color: 'rgba(255,255,255,0.15)' }}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
+              style={{ color: 'var(--text-tertiary)', opacity: 0.4 }}
               title="Ative nas Configurações"
             >
-              <Icon size={15} strokeWidth={1.75} className="shrink-0 opacity-40" />
-              <span className="opacity-40">{label}</span>
-              <Lock size={10} strokeWidth={2} className="ml-auto shrink-0 opacity-30" />
+              <Icon size={15} strokeWidth={1.75} className="shrink-0" />
+              <span className="text-[13px]">{label}</span>
+              <Lock size={10} strokeWidth={2} className="ml-auto shrink-0" />
             </div>
           ))}
         </>
@@ -221,62 +242,72 @@ interface AgentesSubProps {
 
 function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, planLoading }: AgentesSubProps) {
   const catalogSlugs = allAgents.map(a => a.slug)
+  const activeContent    = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && hasAgent(c.slug))
+  const standaloneContent = AGENTS_CONTENT.filter(c => !c.moduleId && catalogSlugs.includes(c.slug) && !hasAgent(c.slug) && !c.badge?.includes('Avivamento'))
+  const moduleAgents     = AGENTS_CONTENT.filter(c => !!c.moduleId)
+  const exclusiveAgents  = AGENTS_CONTENT.filter(c => c.badge?.includes('Avivamento') && planSlug !== 'avivamento' && !hasAgent(c.slug))
 
-  const activeContent = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && hasAgent(c.slug))
-  const standaloneContent = AGENTS_CONTENT.filter(
-    c => !c.moduleId && catalogSlugs.includes(c.slug) && !hasAgent(c.slug) && !c.badge?.includes('Avivamento')
-  )
-  const moduleAgents = AGENTS_CONTENT.filter(c => !!c.moduleId)
-  const exclusiveAgents = AGENTS_CONTENT.filter(
-    c => c.badge?.includes('Avivamento') && planSlug !== 'avivamento' && !hasAgent(c.slug)
-  )
+  const navItemBase: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '6px 12px', fontSize: 13, fontWeight: 500,
+    borderRadius: 8, transition: 'all 150ms ease',
+    borderLeft: '2px solid transparent',
+    textDecoration: 'none', width: '100%',
+  }
 
   if (planLoading) {
-    return <p className="text-[11px] px-3 py-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Carregando...</p>
+    return <p className="text-[11px] px-3 py-4" style={{ color: 'var(--text-tertiary)' }}>Carregando...</p>
   }
 
   return (
     <div className="space-y-0.5">
-      {/* Header contador */}
       <div className="flex items-center justify-between px-3 mb-1 mt-1">
-        <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: 'rgba(249,238,220,0.25)' }}>
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: 'var(--text-tertiary)' }}>
           Agentes IA
         </p>
-        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(249,238,220,0.4)' }}>
+        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+          style={{ background: 'var(--bg-hover)', color: 'var(--text-tertiary)' }}>
           {activeAgentSlugs.length}/{allAgents.length}
         </span>
       </div>
 
-      {/* ATIVOS — link direto para o chat */}
       {activeContent.length > 0 && (
         <>
-          <p className={SECTION_LABEL} style={SECTION_COLOR}>Ativos</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3"
+            style={{ color: 'var(--text-tertiary)' }}>Ativos</p>
           {activeContent.map(c => (
-            <NavLink
-              key={c.slug}
-              to={`/agentes/${c.slug}/conversar`}
-              className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
-              title={`Conversar com ${c.name}`}
+            <NavLink key={c.slug} to={`/agentes/${c.slug}/conversar`}
+              style={({ isActive }) => ({
+                ...navItemBase,
+                background: isActive ? 'var(--bg-hover)' : 'transparent',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+              })}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
             >
               <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
               <span className="flex-1 truncate">{c.name}</span>
-              <CheckCircle2 size={11} className="text-green-400 shrink-0" strokeWidth={2} />
+              <CheckCircle2 size={11} className="shrink-0" strokeWidth={2} style={{ color: 'var(--color-success)' }} />
             </NavLink>
           ))}
         </>
       )}
 
-      {/* CONTRATAR AVULSO */}
       {standaloneContent.length > 0 && (
         <>
-          <p className={SECTION_LABEL} style={{ ...SECTION_COLOR, marginTop: 12 }}>Contratar avulso</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+            style={{ color: 'var(--text-tertiary)' }}>Contratar avulso</p>
           {standaloneContent.map(c => (
-            <NavLink
-              key={c.slug}
-              to={`/agentes/${c.slug}`}
-              className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+            <NavLink key={c.slug} to={`/agentes/${c.slug}`}
+              style={({ isActive }) => ({
+                ...navItemBase,
+                background: isActive ? 'var(--bg-hover)' : 'transparent',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+              })}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
             >
               <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
               <span className="flex-1 truncate">{c.name}</span>
@@ -285,46 +316,45 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, plan
         </>
       )}
 
-      {/* VIA MÓDULO */}
       {moduleAgents.length > 0 && (
         <>
-          <p className={SECTION_LABEL} style={{ ...SECTION_COLOR, marginTop: 12 }}>Via módulo</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+            style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Via módulo</p>
           {moduleAgents.map(c => (
-            <NavLink
-              key={c.slug}
-              to={`/agentes/${c.slug}`}
-              className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
-            >
-              <c.Icon size={14} strokeWidth={1.75} className="shrink-0 opacity-50" />
-              <span className="flex-1 truncate opacity-60">{c.name}</span>
-              <Lock size={10} className="shrink-0 opacity-30" strokeWidth={2} />
-            </NavLink>
+            <div key={c.slug}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
+              style={{ color: 'var(--text-tertiary)', opacity: 0.5 }}>
+              <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
+              <span className="flex-1 truncate text-[13px]">{c.name}</span>
+              <Lock size={10} strokeWidth={2} className="shrink-0" />
+            </div>
           ))}
         </>
       )}
 
-      {/* EXCLUSIVO PLANO SUPERIOR */}
       {exclusiveAgents.length > 0 && (
         <>
-          <p className={SECTION_LABEL} style={{ ...SECTION_COLOR, marginTop: 12 }}>Plano superior</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+            style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Plano superior</p>
           {exclusiveAgents.map(c => (
-            <NavLink
-              key={c.slug}
-              to={`/agentes/${c.slug}`}
-              className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
-            >
-              <c.Icon size={14} strokeWidth={1.75} className="shrink-0 opacity-50" />
-              <span className="flex-1 truncate opacity-50">{c.name}</span>
-              <Sparkles size={10} className="shrink-0 opacity-30" strokeWidth={2} />
+            <NavLink key={c.slug} to={`/agentes/${c.slug}`}
+              style={({ isActive }) => ({
+                ...navItemBase,
+                background: isActive ? 'var(--bg-hover)' : 'transparent',
+                color: 'var(--text-tertiary)',
+                opacity: 0.5,
+                borderLeftColor: 'transparent',
+              })}>
+              <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
+              <span className="flex-1 truncate">{c.name}</span>
+              <Sparkles size={10} strokeWidth={2} className="shrink-0" />
             </NavLink>
           ))}
         </>
       )}
 
       {activeContent.length === 0 && standaloneContent.length === 0 && moduleAgents.length === 0 && (
-        <p className="text-[11px] px-3 py-4 text-center" style={{ color: 'rgba(249,238,220,0.25)' }}>
+        <p className="text-[11px] px-3 py-4 text-center" style={{ color: 'var(--text-tertiary)' }}>
           Nenhum agente configurado
         </p>
       )}
@@ -337,23 +367,30 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, plan
 function ModulosSubPanel() {
   return (
     <div className="space-y-0.5">
-      <p className={SECTION_LABEL} style={SECTION_COLOR}>Módulos add-on</p>
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3"
+        style={{ color: 'var(--text-tertiary)' }}>Módulos add-on</p>
       {MODULES_CONTENT.map(mod => (
         <NavLink
           key={mod.id}
           to={`/modulos/${mod.id}`}
           title="Fale com consultor para ativar"
-          className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-          style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+          style={({ isActive }) => ({
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '6px 12px', borderRadius: 8, transition: 'all 150ms ease',
+            borderLeft: '2px solid transparent',
+            background: isActive ? 'var(--bg-hover)' : 'transparent',
+            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+            textDecoration: 'none',
+          })}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
         >
           <mod.Icon size={14} strokeWidth={1.75} className="shrink-0 opacity-70" />
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-medium leading-tight truncate">{mod.name}</p>
-            <p className="text-[10px] leading-tight" style={{ color: 'rgba(249,238,220,0.3)' }}>
+            <p className="text-[10px] leading-tight" style={{ color: 'var(--text-tertiary)' }}>
               {mod.price.replace('/mês', '')}
-            </p>
-            <p className="text-[9px] leading-tight mt-0.5" style={{ color: 'rgba(249,238,220,0.2)' }}>
-              Implementação acompanhada
             </p>
           </div>
           <Lock size={10} className="shrink-0 opacity-25" strokeWidth={2} />
@@ -366,15 +403,25 @@ function ModulosSubPanel() {
 // ── Sub-painel: CONFIGURAÇÕES ────────────────────────────────────────────────
 
 function ConfigSubPanel() {
-  const GROUP_LABEL = (label: string) => (
-    <p className={SECTION_LABEL} style={SECTION_COLOR}>{label}</p>
-  )
+  const navItemBase: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '6px 12px', fontSize: 13, fontWeight: 500,
+    borderRadius: 8, transition: 'all 150ms ease',
+    borderLeft: '2px solid transparent',
+    textDecoration: 'none', width: '100%',
+  }
 
   const ConfigLink = ({ to, label }: { to: string; label: string }) => (
     <NavLink
       to={to}
-      className={({ isActive }) => `${NAV_ITEM} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
-      style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+      style={({ isActive }) => ({
+        ...navItemBase,
+        background: isActive ? 'var(--bg-hover)' : 'transparent',
+        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+        borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+      })}
+      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
     >
       <ChevronRight size={12} strokeWidth={2} className="shrink-0 opacity-40" />
       <span>{label}</span>
@@ -382,13 +429,12 @@ function ConfigSubPanel() {
   )
 
   const InactiveLink = ({ label }: { label: string }) => (
-    <div
-      className={`${NAV_ITEM} border-l-2 border-transparent cursor-default select-none`}
-      style={{ color: 'rgba(255,255,255,0.15)' }}
-    >
+    <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
+      style={{ color: 'var(--text-tertiary)', opacity: 0.4 }}>
       <ChevronRight size={12} strokeWidth={2} className="shrink-0" />
-      <span className="flex-1">{label}</span>
-      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(249,238,220,0.25)' }}>
+      <span className="flex-1 text-[13px]">{label}</span>
+      <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+        style={{ background: 'var(--bg-hover)', color: 'var(--text-tertiary)' }}>
         Em breve
       </span>
     </div>
@@ -396,21 +442,26 @@ function ConfigSubPanel() {
 
   return (
     <div className="space-y-0.5">
-      {GROUP_LABEL('Identidade')}
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3"
+        style={{ color: 'var(--text-tertiary)' }}>Identidade</p>
       <ConfigLink to="/configuracoes/dados"      label="Dados da Igreja" />
       <ConfigLink to="/configuracoes/identidade" label="Branding" />
 
-      {GROUP_LABEL('Equipe')}
-      <ConfigLink to="/configuracoes/usuarios"   label="Usuários e Permissões" />
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)' }}>Equipe</p>
+      <ConfigLink to="/configuracoes/usuarios" label="Usuários e Permissões" />
 
-      {GROUP_LABEL('Assinatura')}
-      <ConfigLink to="/configuracoes/plano"      label="Plano e Cobrança" />
-      <ConfigLink to="/configuracoes/modulos"    label="Módulos e Add-ons" />
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)' }}>Assinatura</p>
+      <ConfigLink to="/configuracoes/plano"   label="Plano e Cobrança" />
+      <ConfigLink to="/configuracoes/modulos" label="Módulos e Add-ons" />
 
-      {GROUP_LABEL('Integrações')}
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Integrações</p>
       <InactiveLink label="Integrações" />
 
-      {GROUP_LABEL('Operacional')}
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Operacional</p>
       <InactiveLink label="Automações" />
     </div>
   )
@@ -419,9 +470,7 @@ function ConfigSubPanel() {
 // ── Componente principal ─────────────────────────────────────────────────────
 
 interface SidebarProps {
-  /** Mobile only: controla se o drawer está aberto */
   isMobileOpen?: boolean
-  /** Mobile only: callback para fechar o drawer */
   onMobileClose?: () => void
 }
 
@@ -434,13 +483,11 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
 
   const enabledModules = church?.enabled_modules ?? DEFAULT_MODULES
 
-  // Estado de categoria persistido em localStorage
   const [activeCategory, setActiveCategory] = useState<Category>(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Category | null
     return stored ?? inferCategory(location.pathname)
   })
 
-  // Sincroniza categoria com URL ao navegar (e fecha drawer mobile)
   useEffect(() => {
     const inferred = inferCategory(location.pathname)
     setActiveCategory(inferred)
@@ -461,9 +508,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     (user?.user_metadata?.full_name as string | undefined) ??
     (user?.user_metadata?.name  as string | undefined) ??
     user?.email?.split('@')[0] ?? 'Usuário'
-  const userInitial = displayName.charAt(0).toUpperCase()
 
-  // Sub-painel header por categoria
   const SUBPANEL_HEADER: Record<Category, string> = {
     igreja:  church?.name ?? 'Igreja',
     agentes: 'Agentes IA',
@@ -471,47 +516,44 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     config:  'Configurações',
   }
 
-  // Sidebar content (shared between desktop and mobile drawer)
   const sidebarContent = (
     <>
-      {/* ── Coluna 1: Rail 64px ─────────────────────────────── */}
+      {/* Rail 64px */}
       <SidebarRail
         active={activeCategory}
         onSelect={handleSelectCategory}
         churchLogoUrl={church?.logo_url ?? undefined}
         churchName={church?.name ?? undefined}
-        userInitial={userInitial}
         onLogout={handleLogout}
       />
 
-      {/* ── Coluna 2: Sub-painel 240px ──────────────────────── */}
+      {/* Sub-painel 240px */}
       <div
         className="flex flex-col h-full overflow-hidden"
         style={{
           width: 240,
-          background: '#161616',
-          borderRight: '1px solid rgba(255,255,255,0.05)',
+          background: 'var(--bg-surface)',
+          borderRight: '1px solid var(--border-default)',
         }}
       >
         {/* Header do sub-painel */}
         <div
           className="px-4 h-16 flex items-center justify-between shrink-0"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+          style={{ borderBottom: '1px solid var(--border-default)' }}
         >
-          <span
-            className="text-[11px] font-bold uppercase tracking-widest truncate"
-            style={{ color: 'rgba(249,238,220,0.45)' }}
-          >
+          <span className="text-[11px] font-bold uppercase tracking-widest truncate"
+            style={{ color: 'var(--text-tertiary)' }}>
             {SUBPANEL_HEADER[activeCategory]}
           </span>
-          {/* Info extra no header */}
           {activeCategory === 'agentes' && !planLoading && (
-            <span className="text-[9px] font-semibold ml-2 shrink-0" style={{ color: 'rgba(249,238,220,0.3)' }}>
+            <span className="text-[9px] font-semibold ml-2 shrink-0"
+              style={{ color: 'var(--text-tertiary)' }}>
               {activeAgentSlugs.length}/{allAgents.length}
             </span>
           )}
           {activeCategory === 'config' && role && (
-            <span className="text-[9px] font-semibold ml-2 shrink-0" style={{ color: 'rgba(249,238,220,0.3)' }}>
+            <span className="text-[9px] font-semibold ml-2 shrink-0"
+              style={{ color: 'var(--text-tertiary)' }}>
               {ROLE_LABELS[role]}
             </span>
           )}
@@ -519,32 +561,22 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
 
         {/* Conteúdo scrollável */}
         <nav className="flex-1 overflow-y-auto sidebar-scroll px-2 py-3">
-          {activeCategory === 'igreja' && (
-            <IgrejaSubPanel role={role} enabledModules={enabledModules} />
-          )}
+          {activeCategory === 'igreja'  && <IgrejaSubPanel role={role} enabledModules={enabledModules} />}
           {activeCategory === 'agentes' && (
-            <AgentesSubPanel
-              allAgents={allAgents}
-              hasAgent={hasAgent}
-              activeAgentSlugs={activeAgentSlugs}
-              planSlug={planSlug}
-              planLoading={planLoading}
-            />
+            <AgentesSubPanel allAgents={allAgents} hasAgent={hasAgent}
+              activeAgentSlugs={activeAgentSlugs} planSlug={planSlug} planLoading={planLoading} />
           )}
           {activeCategory === 'modulos' && <ModulosSubPanel />}
-          {activeCategory === 'config' && <ConfigSubPanel />}
+          {activeCategory === 'config'  && <ConfigSubPanel />}
         </nav>
 
-        {/* Rodapé do sub-painel: nome + role */}
-        <div
-          className="px-4 py-3 shrink-0"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
-        >
-          <p className="text-[12px] font-medium truncate" style={{ color: 'rgba(249,238,220,0.7)' }}>
+        {/* Rodapé: nome + role */}
+        <div className="px-4 py-3 shrink-0" style={{ borderTop: '1px solid var(--border-default)' }}>
+          <p className="text-[12px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>
             {displayName}
           </p>
           {role && (
-            <p className="text-[10px] truncate" style={{ color: 'rgba(249,238,220,0.3)' }}>
+            <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>
               {ROLE_LABELS[role]}
             </p>
           )}
@@ -555,25 +587,20 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
 
   return (
     <>
-      {/* ── Desktop (md+): sidebar inline sempre visível ──────── */}
+      {/* Desktop: sidebar inline */}
       <aside className="hidden md:flex h-screen sticky top-0 shrink-0">
         {sidebarContent}
       </aside>
 
-      {/* ── Mobile (<md): drawer overlay ─────────────────────── */}
+      {/* Mobile: drawer overlay */}
       {isMobileOpen && (
         <>
-          {/* Backdrop */}
           <div
             className="md:hidden fixed inset-0 z-40 bg-black/50"
             onClick={onMobileClose}
             aria-hidden="true"
           />
-          {/* Drawer */}
-          <aside
-            className="md:hidden fixed left-0 top-0 bottom-0 z-50 flex"
-            style={{ width: 304 }}
-          >
+          <aside className="md:hidden fixed left-0 top-0 bottom-0 z-50 flex" style={{ width: 304 }}>
             {sidebarContent}
           </aside>
         </>
@@ -581,5 +608,3 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     </>
   )
 }
-
-

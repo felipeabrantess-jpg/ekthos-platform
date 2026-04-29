@@ -54,7 +54,7 @@ function EventRow({ event, onEdit, onDelete }: EventRowProps) {
       {/* Color strip */}
       <div
         className="w-1 rounded-full shrink-0 self-stretch"
-        style={{ backgroundColor: event.color ?? '#7C3AED' }}
+        style={{ backgroundColor: event.color ?? 'var(--color-primary)' }}
       />
 
       <div className="flex-1 min-w-0">

@@ -1,27 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // ── Novos tokens semânticos (mapeados para CSS vars de tokens.css) ──────
-        'bg-primary':     'var(--bg-primary)',
-        'bg-surface':     'var(--bg-surface)',
-        'bg-sidebar':     'var(--bg-sidebar)',
-        'bg-hover':       'var(--bg-hover)',
-        'border-default': 'var(--border-default)',
-        'text-primary':   'var(--text-primary)',
-        'text-secondary': 'var(--text-secondary)',
-        'text-tertiary':  'var(--text-tertiary)',
-        primary:          'var(--color-primary)',
-        'primary-text':   'var(--color-primary-text)',
-        secondary:        'var(--color-secondary)',
-        aurora:           'var(--color-aurora)',
-        gold:             'var(--color-gold)',
-
-        // ── Aliases legados — PRESERVADOS até Fase 2 substituir as 358 refs ──
-        // NÃO remover antes da Fase 2 estar 100% concluída
+        // Ekthos brand — vermelho (cor primaria)
         brand: {
           50:  '#FDE8E0',
           100: '#FCCFBF',
@@ -34,21 +17,25 @@ export default {
           800: '#8B2000',
           900: '#5A1500',
         },
+        // Ekthos wine — profundidade espiritual
         wine: {
           DEFAULT: '#670000',
           light:   '#8B1A1A',
           bg:      '#F5E0E0',
         },
+        // Ekthos cream — fundo geral
         cream: {
           DEFAULT: '#f9eedc',
           light:   '#FDF6EB',
           dark:    '#EDE0CC',
         },
+        // Ekthos black — sidebar, textos
         ekthos: {
           black:       '#161616',
           'black-lg':  '#2A2A2A',
           'black-soft':'#333333',
         },
+        // Semanticas
         success: {
           DEFAULT: '#2D7A4F',
           bg:      '#E8F5E9',

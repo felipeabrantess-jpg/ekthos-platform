@@ -465,7 +465,7 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
           <div className="flex items-start gap-4">
             <div
               className="h-14 w-14 rounded-full flex items-center justify-center shrink-0 font-display text-xl font-bold text-white shadow-sm"
-              style={{ background: 'var(--church-primary, #e13500)' }}
+              style={{ background: 'var(--church-primary, var(--color-primary))' }}
             >
               {initials}
             </div>

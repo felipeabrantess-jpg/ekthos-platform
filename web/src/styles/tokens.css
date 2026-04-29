@@ -1,0 +1,113 @@
+:root {
+  /* Backgrounds */
+  --bg-primary:  #F5FAFF;
+  --bg-surface:  #FFFFFF;
+  --bg-sidebar:  #FFFFFF;
+  --bg-hover:    #E6F1FB;
+  --bg-active:   #DCE7F4;
+
+  /* Borders */
+  --border-default: #DCE7F4;
+  --border-focus:   #29B6FF;
+
+  /* Texts */
+  --text-primary:   #07131F;
+  --text-secondary: #6E8398;
+  --text-tertiary:  #4A5F75;
+
+  /* Brand */
+  --color-primary:       #29B6FF;
+  --color-primary-hover: #1FA8F0;
+  --color-primary-dark:  #0A9FE8;
+  --color-primary-text:  #185FA5;
+  --color-secondary:     #7BE7FF;
+  --color-aurora:        #4CEAD8;
+  --color-gold:          #F2C96B;
+
+  /* Semantic */
+  --color-success:    #0F6E56;
+  --color-success-bg: #E1F5EE;
+  --color-warning:    #854F0B;
+  --color-warning-bg: #FAEEDA;
+  --color-danger:     #A32D2D;
+  --color-danger-bg:  #FCEBEB;
+
+  /* Badges semânticos */
+  --badge-visitante-text:    #185FA5;
+  --badge-visitante-bg:      #E6F1FB;
+  --badge-frequentador-text: #0F6E56;
+  --badge-frequentador-bg:   #E1F5EE;
+  --badge-em-risco-text:     #854F0B;
+  --badge-em-risco-bg:       #FAEEDA;
+  --badge-erro-text:         #A32D2D;
+  --badge-erro-bg:           #FCEBEB;
+  --badge-membro-text:       #185FA5;
+  --badge-membro-bg:         #E6F1FB;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(7,19,31,0.06);
+  --shadow-md: 0 4px 12px rgba(7,19,31,0.08);
+  --shadow-lg: 0 8px 24px rgba(7,19,31,0.12);
+
+  /* Radius */
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  /* Transition */
+  --transition-fast:   150ms ease;
+  --transition-normal: 200ms ease;
+}
+
+.dark {
+  /* Backgrounds */
+  --bg-primary:  #07131F;
+  --bg-surface:  #0C1B2B;
+  --bg-sidebar:  #0A1827;
+  --bg-hover:    #10253A;
+  --bg-active:   #1E3953;
+
+  /* Borders */
+  --border-default: #1E3953;
+  --border-focus:   #29B6FF;
+
+  /* Texts */
+  --text-primary:   #F5FAFF;
+  --text-secondary: #A9BED3;
+  --text-tertiary:  #6E8398;
+
+  /* Brand */
+  --color-primary:       #29B6FF;
+  --color-primary-hover: #50C4FF;
+  --color-primary-dark:  #1FA8F0;
+  --color-primary-text:  #29B6FF;
+  --color-secondary:     #7BE7FF;
+  --color-aurora:        #4CEAD8;
+  --color-gold:          #F2C96B;
+
+  /* Semantic */
+  --color-success:    #4CEAD8;
+  --color-success-bg: rgba(76,234,216,0.12);
+  --color-warning:    #F2C96B;
+  --color-warning-bg: rgba(242,201,107,0.12);
+  --color-danger:     #E24B4A;
+  --color-danger-bg:  rgba(226,75,74,0.12);
+
+  /* Badges semânticos */
+  --badge-visitante-text:    #29B6FF;
+  --badge-visitante-bg:      rgba(41,182,255,0.12);
+  --badge-frequentador-text: #4CEAD8;
+  --badge-frequentador-bg:   rgba(76,234,216,0.12);
+  --badge-em-risco-text:     #F2C96B;
+  --badge-em-risco-bg:       rgba(242,201,107,0.12);
+  --badge-erro-text:         #E24B4A;
+  --badge-erro-bg:           rgba(226,75,74,0.12);
+  --badge-membro-text:       #29B6FF;
+  --badge-membro-bg:         rgba(41,182,255,0.12);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+}
