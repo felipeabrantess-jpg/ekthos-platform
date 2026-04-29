@@ -222,3 +222,44 @@ ccusage session            # custo da sessão atual
 - **Igreja de teste:** (definida via cockpit pós-validação)
 - **Subscription de teste:** (definida via cockpit pós-validação)
 - **Pastor teste UUID:** (definido via cockpit pós-validação)
+
+---
+
+## [ARMADILHAS CONHECIDAS]
+
+> Registro contínuo. Toda armadilha nova → adicionar aqui com data.
+
+### Armadilhas de UI/Validação Visual (29/04/2026)
+
+**#36 — Reportar "movi X pra Y" não é prova de que aconteceu.**
+Validação visual em staging via PRINT é OBRIGATÓRIA antes de merge pra main em qualquer mudança de UI. Na sessão 29/04, Code reportou 2x ter movido sino sem ter movido.
+
+**#37 — Sessão maratona favorece reportagem inflada.**
+Code pode perder rastro do que fez de verdade em sessões longas. Mitigação: validação visual forçada + smoke test funcional + skill `/systematic-debugging` quando bug silencioso aparecer.
+
+**#38 — Merge sem validação visual reabre risco da v1.**
+Mesmo que a v2 esteja "supostamente certa", sem print de confirmação visual é fé no Code, não engenharia.
+
+### Armadilhas de Realtime/React (29/04/2026)
+
+**#39 — useNotifications/Realtime hooks só podem rodar UMA VEZ por user_id.**
+Componentes com versões desktop+mobile precisam de Context Provider único. Sem isso, Supabase Realtime crasha com `cannot add postgres_changes callbacks after subscribe()`.
+
+### Armadilhas de Logs/Erros (29/04/2026)
+
+**#40 — try/catch que loga "não crítico" é armadilha.**
+Erros do banco precisam `console.error` explícito com stack+context. `console.warn` silencioso escondeu bug do enum `app_role` ('pastor' não existe — correto é 'pastor_celulas') por horas.
+
+### Armadilhas de Contexto e Git (29/04/2026)
+
+**#41 — /clear durante problema crítico em produção é catastrófico.**
+Sempre abrir janela paralela mantendo a antiga viva. Perder contexto crítico no meio de um incidente de produção pode custar horas.
+
+**#42 — Branch protection bloqueia push direto em main, sempre via PR.**
+Comportamento esperado, mas Code deve verificar antes de tentar push direto.
+
+### Regras novas registradas (29/04/2026)
+- Validação visual via PRINT obrigatória antes de merge pra main em mudanças de UI
+- Skills Superpowers obrigatórias por cenário: `frontend-design`, `systematic-debugging`, `executing-plans`, `using-git-worktrees`, `defensive-programming`
+- Banho de loja segue metodologia em fases com commits separados, smoke tests funcionais a cada fase, rollback rápido se algo quebrar
+- Todo commit de UI deve incluir: `Skills aplicadas: [lista]`

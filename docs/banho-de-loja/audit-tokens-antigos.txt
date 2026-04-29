@@ -1,0 +1,682 @@
+web/src/App.tsx:305:              <Route path="branding" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BrandingPage /></Suspense></ErrorBoundary>} />
+web/src/components/AdminLayout.tsx:22:    <div className="min-h-screen flex flex-col" style={{ background: '#f9eedc' }}>
+web/src/components/AdminLayout.tsx:26:        style={{ background: '#670000' }}
+web/src/components/AdminLayout.tsx:49:          style={{ background: '#161616' }}
+web/src/components/agenda/EventDetailModal.tsx:78:                <span className="text-xs font-medium px-2 py-0.5 rounded-lg bg-brand-50 text-brand-700">
+web/src/components/agenda/EventDetailModal.tsx:90:          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors ml-2">
+web/src/components/agenda/EventDetailModal.tsx:124:                  className="text-brand-600 underline break-all"
+web/src/components/AgentChatWidget.tsx:252:          style={{ background: '#161616' }}
+web/src/components/AgentChatWidget.tsx:257:              style={{ background: '#e13500' }}
+web/src/components/AgentChatWidget.tsx:292:        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f9eedc' }}>
+web/src/components/AgentChatWidget.tsx:295:              <Loader size={18} strokeWidth={1.75} className="animate-spin" style={{ color: '#e13500' }} />
+web/src/components/AgentChatWidget.tsx:307:                  style={{ background: '#e13500' }}
+web/src/components/AgentChatWidget.tsx:319:                  ? { background: '#e13500' }
+web/src/components/AgentChatWidget.tsx:331:                    ? <span className="inline-block w-2 h-4 animate-pulse rounded-sm" style={{ background: '#e13500', opacity: 0.5 }} />
+web/src/components/AgentChatWidget.tsx:335:                  <span className="inline-block w-1.5 h-3.5 ml-0.5 animate-pulse rounded-sm align-middle" style={{ background: '#e13500', opacity: 0.6 }} />
+web/src/components/AgentChatWidget.tsx:357:                '--tw-ring-color': '#e13500',
+web/src/components/AgentChatWidget.tsx:369:              style={{ background: '#e13500' }}
+web/src/components/agents/AgentChatHistory.tsx:103:            className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-brand-50 transition-colors"
+web/src/components/agents/AgentChatHistory.tsx:144:                borderLeft: isActive ? '2px solid var(--church-primary, #e13500)' : '2px solid transparent',
+web/src/components/agents/AgentChatHistory.tsx:155:                style={{ color: isActive ? '#e13500' : 'rgba(0,0,0,0.75)' }}
+web/src/components/agents/AgentChatInterface.tsx:62:            ? 'bg-brand-600 text-white rounded-2xl rounded-br-sm'
+web/src/components/agents/AgentChatInterface.tsx:63:            : 'bg-cream-light text-ekthos-black rounded-2xl rounded-bl-sm border border-cream-dark/40'
+web/src/components/agents/AgentChatInterface.tsx:219:        <div className="h-8 w-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+web/src/components/agents/AgentChatInterface.tsx:220:          <AgentIcon size={15} className="text-brand-600" strokeWidth={1.75} />
+web/src/components/agents/AgentChatInterface.tsx:235:          className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-brand-50 transition-colors shrink-0"
+web/src/components/agents/AgentChatInterface.tsx:253:              <AgentIcon size={30} className="text-brand-500" strokeWidth={1.5} />
+web/src/components/agents/AgentChatInterface.tsx:270:            <div className="h-7 w-7 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+web/src/components/agents/AgentChatInterface.tsx:271:              <AgentIcon size={13} className="text-brand-600" strokeWidth={1.75} />
+web/src/components/agents/AgentChatInterface.tsx:273:            <div className="max-w-[85%] px-4 py-2.5 bg-cream-light rounded-2xl rounded-bl-sm border border-cream-dark/40 text-sm text-ekthos-black leading-relaxed">
+web/src/components/agents/AgentChatInterface.tsx:329:            className="shrink-0 h-8 w-8 rounded-xl bg-brand-600 text-white flex items-center justify-center disabled:opacity-35 disabled:cursor-not-allowed hover:bg-brand-700 active:scale-95 transition-all mb-0.5"
+web/src/components/cells/CellReportForm.tsx:47:          focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
+web/src/components/cells/CellReportForm.tsx:116:          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
+web/src/components/cells/CellReports.tsx:16:  submitted: { label: 'Enviado',   className: 'bg-brand-50 text-brand-700' },
+web/src/components/cells/CellReports.tsx:46:        <div className="w-9 h-9 rounded-xl bg-cream flex items-center justify-center shrink-0">
+web/src/components/cells/CellReports.tsx:47:          <FileText className="w-4 h-4 text-brand-600" />
+web/src/components/cells/CellReports.tsx:57:            {report.new_converts > 0 && <span className="flex items-center gap-1 text-brand-600 font-medium"><Heart className="w-3 h-3" />{report.new_converts} decisões</span>}
+web/src/components/cells/CellReports.tsx:64:            className="p-2 rounded-lg hover:bg-cream transition-colors text-gray-400 hover:text-brand-600"
+web/src/components/cells/CellReports.tsx:77:              className="p-2 rounded-lg hover:bg-cream transition-colors text-gray-400"
+web/src/components/ErrorBoundary.tsx:31:        <div className="min-h-screen flex items-center justify-center bg-[#f9eedc]">
+web/src/components/ErrorBoundary.tsx:34:              <svg className="w-6 h-6 text-[#e13500]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+web/src/components/ErrorBoundary.tsx:38:            <h2 className="text-lg font-semibold text-[#161616] mb-2">Algo deu errado</h2>
+web/src/components/ErrorBoundary.tsx:44:              className="bg-[#e13500] text-white rounded-xl px-6 py-2.5 text-sm font-semibold hover:bg-[#FF4D1A] transition-colors"
+web/src/components/Layout.tsx:20:      style={{ background: '#670000' }}
+web/src/components/Layout.tsx:52:    const secondary = church?.secondary_color ?? '#670000'
+web/src/components/Layout.tsx:79:    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
+web/src/components/Layout.tsx:91:        <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
+web/src/components/MobileHeader.tsx:58:            style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/components/MobileHeader.tsx:76:          background: 'var(--church-primary, #e13500)',
+web/src/components/Sidebar.tsx:87:            style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
+web/src/components/Sidebar.tsx:107:                  borderRight: isActive ? '2px solid var(--church-primary, #e13500)' : '2px solid transparent',
+web/src/components/Sidebar.tsx:135:          style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
+web/src/components/Sidebar.tsx:183:            isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}
+web/src/components/Sidebar.tsx:259:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:279:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:297:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:316:              style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:347:          style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:377:      style={({ isActive }) => isActive ? { borderColor: 'var(--church-primary, #e13500)' } : {}}
+web/src/components/Sidebar.tsx:492:          background: '#161616',
+web/src/components/ui/Badge.tsx:1:type BadgeVariant = 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'wine' | 'ekthos' | 'premium'
+web/src/components/ui/Badge.tsx:8:  red:     'bg-brand-50 text-brand-700',
+web/src/components/ui/Badge.tsx:10:  wine:    'bg-wine-bg text-wine',
+web/src/components/ui/Badge.tsx:11:  ekthos:  'bg-brand-600 text-white',
+web/src/components/ui/Badge.tsx:12:  premium: 'bg-wine text-wine-bg',
+web/src/components/ui/Button.tsx:4:type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'wine'
+web/src/components/ui/Button.tsx:7:  primary:   'bg-brand-600 text-white hover:bg-brand-500 focus:ring-brand-600 active:bg-brand-700',
+web/src/components/ui/Button.tsx:8:  secondary: 'bg-white text-ekthos-black border border-black/10 hover:border-brand-600 hover:text-brand-600 focus:ring-brand-600',
+web/src/components/ui/Button.tsx:9:  danger:    'bg-brand-600 text-white hover:bg-brand-500 focus:ring-brand-600',
+web/src/components/ui/Button.tsx:10:  ghost:     'text-ekthos-black hover:text-brand-600 hover:bg-brand-50 focus:ring-brand-600',
+web/src/components/ui/Button.tsx:11:  wine:      'bg-wine text-wine-bg hover:bg-wine-light focus:ring-wine border-0',
+web/src/components/ui/EmptyState.tsx:12:      <div className="h-12 w-12 rounded-full bg-cream flex items-center justify-center mb-4">
+web/src/components/ui/EmptyState.tsx:13:        <Inbox size={24} strokeWidth={1.5} className="text-brand-600" />
+web/src/components/ui/ErrorState.tsx:11:      <div className="h-12 w-12 rounded-full bg-brand-50 flex items-center justify-center mb-4">
+web/src/components/ui/ErrorState.tsx:12:        <AlertCircle size={24} strokeWidth={1.5} className="text-brand-600" />
+web/src/components/ui/ErrorState.tsx:19:          className="mt-4 text-sm text-brand-600 hover:text-brand-700 font-semibold transition-colors"
+web/src/components/ui/Input.tsx:23:            focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600
+web/src/components/ui/Input.tsx:24:            disabled:bg-cream disabled:text-gray-500
+web/src/components/ui/Input.tsx:25:            ${error ? 'border-brand-600 focus:ring-brand-600 focus:border-brand-600' : 'border-black/10'}
+web/src/components/ui/Input.tsx:30:        {error && <p className="mt-1.5 text-xs text-brand-600 font-medium">{error}</p>}
+web/src/components/ui/PasswordInput.tsx:41:              focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600
+web/src/components/ui/PasswordInput.tsx:42:              disabled:bg-cream disabled:text-gray-500
+web/src/components/ui/PasswordInput.tsx:43:              ${error ? 'border-brand-600' : 'border-black/10'}
+web/src/components/ui/PasswordInput.tsx:60:        {error && <p className="mt-1.5 text-xs text-brand-600 font-medium">{error}</p>}
+web/src/components/ui/Select.tsx:24:            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500
+web/src/components/ui/Spinner.tsx:15:      className={`animate-spin rounded-full border-2 border-cream-dark border-t-brand-600 ${sizes[size]} ${className}`}
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:30:// Stage → cor (brand tokens do design system)
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:32:  visitante:    { bg: 'bg-cream-dark/60',  text: 'text-ekthos-black/50', bar: '#EDE0CC' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:34:  frequentador: { bg: 'bg-brand-50',       text: 'text-brand-700',       bar: '#F25830' },
+web/src/features/dashboard/hooks/useConsolidacaoStats.ts:35:  consolidado:  { bg: 'bg-brand-50',       text: 'text-brand-600',       bar: '#e13500' },
+web/src/features/notifications/components/NotificationBell.tsx:29:            style={{ background: '#e13500' }}
+web/src/features/notifications/components/NotificationPanel.tsx:133:            className="text-xs text-brand-600 hover:text-brand-700 font-medium disabled:opacity-50"
+web/src/features/people/components/PersonDetailPanel.tsx:55:    <div className="bg-white rounded-2xl border border-cream-dark/50 overflow-hidden">
+web/src/features/people/components/PersonDetailPanel.tsx:56:      <div className="px-5 py-3 border-b border-cream-dark/40 bg-cream-dark/20">
+web/src/features/people/components/PersonDetailPanel.tsx:59:      <div className="px-5 py-3 divide-y divide-cream-dark/30">
+web/src/features/people/components/PersonDetailPanel.tsx:108:      <span className="text-xs px-2 py-0.5 rounded-full bg-cream-dark text-ekthos-black/40 font-medium">
+web/src/features/people/components/PersonDetailPanel.tsx:123:    <span className="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-semibold">
+web/src/features/people/components/PersonDetailPanel.tsx:179:          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-cream transition-colors">
+web/src/features/people/components/PersonDetailPanel.tsx:190:              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/features/people/components/PersonDetailPanel.tsx:204:              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/features/people/components/PersonDetailPanel.tsx:218:            className="flex-1 px-4 py-2 rounded-xl border border-black/10 text-sm font-medium text-gray-600 hover:bg-cream transition-colors"
+web/src/features/people/components/PersonDetailPanel.tsx:225:            className="flex-1 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 disabled:opacity-50 transition-colors"
+web/src/features/people/components/PersonDetailPanel.tsx:272:      <div className="bg-white rounded-2xl border border-cream-dark/50 overflow-hidden">
+web/src/features/people/components/PersonDetailPanel.tsx:273:        <div className="px-5 py-3 border-b border-cream-dark/40 bg-cream-dark/20 flex items-center gap-2">
+web/src/features/people/components/PersonDetailPanel.tsx:274:          <HandHeart size={14} className="text-brand-600" />
+web/src/features/people/components/PersonDetailPanel.tsx:286:                isVolunteer ? 'bg-brand-600' : 'bg-gray-200'
+web/src/features/people/components/PersonDetailPanel.tsx:303:                <div key={v.id} className="flex items-center justify-between gap-2 bg-cream rounded-xl px-3 py-2">
+web/src/features/people/components/PersonDetailPanel.tsx:305:                    <span className="w-2 h-2 rounded-full bg-brand-600 shrink-0" />
+web/src/features/people/components/PersonDetailPanel.tsx:328:            className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+web/src/features/people/components/PersonDetailPanel.tsx:348:                className="flex-1 px-4 py-2 rounded-xl border border-black/10 text-sm font-medium text-gray-600 hover:bg-cream"
+web/src/features/people/components/PersonDetailPanel.tsx:450:      <div className="relative w-full max-w-[520px] bg-cream-light h-full flex flex-col shadow-2xl animate-fade-in-up">
+web/src/features/people/components/PersonDetailPanel.tsx:453:        <div className="px-6 pt-5 pb-4 border-b border-cream-dark/50" style={{ background: 'rgba(22,22,22,0.04)' }}>
+web/src/features/people/components/PersonDetailPanel.tsx:458:              className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/60 transition-all"
+web/src/features/people/components/PersonDetailPanel.tsx:468:              style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/features/people/components/PersonDetailPanel.tsx:491:                          ? 'bg-brand-600 text-white'
+web/src/features/people/components/PersonDetailPanel.tsx:493:                          ? 'bg-brand-50 text-brand-600'
+web/src/features/people/components/PersonDetailPanel.tsx:494:                          : 'bg-cream-dark text-ekthos-black/30'
+web/src/features/people/components/PersonDetailPanel.tsx:513:              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors"
+web/src/features/people/components/PersonDetailPanel.tsx:622:                      <span key={m} className="text-[10px] bg-brand-50 text-brand-700 rounded-full px-1.5 py-0.5 font-medium">
+web/src/features/people/components/PersonDetailPanel.tsx:649:                  <p className="text-xs text-ekthos-black/80 bg-cream-dark/30 rounded-lg px-3 py-2 leading-relaxed whitespace-pre-wrap">
+web/src/features/people/components/PersonDetailPanel.tsx:671:                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700">
+web/src/features/people/components/PersonModal.tsx:219:                  ? 'border-brand-600 text-brand-700'
+web/src/features/people/components/PersonModal.tsx:385:                          ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium'
+web/src/features/people/components/PersonModal.tsx:467:                className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 resize-none"
+web/src/features/qr-visitor/components/QrCodeModal.tsx:208:              <div className="flex items-center gap-2 bg-cream rounded-xl px-3 py-2.5">
+web/src/features/qr-visitor/components/QrCodeModal.tsx:212:                  className="shrink-0 flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+web/src/features/qr-visitor/components/QrCodeModal.tsx:227:                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-black/10 text-sm font-medium text-ekthos-black hover:bg-cream transition-colors disabled:opacity-50"
+web/src/features/qr-visitor/components/QrCodeModal.tsx:235:                  className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-black/10 text-sm font-medium text-ekthos-black hover:bg-cream transition-colors disabled:opacity-50"
+web/src/features/qr-visitor/components/QrCodeModal.tsx:257:            className="flex items-center justify-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors"
+web/src/hooks/useChurch.ts:45:    queryKey: ['church-branding', churchId],
+web/src/index.css:7:    /* Church branding — overridden at runtime via Layout.tsx useEffect */
+web/src/index.css:9:    --church-secondary: #670000;
+web/src/index.css:11:    --ekthos-cream:       #f9eedc;
+web/src/index.css:12:    --ekthos-cream-light: #FDF6EB;
+web/src/index.css:13:    --ekthos-cream-dark:  #EDE0CC;
+web/src/index.css:14:    --ekthos-red:         #e13500;
+web/src/index.css:18:    --ekthos-wine:        #670000;
+web/src/index.css:19:    --ekthos-wine-light:  #8B1A1A;
+web/src/index.css:20:    --ekthos-wine-bg:     #F5E0E0;
+web/src/index.css:21:    --ekthos-black:       #161616;
+web/src/index.css:24:    --surface-secondary:  #f9eedc;
+web/src/index.css:30:    --text-primary:       #161616;
+web/src/index.css:37:    background-color: var(--ekthos-cream);
+web/src/lib/database.types.ts:1526:          branding: Json | null
+web/src/lib/database.types.ts:1548:          branding?: Json | null
+web/src/lib/database.types.ts:1570:          branding?: Json | null
+web/src/pages/admin/AffiliateDetail.tsx:249:            style={{ background: '#e13500' }}>
+web/src/pages/admin/AffiliateDetail.tsx:262:  if (s === 'churned') return { bg: '#e1350018', c: '#e13500', l: 'Churn' }
+web/src/pages/admin/AffiliateDetail.tsx:384:              style={{ background: '#e13500' }}>
+web/src/pages/admin/AffiliateDetail.tsx:451:              style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:166:            style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:209:          style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:384:            style={{ background: '#e13500' }}>
+web/src/pages/admin/Affiliates.tsx:531:              <span style={{ color: '#e13500' }}>{m.icon}</span>
+web/src/pages/admin/Affiliates.tsx:593:          <Users size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+web/src/pages/admin/Affiliates.tsx:607:            style={tab === t.id ? { borderColor: '#e13500' } : {}}>
+web/src/pages/admin/Church.tsx:95:function MetricMini({ label, value, color = '#e13500' }: {
+web/src/pages/admin/Church.tsx:109:  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+web/src/pages/admin/Church.tsx:137:              background: data.status === 'configured' ? '#2D7A4F18' : '#e1350018',
+web/src/pages/admin/Church.tsx:138:              color:      data.status === 'configured' ? '#2D7A4F'   : '#e13500',
+web/src/pages/admin/Church.tsx:150:          <MetricMini label="Membros" value={data.members_count} color="#670000" />
+web/src/pages/admin/Church.tsx:171:        <InfoRow label="MRR" value={<span className="font-mono-ekthos font-bold" style={{ color: '#e13500' }}>{fmt(data.mrr)}</span>} />
+web/src/pages/admin/Church.tsx:183:                  style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:241:  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+web/src/pages/admin/Church.tsx:293:          <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#e13500' }}>{fmt(data.mrr)}</p>
+web/src/pages/admin/Church.tsx:325:            style={{ background: '#670000' }}
+web/src/pages/admin/Church.tsx:435:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:450:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:465:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:480:              style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:490:            style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:508:          <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#e13500' }}>
+web/src/pages/admin/Church.tsx:588:          style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Church.tsx:604:            style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:625:              style={{ borderColor: note.pinned ? '#e1350030' : 'rgba(0,0,0,0.05)' }}
+web/src/pages/admin/Church.tsx:631:                      style={{ color: '#e13500' }}>
+web/src/pages/admin/Church.tsx:756:              style={{ background: '#e13500' }}
+web/src/pages/admin/Church.tsx:772:          style={{ background: '#670000' }}
+web/src/pages/admin/Church.tsx:790:            style={tab === t.id ? { background: '#e13500' } : undefined}
+web/src/pages/admin/Churches.tsx:37:  suspended:   '#e13500',
+web/src/pages/admin/Churches.tsx:48:  const color = score >= 70 ? '#2D7A4F' : score >= 40 ? '#C4841D' : '#e13500'
+web/src/pages/admin/Churches.tsx:79:    missao:     '#e13500',
+web/src/pages/admin/Churches.tsx:80:    avivamento: '#670000',
+web/src/pages/admin/Churches.tsx:116:      style={{ background: '#e13500' }}
+web/src/pages/admin/Churches.tsx:266:          style={{ background: '#e13500' }}
+web/src/pages/admin/Churches.tsx:291:            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:307:              style={status === s ? { background: '#e13500' } : undefined}
+web/src/pages/admin/Churches.tsx:325:              style={plan === p ? { background: '#670000' } : undefined}
+web/src/pages/admin/Churches.tsx:481:                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:494:                  style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:509:                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:521:                    style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Churches.tsx:558:                style={{ background: '#e13500' }}
+web/src/pages/admin/Cockpit.tsx:48:  label, value, sub, trend, color = '#e13500', icon,
+web/src/pages/admin/Cockpit.tsx:63:      <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#161616' }}>{value}</p>
+web/src/pages/admin/Cockpit.tsx:85:    error: { bg: '#FFF0EC', border: '#e13500', text: '#e13500' },
+web/src/pages/admin/Cockpit.tsx:207:                color={data.churn_rate > 5 ? '#e13500' : '#2D7A4F'}
+web/src/pages/admin/Cockpit.tsx:214:                color="#670000"
+web/src/pages/admin/Cockpit.tsx:233:                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#e13500' }}>{data.churches_suspended}</p>
+web/src/pages/admin/Cockpit.tsx:254:                      <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
+web/src/pages/admin/Cockpit.tsx:265:                      <Line type="monotone" dataKey="mrr" stroke="#e13500" strokeWidth={2.5} dot={{ fill: '#e13500', r: 3 }} activeDot={{ r: 5 }} />
+web/src/pages/admin/Cockpit.tsx:345:        style={{ background: '#f9eedc', color: '#e13500' }}
+web/src/pages/admin/Leads.tsx:36:  lost:        { label: 'Perdido',     color: '#e13500', bg: 'rgba(225,53,0,0.1)' },
+web/src/pages/admin/Leads.tsx:40:  'Missão':    '#e13500',
+web/src/pages/admin/Leads.tsx:41:  'Avivamento':'#670000',
+web/src/pages/admin/Leads.tsx:117:    <div className="min-h-screen" style={{ background: '#f9eedc' }}>
+web/src/pages/admin/Leads.tsx:123:              style={{ background: 'rgba(225,53,0,0.1)', color: '#e13500' }}>
+web/src/pages/admin/Leads.tsx:127:              <h1 className="font-display text-2xl font-bold text-[#161616]">Leads</h1>
+web/src/pages/admin/Leads.tsx:164:                background:   filterPlan === p ? (p === 'all' ? '#161616' : PLAN_COLORS[p]) : '#ffffff',
+web/src/pages/admin/Leads.tsx:188:                <tr style={{ background: '#f9eedc' }}>
+web/src/pages/admin/Leads.tsx:189:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Pastor / Igreja</th>
+web/src/pages/admin/Leads.tsx:190:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Plano</th>
+web/src/pages/admin/Leads.tsx:191:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden lg:table-cell">Telefone</th>
+web/src/pages/admin/Leads.tsx:192:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden lg:table-cell">Membros</th>
+web/src/pages/admin/Leads.tsx:193:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Status</th>
+web/src/pages/admin/Leads.tsx:194:                  <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden xl:table-cell">Data</th>
+web/src/pages/admin/Leads.tsx:204:                      className="cursor-pointer hover:bg-[#f9eedc]/40 transition-colors"
+web/src/pages/admin/Leads.tsx:209:                        <p className="font-semibold text-[#161616] truncate max-w-[160px]">{lead.name}</p>
+web/src/pages/admin/Leads.tsx:257:                  <h2 className="font-display text-xl font-bold text-[#161616]">{selected.name}</h2>
+web/src/pages/admin/Leads.tsx:280:                    className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[#e13500] transition-colors">
+web/src/pages/admin/Leads.tsx:285:                      className="flex items-center gap-2.5 text-sm text-[#161616] hover:text-[#e13500] transition-colors">
+web/src/pages/admin/Leads.tsx:296:                  <div className="flex items-center gap-2 text-sm text-[#161616]">
+web/src/pages/admin/Leads.tsx:300:                  <div className="flex items-center gap-2 text-sm text-[#161616]">
+web/src/pages/admin/Leads.tsx:327:                <p className="text-sm text-[#161616]">{fmtDate(selected.created_at)}</p>
+web/src/pages/admin/Leads.tsx:358:                    style={{ background: '#e13500', color: '#fff' }}>
+web/src/pages/admin/Leads.tsx:370:                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors resize-none"
+web/src/pages/admin/Leads.tsx:387:                  className="flex items-center gap-2 flex-1 justify-center py-3 rounded-xl text-sm font-semibold border-2 transition-all hover:bg-[#e13500]/5"
+web/src/pages/admin/Leads.tsx:388:                  style={{ borderColor: '#e13500', color: '#e13500' }}>
+web/src/pages/admin/Onboardings.tsx:71:                style={{ background: '#e1350018', color: '#e13500' }}>
+web/src/pages/admin/Onboardings.tsx:103:          <h2 className="font-display text-lg font-semibold mb-3" style={{ color: '#e13500' }}>
+web/src/pages/admin/Onboardings.tsx:153:                      style={{ background: '#e13500' }}
+web/src/pages/admin/Onboardings.tsx:173:                      ? { background: '#e1350018', color: '#e13500' }
+web/src/pages/admin/Pricing.tsx:309:            style={{ background: '#e13500' }}
+web/src/pages/admin/Pricing.tsx:414:            style={{ background: '#e13500' }}
+web/src/pages/admin/Pricing.tsx:758:            style={{ background: '#e13500' }}
+web/src/pages/admin/Pricing.tsx:888:          style={{ background: '#e1350012' }}
+web/src/pages/admin/Pricing.tsx:890:          <Gift size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+web/src/pages/admin/Pricing.tsx:944:            <Tag size={26} strokeWidth={1.5} style={{ color: '#e13500' }} />
+web/src/pages/admin/Pricing.tsx:964:            style={tab === t.id ? { borderColor: '#e13500' } : {}}
+web/src/pages/admin/Revenue.tsx:52:  missao:     '#e13500',
+web/src/pages/admin/Revenue.tsx:53:  avivamento: '#670000',
+web/src/pages/admin/Revenue.tsx:56:const TYPE_COLORS = ['#e13500', '#C4841D', '#4F6EE1']
+web/src/pages/admin/Revenue.tsx:70:        {icon && <span style={{ color: '#e13500' }}>{icon}</span>}
+web/src/pages/admin/Revenue.tsx:90:        style={{ color: color ?? (bold ? '#161616' : '#8A8A8A') }}
+web/src/pages/admin/Revenue.tsx:169:            <Zap size={15} strokeWidth={1.75} style={{ color: '#e13500' }} />
+web/src/pages/admin/Revenue.tsx:255:            style={{ background: '#e13500' }}
+web/src/pages/admin/Revenue.tsx:473:                      <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
+web/src/pages/admin/Revenue.tsx:511:                  color={data.dre.resultado >= 0 ? '#2D7A4F' : '#e13500'}
+web/src/pages/admin/Tasks.tsx:22:  urgent: { label: 'Urgente', color: '#e13500', bg: '#e1350018' },
+web/src/pages/admin/Tasks.tsx:144:            style={{ background: '#e13500' }}
+web/src/pages/admin/Tasks.tsx:162:            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Tasks.tsx:170:            style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/admin/Tasks.tsx:207:              style={{ background: '#e13500' }}
+web/src/pages/admin/Tasks.tsx:225:            style={filter === f ? { background: '#e13500' } : undefined}
+web/src/pages/admin/Tasks.tsx:249:              <h2 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#e13500' }}>
+web/src/pages/admin/Tasks.tsx:312:                    style={{ color: isOverdue ? '#e13500' : '#8A8A8A' }}
+web/src/pages/Agenda.tsx:175:          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+web/src/pages/Agenda.tsx:176:            <Calendar className="w-5 h-5 text-brand-600" />
+web/src/pages/Agenda.tsx:210:                  ? 'bg-brand-600 text-white'
+web/src/pages/Agenda.tsx:211:                  : 'bg-white text-gray-500 hover:bg-cream'
+web/src/pages/Agenda.tsx:225:            className="rounded-xl border border-black/10 px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/agents/AgentChat.tsx:183:        <Link to="/agentes" className="mt-3 text-xs text-brand-600 hover:underline">← Voltar</Link>
+web/src/pages/agents/AgentChat.tsx:203:          <Lock size={22} className="text-brand-400" strokeWidth={1.75} />
+web/src/pages/agents/AgentChat.tsx:211:          className="mt-4 text-xs font-medium text-brand-600 hover:text-brand-700 underline"
+web/src/pages/agents/AgentDetail.tsx:112:        <div className="flex items-start gap-3 p-4 bg-brand-50 border border-brand-100 rounded-2xl">
+web/src/pages/agents/AgentDetail.tsx:113:          <Lock size={18} className="text-brand-400 shrink-0 mt-0.5" strokeWidth={1.75} />
+web/src/pages/agents/AgentDetail.tsx:115:            <p className="text-sm font-semibold text-brand-900">Disponível via módulo</p>
+web/src/pages/agents/AgentDetail.tsx:116:            <p className="text-xs text-brand-600 mt-0.5">
+web/src/pages/agents/AgentDetail.tsx:219:        <Link to="/agentes" className="mt-3 text-xs text-brand-600 hover:underline">
+web/src/pages/agents/AgentDetail.tsx:246:          <Icon size={26} className="text-brand-600" strokeWidth={1.75} />
+web/src/pages/agents/AgentDetail.tsx:252:              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100">
+web/src/pages/agents/AgentDetail.tsx:259:            <p className="text-sm font-bold text-brand-600 mt-2">
+web/src/pages/agents/AgentDetail.tsx:277:      <div className="bg-white border border-cream-dark/60 rounded-2xl p-5 space-y-5">
+web/src/pages/agents/AgentDetail.tsx:288:                <div className="mt-0.5 h-4 w-4 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+web/src/pages/agents/AgentDetail.tsx:289:                  <span className="text-[9px] font-bold text-brand-700">{i + 1}</span>
+web/src/pages/agents/AgentDetail.tsx:303:          <div className="flex items-start gap-2.5 p-3 bg-brand-50 border border-brand-100 rounded-xl">
+web/src/pages/agents/AgentDetail.tsx:304:            <MessageCircle size={14} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+web/src/pages/agents/AgentDetail.tsx:305:            <p className="text-xs text-brand-700 leading-relaxed">{content.note}</p>
+web/src/pages/agents/AgentsList.tsx:30:    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 border border-brand-100">
+web/src/pages/agents/AgentsList.tsx:68:      className="group flex items-start gap-4 p-4 bg-white border border-cream-dark/60 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-200 transition-all"
+web/src/pages/agents/AgentsList.tsx:70:      <div className="h-10 w-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+web/src/pages/agents/AgentsList.tsx:71:        <Icon size={20} className="text-brand-600" strokeWidth={1.75} />
+web/src/pages/agents/AgentsList.tsx:80:          <p className="text-[11px] font-semibold text-brand-600 mt-1.5">{formatPrice(content.price)}</p>
+web/src/pages/agents/AgentsList.tsx:83:      <ChevronRight size={16} className="text-ekthos-black/20 group-hover:text-brand-400 transition-colors shrink-0 mt-1" />
+web/src/pages/agents/AgentsList.tsx:97:      className="group flex items-start gap-4 p-4 bg-white border border-cream-dark/60 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
+web/src/pages/agents/AgentsList.tsx:110:          <span className="font-semibold text-brand-500">{moduleName}</span>
+web/src/pages/agents/AgentsList.tsx:185:          <Sparkles size={16} className="text-brand-400" strokeWidth={1.75} />
+web/src/pages/agents/AgentsList.tsx:198:            <div className="text-center py-8 border border-dashed border-cream-dark/60 rounded-2xl">
+web/src/pages/Agents.tsx:41:        isActive ? 'border-brand-300' : 'border-gray-200'
+web/src/pages/Agents.tsx:46:          <svg className="h-4 w-4 text-brand-600" fill="currentColor" viewBox="0 0 20 20">
+web/src/pages/Aniversarios.tsx:67:      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-brand-600 text-white whitespace-nowrap">
+web/src/pages/Aniversarios.tsx:103:      className={`bg-cream-light rounded-2xl border shadow-sm p-4 flex items-center gap-4 transition-shadow hover:shadow-md ${
+web/src/pages/Aniversarios.tsx:104:        isToday ? 'border-brand-200 bg-brand-50/30' : 'border-cream-dark/50'
+web/src/pages/Aniversarios.tsx:110:        style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/pages/Aniversarios.tsx:184:          <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl bg-brand-50 text-brand-700 border border-brand-200">
+web/src/pages/Aniversarios.tsx:192:      <div className="flex gap-1 p-1 bg-cream-dark/30 rounded-xl w-fit">
+web/src/pages/Aniversarios.tsx:199:                ? 'bg-cream-light shadow-sm text-ekthos-black'
+web/src/pages/Blocked.tsx:45:      style={{ background: '#f9eedc' }}
+web/src/pages/Blocked.tsx:52:            style={{ background: '#e1350015' }}
+web/src/pages/Blocked.tsx:56:              style={{ color: '#e13500' }}
+web/src/pages/Blocked.tsx:94:          style={{ background: '#e13500' }}
+web/src/pages/Cancelled.tsx:102:      style={{ background: '#f9eedc' }}
+web/src/pages/Cancelled.tsx:109:            style={{ background: '#67000015' }}
+web/src/pages/Cancelled.tsx:113:              style={{ color: '#670000' }}
+web/src/pages/Cancelled.tsx:155:                background: daysLeft <= 7 ? '#e1350012' : '#6700000a',
+web/src/pages/Cancelled.tsx:156:                color: daysLeft <= 7 ? '#e13500' : '#670000',
+web/src/pages/Cancelled.tsx:174:            style={{ background: '#670000' }}
+web/src/pages/Celulas.tsx:194:        <div className="px-6 py-4 border-b border-cream-dark/50 flex items-center justify-between">
+web/src/pages/Celulas.tsx:203:          <button onClick={onClose} className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/40 transition-all">
+web/src/pages/Celulas.tsx:216:                  <li key={m.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-cream-dark/30">
+web/src/pages/Celulas.tsx:242:                  <li key={m.id} className="py-1.5 px-3 rounded-lg bg-cream-dark/30 text-sm">
+web/src/pages/Celulas.tsx:281:    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+web/src/pages/Celulas.tsx:312:      <div className="flex gap-2 pt-1 border-t border-cream-dark/40">
+web/src/pages/Celulas.tsx:313:        <button onClick={() => onView(group)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">Ver detalhes</button>
+web/src/pages/Celulas.tsx:327:    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+web/src/pages/Celulas.tsx:330:          <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
+web/src/pages/Celulas.tsx:338:        <tbody className="divide-y divide-cream-dark/40">
+web/src/pages/Celulas.tsx:340:            <tr key={g.id} className="hover:bg-cream-dark/20 transition-colors cursor-pointer" onClick={() => onView(g)}>
+web/src/pages/Celulas.tsx:353:                <button onClick={() => onEdit(g)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">Editar</button>
+web/src/pages/Celulas.tsx:386:          className="flex-1 min-w-0 max-w-xs rounded-xl border border-black/10 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/Celulas.tsx:444:      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2">
+web/src/pages/Celulas.tsx:451:                ? 'border-brand-600 text-brand-700'
+web/src/pages/Celulas.tsx:452:                : 'border-transparent text-ekthos-black/50 hover:text-ekthos-black/80 hover:border-cream-dark'
+web/src/pages/Celulas.tsx:524:                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-cream"
+web/src/pages/checkout/Cancelado.tsx:14:      style={{ background: '#f9eedc' }}>
+web/src/pages/checkout/Cancelado.tsx:20:        <h1 className="font-display text-3xl font-bold mb-3" style={{ color: '#161616' }}>
+web/src/pages/checkout/Cancelado.tsx:30:          <p className="font-semibold text-sm mb-4" style={{ color: '#161616' }}>Posso te ajudar com alguma dúvida?</p>
+web/src/pages/checkout/Cancelado.tsx:38:                <span style={{ color: '#e13500', flexShrink: 0 }}>→</span>
+web/src/pages/checkout/Cancelado.tsx:57:            style={{ borderColor: '#e13500', color: '#e13500' }}>
+web/src/pages/checkout/Sucesso.tsx:84:      style={{ background: '#f9eedc' }}>
+web/src/pages/checkout/Sucesso.tsx:102:          <h1 className="font-display text-3xl font-bold mb-3" style={{ color: '#161616' }}>
+web/src/pages/checkout/Sucesso.tsx:119:                  style={{ background: i === 0 ? '#e13500' : 'rgba(225,53,0,0.08)', color: i === 0 ? '#fff' : '#e13500' }}>
+web/src/pages/checkout/Sucesso.tsx:123:                  <p className="font-semibold text-sm mb-0.5" style={{ color: '#161616' }}>{step.title}</p>
+web/src/pages/checkout/Sucesso.tsx:135:            style={{ background: '#e13500' }}>
+web/src/pages/ChoosePlan.tsx:51:    color:          '#e13500',
+web/src/pages/ChoosePlan.tsx:71:    color:          '#670000',
+web/src/pages/ChoosePlan.tsx:129:    <div className="min-h-screen py-12 px-4" style={{ background: '#f9eedc' }}>
+web/src/pages/ChoosePlan.tsx:133:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
+web/src/pages/ChoosePlan.tsx:228:              <Check size={14} strokeWidth={2} style={{ color: '#e13500' }} />
+web/src/pages/ChoosePlan.tsx:232:              <Check size={14} strokeWidth={2} style={{ color: '#e13500' }} />
+web/src/pages/configuracoes/Dados.tsx:168:              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:61:  { value: '#e13500', label: 'Brand'   },
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:79:    <div className="bg-white border border-cream-dark/60 rounded-2xl overflow-hidden">
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:90:            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/60 hover:bg-cream-dark/40 transition-all"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:106:        <div className="border-t border-cream-dark/40 px-4 py-3 flex flex-wrap gap-2">
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:141:    <div className="flex items-center gap-3 px-3 py-2.5 bg-white border border-cream-dark/60 rounded-xl hover:border-cream-dark transition-colors">
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:174:          className="p-1 rounded text-ekthos-black/25 hover:text-ekthos-black/60 hover:bg-cream-dark/40 disabled:opacity-20 disabled:pointer-events-none transition-all"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:182:          className="p-1 rounded text-ekthos-black/25 hover:text-ekthos-black/60 hover:bg-cream-dark/40 disabled:opacity-20 disabled:pointer-events-none transition-all"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:189:          className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/40 transition-all ml-1"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:243:      className="bg-brand-50 border border-brand-100 rounded-xl p-4 space-y-3"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:254:          className="w-full text-sm bg-white border border-cream-dark rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 text-ekthos-black placeholder:text-ekthos-black/30"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:284:          className="w-full text-sm bg-white border border-cream-dark rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 text-ekthos-black placeholder:text-ekthos-black/30"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:295:            className="rounded border-cream-dark accent-brand-600"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:304:            className="rounded border-cream-dark accent-brand-600"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:317:          className="w-full text-sm bg-white border border-cream-dark rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 text-ekthos-black placeholder:text-ekthos-black/30"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:330:          className="flex items-center gap-1 text-xs text-ekthos-black/50 hover:text-ekthos-black/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-cream-dark/40"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:555:                  className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+web/src/pages/configuracoes/DiscipleshipSettings.tsx:655:                  className="text-sm text-ekthos-black/50 hover:text-ekthos-black/80 px-4 py-2 rounded-xl hover:bg-cream-dark/40 transition-colors"
+web/src/pages/configuracoes/Modulos.tsx:30:              className="group flex items-center gap-4 p-4 bg-white border border-cream-dark/60 rounded-2xl shadow-sm hover:shadow-md hover:border-brand-200 transition-all"
+web/src/pages/configuracoes/Modulos.tsx:36:                <Icon size={20} className="text-brand-500" strokeWidth={1.75} />
+web/src/pages/configuracoes/Modulos.tsx:44:                <p className="text-xs font-semibold text-brand-600 mt-1">{module.price}</p>
+web/src/pages/configuracoes/Modulos.tsx:48:                className="text-ekthos-black/20 group-hover:text-brand-400 transition-colors shrink-0"
+web/src/pages/configuracoes/QrVisitor.tsx:234:                <ToggleRight className="w-5 h-5 text-brand-600" />
+web/src/pages/configuracoes/QrVisitor.tsx:235:                <span className="text-brand-600">Ativo</span>
+web/src/pages/configuracoes/QrVisitor.tsx:246:        <div className="flex items-center gap-2 bg-cream rounded-xl px-3 py-2.5">
+web/src/pages/configuracoes/QrVisitor.tsx:250:            className="shrink-0 flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+web/src/pages/configuracoes/QrVisitor.tsx:282:            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium text-ekthos-black hover:bg-cream transition-colors disabled:opacity-50"
+web/src/pages/configuracoes/QrVisitor.tsx:290:            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium text-ekthos-black hover:bg-cream transition-colors disabled:opacity-50"
+web/src/pages/configuracoes/QrVisitor.tsx:309:          <p className="text-xl font-bold text-brand-600">{conversionRate}%</p>
+web/src/pages/configuracoes/QrVisitor.tsx:315:      <div className="bg-cream rounded-2xl p-4 space-y-2">
+web/src/pages/configuracoes/SettingsLayout.tsx:46:                    ? 'bg-brand-50 border border-brand-100 text-brand-800'
+web/src/pages/configuracoes/SettingsLayout.tsx:47:                    : 'text-ekthos-black/60 hover:text-ekthos-black hover:bg-cream-dark/40'
+web/src/pages/configuracoes/SettingsLayout.tsx:56:                    className={`mt-0.5 shrink-0 ${isActive ? 'text-brand-600' : 'text-ekthos-black/40'}`}
+web/src/pages/Dashboard.tsx:19:const BRAND   = '#e13500'
+web/src/pages/Dashboard.tsx:25:  '#e13500', '#F25830', '#F9A890', '#FCCFBF',
+web/src/pages/Dashboard.tsx:27:  '#670000', '#8B1A1A', '#B85C00',
+web/src/pages/Dashboard.tsx:72:    default: 'border-cream-dark/50',
+web/src/pages/Dashboard.tsx:75:    red:     'border-brand-200',
+web/src/pages/Dashboard.tsx:76:    purple:  'border-wine/20',
+web/src/pages/Dashboard.tsx:77:    blue:    'border-brand-200',
+web/src/pages/Dashboard.tsx:83:    red:     'text-brand-600',
+web/src/pages/Dashboard.tsx:84:    purple:  'text-wine',
+web/src/pages/Dashboard.tsx:85:    blue:    'text-brand-600',
+web/src/pages/Dashboard.tsx:92:    <div className={`bg-cream-light rounded-2xl border p-5 shadow-sm ${borderClass}`}>
+web/src/pages/Dashboard.tsx:98:          <span className={`${alert ? 'text-brand-600' : 'text-ekthos-black/20'}`}>
+web/src/pages/Dashboard.tsx:110:            alert ? 'bg-brand-50 text-brand-600' : 'bg-cream-dark/60 text-ekthos-black/60'
+web/src/pages/Dashboard.tsx:128:    <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-5">
+web/src/pages/Dashboard.tsx:130:        <AlertTriangle size={18} strokeWidth={1.75} className="text-brand-600 shrink-0" />
+web/src/pages/Dashboard.tsx:132:          <p className="text-sm font-bold text-brand-700">
+web/src/pages/Dashboard.tsx:135:          <p className="text-xs text-brand-600/80">
+web/src/pages/Dashboard.tsx:142:          <span key={p.id} className="inline-flex items-center gap-1 bg-white text-brand-700 text-xs font-medium px-2.5 py-1 rounded-full border border-brand-100">
+web/src/pages/Dashboard.tsx:144:            <span className="text-brand-400">· {formatDate(p.created_at)}</span>
+web/src/pages/Dashboard.tsx:148:          <span className="text-xs text-brand-600 font-semibold self-center">
+web/src/pages/Dashboard.tsx:167:    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm">
+web/src/pages/Dashboard.tsx:168:      <div className="px-5 py-4 border-b border-cream-dark/50">
+web/src/pages/Dashboard.tsx:178:        <div className="divide-y divide-cream-dark/40">
+web/src/pages/Dashboard.tsx:203:    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm">
+web/src/pages/Dashboard.tsx:204:      <div className="px-5 py-4 border-b border-cream-dark/50">
+web/src/pages/Dashboard.tsx:378:          <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5">
+web/src/pages/Dashboard.tsx:388:                  bg: 'bg-cream-dark/40', text: 'text-ekthos-black/50', bar: '#EDE0CC',
+web/src/pages/Dashboard.tsx:444:                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:465:                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:488:                  <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" vertical={false} />
+web/src/pages/Dashboard.tsx:506:                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:523:                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:542:                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f9eedc" />
+web/src/pages/Dashboard.tsx:574:                  <span className="text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full font-medium">
+web/src/pages/Dashboard.tsx:583:                  <span className="text-xs text-brand-600 font-semibold text-right block">
+web/src/pages/Dashboard.tsx:609:                      n === 0 ? 'bg-brand-50 text-brand-600' : 'bg-warning-bg text-warning'
+web/src/pages/Escalas.tsx:103:            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/Escalas.tsx:195:            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/Escalas.tsx:241:          className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+web/src/pages/Escalas.tsx:346:                          className="text-sm font-medium text-gray-900 hover:text-brand-600 text-left"
+web/src/pages/Escalas.tsx:366:                            className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+web/src/pages/events/EventForm.tsx:62:  '#7C3AED', // brand purple
+web/src/pages/events/EventForm.tsx:245:          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
+web/src/pages/events/EventForm.tsx:267:                className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventForm.tsx:280:                className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventForm.tsx:296:                className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventForm.tsx:379:              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm placeholder-gray-400 bg-white shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600 focus:border-brand-600"
+web/src/pages/events/EventForm.tsx:415:              <Repeat className="w-4 h-4 text-brand-600" />
+web/src/pages/events/EventForm.tsx:423:                className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventForm.tsx:443:                      className="w-20 rounded-xl border border-black/10 px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventForm.tsx:466:                          className="text-brand-600"
+web/src/pages/events/EventForm.tsx:476:                            className="rounded-xl border border-black/10 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventForm.tsx:487:                              className="w-20 rounded-xl border border-black/10 px-3 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/events/EventsList.tsx:65:              <span className="text-xs text-brand-700 bg-brand-50 px-2 py-0.5 rounded-lg font-medium">
+web/src/pages/events/EventsList.tsx:87:              className="p-2 rounded-lg hover:bg-cream transition-colors text-gray-400 hover:text-brand-600"
+web/src/pages/events/EventsList.tsx:157:            className="p-2 rounded-xl hover:bg-cream transition-colors text-gray-400 hover:text-ekthos-black"
+web/src/pages/events/EventsList.tsx:161:          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+web/src/pages/events/EventsList.tsx:162:            <Calendar className="w-5 h-5 text-brand-600" />
+web/src/pages/Financeiro.tsx:88:          className="h-full rounded-full bg-brand-500 transition-all"
+web/src/pages/Financeiro.tsx:192:              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/Financeiro.tsx:218:              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/Financeiro.tsx:234:              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/ForgotPassword.tsx:40:      style={{ background: '#f9eedc' }}
+web/src/pages/ForgotPassword.tsx:46:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>
+web/src/pages/ForgotPassword.tsx:71:                <Link to="/login" className="text-sm text-brand-700 hover:underline">
+web/src/pages/ForgotPassword.tsx:94:                <Link to="/login" className="text-sm text-brand-700 hover:underline">
+web/src/pages/Gabinete.tsx:108:          className="text-xs text-brand-600 hover:text-brand-700 font-medium px-1"
+web/src/pages/Landing.tsx:4:// Design: bg-white, cream sections, vermelho #e13500
+web/src/pages/Landing.tsx:27:      stroke="#e13500" strokeWidth="2.5" strokeLinejoin="round"/>
+web/src/pages/Landing.tsx:152:    <div className="min-h-screen font-body antialiased text-[#161616] overflow-x-hidden" style={{ background: '#FCFAF7' }}>
+web/src/pages/Landing.tsx:159:            <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
+web/src/pages/Landing.tsx:160:              Ekthos <span style={{ color: '#e13500' }}>Church</span>
+web/src/pages/Landing.tsx:172:                className="text-sm font-medium text-gray-500 hover:text-[#161616] transition-colors">
+web/src/pages/Landing.tsx:180:              className="text-sm font-medium px-4 py-2 rounded-xl text-gray-500 hover:text-[#161616] transition-colors">
+web/src/pages/Landing.tsx:185:              style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:205:                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-[#161616]">
+web/src/pages/Landing.tsx:210:                style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:224:            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[#161616]"
+web/src/pages/Landing.tsx:227:              <span style={{ color: '#e13500' }}>à altura do chamado</span>
+web/src/pages/Landing.tsx:242:                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[#c42e00] active:scale-[0.98] shadow-lg shadow-[#e13500]/20"
+web/src/pages/Landing.tsx:243:                style={{ background: '#e13500', minHeight: 56 }}>
+web/src/pages/Landing.tsx:267:              {/* Acento brand — brilho sutil vindo do produto */}
+web/src/pages/Landing.tsx:313:                <p className="font-display text-base font-bold mb-1 text-[#161616]">{s.label}</p>
+web/src/pages/Landing.tsx:324:          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:327:          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+web/src/pages/Landing.tsx:338:              icon: <Users size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+web/src/pages/Landing.tsx:343:              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+web/src/pages/Landing.tsx:348:              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+web/src/pages/Landing.tsx:353:            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 hover:border-[#e13500]/30 transition-all duration-200">
+web/src/pages/Landing.tsx:356:                <h3 className="font-semibold text-base text-[#161616]">{p.title}</h3>
+web/src/pages/Landing.tsx:365:      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+web/src/pages/Landing.tsx:370:            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#f9eedc' }}>
+web/src/pages/Landing.tsx:395:                    <span style={{ color: '#f9eedc' }}>{a.icon}</span>
+web/src/pages/Landing.tsx:396:                    <h3 className="font-semibold" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
+web/src/pages/Landing.tsx:410:            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:413:            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+web/src/pages/Landing.tsx:485:                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:488:                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+web/src/pages/Landing.tsx:494:                    <li key={item} className="flex items-start gap-3 text-sm text-[#161616]">
+web/src/pages/Landing.tsx:495:                      <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }} />
+web/src/pages/Landing.tsx:522:            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+web/src/pages/Landing.tsx:525:            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+web/src/pages/Landing.tsx:537:                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+web/src/pages/Landing.tsx:538:                  <UserPlus size={20} strokeWidth={1.75} style={{ color: '#e13500' }} />
+web/src/pages/Landing.tsx:542:                  style={{ background: '#670000' }}>Avivamento</span>
+web/src/pages/Landing.tsx:557:                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#161616]">
+web/src/pages/Landing.tsx:568:                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+web/src/pages/Landing.tsx:573:                  style={{ background: '#670000' }}>Avivamento</span>
+web/src/pages/Landing.tsx:588:                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#161616]">
+web/src/pages/Landing.tsx:600:      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+web/src/pages/Landing.tsx:607:                style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500', borderColor: 'rgba(225,53,0,0.25)' }}>
+web/src/pages/Landing.tsx:610:              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#f9eedc' }}>
+web/src/pages/Landing.tsx:612:                <span style={{ color: '#e13500' }}>aplicativo próprio</span>
+web/src/pages/Landing.tsx:627:                    <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 3 }} />
+web/src/pages/Landing.tsx:637:                style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:666:            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
+web/src/pages/Landing.tsx:667:            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+web/src/pages/Landing.tsx:683:                    <p className="font-semibold text-base text-[#161616]">Chamado</p>
+web/src/pages/Landing.tsx:689:                  <span className="font-mono font-bold text-4xl text-[#161616]">R$689,90</span>
+web/src/pages/Landing.tsx:707:                      <span className="text-[#161616]">{f}</span>
+web/src/pages/Landing.tsx:720:                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:733:            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-xl scale-[1.02] flex flex-col">
+web/src/pages/Landing.tsx:736:                  style={{ background: '#e13500' }}>Mais popular</span>
+web/src/pages/Landing.tsx:741:                  <Zap size={18} strokeWidth={1.75} style={{ color: '#e13500' }} />
+web/src/pages/Landing.tsx:743:                    <p className="font-semibold text-base" style={{ color: '#f9eedc' }}>Missão</p>
+web/src/pages/Landing.tsx:749:                  <span className="font-display font-bold text-2xl" style={{ color: '#f9eedc' }}>Plano personalizado</span>
+web/src/pages/Landing.tsx:777:                  style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:790:                  style={{ background: '#670000' }}>Enterprise</span>
+web/src/pages/Landing.tsx:795:                  <Crown size={18} strokeWidth={1.75} style={{ color: '#670000' }} />
+web/src/pages/Landing.tsx:797:                    <p className="font-semibold text-base text-[#161616]">Avivamento</p>
+web/src/pages/Landing.tsx:803:                  <span className="font-display font-bold text-2xl text-[#161616]">Plano sob medida</span>
+web/src/pages/Landing.tsx:808:                  <p className="text-xs font-bold text-[#670000] mb-2">Inclui exclusivamente:</p>
+web/src/pages/Landing.tsx:815:                      <div key={d} className="flex items-center gap-2 text-xs font-medium text-[#161616]">
+web/src/pages/Landing.tsx:816:                        <Check size={13} strokeWidth={2.5} style={{ color: '#670000' }} />
+web/src/pages/Landing.tsx:833:                      <span className="text-[#161616]">{f}</span>
+web/src/pages/Landing.tsx:842:                  style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Landing.tsx:852:            <p className="font-semibold text-center mb-6 text-[#161616]">
+web/src/pages/Landing.tsx:861:                <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
+web/src/pages/Landing.tsx:862:                  <span style={{ color: '#e13500', marginTop: 2 }}>{a.icon}</span>
+web/src/pages/Landing.tsx:864:                    <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
+web/src/pages/Landing.tsx:865:                    <p className="text-xs font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
+web/src/pages/Landing.tsx:879:          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[#161616]">
+web/src/pages/Landing.tsx:886:              <tr style={{ background: '#f9eedc' }}>
+web/src/pages/Landing.tsx:887:                <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
+web/src/pages/Landing.tsx:890:                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
+web/src/pages/Landing.tsx:906:                  <td className="p-4 text-[#161616]">{label}</td>
+web/src/pages/Landing.tsx:909:                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: '#e13500', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+web/src/pages/Landing.tsx:919:      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+web/src/pages/Landing.tsx:923:            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#f9eedc' }}>
+web/src/pages/Landing.tsx:938:                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="#e13500" style={{ color: '#e13500' }} />)}
+web/src/pages/Landing.tsx:942:                  <p className="font-semibold text-sm" style={{ color: '#f9eedc' }}>{t.name}</p>
+web/src/pages/Landing.tsx:955:          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
+web/src/pages/Landing.tsx:956:          <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+web/src/pages/Landing.tsx:966:                <span className="font-semibold text-base pr-4 text-[#161616]">{item.q}</span>
+web/src/pages/Landing.tsx:968:                  style={{ color: '#e13500', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
+web/src/pages/Landing.tsx:983:        style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
+web/src/pages/Landing.tsx:998:              style={{ color: '#e13500', minHeight: 56 }}>
+web/src/pages/Landing.tsx:1011:      <footer className="bg-[#161616] w-full">
+web/src/pages/Landing.tsx:1024:                  Ekthos <span style={{ color: '#e13500' }}>Church</span>
+web/src/pages/Landing.tsx:1038:                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
+web/src/pages/Landing.tsx:1051:                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
+web/src/pages/Landing.tsx:1064:                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
+web/src/pages/Landing.tsx:1170:              style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:1174:          <h2 className="font-display text-xl font-bold text-[#161616]">Solicitar contato</h2>
+web/src/pages/Landing.tsx:1188:              <h3 className="font-display text-xl font-bold text-[#161616] mb-2">Solicitação enviada!</h3>
+web/src/pages/Landing.tsx:1194:                style={{ background: '#e13500' }}>
+web/src/pages/Landing.tsx:1207:                  <label className="block text-xs font-semibold text-[#161616] mb-1.5">
+web/src/pages/Landing.tsx:1208:                    {f.label} {f.required && <span style={{ color: '#e13500' }}>*</span>}
+web/src/pages/Landing.tsx:1212:                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+web/src/pages/Landing.tsx:1218:                <label className="block text-xs font-semibold text-[#161616] mb-1.5">Quantidade de membros</label>
+web/src/pages/Landing.tsx:1220:                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+web/src/pages/Landing.tsx:1232:                <label className="block text-xs font-semibold text-[#161616] mb-1.5">Plano de interesse</label>
+web/src/pages/Landing.tsx:1244:                style={{ background: '#e13500', minHeight: 52 }}>
+web/src/pages/Login.tsx:34:    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+web/src/pages/Login.tsx:38:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>
+web/src/pages/Login.tsx:75:                  className="text-sm text-brand-700 hover:underline"
+web/src/pages/Login.tsx:83:              <p className="text-sm text-brand-600 bg-brand-50 rounded-xl px-3 py-2 font-medium">
+web/src/pages/Ministerios.tsx:49:    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+web/src/pages/Ministerios.tsx:71:      <div className="flex gap-2 pt-1 border-t border-cream-dark/40">
+web/src/pages/Ministerios.tsx:74:          className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+web/src/pages/Ministerios.tsx:279:                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-cream"
+web/src/pages/modules/ModuleDetail.tsx:47:          <CheckCircle2 size={15} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={2} />
+web/src/pages/modules/ModuleDetail.tsx:68:            className="flex items-center gap-3 p-3 bg-white border border-cream-dark/60 rounded-xl"
+web/src/pages/modules/ModuleDetail.tsx:70:            <div className="h-8 w-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
+web/src/pages/modules/ModuleDetail.tsx:71:              <Icon size={16} className="text-brand-600" strokeWidth={1.75} />
+web/src/pages/modules/ModuleDetail.tsx:82:                <Plus size={11} className="text-brand-400" strokeWidth={2.5} />
+web/src/pages/modules/ModuleDetail.tsx:83:                <span className="text-[10px] font-semibold text-brand-600">R$ 149,90/mês</span>
+web/src/pages/modules/ModuleDetail.tsx:105:    <div className="p-5 bg-cream-light border border-cream-dark/50 rounded-2xl space-y-4">
+web/src/pages/modules/ModuleDetail.tsx:115:            <div className="mt-0.5 h-5 w-5 rounded-full bg-brand-100 border border-brand-200 flex items-center justify-center shrink-0">
+web/src/pages/modules/ModuleDetail.tsx:116:              <span className="text-[10px] font-bold text-brand-700">{i + 1}</span>
+web/src/pages/modules/ModuleDetail.tsx:142:    <div className="p-5 bg-brand-50 border border-brand-100 rounded-2xl space-y-3">
+web/src/pages/modules/ModuleDetail.tsx:144:        <Lock size={18} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+web/src/pages/modules/ModuleDetail.tsx:146:          <p className="text-sm font-semibold text-brand-900">Implementação acompanhada</p>
+web/src/pages/modules/ModuleDetail.tsx:147:          <p className="text-xs text-brand-600 mt-0.5 leading-relaxed">
+web/src/pages/modules/ModuleDetail.tsx:185:        <Link to="/agentes" className="mt-3 text-xs text-brand-600 hover:underline">
+web/src/pages/modules/ModuleDetail.tsx:211:          <Icon size={26} className="text-brand-600" strokeWidth={1.75} />
+web/src/pages/modules/ModuleDetail.tsx:219:          <p className="text-sm font-bold text-brand-600 mt-2">{module.price}</p>
+web/src/pages/modules/ModuleDetail.tsx:227:      <div className="bg-white border border-cream-dark/60 rounded-2xl p-5 space-y-6">
+web/src/pages/modules/ModuleDetail.tsx:242:                <div className="mt-1 h-1.5 w-1.5 rounded-full bg-brand-400 shrink-0" />
+web/src/pages/onboarding/Configuring.tsx:550:        secondaryColor:    (tenant.secondary_color as string) ?? '#670000',
+web/src/pages/Onboarding.tsx:41:  { label: 'Fogo e Paixão',          primary: '#E13500', secondary: '#670000', emoji: '🔥' },
+web/src/pages/Onboarding.tsx:89:          resolve({ primary: '#E13500', secondary: '#670000' })
+web/src/pages/Onboarding.tsx:98:        resolve({ primary: '#E13500', secondary: '#670000' })
+web/src/pages/Onboarding.tsx:103:    img.onerror = () => { URL.revokeObjectURL(url); resolve({ primary: '#E13500', secondary: '#670000' }) }
+web/src/pages/Onboarding.tsx:121:      style={{ background: '#161616', color: 'white' }}>
+web/src/pages/people/Consolidation.tsx:38:      <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-brand-600 font-semibold text-sm shrink-0">
+web/src/pages/people/Consolidation.tsx:59:              <Heart className="w-3 h-3 text-brand-600" />
+web/src/pages/people/Consolidation.tsx:70:            <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded-lg font-medium">
+web/src/pages/people/Consolidation.tsx:133:        <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+web/src/pages/people/Consolidation.tsx:134:          <Heart className="w-5 h-5 text-brand-600" />
+web/src/pages/people/Consolidation.tsx:169:                  ? 'bg-brand-600 text-white'
+web/src/pages/people/Consolidation.tsx:170:                  : 'bg-white text-gray-500 hover:bg-cream'
+web/src/pages/people/Leaders.tsx:23:    <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-brand-600 font-semibold text-sm">
+web/src/pages/people/Leaders.tsx:31:    celula:    { bg: 'bg-brand-50 text-brand-700', icon: <Network className="w-3 h-3" />, label: 'Célula' },
+web/src/pages/people/Leaders.tsx:32:    coleider:  { bg: 'bg-cream text-gray-600',     icon: <Network className="w-3 h-3" />, label: 'Co-líder' },
+web/src/pages/people/Leaders.tsx:156:        <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+web/src/pages/people/Leaders.tsx:157:          <Users2 className="w-5 h-5 text-brand-600" />
+web/src/pages/people/Leaders.tsx:173:            <div className="flex justify-center text-brand-600 mb-1">{stat.icon}</div>
+web/src/pages/people/Volunteers.tsx:101:          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
+web/src/pages/people/Volunteers.tsx:110:            <div className="flex items-center justify-between bg-brand-50 rounded-xl px-3 py-2.5">
+web/src/pages/people/Volunteers.tsx:111:              <span className="text-sm font-medium text-brand-700">{selectedPerson.name}</span>
+web/src/pages/people/Volunteers.tsx:114:                className="p-1 rounded text-brand-400 hover:text-brand-600"
+web/src/pages/people/Volunteers.tsx:137:                        className="w-full text-left px-4 py-2.5 hover:bg-cream transition-colors"
+web/src/pages/people/Volunteers.tsx:156:            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/people/Volunteers.tsx:171:            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/people/Volunteers.tsx:205:      <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-brand-600 font-semibold text-sm shrink-0">
+web/src/pages/people/Volunteers.tsx:225:            <span className="inline-flex items-center gap-1 text-xs font-medium bg-brand-50 text-brand-700 px-2 py-0.5 rounded-lg">
+web/src/pages/people/Volunteers.tsx:298:          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+web/src/pages/people/Volunteers.tsx:299:            <HandHeart className="w-5 h-5 text-brand-600" />
+web/src/pages/people/Volunteers.tsx:333:          className="block w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+web/src/pages/people/Volunteers.tsx:343:              ministryFilter === '' ? 'bg-brand-600 text-white' : 'bg-white border border-black/10 text-gray-600 hover:bg-cream'
+web/src/pages/people/Volunteers.tsx:353:                ministryFilter === m.id ? 'bg-brand-600 text-white' : 'bg-white border border-black/10 text-gray-600 hover:bg-cream'
+web/src/pages/People.tsx:111:      className="bg-white rounded-2xl border border-cream-dark/50 p-4 shadow-sm active:bg-cream-light transition-colors cursor-pointer"
+web/src/pages/People.tsx:119:            style={{ background: 'var(--church-primary, #e13500)' }}
+web/src/pages/People.tsx:140:            className="p-2 rounded-lg text-ekthos-black/30 active:text-brand-600 active:bg-brand-50 transition-all"
+web/src/pages/People.tsx:165:      className="hover:bg-cream-dark/30 transition-colors cursor-pointer"
+web/src/pages/People.tsx:189:            <span key={tag} className="text-xs bg-brand-50 text-brand-800 rounded-full px-2 py-0.5 font-medium">
+web/src/pages/People.tsx:206:            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-brand-600 hover:bg-brand-50 transition-all"
+web/src/pages/People.tsx:280:            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-colors"
+web/src/pages/People.tsx:291:      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2 overflow-x-auto scrollbar-none pb-px">
+web/src/pages/People.tsx:298:                ? 'border-brand-600 text-brand-700'
+web/src/pages/People.tsx:307:                  ? 'bg-brand-100 text-brand-700'
+web/src/pages/People.tsx:308:                  : 'bg-cream-dark/60 text-ekthos-black/40'
+web/src/pages/People.tsx:337:        <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+web/src/pages/People.tsx:359:          <div className="hidden md:block bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+web/src/pages/People.tsx:363:                  <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
+web/src/pages/People.tsx:372:                <tbody className="divide-y divide-cream-dark/40">
+web/src/pages/People.tsx:393:        style={{ width: 56, height: 56, background: 'var(--church-primary, #e13500)' }}
+web/src/pages/Pipeline.tsx:57:      className="bg-cream-light rounded-xl border border-cream-dark/50 p-3 shadow-sm cursor-grab active:cursor-grabbing hover:bg-white hover:shadow-md transition-all select-none"
+web/src/pages/Pipeline.tsx:101:        className="relative bg-cream-light rounded-2xl shadow-xl p-5 w-full max-w-sm z-50"
+web/src/pages/Pipeline.tsx:106:          <button onClick={onClose} className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/40 transition-all">
+web/src/pages/Pipeline.tsx:132:                status === 'breach'  ? 'font-semibold text-brand-600' :
+web/src/pages/Pipeline.tsx:148:                  <span key={tag} className="text-xs bg-brand-50 text-brand-800 rounded-full px-2 py-0.5 font-medium">{tag}</span>
+web/src/pages/Pipeline.tsx:207:      className={`flex flex-col rounded-2xl border ${isDragOver ? 'ring-2 ring-brand-600/40 border-brand-200 bg-brand-50/30' : 'border-cream-dark/60 bg-cream-dark/30'} min-w-[260px] max-w-[260px] transition-all`}
+web/src/pages/Pipeline.tsx:214:      <div className="flex items-center justify-between px-3 py-2.5 border-b border-cream-dark/60">
+web/src/pages/Pipeline.tsx:223:            <span className="text-xs font-semibold text-white bg-brand-600 rounded-full px-1.5 py-0.5 leading-none">
+web/src/pages/Pipeline.tsx:227:          <span className="text-xs font-medium text-ekthos-black/60 bg-cream-dark rounded-full px-2 py-0.5">
+web/src/pages/Pipeline.tsx:278:                : 'bg-cream-dark/50 text-ekthos-black/60 active:bg-cream-dark'
+web/src/pages/Pipeline.tsx:280:            style={isActive ? { background: (stage as PipelineStage & { color?: string }).color ?? '#e13500' } : {}}
+web/src/pages/Pipeline.tsx:375:          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-brand-600 hover:text-brand-600 bg-white transition-colors shrink-0"
+web/src/pages/Pipeline.tsx:384:        <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 text-sm text-brand-700">
+web/src/pages/placeholders/EmConstrucao.tsx:16:      <div className="w-16 h-16 rounded-2xl bg-cream flex items-center justify-center mb-6">
+web/src/pages/placeholders/EmConstrucao.tsx:17:        <Construction className="w-8 h-8 text-brand-600" />
+web/src/pages/placeholders/EmConstrucao.tsx:24:        <p className="text-sm text-brand-600 font-medium mb-6">
+web/src/pages/placeholders/EmConstrucao.tsx:33:              <span className="mt-0.5 w-4 h-4 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center shrink-0 text-xs font-bold">
+web/src/pages/ResetPassword.tsx:125:      style={{ background: '#f9eedc' }}
+web/src/pages/ResetPassword.tsx:156:                className="inline-block text-sm font-medium text-brand-700 hover:underline"
+web/src/pages/ResetPassword.tsx:233:                  <p className="text-sm font-medium bg-brand-50 text-brand-600 rounded-xl px-3 py-2">
+web/src/pages/SetPassword.tsx:134:      style={{ background: '#f9eedc' }}
+web/src/pages/SetPassword.tsx:201:              <p className="text-sm font-medium bg-brand-50 text-brand-600 rounded-xl px-3 py-2">
+web/src/pages/settings/Billing.tsx:43:        className="bg-brand-600 h-1.5 rounded-full transition-all"
+web/src/pages/settings/Billing.tsx:250:                      className="text-xs text-brand-600 hover:text-brand-700 underline"
+web/src/pages/settings/Branding.tsx:14:  const [secondary, setSecondary] = useState('#670000')
+web/src/pages/settings/Branding.tsx:25:      setSecondary(church.secondary_color ?? '#670000')
+web/src/pages/settings/Branding.tsx:74:      void queryClient.invalidateQueries({ queryKey: ['church-branding', churchId] })
+web/src/pages/settings/Branding.tsx:224:              <div className="w-36 shrink-0 flex flex-col gap-1 p-3" style={{ background: '#161616' }}>
+web/src/pages/settings/Branding.tsx:253:              <div className="flex-1 p-3" style={{ background: '#f9eedc' }}>
+web/src/pages/settings/Layout.tsx:33:    to: '/settings/branding',
+web/src/pages/settings/Layout.tsx:62:                  ? 'bg-brand-50 text-brand-700 font-medium'
+web/src/pages/settings/Users.tsx:21:        className="bg-brand-600 h-1.5 rounded-full transition-all"
+web/src/pages/settings/Users.tsx:106:                <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center shrink-0">
+web/src/pages/settings/Users.tsx:107:                  <span className="text-xs font-semibold text-brand-700">
+web/src/pages/Signup.tsx:52:    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: '#f9eedc' }}>
+web/src/pages/Signup.tsx:56:          <h1 className="font-display text-4xl font-bold" style={{ color: '#e13500' }}>Ekthos</h1>
+web/src/pages/Signup.tsx:81:                style={{ '--tw-ring-color': '#e13500' } as React.CSSProperties}
+web/src/pages/Signup.tsx:156:              style={{ background: '#e13500' }}
+web/src/pages/Signup.tsx:165:            <a href="#" className="underline" style={{ color: '#e13500' }}>Termos de Uso</a>
+web/src/pages/Signup.tsx:167:            <a href="#" className="underline" style={{ color: '#e13500' }}>Política de Privacidade</a>.
+web/src/pages/Signup.tsx:173:          <Link to="/login" className="font-semibold" style={{ color: '#e13500' }}>
+web/src/pages/VisitorLanding.tsx:153:  const brandColor = church?.primary_color ?? '#4F46E5'
+web/src/pages/VisitorLanding.tsx:162:          style={{ borderColor: `${brandColor}40`, borderTopColor: brandColor }}
+web/src/pages/VisitorLanding.tsx:191:            style={{ backgroundColor: `${brandColor}15` }}
+web/src/pages/VisitorLanding.tsx:195:              style={{ color: brandColor }}
+web/src/pages/VisitorLanding.tsx:267:              style={{ backgroundColor: brandColor }}
+web/src/pages/VisitorLanding.tsx:385:              style={{ backgroundColor: brandColor }}
+web/src/pages/Voluntarios.tsx:108:            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/Voluntarios.tsx:143:                    ? 'bg-brand-600 text-white border-brand-600'
+web/src/pages/Voluntarios.tsx:144:                    : 'bg-white text-gray-600 border-gray-300 hover:border-brand-400'
+web/src/pages/Voluntarios.tsx:157:            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+web/src/pages/Voluntarios.tsx:263:          className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+web/tailwind.config.js:7:        // Ekthos brand — vermelho (cor primaria)
+web/tailwind.config.js:8:        brand: {
+web/tailwind.config.js:15:          600: '#e13500',
+web/tailwind.config.js:20:        // Ekthos wine — profundidade espiritual
+web/tailwind.config.js:21:        wine: {
+web/tailwind.config.js:22:          DEFAULT: '#670000',
+web/tailwind.config.js:26:        // Ekthos cream — fundo geral
+web/tailwind.config.js:27:        cream: {
+web/tailwind.config.js:28:          DEFAULT: '#f9eedc',
+web/tailwind.config.js:34:          black:       '#161616',
