@@ -79,28 +79,30 @@ export default function Layout() {
 
   return (
     <NotificationsProvider>
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
-      {/* Mobile-only top header */}
-      <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
-
-      {impersonating && (
-        <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
-      )}
-
-      {/* Desktop header — fora do main para não ficar dentro de overflow-y-auto */}
-      <AppHeader />
-
-      <div className="flex flex-1 overflow-hidden">
+      {/* flex ROW: sidebar esquerda | coluna de conteúdo direita */}
+      <div className="flex h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
         <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-        {/* Main content — pt-14 on mobile to clear fixed MobileHeader */}
-        <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
-            <Outlet />
-          </div>
-        </main>
+        {/* Coluna de conteúdo: topbar + main */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile: header fixo (hamburger + nome da igreja + sino) */}
+          <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
+          {impersonating && (
+            <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
+          )}
+
+          {/* Desktop: topbar (sino + avatar) — ACIMA do main, fora do overflow-y-auto */}
+          <AppHeader />
+
+          {/* Conteúdo — pt-14 mobile (clear do MobileHeader fixo), pt-0 desktop */}
+          <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
     </NotificationsProvider>
   )
 }
