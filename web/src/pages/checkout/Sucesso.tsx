@@ -81,7 +81,7 @@ export default function CheckoutSucesso() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-5 py-16"
-      style={{ background: '#f9eedc' }}>
+      style={{ background: 'var(--bg-primary)' }}>
 
       {/* Card central */}
       <div className="w-full max-w-lg">
@@ -89,26 +89,26 @@ export default function CheckoutSucesso() {
         <div className="flex justify-center mb-8">
           <div className="relative">
             <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-xl"
-              style={{ background: '#2D7A4F' }}>
+              style={{ background: 'var(--color-success)' }}>
               <Check size={36} strokeWidth={2.5} className="text-white" />
             </div>
             <div className="absolute inset-0 rounded-full animate-ping opacity-20"
-              style={{ background: '#2D7A4F' }} />
+              style={{ background: 'var(--color-success)' }} />
           </div>
         </div>
 
         {/* Headline */}
         <div className="text-center mb-10">
-          <h1 className="font-display text-3xl font-bold mb-3" style={{ color: '#161616' }}>
+          <h1 className="font-display text-3xl font-bold mb-3" style={{ color: 'var(--text-primary)' }}>
             Pagamento confirmado! 🙏
           </h1>
-          <p className="text-base leading-relaxed" style={{ color: '#5A5A5A' }}>
+          <p className="text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             Bem-vindo à Ekthos. Sua jornada de gestão pastoral inteligente começa agora.
           </p>
         </div>
 
         {/* Próximos passos */}
-        <div className="bg-white rounded-2xl border p-6 mb-6" style={{ borderColor: '#f0e0c8' }}>
+        <div className="bg-white rounded-2xl border p-6 mb-6" style={{ borderColor: 'var(--border-default)' }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-5" style={{ color: '#8A8A8A' }}>
             O que acontece agora
           </p>
@@ -120,8 +120,8 @@ export default function CheckoutSucesso() {
                   {step.icon}
                 </div>
                 <div>
-                  <p className="font-semibold text-sm mb-0.5" style={{ color: '#161616' }}>{step.title}</p>
-                  <p className="text-sm leading-relaxed" style={{ color: '#5A5A5A' }}>{step.body}</p>
+                  <p className="font-semibold text-sm mb-0.5" style={{ color: 'var(--text-primary)' }}>{step.title}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{step.body}</p>
                 </div>
               </div>
             ))}
