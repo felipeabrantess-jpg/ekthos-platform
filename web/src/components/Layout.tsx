@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
-import NotificationBell from '@/features/notifications/components/NotificationBell'
+import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
 
 interface ImpersonatingState {
@@ -85,18 +85,14 @@ export default function Layout() {
         <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
       )}
 
+      {/* Desktop header — fora do main para não ficar dentro de overflow-y-auto */}
+      <AppHeader />
+
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-        {/* Main content — pt-14 in mobile to clear fixed MobileHeader */}
+        {/* Main content — pt-14 on mobile to clear fixed MobileHeader */}
         <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
-          {/* Desktop topbar — sino + ações globais */}
-          <div
-            className="hidden md:flex items-center justify-end px-6 h-12 shrink-0 sticky top-0 z-20"
-            style={{ background: 'rgba(249,238,220,0.95)', borderBottom: '1px solid rgba(0,0,0,0.05)', backdropFilter: 'blur(8px)' }}
-          >
-            <NotificationBell />
-          </div>
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
             <Outlet />
           </div>

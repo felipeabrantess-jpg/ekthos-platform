@@ -107,13 +107,10 @@ Deno.serve(async (req: Request) => {
 
     const churchId = person.church_id as string
 
-    // ── 1b. Notificar admins para cadastros via QR Code ───
-    // Passa o mesmo sb do handler — cliente já autenticado e funcional
-    if (person.source === 'qr_code') {
-      await notifyAdminsQrCapture(sb, churchId, person as {
-        id: string; name: string | null; church_id: string
-      })
-    }
+    // ── 1b. Notificar admins/pastores para todos os cadastros ─
+    await notifyAdmins(sb, churchId, person as {
+      id: string; name: string | null; church_id: string; source: string | null
+    })
 
     // ── 2. Verificar elegibilidade ────────────────────────
 
@@ -233,8 +230,8 @@ Deno.serve(async (req: Request) => {
       })
 
     } catch (fetchErr) {
-      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
-      console.warn('[dispatch-person-event] Webhook failed:', msg)
+      const msg = fetchErr instanceof Error ? (fetchErr.stack ?? fetchErr.message) : String(fetchErr)
+      console.error('[dispatch-person-event] Webhook failed:', msg)
 
       await writeAudit(sb, churchId, personId, 'person_event_dispatch_failed', {
         webhook_url: webhook.people_url,
@@ -253,60 +250,75 @@ Deno.serve(async (req: Request) => {
 })
 
 // ============================================================
-// Helper: notificar admins da igreja sobre cadastro via QR Code
-// Recebe sb do handler (cliente já autenticado) — sem nova instância
-// tem try/catch próprio — nunca propaga erro
+// Helper: notificar admins/pastores sobre novo cadastro
+// Funciona para qualquer source (qr_code, manual, etc.)
+// Recebe sb do handler — sem nova instância
+// try/catch próprio — nunca propaga erro
 // ============================================================
-async function notifyAdminsQrCapture(
+async function notifyAdmins(
   sb: ReturnType<typeof createClient>,
   churchId: string,
-  person: { id: string; name: string | null; church_id: string }
+  person: { id: string; name: string | null; church_id: string; source: string | null }
 ): Promise<void> {
   try {
-    // Buscar admins usando o mesmo cliente autenticado do handler
     const { data: admins, error: adminsErr } = await sb
       .from('user_roles')
       .select('user_id')
       .eq('church_id', churchId)
       .in('role', ['admin', 'pastor_celulas'])
 
-    console.log('[dispatch-person-event] notifyAdmins: admins=', JSON.stringify(admins), 'err=', adminsErr?.message)
-
     if (adminsErr || !admins || admins.length === 0) {
       console.log('[dispatch-person-event] Nenhum admin para notificar (church_id:', churchId, ')')
       return
     }
 
-    const personName = (person.name ?? 'Visitante').trim()
+    const personName    = (person.name ?? 'Visitante sem nome').trim()
+    const isQr          = person.source === 'qr_code'
+    const notifBody     = isQr
+      ? `${personName} se cadastrou via QR Code.`
+      : `${personName} foi cadastrado manualmente.`
+    const automationName = isQr ? 'qr_code_visitor' : 'manual-registration'
 
-    // INSERT na tabela notifications via mesmo cliente
     for (const admin of admins) {
       const { error: notifErr } = await sb
-        .from('notifications')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('notifications' as any)
         .insert({
           church_id:       churchId,
           user_id:         admin.user_id,
-          title:           'Novo cadastro via QR Code',
-          body:            `${personName} acabou de se cadastrar como visitante.`,
-          type:            'success',
+          title:           `Nova pessoa: ${personName}`,
+          body:            notifBody,
+          type:            'info',
           read:            false,
           link:            '/pessoas?tab=novos',
-          automation_name: 'qr_code_visitor',
+          automation_name: automationName,
           person_id:       person.id,
         })
 
       if (notifErr) {
-        console.error('[dispatch-person-event] notification INSERT error:', notifErr.message)
-      } else {
-        console.log('[dispatch-person-event] notification INSERT ok para user:', admin.user_id)
+        console.error(
+          '[dispatch-person-event] notification INSERT error:',
+          notifErr.message,
+          { user_id: admin.user_id, church_id: churchId }
+        )
       }
     }
 
-    console.log(`[dispatch-person-event] Notificações QR processadas para ${admins.length} admin(s)`)
-  } catch (err) {
-    console.error('[CRITICAL] notifyAdminsQrCapture failed:', err)
-    console.error('Stack:', err instanceof Error ? err.stack : String(err))
-    console.error('Context:', { person_id: person.id, church_id: churchId })
+    console.log(`[dispatch-person-event] Notificacoes processadas para ${admins.length} admin(s)`)
+
+    /*
+     * TODO Frente N v3 (proximas versoes):
+     * - Notificacao quando person_stage muda pra 'novo_convertido'
+     * - Notificacao quando pessoa entra em etapa do pipeline
+     * - Notificacao automatica diaria para visitantes 24h+ sem consolidacao
+     * - Notificacao para pedidos de modulo (Volunteer Pro etc)
+     */
+  } catch (err: unknown) {
+    console.error(
+      '[dispatch-person-event] notifyAdmins failed:',
+      err instanceof Error ? (err.stack ?? err.message) : String(err),
+      { person_id: person.id, church_id: churchId }
+    )
     // NÃO relança — não bloqueia request principal
   }
 }
