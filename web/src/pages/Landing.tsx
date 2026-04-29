@@ -14,6 +14,7 @@ import {
   Bot, MessageCircle, Bell, Shield, TrendingUp,
   UserPlus, ShieldCheck, Smartphone,
 } from 'lucide-react'
+import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
 
 // ── Env ────────────────────────────────────────────────────
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
@@ -83,6 +84,199 @@ const FAQ_ITEMS = [
     a: 'Ao solicitar contato, um consultor pastoral entra em contato em até 24h para entender a realidade da sua igreja e apresentar uma proposta personalizada. O processo é guiado e sem pressão.',
   },
 ]
+
+// ══════════════════════════════════════════════════════════
+// VIDEO PREMIUM BLOCK
+// ══════════════════════════════════════════════════════════
+
+function VideoSection() {
+  const [open, setOpen] = useState(false)
+  const VIDEO_URL = 'https://www.youtube.com/embed/PLACEHOLDER_ID?autoplay=1'
+
+  return (
+    <section className="pb-16 lg:pb-24 px-5 lg:px-8 max-w-5xl mx-auto text-center">
+      {/* Tag editorial */}
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
+        <span className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: 'var(--color-primary)' }}>
+          VEJA EM 90 SEGUNDOS
+        </span>
+        <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
+      </div>
+
+      {/* Container premium */}
+      <div
+        className="relative rounded-3xl overflow-hidden cursor-pointer group"
+        style={{
+          background: 'linear-gradient(135deg, rgba(41,182,255,0.08) 0%, rgba(76,234,216,0.06) 50%, rgba(41,182,255,0.04) 100%)',
+          border: '1px solid rgba(41,182,255,0.15)',
+          boxShadow: '0 8px 40px rgba(41,182,255,0.12), 0 0 0 1px rgba(41,182,255,0.08)',
+        }}
+        onClick={() => setOpen(true)}
+        role="button"
+        aria-label="Assistir apresentação do Ekthos Church"
+      >
+        {/* Thumbnail placeholder */}
+        <div className="aspect-video relative">
+          <img
+            src="/screenshots/painel.png"
+            alt="Preview Ekthos Church"
+            className="w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-opacity duration-300"
+          />
+          {/* Aurora overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'linear-gradient(160deg, rgba(41,182,255,0.15) 0%, rgba(76,234,216,0.08) 60%, transparent 100%)' }}
+          />
+
+          {/* Play button */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="relative flex items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110"
+              style={{
+                width: 72, height: 72,
+                background: 'var(--color-primary)',
+                boxShadow: '0 0 0 12px rgba(41,182,255,0.18), 0 0 0 24px rgba(41,182,255,0.08)',
+              }}
+            >
+              {/* Pulse ring */}
+              <span
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: 'var(--color-primary)', opacity: 0.25 }}
+              />
+              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white ml-1" aria-hidden>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Caption editorial */}
+      <p className="mt-4 text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+        Veja como o Ekthos Church transforma a gestão pastoral —
+        da presença ao discipulado, em menos de dois minutos.
+      </p>
+
+      {/* Modal de vídeo */}
+      {open && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8"
+          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl rounded-2xl overflow-hidden"
+            style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-3 right-3 z-10 rounded-full p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              onClick={() => setOpen(false)}
+              aria-label="Fechar"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <div className="aspect-video">
+              <iframe
+                src={VIDEO_URL}
+                className="w-full h-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                title="Ekthos Church — apresentação"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// ECOSSISTEMA — GLASS OUTLINE ICONS
+// ══════════════════════════════════════════════════════════
+
+const ECOSSISTEMA_ITEMS: { icon: EkthosIconName; label: string; desc: string }[] = [
+  { icon: 'pessoas',       label: 'Pessoas',          desc: 'Cadastro pastoral completo com histórico de cada membro' },
+  { icon: 'discipulado',   label: 'Discipulado',       desc: 'Pipeline editável do visitante ao líder em 11 etapas' },
+  { icon: 'eventos',       label: 'Eventos',           desc: 'Calendário recorrente com checklist e presença automática' },
+  { icon: 'celulas',       label: 'Células',           desc: 'Gestão de grupos, líderes, relatórios e frequência' },
+  { icon: 'voluntarios',   label: 'Voluntários',       desc: 'Escalas inteligentes com confirmação por WhatsApp' },
+  { icon: 'notificacoes',  label: 'Notificações',      desc: 'Alertas pastorais em tempo real — ausências, aniversários, crises' },
+  { icon: 'qr-entrada',    label: 'QR de Entrada',     desc: 'Check-in por QR code e presença em cultos sem fricção' },
+  { icon: 'mensageria-ia', label: 'Mensageria IA',     desc: 'Agentes pastorais que se comunicam automaticamente com os membros' },
+  { icon: 'cockpit',       label: 'Cockpit Pastoral',  desc: 'Visão 360° da saúde espiritual e operacional da sua igreja' },
+]
+
+function EcossistemaSection() {
+  return (
+    <section className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#161616]">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-14">
+          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: 'var(--color-primary)' }}>
+            Ecossistema completo
+          </p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-white leading-tight">
+            Tudo que sua igreja precisa,<br className="hidden lg:block" /> em um só lugar
+          </h2>
+          <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed">
+            Cada módulo foi pensado para o cotidiano pastoral —
+            não para o relatório corporativo.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {ECOSSISTEMA_ITEMS.map(({ icon, label, desc }) => (
+            <div
+              key={icon}
+              className="group relative rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                backdropFilter: 'blur(8px)',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.background = 'rgba(41,182,255,0.06)'
+                ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(41,182,255,0.2)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'
+                ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)'
+              }}
+            >
+              {/* Glow sutil no hover */}
+              <div
+                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse at 30% 30%, rgba(41,182,255,0.08) 0%, transparent 70%)' }}
+              />
+
+              <div className="flex items-start gap-4 relative">
+                <div
+                  className="shrink-0 flex items-center justify-center rounded-xl"
+                  style={{
+                    width: 44, height: 44,
+                    background: 'rgba(41,182,255,0.1)',
+                    border: '1px solid rgba(41,182,255,0.18)',
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  <EkthosIcon name={icon} size={22} strokeWidth={1.5} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-white mb-1">{label}</p>
+                  <p className="text-xs leading-relaxed text-white/45">{desc}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
 
 // ══════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
@@ -299,6 +493,9 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── 2.5. VÍDEO PREMIUM ───────────────────────────────────── */}
+      <VideoSection />
+
       {/* ── 3. FATOS ──────────────────────────────────────────── */}
       <section className="py-14 border-y w-full" style={{ background: '#F6F2EC', borderColor: '#E8E0D4' }}>
         <div className="max-w-5xl mx-auto px-5 lg:px-8">
@@ -402,6 +599,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── 5.5. ECOSSISTEMA ─────────────────────────────────────── */}
+      <EcossistemaSection />
 
       {/* ── 6. FUNCIONALIDADES (ALTERNATING) ──────────────────── */}
       <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>

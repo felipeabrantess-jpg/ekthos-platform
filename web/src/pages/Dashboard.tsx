@@ -69,33 +69,33 @@ function MetricCard({
   icon?: React.ReactNode
 }) {
   const borderMap = {
-    default: 'border-cream-dark/50',
+    default: 'border-border-default',
     green:   'border-success/20',
     yellow:  'border-warning/20',
-    red:     'border-brand-200',
+    red:     'border-border-default',
     purple:  'border-wine/20',
-    blue:    'border-brand-200',
+    blue:    'border-border-default',
   }
   const valueColorMap = {
     default: 'text-ekthos-black',
     green:   'text-success',
     yellow:  'text-warning',
-    red:     'text-brand-600',
-    purple:  'text-wine',
-    blue:    'text-brand-600',
+    red:     'text-primary-text',
+    purple:  'text-text-primary',
+    blue:    'text-primary-text',
   }
 
   const borderClass = borderMap[alert ? 'red' : color]
   const valueClass  = valueColorMap[alert ? 'red' : color]
 
   return (
-    <div className={`bg-cream-light rounded-2xl border p-5 shadow-sm ${borderClass}`}>
+    <div className={`bg-bg-primary rounded-2xl border p-5 shadow-sm ${borderClass}`}>
       <div className="flex items-start justify-between">
         <p className="text-xs font-medium leading-tight text-ekthos-black/50">
           {label}
         </p>
         {icon && (
-          <span className={`${alert ? 'text-brand-600' : 'text-ekthos-black/20'}`}>
+          <span className={`${alert ? 'text-primary-text' : 'text-ekthos-black/20'}`}>
             {icon}
           </span>
         )}
@@ -107,7 +107,7 @@ function MetricCard({
         {sub && <span className="text-xs text-ekthos-black/40">{sub}</span>}
         {meta && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            alert ? 'bg-brand-50 text-brand-600' : 'bg-cream-dark/60 text-ekthos-black/60'
+            alert ? 'bg-bg-hover text-primary-text' : 'bg-bg-hover text-ekthos-black/60'
           }`}>
             {meta}
           </span>
@@ -125,27 +125,27 @@ function AlertaCritico({ items }: {
     new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(iso))
 
   return (
-    <div className="rounded-2xl border-2 border-brand-200 bg-brand-50 p-5">
+    <div className="rounded-2xl border-2 border-border-default bg-bg-hover p-5">
       <div className="flex items-center gap-2.5 mb-3">
-        <AlertTriangle size={18} strokeWidth={1.75} className="text-brand-600 shrink-0" />
+        <AlertTriangle size={18} strokeWidth={1.75} className="text-primary-text shrink-0" />
         <div>
-          <p className="text-sm font-bold text-brand-700">
+          <p className="text-sm font-bold text-primary-text">
             {items.length} visitante{items.length > 1 ? 's' : ''} sem consolidação
           </p>
-          <p className="text-xs text-brand-600/80">
+          <p className="text-xs text-primary-text/80">
             Entraram há mais de 24h e ainda não foram acompanhados
           </p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {items.slice(0, 8).map(p => (
-          <span key={p.id} className="inline-flex items-center gap-1 bg-white text-brand-700 text-xs font-medium px-2.5 py-1 rounded-full border border-brand-100">
+          <span key={p.id} className="inline-flex items-center gap-1 bg-white text-primary-text text-xs font-medium px-2.5 py-1 rounded-full border border-border-default">
             {p.nome}
-            <span className="text-brand-400">· {formatDate(p.created_at)}</span>
+            <span className="text-text-tertiary">· {formatDate(p.created_at)}</span>
           </span>
         ))}
         {items.length > 8 && (
-          <span className="text-xs text-brand-600 font-semibold self-center">
+          <span className="text-xs text-primary-text font-semibold self-center">
             +{items.length - 8} outros
           </span>
         )}
@@ -164,8 +164,8 @@ function AlertaTable<T extends Record<string, unknown>>({
   empty?: string
 }) {
   return (
-    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm">
-      <div className="px-5 py-4 border-b border-cream-dark/50">
+    <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm">
+      <div className="px-5 py-4 border-b border-border-default">
         <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
         {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
       </div>
@@ -200,8 +200,8 @@ function ChartCard({ title, sub, children, height = 220 }: {
   height?: number
 }) {
   return (
-    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm">
-      <div className="px-5 py-4 border-b border-cream-dark/50">
+    <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm">
+      <div className="px-5 py-4 border-b border-border-default">
         <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
         {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
       </div>
@@ -375,7 +375,7 @@ export default function Dashboard() {
 
         {/* Distribuição por estágio */}
         {consolidacao && consolidacao.porStage.length > 0 && (
-          <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5">
+          <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm p-5">
             <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-tertiary)' }}>
               Distribuição por Estágio
             </p>
@@ -385,7 +385,7 @@ export default function Dashboard() {
                   ? Math.round((count / consolidacao.totalPeople) * 100)
                   : 0
                 const colors = STAGE_PILL_COLORS[stage] ?? {
-                  bg: 'bg-cream-dark/40', text: 'text-ekthos-black/50', bar: '#EDE0CC',
+                  bg: 'bg-bg-hover', text: 'text-ekthos-black/50', bar: '#EDE0CC',
                 }
                 return (
                   <div key={stage} className="flex items-center gap-3">
@@ -571,7 +571,7 @@ export default function Dashboard() {
                 label: 'Estágio',
                 key: 'person_stage',
                 render: (v) => (
-                  <span className="text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs text-primary-text bg-bg-hover px-2 py-0.5 rounded-full font-medium">
                     {STAGE_LABELS[String(v)] ?? String(v)}
                   </span>
                 ),
@@ -580,7 +580,7 @@ export default function Dashboard() {
                 label: 'Último Contato',
                 key: 'last_contact_at',
                 render: (v) => (
-                  <span className="text-xs text-brand-600 font-semibold text-right block">
+                  <span className="text-xs text-primary-text font-semibold text-right block">
                     {relativeDate(v as string | null)}
                   </span>
                 ),
@@ -606,7 +606,7 @@ export default function Dashboard() {
                   const n = v as number
                   return (
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                      n === 0 ? 'bg-brand-50 text-brand-600' : 'bg-warning-bg text-warning'
+                      n === 0 ? 'bg-bg-hover text-primary-text' : 'bg-warning-bg text-warning'
                     }`}>
                       {n === 0 ? 'Vazia' : `${n} membro${n > 1 ? 's' : ''}`}
                     </span>
