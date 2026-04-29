@@ -121,6 +121,12 @@ export function useCreatePerson() {
         .single()
 
       if (error) throw new Error(error.message)
+
+      // Dispara evento de pessoa criada (non-blocking — notificações in-app)
+      void supabase.functions.invoke('dispatch-person-event', {
+        body: { person_id: data.id, event: 'person_created' },
+      })
+
       return data
     },
     onSuccess: (data) => {
