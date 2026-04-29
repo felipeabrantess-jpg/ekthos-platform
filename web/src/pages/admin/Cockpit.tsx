@@ -45,7 +45,7 @@ function pct(a: number, b: number): string {
 // ── Componentes ────────────────────────────────────────────
 
 function Metric({
-  label, value, sub, trend, color = '#e13500', icon,
+  label, value, sub, trend, color = 'var(--color-primary)', icon,
 }: {
   label: string
   value: string | number
@@ -55,14 +55,14 @@ function Metric({
   icon?: React.ReactNode
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+    <div className="rounded-2xl border shadow-sm p-5" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
       <div className="flex items-start justify-between mb-2">
-        <p className="text-xs font-medium" style={{ color: '#8A8A8A' }}>{label}</p>
+        <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</p>
         {icon && <span style={{ color }}>{icon}</span>}
       </div>
-      <p className="font-mono-ekthos text-3xl font-bold" style={{ color: '#161616' }}>{value}</p>
+      <p className="font-mono-ekthos text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{value}</p>
       <div className="flex items-center gap-2 mt-1.5">
-        {sub && <span className="text-xs text-gray-400">{sub}</span>}
+        {sub && <span className="text-xs text-text-secondary">{sub}</span>}
         {trend && (
           <span className={`text-xs font-semibold ${trend.startsWith('+') ? 'text-emerald-600' : 'text-red-600'}`}>
             {trend}
@@ -156,13 +156,13 @@ export default function AdminCockpit() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-gray-900">Cockpit Ekthos</h1>
-          <p className="text-sm text-gray-400 mt-1 capitalize">{now}</p>
+          <h1 className="font-display text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>Cockpit Ekthos</h1>
+          <p className="text-sm text-text-secondary mt-1 capitalize">{now}</p>
         </div>
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 bg-white border border-black/5 hover:bg-gray-50 transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary rounded-xl transition-all transition-all disabled:opacity-50"
         >
           <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
           Atualizar
@@ -197,21 +197,21 @@ export default function AdminCockpit() {
                 label="Igrejas Ativas"
                 value={data.churches_configured}
                 sub={`de ${data.churches_total} total`}
-                color="#2D7A4F"
+                color="var(--color-success)"
                 icon={<Building2 size={18} strokeWidth={1.75} />}
               />
               <Metric
                 label="Churn Rate"
                 value={`${data.churn_rate.toFixed(1)}%`}
                 sub="últimos 30 dias"
-                color={data.churn_rate > 5 ? '#e13500' : '#2D7A4F'}
+                color={data.churn_rate > 5 ? 'var(--color-danger)' : 'var(--color-success)'}
                 icon={<TrendingDown size={18} strokeWidth={1.75} />}
               />
               <Metric
                 label="Ticket Médio"
                 value={fmt(data.ticket_medio)}
                 sub={`+${data.new_this_month} novo${data.new_this_month !== 1 ? 's' : ''} este mês`}
-                color="#670000"
+                color="var(--color-primary)"
                 icon={<CreditCard size={18} strokeWidth={1.75} />}
               />
             </div>
@@ -219,39 +219,39 @@ export default function AdminCockpit() {
 
           {/* Status das igrejas — 3 cards menores */}
           <section>
-            <h2 className="font-display text-lg font-semibold text-gray-800 mb-3">Status das Igrejas</h2>
+            <h2 className="font-display text-lg font-semibold text-text-primary mb-3">Status das Igrejas</h2>
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white rounded-xl border border-black/5 p-4 text-center">
-                <p className="font-mono-ekthos text-2xl font-bold text-emerald-600">{data.churches_configured}</p>
-                <p className="text-xs text-gray-500 mt-1">Configuradas</p>
+              <div className="rounded-xl border p-4 text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: 'var(--color-success)' }}>{data.churches_configured}</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Configuradas</p>
               </div>
-              <div className="bg-white rounded-xl border border-black/5 p-4 text-center">
-                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#C4841D' }}>{data.churches_onboarding}</p>
-                <p className="text-xs text-gray-500 mt-1">Em onboarding</p>
+              <div className="rounded-xl border p-4 text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: 'var(--color-warning)' }}>{data.churches_onboarding}</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Em onboarding</p>
               </div>
-              <div className="bg-white rounded-xl border border-black/5 p-4 text-center">
-                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: '#e13500' }}>{data.churches_suspended}</p>
-                <p className="text-xs text-gray-500 mt-1">Suspensas</p>
+              <div className="rounded-xl border p-4 text-center" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+                <p className="font-mono-ekthos text-2xl font-bold" style={{ color: 'var(--color-danger)' }}>{data.churches_suspended}</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Suspensas</p>
               </div>
             </div>
           </section>
 
           {/* Gráfico MRR */}
           <section>
-            <div className="bg-white rounded-2xl border border-black/5 shadow-sm">
-              <div className="px-5 py-4 border-b border-black/5">
-                <h3 className="text-sm font-semibold text-gray-800">Evolução do MRR</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Últimos 12 meses</p>
+            <div className="rounded-2xl border shadow-sm" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+              <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border-default)' }}>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Evolução do MRR</h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Últimos 12 meses</p>
               </div>
               <div className="p-4" style={{ height: 260 }}>
                 {data.mrr_series.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-sm text-gray-400">Sem dados de MRR ainda</p>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Sem dados de MRR ainda</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={data.mrr_series} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f9eedc" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-hover)" />
                       <XAxis dataKey="mes" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                       <YAxis
                         tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }}
@@ -262,7 +262,7 @@ export default function AdminCockpit() {
                       />
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <Tooltip formatter={(v: any) => [fmt(v as number), 'MRR']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                      <Line type="monotone" dataKey="mrr" stroke="#e13500" strokeWidth={2.5} dot={{ fill: '#e13500', r: 3 }} activeDot={{ r: 5 }} />
+                      <Line type="monotone" dataKey="mrr" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 )}
@@ -272,7 +272,7 @@ export default function AdminCockpit() {
 
           {/* Alertas rápidos */}
           <section>
-            <h2 className="font-display text-lg font-semibold text-gray-800 mb-3">Alertas Operacionais</h2>
+            <h2 className="font-display text-lg font-semibold text-text-primary mb-3">Alertas Operacionais</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <AlertCard
                 label="Pagamentos atrasados"
@@ -338,19 +338,20 @@ function QuickLink({ icon, title, sub, href }: {
   return (
     <a
       href={href}
-      className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 flex items-center gap-4 hover:shadow-md transition-all group"
+      className="rounded-2xl border shadow-sm p-5 flex items-center gap-4 hover:shadow-md transition-all group"
+      style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
     >
       <div
         className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-        style={{ background: '#f9eedc', color: '#e13500' }}
+        style={{ background: 'var(--bg-hover)', color: 'var(--color-primary)' }}
       >
         {icon}
       </div>
       <div>
-        <p className="text-sm font-semibold text-gray-800">{title}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{sub}</p>
       </div>
-      <Activity size={14} strokeWidth={1.75} className="ml-auto text-gray-300 group-hover:text-gray-500 transition-colors" />
+      <Activity size={14} strokeWidth={1.75} style={{ color: 'var(--text-tertiary)' }} className="ml-auto transition-colors" />
     </a>
   )
 }

@@ -31,7 +31,7 @@ export function Modulos() {
             >
               <div
                 className="h-10 w-10 rounded-xl border flex items-center justify-center shrink-0"
-                style={{ background: 'rgba(225,53,0,0.05)', borderColor: 'rgba(225,53,0,0.1)' }}
+                style={{ background: 'var(--bg-hover)', borderColor: 'var(--border-default)' }}
               >
                 <Icon size={20} className="text-brand-500" strokeWidth={1.75} />
               </div>

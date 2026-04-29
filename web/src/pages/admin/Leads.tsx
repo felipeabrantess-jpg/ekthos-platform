@@ -114,7 +114,7 @@ export default function AdminLeads() {
   const countByStatus = (s: Lead['status']) => leads.filter(l => l.status === s).length
 
   return (
-    <div className="min-h-screen" style={{ background: '#f9eedc' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-primary)' }}>
       {/* Header */}
       <div className="px-6 lg:px-10 pt-8 pb-6">
         <div className="flex items-center justify-between mb-1">
@@ -185,7 +185,7 @@ export default function AdminLeads() {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: '#f9eedc' }}>
+                <tr style={{ background: 'var(--bg-primary)' }}>
                   <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Pastor / Igreja</th>
                   <th className="text-left px-5 py-3.5 font-semibold text-[#161616]">Plano</th>
                   <th className="text-left px-5 py-3.5 font-semibold text-[#161616] hidden lg:table-cell">Telefone</th>
