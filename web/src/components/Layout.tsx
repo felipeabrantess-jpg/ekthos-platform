@@ -79,7 +79,7 @@ export default function Layout() {
   return (
     <NotificationsProvider>
       {/* flex ROW: sidebar esquerda | coluna de conteúdo direita */}
-      <div className="flex h-screen overflow-hidden" style={{ background: '#f9eedc' }}>
+      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
         <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
         {/* Coluna de conteúdo: topbar + main */}
@@ -95,7 +95,7 @@ export default function Layout() {
           <AppHeader />
 
           {/* Conteúdo — pt-14 mobile (clear do MobileHeader fixo), pt-0 desktop */}
-          <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: '#f9eedc' }}>
+          <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: 'var(--bg-primary)' }}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
               <Outlet />
             </div>

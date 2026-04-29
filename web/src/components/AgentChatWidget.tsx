@@ -249,7 +249,7 @@ export default function AgentChatWidget({
         {/* Header */}
         <div
           className="flex items-center justify-between px-4 py-3 shrink-0 border-b border-black/[0.06]"
-          style={{ background: '#161616' }}
+          style={{ background: 'var(--bg-sidebar)' }}
         >
           <div className="flex items-center gap-2.5">
             <div

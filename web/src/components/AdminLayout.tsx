@@ -46,7 +46,7 @@ export default function AdminLayout() {
         {/* Sidebar admin */}
         <aside
           className="w-52 shrink-0 flex flex-col py-6 px-3 gap-1"
-          style={{ background: '#161616' }}
+          style={{ background: 'var(--bg-sidebar)' }}
         >
           <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-3 mb-2">
             Navegação
