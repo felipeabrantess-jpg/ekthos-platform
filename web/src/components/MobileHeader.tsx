@@ -13,6 +13,7 @@
 import { Menu } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurch } from '@/hooks/useChurch'
+import NotificationBell from '@/features/notifications/components/NotificationBell'
 
 interface MobileHeaderProps {
   onMenuClick: () => void
@@ -68,16 +69,19 @@ export default function MobileHeader({ onMenuClick }: MobileHeaderProps) {
         </span>
       </div>
 
-      {/* Avatar do usuário */}
-      <div
-        className="flex items-center justify-center rounded-full text-xs font-bold text-white shrink-0"
-        style={{
-          width: 36, height: 36,
-          background: 'var(--church-primary, #e13500)',
-        }}
-        title={displayName}
-      >
-        {userInitial}
+      {/* Sino + Avatar */}
+      <div className="flex items-center gap-1">
+        <NotificationBell />
+        <div
+          className="flex items-center justify-center rounded-full text-xs font-bold text-white shrink-0"
+          style={{
+            width: 36, height: 36,
+            background: 'var(--church-primary, #e13500)',
+          }}
+          title={displayName}
+        >
+          {userInitial}
+        </div>
       </div>
     </header>
   )
