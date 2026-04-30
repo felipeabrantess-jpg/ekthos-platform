@@ -52,9 +52,10 @@ interface RailProps {
   churchLogoUrl?: string
   churchName?: string
   onLogout: () => void
+  userInitial?: string
 }
 
-function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout }: RailProps) {
+function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, userInitial }: RailProps) {
   return (
     <div
       className="flex flex-col h-full shrink-0"
@@ -513,6 +514,8 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     (user?.user_metadata?.name  as string | undefined) ??
     user?.email?.split('@')[0] ?? 'Usuário'
 
+  const userInitial = displayName.charAt(0).toUpperCase()
+
   const SUBPANEL_HEADER: Record<Category, string> = {
     igreja:  church?.name ?? 'Igreja',
     agentes: 'Agentes IA',
@@ -529,6 +532,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
         churchLogoUrl={church?.logo_url ?? undefined}
         churchName={church?.name ?? undefined}
         onLogout={handleLogout}
+        userInitial={userInitial}
       />
 
       {/* Sub-painel 240px */}
