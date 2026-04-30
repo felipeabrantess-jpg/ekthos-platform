@@ -959,7 +959,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <p className="text-xs text-[var(--text-tertiary)] italic px-1">
-                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro disponíveis como complemento.
+                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro vendidos como módulo Pro.
                 </p>
               </div>
               <div className="px-7 pb-7">
@@ -1017,7 +1017,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <p className="text-xs italic px-1" style={{ color: 'rgba(245,250,255,0.35)' }}>
-                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro disponíveis como complemento.
+                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro vendidos como módulo Pro.
                 </p>
               </div>
               <div className="px-7 pb-7">
