@@ -12,7 +12,7 @@ import {
   Check, ChevronDown, Menu, X, Star, Zap, Crown,
   Users, BarChart2,
   Bot, MessageCircle, Bell, Shield, TrendingUp,
-  UserPlus, ShieldCheck, Smartphone,
+  UserPlus, ShieldCheck, Smartphone, DollarSign,
 } from 'lucide-react'
 import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
 import LogoEkthos from '@/components/LogoEkthos'
@@ -714,37 +714,37 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 7. VOLUNTEER + KIDS ───────────────────────────────── */}
+      {/* ── 7. MÓDULOS PRO ────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-surface)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
-              Soluções especializadas
+              Módulos Pro
             </p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
-              Para sua operação pastoral completa
+              Módulos Pro exclusivos do plano Avivamento
             </h2>
             <p className="text-lg max-w-xl mx-auto mt-4 text-[var(--text-secondary)]">
               Módulos especializados para as áreas que mais demandam atenção nas igrejas em crescimento.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {/* Volunteer Pro */}
-            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-start justify-between mb-5">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+              <div className="flex items-start justify-between mb-3">
                 <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
                   <UserPlus size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
-                  Gestão de Voluntários e Escalas
+                  Volunteer Pro
                 </h3>
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
+              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-primary)' }}>R$ 289,90/mês</p>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
-                Organize equipes, gere escalas inteligentes, confirme presença via WhatsApp
-                e acompanhe o engajamento dos seus voluntários.
+                Escalas, check-in, confirmação WhatsApp e métricas de voluntários.
               </p>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2.5 flex-1">
                 {[
                   'Equipes e funções organizadas',
                   'Escalas automáticas com IA',
@@ -759,23 +759,28 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
+              <button onClick={() => setLeadModal('avivamento')}
+                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: 'var(--color-primary)' }}>
+                Falar com nosso time
+              </button>
             </div>
 
             {/* Kids Pro */}
-            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex items-start justify-between mb-5">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+              <div className="flex items-start justify-between mb-3">
                 <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
                   <ShieldCheck size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
-                  Ministério Infantil Seguro
+                  Kids Pro
                 </h3>
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
+              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-primary)' }}>R$ 349,90/mês</p>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
-                Segurança total para as crianças. Check-in com QR Code, validação de
-                responsáveis e comunicação instantânea com os pais.
+                Check-in QR Code, validação de responsáveis e alertas aos pais.
               </p>
-              <ul className="space-y-2.5">
+              <ul className="space-y-2.5 flex-1">
                 {[
                   'Cadastro de crianças e responsáveis',
                   'Check-in com QR Code',
@@ -790,8 +795,54 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
+              <button onClick={() => setLeadModal('avivamento')}
+                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: 'var(--color-primary)' }}>
+                Falar com nosso time
+              </button>
+            </div>
+
+            {/* Financeiro Pro */}
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
+                  <DollarSign size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+                  Financeiro Pro
+                </h3>
+                <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
+                  style={{ background: '#670000' }}>Avivamento</span>
+              </div>
+              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-primary)' }}>R$ 489,90/mês</p>
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
+                Folha, DRE, NF, conciliação e agente financeiro com IA.
+              </p>
+              <ul className="space-y-2.5 flex-1">
+                {[
+                  'Folha de pagamento',
+                  'Notas fiscais (entrada/saída)',
+                  'DRE',
+                  'Centro de custos',
+                  'Conciliação bancária',
+                  'Chat agent-financeiro com IA',
+                  'WhatsApp Z-API para cobranças',
+                ].map(f => (
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-primary)]">
+                    <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button onClick={() => setLeadModal('avivamento')}
+                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ background: 'var(--color-primary)' }}>
+                Falar com nosso time
+              </button>
             </div>
           </div>
+
+          <p className="text-center text-sm text-[var(--text-tertiary)] mt-8 italic">
+            Implementação acompanhada pelo time Ekthos. Recebemos sua mensagem e contatamos em até 24h.
+          </p>
         </div>
       </section>
 
@@ -806,7 +857,7 @@ export default function Landing() {
                 style={{ background: 'rgba(41,182,255,0.15)', color: 'var(--color-primary)', borderColor: 'rgba(41,182,255,0.25)' }}>
                 <Smartphone size={12} /> Exclusivo do plano Avivamento
               </span>
-              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: 'var(--text-primary)' }}>
+              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#F5FAFF' }}>
                 Sua igreja com{' '}
                 <span style={{ color: 'var(--color-primary)' }}>aplicativo próprio</span>
               </h2>
@@ -908,7 +959,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <p className="text-xs text-[var(--text-tertiary)] italic px-1">
-                  Módulos Volunteer Pro e Ministério Infantil disponíveis como complemento.
+                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro vendidos como módulo Pro.
                 </p>
               </div>
               <div className="px-7 pb-7">
@@ -966,7 +1017,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <p className="text-xs italic px-1" style={{ color: 'rgba(245,250,255,0.35)' }}>
-                  Módulos Volunteer Pro e Ministério Infantil disponíveis como complemento.
+                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro vendidos como módulo Pro.
                 </p>
               </div>
               <div className="px-7 pb-7">
@@ -1008,7 +1059,8 @@ export default function Landing() {
                   <div className="space-y-1.5">
                     {[
                       'Volunteer Pro — escalas e equipes',
-                      'Ministério Infantil (Kids)',
+                      'Kids Pro — ministério infantil',
+                      'Financeiro Pro — financeiro e folha',
                       'Aplicativo próprio da igreja',
                     ].map(d => (
                       <div key={d} className="flex items-center gap-2 text-xs font-medium text-[var(--text-primary)]">
@@ -1049,13 +1101,14 @@ export default function Landing() {
           {/* Addons */}
           <div className="mt-10 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] p-6 lg:p-8">
             <p className="font-semibold text-center mb-6 text-[var(--text-primary)]">
-              Complementos disponíveis nos planos Chamado e Missão
+              Módulos Pro — disponíveis nos planos Chamado e Missão
             </p>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-4 gap-5">
               {[
-                { icon: <UserPlus size={16} strokeWidth={1.75} />,   title: 'Volunteer Pro',       price: 'Sob consulta', desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
-                { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Ministério Infantil', price: 'Sob consulta', desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
-                { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional',   price: 'Sob consulta', desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
+                { icon: <UserPlus size={16} strokeWidth={1.75} />,   title: 'Volunteer Pro',     price: 'Sob consulta',  desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
+                { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Kids Pro',          price: 'Sob consulta',  desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
+                { icon: <DollarSign size={16} strokeWidth={1.75} />,  title: 'Financeiro Pro',    price: 'Sob consulta',  desc: 'Folha, DRE, NF, conciliação e agente financeiro com IA.' },
+                { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional', price: 'R$ 59,90/mês',  desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
               ].map((a, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: 'var(--bg-active)' }}>
                   <span style={{ color: 'var(--color-primary)', marginTop: 2 }}>{a.icon}</span>
@@ -1264,7 +1317,7 @@ export default function Landing() {
               © 2026 Ekthos Church. Feito com fé para a Igreja de Cristo.
             </p>
             <p className="text-xs" style={{ color: 'rgba(249,238,220,0.2)' }}>
-              CNPJ 00.000.000/0001-00 · São Paulo, Brasil
+              F C Abrantes — Conceito Firmado em Tecnologia e Eventos LTDA — 60.940.150/0001-07 — Niterói/RJ
             </p>
           </div>
         </div>

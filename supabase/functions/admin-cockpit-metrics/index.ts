@@ -132,7 +132,7 @@ Deno.serve(async (req: Request) => {
   for (const p of (plansRes.data ?? [])) {
     planMap[p.slug] = {
       plan:  p.price_cents        ?? 0,
-      user:  p.user_price_cents   ?? 2990,
+      user:  p.user_price_cents   ?? 5990,
       agent: p.agent_price_cents  ?? 4990,
     }
   }
@@ -140,7 +140,7 @@ Deno.serve(async (req: Request) => {
   function calcMrrCents(subs: typeof subscriptionsRes.data): number {
     let mrr = 0
     for (const sub of (subs ?? [])) {
-      const prices = planMap[sub.plan_slug ?? ''] ?? { plan: 0, user: 2990, agent: 4990 }
+      const prices = planMap[sub.plan_slug ?? ''] ?? { plan: 0, user: 5990, agent: 4990 }
       const planPrice  = sub.custom_plan_price_cents  ?? prices.plan
       const userPrice  = sub.custom_user_price_cents  ?? prices.user
       const agentPrice = sub.custom_agent_price_cents ?? prices.agent
@@ -184,7 +184,7 @@ Deno.serve(async (req: Request) => {
     const d = new Date(sub.current_period_start)
     const key = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
     if (key in mrrByMonth) {
-      const prices = planMap[sub.plan_slug ?? ''] ?? { plan: 0, user: 2990, agent: 4990 }
+      const prices = planMap[sub.plan_slug ?? ''] ?? { plan: 0, user: 5990, agent: 4990 }
       mrrByMonth[key] += sub.custom_plan_price_cents ?? prices.plan
     }
   }
