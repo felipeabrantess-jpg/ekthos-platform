@@ -46,32 +46,32 @@ function MinistryCard({ ministry, onEdit, onDelete }: MinistryCardProps) {
   const leaderName = ministry.leaders?.people?.name ?? null
 
   return (
-    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <div className="bg-bg-surface rounded-2xl border border-border-default shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-display text-base font-semibold text-ekthos-black truncate">{ministry.name}</h3>
+          <h3 className="font-display text-base font-semibold text-text-primary truncate">{ministry.name}</h3>
           {ministry.description && (
-            <p className="text-sm text-ekthos-black/50 mt-0.5 line-clamp-2">{ministry.description}</p>
+            <p className="text-sm text-text-secondary mt-0.5 line-clamp-2">{ministry.description}</p>
           )}
         </div>
         <Badge label="Ativo" variant="green" />
       </div>
 
-      <div className="text-sm text-ekthos-black/60 space-y-1">
+      <div className="text-sm text-text-secondary space-y-1">
         <div className="flex items-center gap-1.5">
-          <span className="text-ekthos-black/40">Líder:</span>
-          <span className="font-medium text-ekthos-black">{leaderName ?? 'Sem líder'}</span>
+          <span className="text-text-tertiary">Líder:</span>
+          <span className="font-medium text-text-primary">{leaderName ?? 'Sem líder'}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-ekthos-black/40">Voluntários:</span>
-          <span className="font-medium text-ekthos-black">{ministry.volunteer_count ?? 0}</span>
+          <span className="text-text-tertiary">Voluntários:</span>
+          <span className="font-medium text-text-primary">{ministry.volunteer_count ?? 0}</span>
         </div>
       </div>
 
-      <div className="flex gap-2 pt-1 border-t border-cream-dark/40">
+      <div className="flex gap-2 pt-1 border-t border-border-default">
         <button
           onClick={() => onEdit(ministry)}
-          className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+          className="text-xs text-primary hover:text-primary font-medium"
         >
           Editar
         </button>
@@ -148,7 +148,7 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
     <Modal open={open} onClose={onClose} title={editing ? 'Editar Ministério' : 'Novo Ministério'}>
       <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Nome *</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Nome *</label>
           <Input
             value={form.name}
             onChange={(e) => handleChange('name', e.target.value)}
@@ -157,7 +157,7 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Descrição</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Descrição</label>
           <Input
             value={form.description}
             onChange={(e) => handleChange('description', e.target.value)}
@@ -165,13 +165,13 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">ID do Líder (person_id)</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">ID do Líder (person_id)</label>
           <Input
             value={form.leaderPersonId}
             onChange={(e) => handleChange('leaderPersonId', e.target.value)}
             placeholder="UUID da pessoa líder (opcional)"
           />
-          <p className="text-xs text-ekthos-black/40 mt-1">Cole o ID da pessoa cadastrada em Pessoas</p>
+          <p className="text-xs text-text-tertiary mt-1">Cole o ID da pessoa cadastrada em Pessoas</p>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
@@ -219,8 +219,8 @@ export default function Ministerios() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ekthos-black">Ministérios</h1>
-          <p className="text-sm text-ekthos-black/50 mt-1">
+          <h1 className="font-display text-2xl font-bold text-text-primary">Ministérios</h1>
+          <p className="text-sm text-text-secondary mt-1">
             {ministries ? `${ministries.length} ministério${ministries.length !== 1 ? 's' : ''}` : 'Carregando...'}
           </p>
         </div>
@@ -268,15 +268,15 @@ export default function Ministerios() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingMinistry(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-ekthos-black mb-1">Excluir ministério?</h3>
+            <h3 className="font-semibold text-text-primary mb-1">Excluir ministério?</h3>
             <p className="text-sm text-gray-500 mb-1">
-              Você está prestes a excluir <span className="font-semibold text-ekthos-black">{deletingMinistry.name}</span>.
+              Você está prestes a excluir <span className="font-semibold text-text-primary">{deletingMinistry.name}</span>.
             </p>
             <p className="text-xs text-red-500 mb-4">Esta ação é irreversível e removerá o ministério permanentemente.</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setDeletingMinistry(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-cream"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-bg-hover"
               >
                 Cancelar
               </button>

@@ -105,7 +105,7 @@ function MemberCard({ member, isFirst, isLast, onEdit, onRemove, onMoveUp, onMov
         </button>
         <button
           onClick={() => onEdit(member)}
-          className="text-xs text-brand-600 hover:text-brand-700 font-medium px-1"
+          className="text-xs text-primary hover:text-primary font-medium px-1"
         >
           Editar
         </button>

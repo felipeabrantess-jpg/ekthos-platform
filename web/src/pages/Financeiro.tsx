@@ -85,7 +85,7 @@ function CampaignProgress({ campaign, raised }: CampaignProgressProps) {
       </div>
       <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
         <div
-          className="h-full rounded-full bg-brand-500 transition-all"
+          className="h-full rounded-full bg-primary transition-all"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -189,7 +189,7 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
             <select
               value={form.type}
               onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as DonationType }))}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               required
             >
               <option value="dizimo">Dízimo</option>
@@ -215,7 +215,7 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
             <select
               value={form.payment_method}
               onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value as PaymentMethod | '' }))}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">Não informado</option>
               <option value="pix">PIX</option>
@@ -231,7 +231,7 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
             <select
               value={form.status}
               onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as DonationStatus }))}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="pending">Pendente</option>
               <option value="confirmed">Confirmado</option>
