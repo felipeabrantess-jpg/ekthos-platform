@@ -1,24 +1,33 @@
 /**
- * LogoEkthos — logo oficial nova (†Ekthos / CHURCH)
- * Cruz geométrica grossa + wordmark DM Sans 800
- * color="currentColor" adapta qualquer fundo.
+ * LogoEkthos — replica fiel da logo oficial
+ * Cruz estilizada (†) + wordmark Nunito 800 + CHURCH
+ * variant controla cor: 'dark' para fundos claros, 'light' para fundos escuros
  */
+
+type LogoVariant = 'dark' | 'light' | 'primary'
+
+const VARIANT_COLORS: Record<LogoVariant, string> = {
+  dark:    '#07131F',
+  light:   '#FFFFFF',
+  primary: '#29B6FF',
+}
 
 interface LogoEkthosProps {
   height?: number
-  color?: string
+  variant?: LogoVariant
   showChurch?: boolean
   className?: string
 }
 
 export default function LogoEkthos({
   height = 36,
-  color = 'currentColor',
+  variant = 'dark',
   showChurch = true,
   className = '',
 }: LogoEkthosProps) {
-  const VW = 190
-  const VH = showChurch ? 56 : 42
+  const color = VARIANT_COLORS[variant]
+  const VW = 200
+  const VH = showChurch ? 60 : 44
 
   return (
     <svg
@@ -30,22 +39,20 @@ export default function LogoEkthos({
       role="img"
       className={className}
     >
-      {/* ── Cruz — 3 rects sobrepostos ── */}
-      {/* Acento topo (pequeníssimo) */}
-      <rect x="9.5" y="0" width="5" height="6" rx="2.5" fill={color} />
-      {/* Eixo vertical */}
-      <rect x="7"   y="4" width="10" height="38" rx="5" fill={color} />
-      {/* Barra horizontal */}
-      <rect x="0"   y="15" width="24" height="10" rx="5" fill={color} />
+      {/* Cruz estilizada: acento topo + vertical + horizontal */}
+      <line x1="12" y1="3" x2="24" y2="3"
+        stroke={color} strokeWidth="4" strokeLinecap="round" />
+      <line x1="18" y1="0" x2="18" y2="40"
+        stroke={color} strokeWidth="4" strokeLinecap="round" />
+      <line x1="0" y1="14" x2="36" y2="14"
+        stroke={color} strokeWidth="4" strokeLinecap="round" />
 
-      {/* ── Wordmark ── */}
+      {/* Wordmark */}
       <text
-        x="32"
-        y="36"
-        fontFamily="'DM Sans', system-ui, sans-serif"
-        fontSize="36"
+        x="44" y="40"
+        fontFamily="'Nunito', 'Poppins', system-ui, sans-serif"
+        fontSize="40"
         fontWeight="800"
-        letterSpacing="-0.5"
         fill={color}
       >
         Ekthos
@@ -53,14 +60,14 @@ export default function LogoEkthos({
 
       {showChurch && (
         <text
-          x="32"
-          y="52"
-          fontFamily="'DM Sans', system-ui, sans-serif"
+          x="100" y="56"
+          textAnchor="middle"
+          fontFamily="'Nunito', system-ui, sans-serif"
           fontSize="10"
           fontWeight="700"
-          letterSpacing="4.5"
+          letterSpacing="4"
           fill={color}
-          opacity="0.6"
+          opacity="0.75"
         >
           CHURCH
         </text>

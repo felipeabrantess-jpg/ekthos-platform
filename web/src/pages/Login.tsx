@@ -36,7 +36,7 @@ export default function Login() {
       <div className="w-full max-w-sm animate-fade-in-up">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <LogoEkthos height={40} color="var(--text-primary)" showChurch={true} />
+          <LogoEkthos height={40} variant="dark" showChurch={true} />
           <p className="text-sm text-gray-500 mt-3 font-body">
             Plataforma operacional para igrejas
           </p>
