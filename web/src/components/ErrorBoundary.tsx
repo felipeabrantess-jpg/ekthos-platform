@@ -30,12 +30,12 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen flex items-center justify-center bg-bg-primary">
           <div className="bg-white rounded-2xl shadow-sm border border-black/6 p-8 max-w-md w-full text-center">
-            <div className="w-12 h-12 rounded-full bg-[#FDE8E0] flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--badge-erro-bg)' }}>
               <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h2 className="text-lg font-semibold text-[#161616] mb-2">Algo deu errado</h2>
+            <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Algo deu errado</h2>
             <p className="text-sm text-[#5A5A5A] mb-6">
               Ocorreu um erro inesperado. Tente recarregar a página.
             </p>

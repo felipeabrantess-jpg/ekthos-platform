@@ -19,6 +19,7 @@ import {
   CheckCircle2, Lock, ChevronRight, Sparkles,
 } from 'lucide-react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
+import ThemeToggle from '@/components/ThemeToggle'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import { usePlan } from '@/hooks/usePlan'
 import { useChurch, DEFAULT_MODULES } from '@/hooks/useChurch'
@@ -578,7 +579,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
           {activeCategory === 'config'  && <ConfigSubPanel />}
         </nav>
 
-        {/* Rodapé: nome + role */}
+        {/* Rodapé: nome + role + tema */}
         <div className="px-4 py-3 shrink-0" style={{ borderTop: '1px solid var(--border-default)' }}>
           <p className="text-[12px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>
             {displayName}
@@ -588,6 +589,9 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
               {ROLE_LABELS[role]}
             </p>
           )}
+          <div className="mt-2.5 pt-2.5" style={{ borderTop: '1px solid var(--border-default)' }}>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </>
