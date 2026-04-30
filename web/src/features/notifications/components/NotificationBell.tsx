@@ -5,6 +5,7 @@ import NotificationPanel from './NotificationPanel'
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false)
+  const bellRef = useRef<HTMLDivElement>(null)
   const { notifications, loading, unreadCount } = useNotificationsContext()
 
   return (
