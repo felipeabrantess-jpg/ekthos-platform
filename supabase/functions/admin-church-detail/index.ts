@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle()
 
     const basePlan  = sub.custom_plan_price_cents  ?? plan?.price_cents       ?? 0
-    const baseUser  = sub.custom_user_price_cents  ?? plan?.user_price_cents  ?? 2990
+    const baseUser  = sub.custom_user_price_cents  ?? plan?.user_price_cents  ?? 5990
     const baseAgent = sub.custom_agent_price_cents ?? plan?.agent_price_cents ?? 4990
     mrrCents = basePlan
              + (sub.extra_users  ?? 0) * baseUser

@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
       if (created > monthEnd) continue
       // Aproximação: considera ativa se criada antes do fim do mês
       const base = priceMap[sub.plan_slug ?? ''] ?? 0
-      const extras = (sub.extra_users ?? 0) * 2990 + (sub.extra_agents ?? 0) * 4990
+      const extras = (sub.extra_users ?? 0) * 5990 + (sub.extra_agents ?? 0) * 4990
       mrrCents += base + extras
 
       if (created >= monthStart && created <= monthEnd) newCount++
@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
     const slug = sub.plan_slug ?? 'unknown'
     if (!byPlan[slug]) byPlan[slug] = { name: nameMap[slug] ?? slug, count: 0, mrr_cents: 0 }
     byPlan[slug].count++
-    byPlan[slug].mrr_cents += (priceMap[slug] ?? 0) + (sub.extra_users ?? 0) * 2990 + (sub.extra_agents ?? 0) * 4990
+    byPlan[slug].mrr_cents += (priceMap[slug] ?? 0) + (sub.extra_users ?? 0) * 5990 + (sub.extra_agents ?? 0) * 4990
   }
 
   // ── MRR / ARR atuais ──────────────────────────────────
