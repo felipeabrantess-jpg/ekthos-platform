@@ -100,7 +100,7 @@ function CreateScheduleModal({ open, onClose, churchId, ministries }: CreateSche
           <select
             value={form.ministry_id}
             onChange={(e) => setForm((p) => ({ ...p, ministry_id: e.target.value }))}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             required
           >
             <option value="">Selecionar...</option>
@@ -192,7 +192,7 @@ function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }:
           <select
             value={volunteerId}
             onChange={(e) => setVolunteerId(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             required
           >
             <option value="">Selecionar voluntário...</option>
@@ -238,7 +238,7 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
         </p>
         <button
           onClick={() => setAddOpen(true)}
-          className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+          className="text-xs text-primary hover:text-primary font-medium"
         >
           + Adicionar
         </button>
@@ -343,7 +343,7 @@ export default function Escalas() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => toggleExpand(s.id)}
-                          className="text-sm font-medium text-gray-900 hover:text-brand-600 text-left"
+                          className="text-sm font-medium text-gray-900 hover:text-primary text-left"
                         >
                           {s.event_name}
                         </button>
@@ -363,7 +363,7 @@ export default function Escalas() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => toggleExpand(s.id)}
-                            className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+                            className="text-xs text-primary hover:text-primary font-medium"
                           >
                             {expandedId === s.id ? 'Fechar' : 'Ver'}
                           </button>

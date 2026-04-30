@@ -100,29 +100,29 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
     <Modal open={open} onClose={onClose} title={editing ? 'Editar Célula' : 'Nova Célula'}>
       <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Nome *</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Nome *</label>
           <Input value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="Nome da célula" required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Descrição</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Descrição</label>
           <Input value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Breve descrição" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Dia da reunião</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Dia da reunião</label>
             <Input value={form.meeting_day} onChange={(e) => handleChange('meeting_day', e.target.value)} placeholder="Ex: Quinta-feira" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Horário</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Horário</label>
             <Input value={form.meeting_time} onChange={(e) => handleChange('meeting_time', e.target.value)} placeholder="Ex: 19:30" />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Local</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Local</label>
           <Input value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="Endereço ou nome do local" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Observações</label>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Observações</label>
           <Input value={form.notes} onChange={(e) => handleChange('notes', e.target.value)} placeholder="Informações adicionais" />
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -191,32 +191,32 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
     <div className="fixed inset-0 z-40 flex">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
       <div className="relative ml-auto w-full max-w-md bg-white h-full shadow-xl flex flex-col overflow-hidden">
-        <div className="px-6 py-4 border-b border-cream-dark/50 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-border-default flex items-center justify-between">
           <div>
-            <h2 className="font-display text-lg font-semibold text-ekthos-black">{group.name}</h2>
+            <h2 className="font-display text-lg font-semibold text-text-primary">{group.name}</h2>
             {group.meeting_day && (
-              <p className="text-sm text-ekthos-black/50">
+              <p className="text-sm text-text-secondary">
                 {group.meeting_day}{group.meeting_time ? ` às ${group.meeting_time}` : ''}{group.location ? ` — ${group.location}` : ''}
               </p>
             )}
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/40 transition-all">
+          <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-bg-hover transition-all">
             <X size={18} strokeWidth={1.75} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-ekthos-black mb-3">Membros</h3>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Membros</h3>
             {membersLoading ? <Spinner size="sm" /> : (members ?? []).length === 0 ? (
-              <p className="text-sm text-ekthos-black/40">Nenhum membro cadastrado ainda.</p>
+              <p className="text-sm text-text-tertiary">Nenhum membro cadastrado ainda.</p>
             ) : (
               <ul className="space-y-2">
                 {(members ?? []).map((m: any) => (
-                  <li key={m.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-cream-dark/30">
+                  <li key={m.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-bg-hover">
                     <div>
-                      <p className="text-sm font-medium text-ekthos-black">{m.people?.name ?? m.person_id}</p>
-                      <p className="text-xs text-ekthos-black/40 capitalize">{m.role}</p>
+                      <p className="text-sm font-medium text-text-primary">{m.people?.name ?? m.person_id}</p>
+                      <p className="text-xs text-text-tertiary capitalize">{m.role}</p>
                     </div>
                     <button onClick={() => void removeMember.mutateAsync({ id: m.id, group_id: group.id })} className="text-xs text-red-400 hover:text-red-600">
                       Remover
@@ -233,20 +233,20 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-ekthos-black mb-3">Reuniões Recentes</h3>
+            <h3 className="text-sm font-semibold text-text-primary mb-3">Reuniões Recentes</h3>
             {meetingsLoading ? <Spinner size="sm" /> : (meetings ?? []).length === 0 ? (
-              <p className="text-sm text-ekthos-black/40">Nenhuma reunião registrada.</p>
+              <p className="text-sm text-text-tertiary">Nenhuma reunião registrada.</p>
             ) : (
               <ul className="space-y-2">
                 {(meetings ?? []).slice(0, 5).map((m: CellMeeting) => (
-                  <li key={m.id} className="py-1.5 px-3 rounded-lg bg-cream-dark/30 text-sm">
+                  <li key={m.id} className="py-1.5 px-3 rounded-lg bg-bg-hover text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-ekthos-black">
+                      <span className="font-medium text-text-primary">
                         {new Date(m.meeting_date + 'T00:00:00').toLocaleDateString('pt-BR')}
                       </span>
-                      <span className="text-xs text-ekthos-black/40">{m.visitors_count} visitante{m.visitors_count !== 1 ? 's' : ''}</span>
+                      <span className="text-xs text-text-tertiary">{m.visitors_count} visitante{m.visitors_count !== 1 ? 's' : ''}</span>
                     </div>
-                    {m.theme && <p className="text-xs text-ekthos-black/50 mt-0.5">{m.theme}</p>}
+                    {m.theme && <p className="text-xs text-text-secondary mt-0.5">{m.theme}</p>}
                   </li>
                 ))}
               </ul>
@@ -278,20 +278,20 @@ function GroupCard({ group, onEdit, onView, onDelete }: GroupCardProps) {
   const statusLabel = group.status === 'active' ? 'Ativa' : 'Inativa'
 
   return (
-    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <div className="bg-bg-surface rounded-2xl border border-border-default shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <h3 className="font-display text-base font-semibold text-ekthos-black truncate">{group.name}</h3>
-          {group.description && <p className="text-sm text-ekthos-black/50 mt-0.5 line-clamp-2">{group.description}</p>}
+          <h3 className="font-display text-base font-semibold text-text-primary truncate">{group.name}</h3>
+          {group.description && <p className="text-sm text-text-secondary mt-0.5 line-clamp-2">{group.description}</p>}
         </div>
         <Badge label={statusLabel} variant={statusColor as 'green' | 'gray'} />
       </div>
 
       {(group.meeting_day || group.location) && (
-        <div className="text-sm text-ekthos-black/60 space-y-0.5">
+        <div className="text-sm text-text-secondary space-y-0.5">
           {group.meeting_day && (
             <div className="flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 text-ekthos-black/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3.5 w-3.5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <span>{group.meeting_day}{group.meeting_time ? ` às ${group.meeting_time}` : ''}</span>
@@ -299,7 +299,7 @@ function GroupCard({ group, onEdit, onView, onDelete }: GroupCardProps) {
           )}
           {group.location && (
             <div className="flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 text-ekthos-black/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3.5 w-3.5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -309,9 +309,9 @@ function GroupCard({ group, onEdit, onView, onDelete }: GroupCardProps) {
         </div>
       )}
 
-      <div className="flex gap-2 pt-1 border-t border-cream-dark/40">
-        <button onClick={() => onView(group)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">Ver detalhes</button>
-        <button onClick={() => onEdit(group)} className="text-xs text-ekthos-black/50 hover:text-ekthos-black/80 font-medium">Editar</button>
+      <div className="flex gap-2 pt-1 border-t border-border-default">
+        <button onClick={() => onView(group)} className="text-xs text-primary hover:text-primary font-medium">Ver detalhes</button>
+        <button onClick={() => onEdit(group)} className="text-xs text-text-secondary hover:text-text-primary font-medium">Editar</button>
         <button onClick={() => onDelete(group)} className="ml-auto text-xs text-red-400 hover:text-red-600 font-medium">Excluir</button>
       </div>
     </div>
@@ -324,33 +324,33 @@ function ListaTab({ groups, onEdit, onView, onDelete }: { groups: Group[]; onEdi
     return <EmptyState title="Nenhuma célula cadastrada" description="Crie a primeira célula pelo botão 'Nova Célula'." />
   }
   return (
-    <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+    <div className="bg-bg-surface rounded-2xl border border-border-default shadow-sm overflow-hidden">
       <table className="w-full text-left">
         <thead>
-          <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
-            <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Nome</th>
-            <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Dia / Horário</th>
-            <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Local</th>
-            <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Status</th>
-            <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Ações</th>
+          <tr className="bg-bg-hover border-b border-border-default">
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Dia / Horário</th>
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Local</th>
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Status</th>
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-cream-dark/40">
+        <tbody className="divide-y divide-border-default">
           {groups.map(g => (
-            <tr key={g.id} className="hover:bg-cream-dark/20 transition-colors cursor-pointer" onClick={() => onView(g)}>
+            <tr key={g.id} className="hover:bg-bg-hover transition-colors cursor-pointer" onClick={() => onView(g)}>
               <td className="px-4 py-3">
-                <p className="text-sm font-medium text-ekthos-black">{g.name}</p>
-                {g.description && <p className="text-xs text-ekthos-black/40 truncate max-w-xs">{g.description}</p>}
+                <p className="text-sm font-medium text-text-primary">{g.name}</p>
+                {g.description && <p className="text-xs text-text-tertiary truncate max-w-xs">{g.description}</p>}
               </td>
-              <td className="px-4 py-3 text-sm text-ekthos-black/60">
+              <td className="px-4 py-3 text-sm text-text-secondary">
                 {g.meeting_day ? `${g.meeting_day}${g.meeting_time ? ` às ${g.meeting_time}` : ''}` : '—'}
               </td>
-              <td className="px-4 py-3 text-sm text-ekthos-black/60">{g.location ?? '—'}</td>
+              <td className="px-4 py-3 text-sm text-text-secondary">{g.location ?? '—'}</td>
               <td className="px-4 py-3">
                 <Badge label={g.status === 'active' ? 'Ativa' : 'Inativa'} variant={g.status === 'active' ? 'green' : 'gray'} />
               </td>
               <td className="px-4 py-3 flex gap-3" onClick={e => e.stopPropagation()}>
-                <button onClick={() => onEdit(g)} className="text-xs text-brand-600 hover:text-brand-700 font-medium">Editar</button>
+                <button onClick={() => onEdit(g)} className="text-xs text-primary hover:text-primary font-medium">Editar</button>
                 <button onClick={() => onDelete(g)} className="text-xs text-red-400 hover:text-red-600 font-medium">Excluir</button>
               </td>
             </tr>
@@ -369,7 +369,7 @@ function RelatoriosTab({ groups }: { groups: Group[] }) {
 
   if (groups.length === 0) {
     return (
-      <div className="text-center py-16 text-ekthos-black/40">
+      <div className="text-center py-16 text-text-tertiary">
         <p className="text-sm">Cadastre células para acessar os relatórios.</p>
       </div>
     )
@@ -379,11 +379,11 @@ function RelatoriosTab({ groups }: { groups: Group[] }) {
     <div className="space-y-4">
       {/* Seletor de célula */}
       <div className="flex gap-2 items-center flex-wrap">
-        <span className="text-sm text-ekthos-black/50 shrink-0">Célula:</span>
+        <span className="text-sm text-text-secondary shrink-0">Célula:</span>
         <select
           value={selectedGroupId ?? ''}
           onChange={e => setSelectedGroupId(e.target.value)}
-          className="flex-1 min-w-0 max-w-xs rounded-xl border border-black/10 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+          className="flex-1 min-w-0 max-w-xs rounded-xl border border-black/10 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
         >
           {groups.map(g => (
             <option key={g.id} value={g.id}>{g.name}</option>
@@ -430,8 +430,8 @@ export default function Celulas() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold text-ekthos-black">Células</h1>
-          <p className="text-sm text-ekthos-black/50 mt-1">
+          <h1 className="font-display text-2xl font-bold text-text-primary">Células</h1>
+          <p className="text-sm text-text-secondary mt-1">
             {groups
               ? `${activeGroups.length} ativa${activeGroups.length !== 1 ? 's' : ''}${inactiveGroups.length > 0 ? ` · ${inactiveGroups.length} inativa${inactiveGroups.length !== 1 ? 's' : ''}` : ''}`
               : 'Carregando...'}
@@ -441,15 +441,15 @@ export default function Celulas() {
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────── */}
-      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2">
+      <div className="flex gap-1 border-b border-border-default -mb-2">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-brand-600 text-brand-700'
-                : 'border-transparent text-ekthos-black/50 hover:text-ekthos-black/80 hover:border-cream-dark'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-secondary hover:text-text-primary hover:border-border-default'
             }`}
           >
             {tab.label}
@@ -478,7 +478,7 @@ export default function Celulas() {
           <div className="space-y-6">
             {activeGroups.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Ativas</h2>
+                <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Ativas</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {activeGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
                 </div>
@@ -486,7 +486,7 @@ export default function Celulas() {
             )}
             {inactiveGroups.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Inativas</h2>
+                <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Inativas</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {inactiveGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
                 </div>
@@ -513,15 +513,15 @@ export default function Celulas() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingGroup(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-            <h3 className="font-semibold text-ekthos-black mb-1">Excluir célula?</h3>
+            <h3 className="font-semibold text-text-primary mb-1">Excluir célula?</h3>
             <p className="text-sm text-gray-500 mb-1">
-              Você está prestes a excluir <span className="font-semibold text-ekthos-black">{deletingGroup.name}</span>.
+              Você está prestes a excluir <span className="font-semibold text-text-primary">{deletingGroup.name}</span>.
             </p>
             <p className="text-xs text-red-500 mb-4">Esta ação é irreversível. Membros e reuniões vinculados serão desvinculados.</p>
             <div className="flex gap-2">
               <button
                 onClick={() => setDeletingGroup(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-cream"
+                className="flex-1 px-4 py-2.5 rounded-xl border border-black/10 text-sm font-medium hover:bg-bg-hover"
               >
                 Cancelar
               </button>

@@ -121,12 +121,12 @@ function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
             {(person.name ?? '?').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-ekthos-black truncate">{person.name ?? '—'}</p>
+            <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? '—'}</p>
             {person.email && (
-              <p className="text-xs text-ekthos-black/50 truncate mt-0.5">{person.email}</p>
+              <p className="text-xs text-text-secondary truncate mt-0.5">{person.email}</p>
             )}
             {person.phone && (
-              <p className="text-xs text-ekthos-black/40 mt-0.5">{formatPhone(person.phone)}</p>
+              <p className="text-xs text-text-tertiary mt-0.5">{formatPhone(person.phone)}</p>
             )}
           </div>
         </div>
@@ -137,7 +137,7 @@ function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(person) }}
-            className="p-2 rounded-lg text-ekthos-black/30 active:text-primary-text active:bg-bg-hover transition-all"
+            className="p-2 rounded-lg text-text-tertiary active:text-primary-text active:bg-bg-hover transition-all"
             title="Editar"
           >
             <Pencil size={15} strokeWidth={1.75} />
@@ -167,20 +167,20 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
     >
       <td className="px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-ekthos-black">{person.name ?? '—'}</p>
+          <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
           {person.email && (
-            <p className="text-xs text-ekthos-black/50">{person.email}</p>
+            <p className="text-xs text-text-secondary">{person.email}</p>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-ekthos-black/60">
+      <td className="px-4 py-3 text-sm text-text-secondary">
         {formatPhone(person.phone)}
       </td>
       <td className="px-4 py-3">
         {stage ? (
           <Badge label={stage.name} variant={stageToBadgeVariant(stage.slug)} />
         ) : (
-          <span className="text-xs text-ekthos-black/30">Sem stage</span>
+          <span className="text-xs text-text-tertiary">Sem stage</span>
         )}
       </td>
       <td className="px-4 py-3">
@@ -191,11 +191,11 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
             </span>
           ))}
           {person.tags.length > 3 && (
-            <span className="text-xs text-ekthos-black/40">+{person.tags.length - 3}</span>
+            <span className="text-xs text-text-tertiary">+{person.tags.length - 3}</span>
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-ekthos-black/50">
+      <td className="px-4 py-3 text-sm text-text-secondary">
         {formatDate(person.created_at)}
       </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
@@ -203,14 +203,14 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
           <button
             onClick={() => onEdit(person)}
             title="Editar"
-            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-primary-text hover:bg-bg-hover transition-all"
+            className="p-1.5 rounded-lg text-text-tertiary hover:text-primary-text hover:bg-bg-hover transition-all"
           >
             <Pencil size={14} strokeWidth={1.75} />
           </button>
           <button
             onClick={() => onDelete(person)}
             title="Remover"
-            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-red-600 hover:bg-red-50 transition-all"
+            className="p-1.5 rounded-lg text-text-tertiary hover:text-red-600 hover:bg-red-50 transition-all"
           >
             <Trash2 size={14} strokeWidth={1.75} />
           </button>
@@ -268,8 +268,8 @@ export default function People() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Pessoas</h1>
-          <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">
+          <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
+          <p className="text-xs md:text-sm text-text-secondary mt-1">
             {people ? `${allPeople.length} cadastradas` : 'Carregando...'}
           </p>
         </div>
@@ -296,7 +296,7 @@ export default function People() {
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
-                : 'border-transparent text-ekthos-black/50 active:text-ekthos-black/80'
+                : 'border-transparent text-text-secondary active:text-text-primary'
             }`}
           >
             {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
@@ -305,7 +305,7 @@ export default function People() {
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
                 activeTab === tab.id
                   ? 'bg-bg-hover text-primary-text'
-                  : 'bg-bg-hover text-ekthos-black/40'
+                  : 'bg-bg-hover text-text-tertiary'
               }`}>
                 {applyTabFilter(tab.id, allPeople).length}
               </span>
@@ -361,15 +361,15 @@ export default function People() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-bg-hover border-b border-border-default">
-                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Nome</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Telefone</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Stage</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Tags</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Cadastro</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Ações</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Stage</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tags</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-cream-dark/40">
+                <tbody className="divide-y divide-border-default">
                   {filteredPeople.map((person) => (
                     <PersonRow
                       key={person.id}

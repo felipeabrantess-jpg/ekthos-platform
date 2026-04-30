@@ -38,7 +38,7 @@ interface LogoConfirmState {
 // ── Constantes ─────────────────────────────────────────────
 
 const COLOR_PALETTES: ColorPaletteOption[] = [
-  { label: 'Fogo e Paixão',          primary: 'var(--color-primary)', secondary: '#670000', emoji: '🔥' },
+  { label: 'Fogo e Paixão',          primary: 'var(--color-primary)', secondary: 'var(--ekthos-wine)', emoji: '🔥' },
   { label: 'Céu e Mar',              primary: '#2563EB', secondary: '#1E3A5F', emoji: '🌊' },
   { label: 'Vida e Esperança',        primary: '#059669', secondary: '#064E3B', emoji: '🌿' },
   { label: 'Realeza e Unção',        primary: '#7C3AED', secondary: '#4C1D95', emoji: '👑' },
@@ -86,7 +86,7 @@ async function extractDominantColors(file: File): Promise<{ primary: string; sec
           toHex(Math.round(r * factor), Math.round(g * factor), Math.round(b * factor))
 
         if (buckets.length === 0) {
-          resolve({ primary: 'var(--color-primary)', secondary: '#670000' })
+          resolve({ primary: 'var(--color-primary)', secondary: 'var(--ekthos-wine)' })
         } else {
           const top = buckets[0]
           resolve({
@@ -95,12 +95,12 @@ async function extractDominantColors(file: File): Promise<{ primary: string; sec
           })
         }
       } catch {
-        resolve({ primary: 'var(--color-primary)', secondary: '#670000' })
+        resolve({ primary: 'var(--color-primary)', secondary: 'var(--ekthos-wine)' })
       } finally {
         URL.revokeObjectURL(url)
       }
     }
-    img.onerror = () => { URL.revokeObjectURL(url); resolve({ primary: 'var(--color-primary)', secondary: '#670000' }) }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve({ primary: 'var(--color-primary)', secondary: 'var(--ekthos-wine)' }) }
     img.src = url
   })
 }
@@ -342,7 +342,7 @@ function ColorConfirmWidget({
 }) {
   return (
     <div className="px-5 py-4 bg-white border-t border-black/[0.06] space-y-3">
-      <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: '#F9EEDC' }}>
+      <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-surface)' }}>
         <img src={logoUrl} alt="Logo enviado" className="h-10 w-auto object-contain rounded shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-gray-700 mb-1">Cores extraídas do logo</p>
@@ -365,7 +365,7 @@ function ColorConfirmWidget({
         <button
           onClick={onChooseOther}
           className="flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all hover:border-gray-400"
-          style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
+          style={{ borderColor: '#E8E8E8', color: 'var(--text-secondary)', background: '#FAFAFA' }}
         >
           Escolher outra paleta
         </button>
@@ -484,7 +484,7 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
           {widget.options.map(opt => (
             <button key={opt} onClick={() => onSelect(opt)}
               className="text-sm px-4 py-2 rounded-xl border font-medium transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
-              style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}>
+              style={{ borderColor: '#E8E8E8', color: 'var(--text-secondary)', background: '#FAFAFA' }}>
               {opt}
             </button>
           ))}
@@ -506,7 +506,7 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
               className="text-sm px-3.5 py-1.5 rounded-full border font-medium transition-all"
               style={{
                 background:  selected.includes(opt) ? 'var(--color-primary)' : '#FAFAFA',
-                color:       selected.includes(opt) ? 'white' : '#5A5A5A',
+                color:       selected.includes(opt) ? 'white' : 'var(--text-secondary)',
                 borderColor: selected.includes(opt) ? 'var(--color-primary)' : '#E8E8E8',
               }}>
               {opt}
@@ -821,7 +821,7 @@ export default function Onboarding() {
   const showingNormalWidget  = !logoConfirm && !!currentWidget
 
   return (
-    <div className="h-screen flex flex-col" style={{ background: '#F9EEDC' }}>
+    <div className="h-screen flex flex-col" style={{ background: 'var(--bg-surface)' }}>
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-black/[0.06] shrink-0">
@@ -946,7 +946,7 @@ export default function Onboarding() {
 
         {/* Preview lateral */}
         <div className="w-72 border-l border-black/[0.06] hidden lg:block overflow-y-auto"
-          style={{ background: '#F9EEDC' }}>
+          style={{ background: 'var(--bg-surface)' }}>
           <OnboardingPreview preview={preview} />
         </div>
       </div>

@@ -51,8 +51,8 @@ function relativeDate(iso: string | null): string {
 function SectionTitle({ title, sub }: { title: string; sub?: string }) {
   return (
     <div className="mb-4">
-      <h2 className="font-display text-xl font-semibold text-ekthos-black">{title}</h2>
-      {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
+      <h2 className="font-display text-xl font-semibold text-text-primary">{title}</h2>
+      {sub && <p className="text-xs text-text-tertiary mt-0.5">{sub}</p>}
     </div>
   )
 }
@@ -73,11 +73,11 @@ function MetricCard({
     green:   'border-success/20',
     yellow:  'border-warning/20',
     red:     'border-border-default',
-    purple:  'border-wine/20',
+    purple:  'border-border-default',
     blue:    'border-border-default',
   }
   const valueColorMap = {
-    default: 'text-ekthos-black',
+    default: 'text-text-primary',
     green:   'text-success',
     yellow:  'text-warning',
     red:     'text-primary-text',
@@ -91,11 +91,11 @@ function MetricCard({
   return (
     <div className={`bg-bg-primary rounded-2xl border p-5 shadow-sm ${borderClass}`}>
       <div className="flex items-start justify-between">
-        <p className="text-xs font-medium leading-tight text-ekthos-black/50">
+        <p className="text-xs font-medium leading-tight text-text-secondary">
           {label}
         </p>
         {icon && (
-          <span className={`${alert ? 'text-primary-text' : 'text-ekthos-black/20'}`}>
+          <span className={`${alert ? 'text-primary-text' : 'text-text-tertiary'}`}>
             {icon}
           </span>
         )}
@@ -104,10 +104,10 @@ function MetricCard({
         {value}
       </p>
       <div className="mt-2 flex items-center gap-2 flex-wrap">
-        {sub && <span className="text-xs text-ekthos-black/40">{sub}</span>}
+        {sub && <span className="text-xs text-text-tertiary">{sub}</span>}
         {meta && (
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            alert ? 'bg-bg-hover text-primary-text' : 'bg-bg-hover text-ekthos-black/60'
+            alert ? 'bg-bg-hover text-primary-text' : 'bg-bg-hover text-text-secondary'
           }`}>
             {meta}
           </span>
@@ -166,22 +166,22 @@ function AlertaTable<T extends Record<string, unknown>>({
   return (
     <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm">
       <div className="px-5 py-4 border-b border-border-default">
-        <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
-        {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
+        <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+        {sub && <p className="text-xs text-text-tertiary mt-0.5">{sub}</p>}
       </div>
       {data.length === 0 ? (
-        <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-ekthos-black/40">
+        <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-text-tertiary">
           <CheckCircle size={16} strokeWidth={1.75} className="text-success shrink-0" />
           {empty ?? 'Nenhum registro'}
         </div>
       ) : (
-        <div className="divide-y divide-cream-dark/40">
+        <div className="divide-y divide-border-default">
           {data.map((row, i) => (
             <div key={i} className="px-5 py-3 flex items-center gap-3">
               {columns.map(col => (
                 <div key={String(col.key)} className="flex-1 min-w-0">
                   {col.render ? col.render(row[col.key], row) : (
-                    <span className="text-sm text-ekthos-black/70 truncate block">{String(row[col.key] ?? '-')}</span>
+                    <span className="text-sm text-text-primary/70 truncate block">{String(row[col.key] ?? '-')}</span>
                   )}
                 </div>
               ))}
@@ -202,8 +202,8 @@ function ChartCard({ title, sub, children, height = 220 }: {
   return (
     <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm">
       <div className="px-5 py-4 border-b border-border-default">
-        <h3 className="text-sm font-semibold text-ekthos-black">{title}</h3>
-        {sub && <p className="text-xs text-ekthos-black/40 mt-0.5">{sub}</p>}
+        <h3 className="text-sm font-semibold text-text-primary">{title}</h3>
+        {sub && <p className="text-xs text-text-tertiary mt-0.5">{sub}</p>}
       </div>
       <div className="p-4" style={{ height }}>
         {children}
@@ -275,10 +275,10 @@ export default function Dashboard() {
 
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl md:text-3xl font-bold text-ekthos-black">
+        <h1 className="font-display text-2xl md:text-3xl font-bold text-text-primary">
           Dashboard Pastoral
         </h1>
-        <p className="text-xs md:text-sm text-ekthos-black/40 mt-1 capitalize">{now}</p>
+        <p className="text-xs md:text-sm text-text-tertiary mt-1 capitalize">{now}</p>
       </div>
 
       {/* Alerta critico */}
@@ -385,7 +385,7 @@ export default function Dashboard() {
                   ? Math.round((count / consolidacao.totalPeople) * 100)
                   : 0
                 const colors = STAGE_PILL_COLORS[stage] ?? {
-                  bg: 'bg-bg-hover', text: 'text-ekthos-black/50', bar: '#EDE0CC',
+                  bg: 'bg-bg-hover', text: 'text-text-secondary', bar: 'var(--border-default)',
                 }
                 return (
                   <div key={stage} className="flex items-center gap-3">
@@ -396,7 +396,7 @@ export default function Dashboard() {
                         style={{ width: `${pct}%`, background: colors.bar }}
                       />
                     </div>
-                    <span className="text-xs font-mono-ekthos text-ekthos-black/50 w-8 text-right shrink-0">
+                    <span className="text-xs font-mono-ekthos text-text-secondary w-8 text-right shrink-0">
                       {count}
                     </span>
                   </div>
@@ -565,7 +565,7 @@ export default function Dashboard() {
               {
                 label: 'Nome',
                 key: 'nome',
-                render: (v) => <span className="text-sm font-medium text-ekthos-black">{String(v)}</span>,
+                render: (v) => <span className="text-sm font-medium text-text-primary">{String(v)}</span>,
               },
               {
                 label: 'Estágio',
@@ -597,7 +597,7 @@ export default function Dashboard() {
               {
                 label: 'Célula',
                 key: 'name',
-                render: (v) => <span className="text-sm font-medium text-ekthos-black">{String(v)}</span>,
+                render: (v) => <span className="text-sm font-medium text-text-primary">{String(v)}</span>,
               },
               {
                 label: 'Membros',

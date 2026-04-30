@@ -105,7 +105,7 @@ function AddVolunteerModal({ open, onClose, churchId, ministries, defaultMinistr
           <select
             value={form.ministryId}
             onChange={(e) => setForm((p) => ({ ...p, ministryId: e.target.value }))}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             required
           >
             <option value="">Selecionar ministério...</option>
@@ -140,8 +140,8 @@ function AddVolunteerModal({ open, onClose, churchId, ministries, defaultMinistr
                 onClick={() => toggleDay(day)}
                 className={`px-3 py-1.5 text-xs rounded-full border font-medium transition-colors ${
                   form.availabilityDays.includes(day)
-                    ? 'bg-brand-600 text-white border-brand-600'
-                    : 'bg-white text-gray-600 border-gray-300 hover:border-brand-400'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-primary'
                 }`}
               >
                 {day}
@@ -154,7 +154,7 @@ function AddVolunteerModal({ open, onClose, churchId, ministries, defaultMinistr
           <select
             value={form.period}
             onChange={(e) => setForm((p) => ({ ...p, period: e.target.value }))}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">Qualquer</option>
             <option value="manha">Manhã</option>
@@ -260,7 +260,7 @@ export default function Voluntarios() {
         <select
           value={selectedMinistryId}
           onChange={(e) => setSelectedMinistryId(e.target.value)}
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
         >
           <option value="">Todos os ministérios</option>
           {(ministries ?? []).map((m) => (
