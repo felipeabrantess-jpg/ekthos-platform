@@ -351,7 +351,7 @@ export default function Landing() {
         style={{ background: 'rgba(7,19,31,0.92)', borderColor: 'var(--border-default)' }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center shrink-0">
-            <LogoEkthos height={28} color="var(--text-primary)" showChurch={true} />
+            <LogoEkthos height={28} variant="light" showChurch={true} />
           </a>
 
           <nav className="hidden md:flex items-center gap-7">
@@ -1211,17 +1211,8 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
-              <div className="mb-4 flex items-center gap-3">
-                {/* Cruz no footer — canal duplo em branco */}
-                <svg width="38" height="38" viewBox="0 0 40 40" fill="none" aria-hidden>
-                  <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z"
-                    stroke="rgba(245,250,255,0.9)" strokeWidth="2.5" strokeLinejoin="round"/>
-                  <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
-                    stroke="rgba(245,250,255,0.5)" strokeWidth="1.5" strokeLinejoin="round"/>
-                </svg>
-                <span className="font-display text-2xl font-bold text-white tracking-tight">
-                  Ekthos <span style={{ color: 'var(--color-primary)' }}>Church</span>
-                </span>
+              <div className="mb-4">
+                <LogoEkthos variant="light" height={36} showChurch={true} />
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.45)' }}>
                 CRM pastoral com inteligência artificial para igrejas que querem cuidar melhor da sua comunidade.
