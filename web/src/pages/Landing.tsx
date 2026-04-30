@@ -344,7 +344,7 @@ export default function Landing() {
   const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%21+Quero+conhecer+o+Ekthos+Church`
 
   return (
-    <div className="dark min-h-screen font-body antialiased overflow-x-hidden" style={{ background: '#07131F', color: 'var(--text-primary)' }}>
+    <div className="min-h-screen font-body antialiased overflow-x-hidden bg-white text-[#07131F]">
 
       {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
       <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md border-b ${scrolled ? 'shadow-md' : ''}`}
