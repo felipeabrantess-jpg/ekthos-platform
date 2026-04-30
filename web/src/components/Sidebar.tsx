@@ -52,9 +52,10 @@ interface RailProps {
   churchLogoUrl?: string
   churchName?: string
   onLogout: () => void
+  userInitial?: string
 }
 
-function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout }: RailProps) {
+function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, userInitial }: RailProps) {
   return (
     <div
       className="flex flex-col h-full shrink-0"
@@ -130,11 +131,15 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout }: 
         })}
       </nav>
 
-      {/* Rodapé: logout */}
-      <div
-        className="flex flex-col items-center gap-2 pb-3 pt-3"
-        style={{ borderTop: '1px solid var(--border-default)' }}
-      >
+      {/* Rodapé: avatar + logout */}
+      <div className="flex flex-col items-center gap-2 pb-3 border-t border-white/[0.04] pt-3">
+        <div
+          className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
+          style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
+          title="Perfil"
+        >
+          {userInitial}
+        </div>
         <button
           onClick={onLogout}
           className="flex items-center justify-center rounded-lg transition-all"
@@ -509,6 +514,8 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     (user?.user_metadata?.name  as string | undefined) ??
     user?.email?.split('@')[0] ?? 'Usuário'
 
+  const userInitial = displayName.charAt(0).toUpperCase()
+
   const SUBPANEL_HEADER: Record<Category, string> = {
     igreja:  church?.name ?? 'Igreja',
     agentes: 'Agentes IA',
@@ -525,6 +532,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
         churchLogoUrl={church?.logo_url ?? undefined}
         churchName={church?.name ?? undefined}
         onLogout={handleLogout}
+        userInitial={userInitial}
       />
 
       {/* Sub-painel 240px */}

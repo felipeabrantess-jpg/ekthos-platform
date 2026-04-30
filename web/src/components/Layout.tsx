@@ -78,27 +78,24 @@ export default function Layout() {
 
   return (
     <NotificationsProvider>
+      {/* flex ROW: sidebar esquerda | coluna de conteúdo direita */}
       <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
-        {/* Mobile: fixed top header */}
-        <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
-
-        {/* Sidebar esquerda */}
         <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-        {/* Coluna direita: AppHeader + conteúdo */}
-        <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Coluna de conteúdo: topbar + main */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile: header fixo (hamburger + nome da igreja + sino) */}
+          <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+
           {impersonating && (
             <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
           )}
 
-          {/* AppHeader desktop (sino + ThemeToggle + avatar) */}
+          {/* Desktop: topbar (sino + avatar) — ACIMA do main, fora do overflow-y-auto */}
           <AppHeader />
 
-          {/* Main content — pt-14 mobile para limpar MobileHeader fixo */}
-          <main
-            className="flex-1 overflow-y-auto pt-14 md:pt-0"
-            style={{ background: 'var(--bg-primary)' }}
-          >
+          {/* Conteúdo — pt-14 mobile (clear do MobileHeader fixo), pt-0 desktop */}
+          <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: 'var(--bg-primary)' }}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
               <Outlet />
             </div>

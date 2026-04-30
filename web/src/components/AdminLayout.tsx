@@ -19,7 +19,7 @@ export default function AdminLayout() {
   const logout = useLogout()
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#f9eedc' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)' }}>
       {/* Banner vermelho admin */}
       <div
         className="w-full flex items-center justify-between px-6 py-2.5 shrink-0"
@@ -46,7 +46,7 @@ export default function AdminLayout() {
         {/* Sidebar admin */}
         <aside
           className="w-52 shrink-0 flex flex-col py-6 px-3 gap-1"
-          style={{ background: '#161616' }}
+          style={{ background: 'var(--bg-sidebar)' }}
         >
           <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-3 mb-2">
             Navegação

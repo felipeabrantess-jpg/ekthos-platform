@@ -99,18 +99,18 @@ export default function Cancelled() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: '#f9eedc' }}
+      style={{ background: 'var(--bg-primary)' }}
     >
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center space-y-5">
         {/* Ícone */}
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: '#67000015' }}
+            style={{ background: 'var(--bg-hover)' }}
           >
             <svg
               className="w-8 h-8"
-              style={{ color: '#670000' }}
+              style={{ color: 'var(--text-primary)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -152,8 +152,8 @@ export default function Cancelled() {
             <div
               className="mt-3 px-4 py-2 rounded-lg text-xs font-medium"
               style={{
-                background: daysLeft <= 7 ? '#e1350012' : '#6700000a',
-                color: daysLeft <= 7 ? '#e13500' : '#670000',
+                background: daysLeft <= 7 ? 'var(--color-primary)12' : '#6700000a',
+                color: daysLeft <= 7 ? 'var(--color-primary)' : '#670000',
               }}
             >
               {daysLeft > 0

@@ -1,0 +1,66 @@
+web/src/App.tsx:        <Routes>
+web/src/App.tsx:          <Route index element={<SmartRoot />} />
+web/src/App.tsx:          <Route path="/landing"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Landing /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/checkout/sucesso"    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutSucesso /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/checkout/cancelado"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><CheckoutCancelado /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route
+web/src/App.tsx:          <Route path="/login"    element={<ErrorBoundary><Login /></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/signup"   element={<ErrorBoundary><Signup /></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/auth/set-password"    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><SetPassword /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/auth/forgot-password" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><ForgotPassword /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/auth/reset-password"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><ResetPassword /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/choose-plan" element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
+web/src/App.tsx:          <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
+web/src/App.tsx:          <Route
+web/src/App.tsx:          <Route
+web/src/App.tsx:          <Route
+web/src/App.tsx:          <Route
+web/src/App.tsx:            <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="agenda"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="eventos"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EventsList /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="inscricoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmConstrucao name="Inscrições" previstoPara="2º semestre 2026" features={['Formulários de inscrição para eventos', 'Controle de vagas e lista de espera', 'Integração com Agenda']} /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Suspense fallback={<PageLoader />}><Ministerios /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="agents" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agents /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="agentes"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentsList /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="configuracoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConfiguracoesLayoutPage /></Suspense></ErrorBoundary>}>
+web/src/App.tsx:              <Route index element={<Suspense fallback={<PageLoader />}><ConfiguracoesIndex /></Suspense>} />
+web/src/App.tsx:              <Route path="dados"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DadosPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="identidade" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><IdentidadePage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="plano"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><PlanoPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="usuarios"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsuariosPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="modulos"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModulosPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="discipulado"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DiscipleshipSettingsPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="qr-visitante" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><QrVisitorPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="settings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><SettingsLayoutPage /></Suspense></ErrorBoundary>}>
+web/src/App.tsx:              <Route index element={<Navigate to="billing" replace />} />
+web/src/App.tsx:              <Route path="billing"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BillingPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="users"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsersPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:              <Route path="branding" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BrandingPage /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:          <Route
+web/src/App.tsx:            <Route index element={<Navigate to="cockpit" replace />} />
+web/src/App.tsx:            <Route path="cockpit"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminCockpit /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="churches"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurches /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="churches/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurch /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="onboardings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminOnboardings /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="leads"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminLeads /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="tasks"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminTasks /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="revenue"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminRevenue /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="pricing"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminPricing /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="afiliados"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAffiliates /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="afiliados/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AffiliateDetail /></Suspense></ErrorBoundary>} />
+web/src/App.tsx:            <Route path="comunicacao"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminComunicacao /></Suspense></ErrorBoundary>} />

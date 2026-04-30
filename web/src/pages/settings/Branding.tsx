@@ -10,7 +10,7 @@ export function Branding() {
   const { data: church, isLoading } = useChurch()
   const queryClient = useQueryClient()
 
-  const [primary, setPrimary]     = useState('#E13500')
+  const [primary, setPrimary]     = useState('var(--color-primary)')
   const [secondary, setSecondary] = useState('#670000')
   const [logoFile, setLogoFile]   = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -21,7 +21,7 @@ export function Branding() {
   // Sync state when church data loads
   useEffect(() => {
     if (church) {
-      setPrimary(church.primary_color ?? '#E13500')
+      setPrimary(church.primary_color ?? 'var(--color-primary)')
       setSecondary(church.secondary_color ?? '#670000')
     }
   }, [church])

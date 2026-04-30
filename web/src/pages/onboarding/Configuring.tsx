@@ -110,20 +110,20 @@ function StepRow({ step }: { step: Step }) {
       <div className="w-6 h-6 flex items-center justify-center shrink-0">
         {isDone && (
           <span className="check-pop">
-            <CheckCircle2 size={20} strokeWidth={2} style={{ color: '#2D7A4F' }} />
+            <CheckCircle2 size={20} strokeWidth={2} style={{ color: 'var(--color-success)' }} />
           </span>
         )}
         {isFailed && (
-          <AlertCircle size={20} strokeWidth={2} style={{ color: '#E13500' }} />
+          <AlertCircle size={20} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
         )}
         {isRunning && (
           <div
             className="w-[18px] h-[18px] rounded-full border-[2.5px] border-t-transparent animate-spin"
-            style={{ borderColor: '#E13500', borderTopColor: 'transparent' }}
+            style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
           />
         )}
         {isPending && (
-          <Circle size={16} strokeWidth={1.5} style={{ color: '#DCDCDC' }} />
+          <Circle size={16} strokeWidth={1.5} style={{ color: 'var(--border-default)' }} />
         )}
       </div>
 
@@ -142,7 +142,7 @@ function StepRow({ step }: { step: Step }) {
               <span
                 key={i}
                 className="inline-block w-1 h-1 rounded-full animate-bounce"
-                style={{ background: '#E13500', animationDelay: `${i * 120}ms` }}
+                style={{ background: 'var(--color-primary)', animationDelay: `${i * 120}ms` }}
               />
             ))}
           </span>
@@ -153,7 +153,7 @@ function StepRow({ step }: { step: Step }) {
         className={`text-[10px] font-bold tabular-nums transition-colors shrink-0 ${
           isDone ? 'text-emerald-400' : isPending ? 'text-gray-300' : ''
         }`}
-        style={isRunning ? { color: '#E13500' } : {}}
+        style={isRunning ? { color: 'var(--color-primary)' } : {}}
       >
         {step.step_number}/20
       </span>
@@ -208,9 +208,9 @@ function CompletionScreen({
       <div className="flex flex-col items-center text-center">
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mb-4 check-pop"
-          style={{ background: '#F0FDF4' }}
+          style={{ background: 'var(--color-success-bg)' }}
         >
-          <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+          <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: 'var(--color-success)' }} />
         </div>
         <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>
           Bem-vindo à Ekthos!
@@ -223,7 +223,7 @@ function CompletionScreen({
       {/* Plano atual */}
       <div
         className="flex items-center justify-between px-4 py-3 rounded-2xl"
-        style={{ background: '#F9EEDC' }}
+        style={{ background: 'var(--bg-primary)' }}
       >
         <div>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Seu plano atual</p>
@@ -231,7 +231,7 @@ function CompletionScreen({
         </div>
         <span
           className="text-xs font-semibold px-3 py-1.5 rounded-full"
-          style={{ background: 'rgba(225,53,0,0.08)', color: '#E13500' }}
+          style={{ background: 'rgba(225,53,0,0.08)', color: 'var(--color-primary)' }}
         >
           {planInfo.price}
         </span>
@@ -240,7 +240,7 @@ function CompletionScreen({
       {/* Identidade visual */}
       <div
         className="rounded-2xl p-4 flex items-center gap-4"
-        style={{ background: '#F9EEDC' }}
+        style={{ background: 'var(--bg-primary)' }}
       >
         {summary.logoUrl ? (
           <img
@@ -284,7 +284,7 @@ function CompletionScreen({
         {summary.ministries.length > 0 && (
           <div className="rounded-xl border border-black/[0.06] bg-white p-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <Building2 size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+              <Building2 size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Ministérios</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{summary.ministries.length}</p>
@@ -296,7 +296,7 @@ function CompletionScreen({
         {summary.cells > 0 && (
           <div className="rounded-xl border border-black/[0.06] bg-white p-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <Network size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+              <Network size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Células</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{summary.cells}</p>
@@ -306,7 +306,7 @@ function CompletionScreen({
         {summary.pipeline.length > 0 && (
           <div className={`rounded-xl border border-black/[0.06] bg-white p-3 ${summary.ministries.length === 0 && summary.cells === 0 ? 'col-span-2' : ''}`}>
             <div className="flex items-center gap-1.5 mb-1">
-              <GitBranch size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+              <GitBranch size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Pipeline</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{summary.pipeline.length}</p>
@@ -315,7 +315,7 @@ function CompletionScreen({
         )}
         <div className="rounded-xl border border-black/[0.06] bg-white p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <Users size={13} strokeWidth={2} style={{ color: '#E13500' }} />
+            <Users size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Agentes</p>
           </div>
           <p className="text-2xl font-bold text-gray-900">{activeAgents.length}</p>
@@ -335,13 +335,13 @@ function CompletionScreen({
                 key={slug}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100"
               >
-                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#E13500' }}>
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--color-primary)' }}>
                   <Bot size={13} strokeWidth={1.75} className="text-white" />
                 </div>
                 <span className="text-sm text-gray-700 flex-1">
                   {AGENT_NAMES[slug] ?? slug}
                 </span>
-                <CheckCircle2 size={14} strokeWidth={2} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+                <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
               </div>
             ))}
           </div>
@@ -361,12 +361,12 @@ function CompletionScreen({
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-black/[0.07]"
               >
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(225,53,0,0.08)' }}>
-                  <Sparkles size={12} strokeWidth={1.75} style={{ color: '#E13500' }} />
+                  <Sparkles size={12} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                 </div>
                 <span className="text-sm text-gray-600 flex-1">
                   {AGENT_NAMES[slug] ?? slug}
                 </span>
-                <span className="text-[11px] font-semibold shrink-0" style={{ color: '#E13500' }}>
+                <span className="text-[11px] font-semibold shrink-0" style={{ color: 'var(--color-primary)' }}>
                   R$149,90/mês
                 </span>
               </div>
@@ -381,12 +381,12 @@ function CompletionScreen({
           className="rounded-2xl border border-dashed p-4 space-y-2"
           style={{ borderColor: 'rgba(225,53,0,0.25)', background: 'rgba(225,53,0,0.02)' }}
         >
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#E13500' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--color-primary)' }}>
             Recomendamos para sua igreja
           </p>
           {summary.agentsRecommended.map(slug => (
             <div key={slug} className="flex items-center gap-2 text-sm text-gray-600">
-              <Sparkles size={12} strokeWidth={1.75} style={{ color: '#E13500', flexShrink: 0 }} />
+              <Sparkles size={12} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
               {AGENT_NAMES[slug] ?? slug}
             </div>
           ))}
@@ -401,7 +401,7 @@ function CompletionScreen({
         <button
           onClick={onEnter}
           className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
-          style={{ background: '#E13500' }}
+          style={{ background: 'var(--color-primary)' }}
         >
           Entrar no meu CRM
           <ArrowRight size={18} strokeWidth={2} />
@@ -546,7 +546,7 @@ export default function OnboardingConfiguring() {
         city:              (tenant.city  as string) ?? '',
         state:             (tenant.state as string) ?? '',
         logoUrl:           (tenant.logo_url      as string | null) ?? null,
-        primaryColor:      (tenant.primary_color  as string) ?? '#E13500',
+        primaryColor:      (tenant.primary_color  as string) ?? 'var(--color-primary)',
         secondaryColor:    (tenant.secondary_color as string) ?? '#670000',
         ministries:        depts.map(d => d.name),
         cells,
@@ -595,13 +595,13 @@ export default function OnboardingConfiguring() {
 
       <div
         className="min-h-screen flex flex-col items-center justify-start py-12 px-4"
-        style={{ background: '#F9EEDC' }}
+        style={{ background: 'var(--bg-primary)' }}
       >
         {/* Header */}
         <div className="text-center mb-10">
           <div
             className="inline-flex items-center justify-center w-12 h-12 rounded-2xl font-bold text-xl text-white mb-5 shadow-sm"
-            style={{ background: '#E13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             E
           </div>
@@ -631,7 +631,7 @@ export default function OnboardingConfiguring() {
               </span>
               <span
                 className="text-sm font-bold tabular-nums shrink-0 transition-colors duration-500"
-                style={{ color: isDone ? '#2D7A4F' : '#E13500' }}
+                style={{ color: isDone ? '#2D7A4F' : 'var(--color-primary)' }}
               >
                 {progressPct}%
               </span>
@@ -641,7 +641,7 @@ export default function OnboardingConfiguring() {
                 className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width:      `${progressPct}%`,
-                  background: isDone ? '#2D7A4F' : '#E13500',
+                  background: isDone ? '#2D7A4F' : 'var(--color-primary)',
                 }}
               />
             </div>
@@ -668,9 +668,9 @@ export default function OnboardingConfiguring() {
               <div className="flex flex-col items-center text-center mb-6">
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center mb-4 check-pop"
-                  style={{ background: '#F0FDF4' }}
+                  style={{ background: 'var(--color-success-bg)' }}
                 >
-                  <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+                  <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: 'var(--color-success)' }} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>
                   Bem-vindo à Ekthos!
@@ -682,7 +682,7 @@ export default function OnboardingConfiguring() {
               <button
                 onClick={goToDashboard}
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.99]"
-                style={{ background: '#E13500' }}
+                style={{ background: 'var(--color-primary)' }}
               >
                 Entrar no CRM
                 <ArrowRight size={18} strokeWidth={2} />
@@ -697,7 +697,7 @@ export default function OnboardingConfiguring() {
               style={{ background: '#FFF5F2' }}
             >
               <div className="flex items-start gap-2.5">
-                <AlertCircle size={18} strokeWidth={2} style={{ color: '#E13500', flexShrink: 0, marginTop: 1 }} />
+                <AlertCircle size={18} strokeWidth={2} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <p className="text-sm font-semibold text-red-700 mb-0.5">Problema parcial detectado</p>
                   <p className="text-xs text-red-600 leading-relaxed">{engineError}</p>

@@ -82,7 +82,7 @@ function AlertCard({
 }) {
   const colorMap = {
     warn:  { bg: '#FFF8EC', border: '#C4841D', text: '#C4841D' },
-    error: { bg: '#FFF0EC', border: '#e13500', text: '#e13500' },
+    error: { bg: '#FFF0EC', border: 'var(--color-primary)', text: 'var(--color-primary)' },
     info:  { bg: '#F0F4FF', border: '#4F6EE1', text: '#4F6EE1' },
   }
   const c = colorMap[severity]

@@ -108,7 +108,7 @@ function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
 
   return (
     <div
-      className="bg-white rounded-2xl border border-cream-dark/50 p-4 shadow-sm active:bg-cream-light transition-colors cursor-pointer"
+      className="bg-white rounded-2xl border border-border-default p-4 shadow-sm active:bg-bg-primary transition-colors cursor-pointer"
       onClick={() => onView(person)}
     >
       <div className="flex items-start justify-between gap-3">
@@ -137,7 +137,7 @@ function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(person) }}
-            className="p-2 rounded-lg text-ekthos-black/30 active:text-brand-600 active:bg-brand-50 transition-all"
+            className="p-2 rounded-lg text-ekthos-black/30 active:text-primary-text active:bg-bg-hover transition-all"
             title="Editar"
           >
             <Pencil size={15} strokeWidth={1.75} />
@@ -162,7 +162,7 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
 
   return (
     <tr
-      className="hover:bg-cream-dark/30 transition-colors cursor-pointer"
+      className="hover:bg-bg-hover transition-colors cursor-pointer"
       onClick={() => onView(person)}
     >
       <td className="px-4 py-3">
@@ -186,7 +186,7 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
           {person.tags.slice(0, 3).map((tag) => (
-            <span key={tag} className="text-xs bg-brand-50 text-brand-800 rounded-full px-2 py-0.5 font-medium">
+            <span key={tag} className="text-xs bg-bg-hover text-primary-text rounded-full px-2 py-0.5 font-medium">
               {tag}
             </span>
           ))}
@@ -203,7 +203,7 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
           <button
             onClick={() => onEdit(person)}
             title="Editar"
-            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-brand-600 hover:bg-brand-50 transition-all"
+            className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-primary-text hover:bg-bg-hover transition-all"
           >
             <Pencil size={14} strokeWidth={1.75} />
           </button>
@@ -277,7 +277,7 @@ export default function People() {
           {/* QR de Entrada */}
           <button
             onClick={() => setQrModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-brand-200 bg-brand-50 text-brand-700 text-sm font-medium hover:bg-brand-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
           >
             <QrCode size={15} strokeWidth={1.75} />
             <span className="hidden sm:inline">QR de Entrada</span>
@@ -288,14 +288,14 @@ export default function People() {
       </div>
 
       {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
-      <div className="flex gap-1 border-b border-cream-dark/50 -mb-2 overflow-x-auto scrollbar-none pb-px">
+      <div className="flex gap-1 border-b border-border-default -mb-2 overflow-x-auto scrollbar-none pb-px">
         {TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setSearch('') }}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
-                ? 'border-brand-600 text-brand-700'
+                ? 'border-primary text-primary-text'
                 : 'border-transparent text-ekthos-black/50 active:text-ekthos-black/80'
             }`}
           >
@@ -304,8 +304,8 @@ export default function People() {
             {people && tab.id !== 'geral' && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
                 activeTab === tab.id
-                  ? 'bg-brand-100 text-brand-700'
-                  : 'bg-cream-dark/60 text-ekthos-black/40'
+                  ? 'bg-bg-hover text-primary-text'
+                  : 'bg-bg-hover text-ekthos-black/40'
               }`}>
                 {applyTabFilter(tab.id, allPeople).length}
               </span>
@@ -334,7 +334,7 @@ export default function People() {
       ) : isError ? (
         <ErrorState onRetry={() => void refetch()} />
       ) : filteredPeople.length === 0 ? (
-        <div className="bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+        <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
           <EmptyState
             title={search ? 'Nenhuma pessoa encontrada' : emptyMessages[activeTab].title}
             description={search ? 'Tente buscar por outro nome ou telefone.' : emptyMessages[activeTab].description}
@@ -356,11 +356,11 @@ export default function People() {
           </div>
 
           {/* ── Desktop: tabela ───────────────────────────────── */}
-          <div className="hidden md:block bg-cream-light rounded-2xl border border-cream-dark/50 shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-cream-dark/40 border-b border-cream-dark/60">
+                  <tr className="bg-bg-hover border-b border-border-default">
                     <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Nome</th>
                     <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Telefone</th>
                     <th className="px-4 py-3 text-xs font-semibold text-ekthos-black/50 uppercase tracking-widest">Stage</th>
@@ -390,7 +390,7 @@ export default function People() {
       <button
         onClick={handleNewPerson}
         className="md:hidden fixed bottom-6 right-6 z-20 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform"
-        style={{ width: 56, height: 56, background: 'var(--church-primary, #e13500)' }}
+        style={{ width: 56, height: 56, background: 'var(--church-primary, var(--color-primary))' }}
         aria-label="Nova pessoa"
       >
         <span className="text-white text-2xl font-bold leading-none">+</span>

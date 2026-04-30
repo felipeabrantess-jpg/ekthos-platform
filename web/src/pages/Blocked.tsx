@@ -42,18 +42,18 @@ export default function Blocked() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
-      style={{ background: '#f9eedc' }}
+      style={{ background: 'var(--bg-primary)' }}
     >
       <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center space-y-5">
         {/* Ícone */}
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: '#e1350015' }}
+            style={{ background: 'var(--bg-hover)' }}
           >
             <svg
               className="w-8 h-8"
-              style={{ color: '#e13500' }}
+              style={{ color: 'var(--color-primary)' }}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -91,7 +91,7 @@ export default function Blocked() {
           onClick={() => void handleRegularize()}
           disabled={loading || !churchId}
           className="w-full py-3 px-4 rounded-xl text-white font-semibold text-sm transition-all disabled:opacity-50"
-          style={{ background: '#e13500' }}
+          style={{ background: 'var(--color-primary)' }}
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">

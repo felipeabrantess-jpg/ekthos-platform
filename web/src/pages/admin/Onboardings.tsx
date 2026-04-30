@@ -68,7 +68,7 @@ export default function AdminOnboardings() {
             {data.length} igreja{data.length !== 1 ? 's' : ''} em onboarding
             {stuck.length > 0 && (
               <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: '#e1350018', color: '#e13500' }}>
+                style={{ background: 'var(--color-primary)18', color: 'var(--color-primary)' }}>
                 {stuck.length} travada{stuck.length !== 1 ? 's' : ''}
               </span>
             )}
@@ -100,7 +100,7 @@ export default function AdminOnboardings() {
 
       {!loading && stuck.length > 0 && (
         <section>
-          <h2 className="font-display text-lg font-semibold mb-3" style={{ color: '#e13500' }}>
+          <h2 className="font-display text-lg font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>
             ⚠️ Travadas há mais de 14 dias ({stuck.length})
           </h2>
           <OnboardingTable rows={stuck} onSelect={id => navigate(`/admin/churches/${id}`)} />
@@ -150,7 +150,7 @@ function OnboardingTable({ rows, onSelect }: {
                   <div className="flex items-center gap-2.5">
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
-                      style={{ background: '#e13500' }}
+                      style={{ background: 'var(--color-primary)' }}
                     >
                       {c.name.charAt(0)}
                     </div>
@@ -170,7 +170,7 @@ function OnboardingTable({ rows, onSelect }: {
                   <span
                     className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full"
                     style={stuck
-                      ? { background: '#e1350018', color: '#e13500' }
+                      ? { background: 'var(--color-primary)18', color: 'var(--color-primary)' }
                       : { background: '#C4841D18', color: '#C4841D' }
                     }
                   >

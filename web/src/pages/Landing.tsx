@@ -1,7 +1,7 @@
 // ============================================================
 // Landing Page — Ekthos Church
 // Skills: ekthos-frontend + landing-page-ekthos
-// Design: bg-white, cream sections, vermelho #e13500
+// Design: bg-white, cream sections, vermelho var(--color-primary)
 // Rebuilt 2026-04-22: alternating layouts, no icon circles,
 // no CSS mockups, no fake numbers, Preview MCP validated
 // ============================================================
@@ -14,6 +14,8 @@ import {
   Bot, MessageCircle, Bell, Shield, TrendingUp,
   UserPlus, ShieldCheck, Smartphone,
 } from 'lucide-react'
+import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
+import LogoEkthos from '@/components/LogoEkthos'
 
 // ── Env ────────────────────────────────────────────────────
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
@@ -24,10 +26,10 @@ const EKTHOS_CROSS = (
   <svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
     {/* Linha externa da cruz */}
     <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z"
-      stroke="#e13500" strokeWidth="2.5" strokeLinejoin="round"/>
+      stroke="var(--color-primary)" strokeWidth="2.5" strokeLinejoin="round"/>
     {/* Linha interna — cria o canal duplo característico */}
     <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
-      stroke="#c42e00" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
+      stroke="var(--color-primary-dark)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
   </svg>
 )
 
@@ -83,6 +85,199 @@ const FAQ_ITEMS = [
     a: 'Ao solicitar contato, um consultor pastoral entra em contato em até 24h para entender a realidade da sua igreja e apresentar uma proposta personalizada. O processo é guiado e sem pressão.',
   },
 ]
+
+// ══════════════════════════════════════════════════════════
+// VIDEO PREMIUM BLOCK
+// ══════════════════════════════════════════════════════════
+
+function VideoSection() {
+  const [open, setOpen] = useState(false)
+  const VIDEO_URL = 'https://www.youtube.com/embed/PLACEHOLDER_ID?autoplay=1'
+
+  return (
+    <section className="pb-16 lg:pb-24 px-5 lg:px-8 max-w-5xl mx-auto text-center">
+      {/* Tag editorial */}
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
+        <span className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: 'var(--color-primary)' }}>
+          VEJA EM 90 SEGUNDOS
+        </span>
+        <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
+      </div>
+
+      {/* Container premium */}
+      <div
+        className="relative rounded-3xl overflow-hidden cursor-pointer group"
+        style={{
+          background: 'linear-gradient(135deg, rgba(41,182,255,0.08) 0%, rgba(76,234,216,0.06) 50%, rgba(41,182,255,0.04) 100%)',
+          border: '1px solid rgba(41,182,255,0.15)',
+          boxShadow: '0 8px 40px rgba(41,182,255,0.12), 0 0 0 1px rgba(41,182,255,0.08)',
+        }}
+        onClick={() => setOpen(true)}
+        role="button"
+        aria-label="Assistir apresentação do Ekthos Church"
+      >
+        {/* Thumbnail placeholder */}
+        <div className="aspect-video relative">
+          <img
+            src="/screenshots/painel.png"
+            alt="Preview Ekthos Church"
+            className="w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-opacity duration-300"
+          />
+          {/* Aurora overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ background: 'linear-gradient(160deg, rgba(41,182,255,0.15) 0%, rgba(76,234,216,0.08) 60%, transparent 100%)' }}
+          />
+
+          {/* Play button */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="relative flex items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110"
+              style={{
+                width: 72, height: 72,
+                background: 'var(--color-primary)',
+                boxShadow: '0 0 0 12px rgba(41,182,255,0.18), 0 0 0 24px rgba(41,182,255,0.08)',
+              }}
+            >
+              {/* Pulse ring */}
+              <span
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: 'var(--color-primary)', opacity: 0.25 }}
+              />
+              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white ml-1" aria-hidden>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Caption editorial */}
+      <p className="mt-4 text-sm text-[var(--text-tertiary)] max-w-md mx-auto leading-relaxed">
+        Veja como o Ekthos Church transforma a gestão pastoral —
+        da presença ao discipulado, em menos de dois minutos.
+      </p>
+
+      {/* Modal de vídeo */}
+      {open && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8"
+          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl rounded-2xl overflow-hidden"
+            style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-3 right-3 z-10 rounded-full p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              onClick={() => setOpen(false)}
+              aria-label="Fechar"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
+              </svg>
+            </button>
+            <div className="aspect-video">
+              <iframe
+                src={VIDEO_URL}
+                className="w-full h-full"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+                title="Ekthos Church — apresentação"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// ECOSSISTEMA — GLASS OUTLINE ICONS
+// ══════════════════════════════════════════════════════════
+
+const ECOSSISTEMA_ITEMS: { icon: EkthosIconName; label: string; desc: string }[] = [
+  { icon: 'pessoas',       label: 'Pessoas',          desc: 'Cadastro pastoral completo com histórico de cada membro' },
+  { icon: 'discipulado',   label: 'Discipulado',       desc: 'Pipeline editável do visitante ao líder em 11 etapas' },
+  { icon: 'eventos',       label: 'Eventos',           desc: 'Calendário recorrente com checklist e presença automática' },
+  { icon: 'celulas',       label: 'Células',           desc: 'Gestão de grupos, líderes, relatórios e frequência' },
+  { icon: 'voluntarios',   label: 'Voluntários',       desc: 'Escalas inteligentes com confirmação por WhatsApp' },
+  { icon: 'notificacoes',  label: 'Notificações',      desc: 'Alertas pastorais em tempo real — ausências, aniversários, crises' },
+  { icon: 'qr-entrada',    label: 'QR de Entrada',     desc: 'Check-in por QR code e presença em cultos sem fricção' },
+  { icon: 'mensageria-ia', label: 'Mensageria IA',     desc: 'Agentes pastorais que se comunicam automaticamente com os membros' },
+  { icon: 'cockpit',       label: 'Cockpit Pastoral',  desc: 'Visão 360° da saúde espiritual e operacional da sua igreja' },
+]
+
+function EcossistemaSection() {
+  return (
+    <section className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#07131F]">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-14">
+          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: 'var(--color-primary)' }}>
+            Ecossistema completo
+          </p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-white leading-tight">
+            Tudo que sua igreja precisa,<br className="hidden lg:block" /> em um só lugar
+          </h2>
+          <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed">
+            Cada módulo foi pensado para o cotidiano pastoral —
+            não para o relatório corporativo.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {ECOSSISTEMA_ITEMS.map(({ icon, label, desc }) => (
+            <div
+              key={icon}
+              className="group relative rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                backdropFilter: 'blur(8px)',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLDivElement).style.background = 'rgba(41,182,255,0.06)'
+                ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(41,182,255,0.2)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'
+                ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)'
+              }}
+            >
+              {/* Glow sutil no hover */}
+              <div
+                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{ background: 'radial-gradient(ellipse at 30% 30%, rgba(41,182,255,0.08) 0%, transparent 70%)' }}
+              />
+
+              <div className="flex items-start gap-4 relative">
+                <div
+                  className="shrink-0 flex items-center justify-center rounded-xl"
+                  style={{
+                    width: 44, height: 44,
+                    background: 'rgba(41,182,255,0.1)',
+                    border: '1px solid rgba(41,182,255,0.18)',
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  <EkthosIcon name={icon} size={22} strokeWidth={1.5} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-white mb-1">{label}</p>
+                  <p className="text-xs leading-relaxed text-white/45">{desc}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
 
 // ══════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
@@ -149,16 +344,14 @@ export default function Landing() {
   const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%21+Quero+conhecer+o+Ekthos+Church`
 
   return (
-    <div className="min-h-screen font-body antialiased text-[#161616] overflow-x-hidden" style={{ background: '#FCFAF7' }}>
+    <div className="min-h-screen font-body antialiased overflow-x-hidden bg-white text-[#07131F]">
 
       {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md border-b border-gray-100 ${scrolled ? 'shadow-sm' : ''}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md border-b ${scrolled ? 'shadow-md' : ''}`}
+        style={{ background: 'rgba(7,19,31,0.92)', borderColor: 'var(--border-default)' }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3 shrink-0">
-            {EKTHOS_CROSS}
-            <span className="font-display text-2xl font-bold tracking-tight text-[#161616]">
-              Ekthos <span style={{ color: '#e13500' }}>Church</span>
-            </span>
+          <a href="/" className="flex items-center shrink-0">
+            <LogoEkthos height={28} color="var(--text-primary)" showChurch={true} />
           </a>
 
           <nav className="hidden md:flex items-center gap-7">
@@ -169,7 +362,7 @@ export default function Landing() {
               { label: 'FAQ',             href: '#faq' },
             ].map(l => (
               <a key={l.href} href={l.href}
-                className="text-sm font-medium text-gray-500 hover:text-[#161616] transition-colors">
+                className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                 {l.label}
               </a>
             ))}
@@ -177,37 +370,37 @@ export default function Landing() {
 
           <div className="hidden md:flex items-center gap-3">
             <Link to="/login"
-              className="text-sm font-medium px-4 py-2 rounded-xl text-gray-500 hover:text-[#161616] transition-colors">
+              className="text-sm font-medium px-4 py-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
               Entrar
             </Link>
             <button onClick={scrollToPricing}
               className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: '#e13500' }}>
+              style={{ background: 'var(--color-primary)' }}>
               Ver planos
             </button>
           </div>
 
-          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2 text-gray-500">
+          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2 text-[var(--text-secondary)]">
             {menuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
 
         {menuOpen && (
-          <div className="md:hidden px-5 pb-6 pt-2 flex flex-col gap-4 bg-white border-t border-gray-100">
+          <div className="md:hidden px-5 pb-6 pt-2 flex flex-col gap-4 border-t" style={{ background: 'rgba(7,19,31,0.98)', borderColor: 'var(--border-default)' }}>
             {['#funcionalidades', '#agentes', '#pricing', '#faq'].map((href, i) => (
               <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="text-sm font-medium py-1 text-gray-600">
+                className="text-sm font-medium py-1 text-[var(--text-secondary)]">
                 {['Funcionalidades', 'Agentes IA', 'Planos', 'FAQ'][i]}
               </a>
             ))}
             <div className="flex gap-3 pt-2">
               <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-gray-200 text-[#161616]">
+                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-[var(--border-default)] text-[var(--text-primary)]">
                 Entrar
               </Link>
               <button onClick={scrollToPricing}
                 className="flex-1 text-sm font-semibold py-2.5 rounded-xl text-white"
-                style={{ background: '#e13500' }}>
+                style={{ background: 'var(--color-primary)' }}>
                 Ver planos
               </button>
             </div>
@@ -221,26 +414,26 @@ export default function Landing() {
 
           {/* Copy */}
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[#161616]"
+            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[var(--text-primary)]"
               style={{ letterSpacing: '-0.02em' }}>
               Sua igreja merece uma gestão{' '}
-              <span style={{ color: '#e13500' }}>à altura do chamado</span>
+              <span style={{ color: 'var(--color-primary)' }}>à altura do chamado</span>
             </h1>
 
-            <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0 text-gray-500">
+            <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0 text-[var(--text-secondary)]">
               CRM pastoral com inteligência artificial. Acompanhe cada membro,
               automatize tarefas repetitivas e foque no que realmente importa:
               cuidar da sua comunidade.
             </p>
 
-            <p className="text-sm italic mb-8" style={{ color: 'rgba(225,53,0,0.7)' }}>
+            <p className="text-sm italic mb-8" style={{ color: 'var(--color-primary-text)' }}>
               "Conhece o estado do teu rebanho e põe o coração nos teus gados." — Pv 27:23
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <button onClick={scrollToPricing}
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[#c42e00] active:scale-[0.98] shadow-lg shadow-[#e13500]/20"
-                style={{ background: '#e13500', minHeight: 56 }}>
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[var(--color-primary-dark)] active:scale-[0.98] shadow-lg shadow-primary/20"
+                style={{ background: 'var(--color-primary)', minHeight: 56 }}>
                 Começar agora →
               </button>
               <a href={waHref} target="_blank" rel="noopener noreferrer"
@@ -250,7 +443,7 @@ export default function Landing() {
               </a>
             </div>
 
-            <p className="mt-8 text-sm text-gray-400 text-center lg:text-left">
+            <p className="mt-8 text-sm text-[var(--text-tertiary)] text-center lg:text-left">
               Setup completo em menos de 30 minutos · Suporte em português
             </p>
           </div>
@@ -260,13 +453,13 @@ export default function Landing() {
             {/* Stage container — tem identidade visual própria, não é só fundo branco */}
             <div className="relative rounded-3xl overflow-hidden"
               style={{
-                background: 'linear-gradient(150deg, #EDE5D8 0%, #F4EDE4 45%, #E6DDD0 100%)',
+                background: 'linear-gradient(150deg, #0C1B2B 0%, #10253A 45%, #0A1827 100%)',
                 padding: '32px 20px 0',
               }}>
 
               {/* Acento brand — brilho sutil vindo do produto */}
               <div className="absolute inset-x-0 top-0 h-56 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(225,53,0,0.09), transparent 68%)' }} />
+                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(41,182,255,0.06), transparent 68%)' }} />
 
               {/* Screenshot de apoio — camada de profundidade, atrás do principal (só desktop) */}
               <div className="absolute hidden lg:block rounded-xl overflow-hidden"
@@ -299,8 +492,11 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── 2.5. VÍDEO PREMIUM ───────────────────────────────────── */}
+      <VideoSection />
+
       {/* ── 3. FATOS ──────────────────────────────────────────── */}
-      <section className="py-14 border-y w-full" style={{ background: '#F6F2EC', borderColor: '#E8E0D4' }}>
+      <section className="py-14 border-y w-full" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
         <div className="max-w-5xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -310,8 +506,8 @@ export default function Landing() {
               { label: 'Suporte em português',    sub: 'time pastoral dedicado' },
             ].map(s => (
               <div key={s.label} className="py-2">
-                <p className="font-display text-base font-bold mb-1 text-[#161616]">{s.label}</p>
-                <p className="text-sm text-gray-500">{s.sub}</p>
+                <p className="font-display text-base font-bold mb-1 text-[var(--text-primary)]">{s.label}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{s.sub}</p>
               </div>
             ))}
           </div>
@@ -321,13 +517,13 @@ export default function Landing() {
       {/* ── 4. PROBLEMA ───────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
             A realidade de muitas igrejas
           </p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[var(--text-primary)]">
             Você não consegue cuidar de todos sozinho
           </h2>
-          <p className="text-lg max-w-2xl mx-auto text-gray-500">
+          <p className="text-lg max-w-2xl mx-auto text-[var(--text-secondary)]">
             Crescer sem ferramentas é como pastorear no escuro. Você sente, mas não vê.
           </p>
         </div>
@@ -335,42 +531,42 @@ export default function Landing() {
         <div className="grid md:grid-cols-3 gap-6">
           {[
             {
-              icon: <Users size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+              icon: <Users size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
               title: 'Membros se afastando em silêncio',
               body: 'Você só percebe que alguém saiu quando já foi embora. Sem dados, sem alertas, sem acompanhamento sistemático.',
             },
             {
-              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
               title: 'Horas perdidas em tarefas manuais',
               body: 'Planilhas, WhatsApp, cadernos. O pastor gasta mais tempo organizando do que pastoreando.',
             },
             {
-              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: '#e13500', flexShrink: 0 }} />,
+              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
               title: 'Decisões sem dados reais',
               body: 'Sem métricas, você navega por intuição. Quantos visitantes voltaram? Qual ministério está em queda?',
             },
           ].map((p, i) => (
-            <div key={i} className="bg-white rounded-2xl p-7 border border-gray-200 hover:border-[#e13500]/30 transition-all duration-200">
+            <div key={i} className="bg-[var(--bg-surface)] rounded-2xl p-7 border border-[var(--border-default)] hover:border-primary/30 transition-all duration-200">
               <div className="flex items-center gap-2.5 mb-4">
                 {p.icon}
-                <h3 className="font-semibold text-base text-[#161616]">{p.title}</h3>
+                <h3 className="font-semibold text-base text-[var(--text-primary)]">{p.title}</h3>
               </div>
-              <p className="text-sm leading-relaxed text-gray-500">{p.body}</p>
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{p.body}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── 5. AGENTES IA ─────────────────────────────────────── */}
-      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3"
-              style={{ color: 'rgba(225,53,0,0.8)' }}>Inteligência Artificial pastoral</p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#f9eedc' }}>
+              style={{ color: 'var(--color-primary)' }}>Inteligência Artificial pastoral</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               Agentes que conhecem a linguagem da igreja
             </h2>
-            <p className="text-lg max-w-2xl" style={{ color: 'rgba(249,238,220,0.6)' }}>
+            <p className="text-lg max-w-2xl" style={{ color: 'rgba(245,250,255,0.6)' }}>
               Não são chatbots genéricos. São assistentes treinados com o vocabulário e a sensibilidade pastoral.
             </p>
           </div>
@@ -387,15 +583,15 @@ export default function Landing() {
               <div key={i} className="flex items-start gap-5 py-8 border-b"
                 style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
                 <span className="font-mono text-4xl font-bold leading-none shrink-0 w-12 text-right"
-                  style={{ color: 'rgba(225,53,0,0.18)' }}>
+                  style={{ color: 'rgba(41,182,255,0.18)' }}>
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 mb-1.5">
-                    <span style={{ color: '#f9eedc' }}>{a.icon}</span>
-                    <h3 className="font-semibold" style={{ color: '#f9eedc' }}>Agente {a.slug}</h3>
+                    <span style={{ color: 'var(--text-primary)' }}>{a.icon}</span>
+                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Agente {a.slug}</h3>
                   </div>
-                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.55)' }}>{a.desc}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.55)' }}>{a.desc}</p>
                 </div>
               </div>
             ))}
@@ -403,17 +599,20 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── 5.5. ECOSSISTEMA ─────────────────────────────────────── */}
+      <EcossistemaSection />
+
       {/* ── 6. FUNCIONALIDADES (ALTERNATING) ──────────────────── */}
-      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
               Tudo que sua operação pastoral precisa
             </p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
               Um CRM feito para igrejas
             </h2>
-            <p className="text-lg max-w-xl mx-auto mt-4 text-gray-500">
+            <p className="text-lg max-w-xl mx-auto mt-4 text-[var(--text-secondary)]">
               Cada módulo foi desenhado para a realidade do pastor brasileiro.
             </p>
           </div>
@@ -478,21 +677,21 @@ export default function Landing() {
           ].map((feat, i) => (
             <div
               key={i}
-              className={`flex flex-col ${feat.reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20 py-16 ${i < 3 ? 'border-b border-gray-100' : ''}`}
+              className={`flex flex-col ${feat.reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20 py-16 ${i < 3 ? 'border-b border-[var(--border-default)]' : ''}`}
             >
               {/* Text */}
               <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
                   {feat.label}
                 </p>
-                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[#161616]">
+                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[var(--text-primary)]">
                   {feat.title}
                 </h3>
-                <p className="text-gray-500 leading-relaxed mb-7">{feat.body}</p>
+                <p className="text-[var(--text-secondary)] leading-relaxed mb-7">{feat.body}</p>
                 <ul className="space-y-3">
                   {feat.items.map(item => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-[#161616]">
-                      <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }} />
+                    <li key={item} className="flex items-start gap-3 text-sm text-[var(--text-primary)]">
+                      <Check size={16} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
                       {item}
                     </li>
                   ))}
@@ -501,7 +700,7 @@ export default function Landing() {
 
               {/* Screenshot */}
               <div className="flex-1 w-full rounded-2xl p-3 lg:p-4"
-                style={{ background: '#f4f4f5' }}>
+                style={{ background: 'var(--bg-surface)' }}>
                 <img
                   src={feat.screenshot}
                   alt={feat.alt}
@@ -516,32 +715,32 @@ export default function Landing() {
       </section>
 
       {/* ── 7. VOLUNTEER + KIDS ───────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
+      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-surface)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
               Soluções especializadas
             </p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
               Para sua operação pastoral completa
             </h2>
-            <p className="text-lg max-w-xl mx-auto mt-4 text-gray-500">
+            <p className="text-lg max-w-xl mx-auto mt-4 text-[var(--text-secondary)]">
               Módulos especializados para as áreas que mais demandam atenção nas igrejas em crescimento.
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Volunteer Pro */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-start justify-between mb-5">
-                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
-                  <UserPlus size={20} strokeWidth={1.75} style={{ color: '#e13500' }} />
+                <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
+                  <UserPlus size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   Gestão de Voluntários e Escalas
                 </h3>
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Organize equipes, gere escalas inteligentes, confirme presença via WhatsApp
                 e acompanhe o engajamento dos seus voluntários.
               </p>
@@ -554,7 +753,7 @@ export default function Landing() {
                   'Trocas entre voluntários',
                   'Métricas de engajamento',
                 ].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#161616]">
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-primary)]">
                     <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
                     {f}
                   </li>
@@ -563,16 +762,16 @@ export default function Landing() {
             </div>
 
             {/* Kids Pro */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200">
               <div className="flex items-start justify-between mb-5">
-                <h3 className="font-display text-xl font-bold text-[#161616] flex items-center gap-2.5">
+                <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
                   <ShieldCheck size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
                   Ministério Infantil Seguro
                 </h3>
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <p className="text-gray-500 text-sm leading-relaxed mb-6">
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Segurança total para as crianças. Check-in com QR Code, validação de
                 responsáveis e comunicação instantânea com os pais.
               </p>
@@ -585,7 +784,7 @@ export default function Landing() {
                   'Controle de alergias e restrições',
                   'Relatórios de frequência',
                 ].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[#161616]">
+                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-primary)]">
                     <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
                     {f}
                   </li>
@@ -597,21 +796,21 @@ export default function Landing() {
       </section>
 
       {/* ── 8. APP PRÓPRIO DA IGREJA ──────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24">
 
             {/* Copy */}
             <div className="flex-1 text-center lg:text-left">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold mb-6 border"
-                style={{ background: 'rgba(225,53,0,0.15)', color: '#e13500', borderColor: 'rgba(225,53,0,0.25)' }}>
+                style={{ background: 'rgba(41,182,255,0.15)', color: 'var(--color-primary)', borderColor: 'rgba(41,182,255,0.25)' }}>
                 <Smartphone size={12} /> Exclusivo do plano Avivamento
               </span>
-              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#f9eedc' }}>
+              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: 'var(--text-primary)' }}>
                 Sua igreja com{' '}
-                <span style={{ color: '#e13500' }}>aplicativo próprio</span>
+                <span style={{ color: 'var(--color-primary)' }}>aplicativo próprio</span>
               </h2>
-              <p className="text-lg leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(249,238,220,0.7)' }}>
+              <p className="text-lg leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(245,250,255,0.7)' }}>
                 No plano Avivamento, sua igreja ganha um aplicativo exclusivo com a identidade,
                 logo e cores da sua comunidade. Seus membros acessam tudo pelo celular.
               </p>
@@ -624,17 +823,17 @@ export default function Landing() {
                   ['Conteúdo devocional e materiais',               'Devocionais, estudos e avisos'],
                 ].map(([main, sub]) => (
                   <li key={main} className="flex items-start gap-3">
-                    <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 3 }} />
+                    <Check size={16} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 3 }} />
                     <div>
-                      <p className="text-sm font-medium" style={{ color: 'rgba(249,238,220,0.9)' }}>{main}</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'rgba(249,238,220,0.45)' }}>{sub}</p>
+                      <p className="text-sm font-medium" style={{ color: 'rgba(245,250,255,0.9)' }}>{main}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'rgba(245,250,255,0.45)' }}>{sub}</p>
                     </div>
                   </li>
                 ))}
               </ul>
               <button onClick={() => setLeadModal('avivamento')}
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: '#e13500', minHeight: 52 }}>
+                style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                 Solicitar contato sobre o Avivamento →
               </button>
             </div>
@@ -650,7 +849,7 @@ export default function Landing() {
                   className="w-full block"
                 />
               </div>
-              <p className="text-center text-xs mt-4" style={{ color: 'rgba(249,238,220,0.3)' }}>
+              <p className="text-center text-xs mt-4" style={{ color: 'rgba(245,250,255,0.3)' }}>
                 Interface personalizada com a identidade da sua igreja
               </p>
             </div>
@@ -660,14 +859,14 @@ export default function Landing() {
 
       {/* ── 9. PRICING ────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef}
-        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: '#F0EAE0' }}>
+        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: 'var(--bg-primary)' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[#161616]">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Planos</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[var(--text-primary)]">
               Investimento que se paga com o primeiro membro retido
             </h2>
-            <p className="text-lg max-w-xl mx-auto text-gray-500">
+            <p className="text-lg max-w-xl mx-auto text-[var(--text-secondary)]">
               Do self-service ao consultivo — escolha o que faz sentido para a sua igreja.
             </p>
           </div>
@@ -675,21 +874,21 @@ export default function Landing() {
           <div className="grid md:grid-cols-3 gap-6 items-start">
 
             {/* ── CHAMADO ── */}
-            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+            <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
                   <Star size={18} strokeWidth={1.75} style={{ color: '#5A5A5A' }} />
                   <div>
-                    <p className="font-semibold text-base text-[#161616]">Chamado</p>
-                    <p className="text-xs text-gray-400">Igrejas de até 500 membros</p>
+                    <p className="font-semibold text-base text-[var(--text-primary)]">Chamado</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Igrejas de até 500 membros</p>
                   </div>
                 </div>
 
                 <div className="mb-1">
-                  <span className="font-mono font-bold text-4xl text-[#161616]">R$689,90</span>
-                  <span className="text-sm ml-1 text-gray-400">/mês</span>
+                  <span className="font-mono font-bold text-4xl text-[var(--text-primary)]">R$689,90</span>
+                  <span className="text-sm ml-1 text-[var(--text-tertiary)]">/mês</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-6">Acesso imediato após contratação</p>
+                <p className="text-xs text-[var(--text-tertiary)] mb-6">Acesso imediato após contratação</p>
 
                 <ul className="space-y-2.5 mb-4">
                   {[
@@ -704,11 +903,11 @@ export default function Landing() {
                   ].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
                       <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-                      <span className="text-[#161616]">{f}</span>
+                      <span className="text-[var(--text-primary)]">{f}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-gray-400 italic px-1">
+                <p className="text-xs text-[var(--text-tertiary)] italic px-1">
                   Módulos Volunteer Pro e Ministério Infantil disponíveis como complemento.
                 </p>
               </div>
@@ -717,7 +916,7 @@ export default function Landing() {
                   onClick={() => handleCheckout('chamado')}
                   disabled={checkoutPlan === 'chamado'}
                   className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
-                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
+                  style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)', minHeight: 52 }}>
                   {checkoutPlan === 'chamado' ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -725,30 +924,30 @@ export default function Landing() {
                     </span>
                   ) : 'Contratar agora →'}
                 </button>
-                <p className="text-center text-xs mt-2 text-gray-400">Acesso imediato</p>
+                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Acesso imediato</p>
               </div>
             </div>
 
             {/* ── MISSÃO (popular) ── */}
-            <div className="relative bg-[#161616] rounded-2xl border-2 border-[#e13500] shadow-xl scale-[1.02] flex flex-col">
+            <div className="relative bg-[#07131F] rounded-2xl border-2 border-[var(--color-primary)] shadow-xl scale-[1.02] flex flex-col">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#e13500' }}>Mais popular</span>
+                  style={{ background: 'var(--color-primary)' }}>Mais popular</span>
               </div>
 
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
-                  <Zap size={18} strokeWidth={1.75} style={{ color: '#e13500' }} />
+                  <Zap size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   <div>
-                    <p className="font-semibold text-base" style={{ color: '#f9eedc' }}>Missão</p>
-                    <p className="text-xs" style={{ color: 'rgba(249,238,220,0.5)' }}>Igrejas de até 1.000 membros</p>
+                    <p className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Missão</p>
+                    <p className="text-xs" style={{ color: 'rgba(245,250,255,0.5)' }}>Igrejas de até 1.000 membros</p>
                   </div>
                 </div>
 
                 <div className="mb-1">
-                  <span className="font-display font-bold text-2xl" style={{ color: '#f9eedc' }}>Plano personalizado</span>
+                  <span className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>Plano personalizado</span>
                 </div>
-                <p className="text-xs mb-6" style={{ color: 'rgba(249,238,220,0.4)' }}>Proposta sob medida para a sua realidade</p>
+                <p className="text-xs mb-6" style={{ color: 'rgba(245,250,255,0.4)' }}>Proposta sob medida para a sua realidade</p>
 
                 <ul className="space-y-2.5 mb-4">
                   {[
@@ -762,11 +961,11 @@ export default function Landing() {
                   ].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
                       <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ color: 'rgba(249,238,220,0.85)' }}>{f}</span>
+                      <span style={{ color: 'rgba(245,250,255,0.85)' }}>{f}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs italic px-1" style={{ color: 'rgba(249,238,220,0.35)' }}>
+                <p className="text-xs italic px-1" style={{ color: 'rgba(245,250,255,0.35)' }}>
                   Módulos Volunteer Pro e Ministério Infantil disponíveis como complemento.
                 </p>
               </div>
@@ -774,17 +973,17 @@ export default function Landing() {
                 <button
                   onClick={() => setLeadModal('missao')}
                   className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: '#e13500', minHeight: 52 }}>
+                  style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                   Solicitar contato →
                 </button>
-                <p className="text-center text-xs mt-2" style={{ color: 'rgba(249,238,220,0.35)' }}>
+                <p className="text-center text-xs mt-2" style={{ color: 'rgba(245,250,255,0.35)' }}>
                   Consultoria personalizada
                 </p>
               </div>
             </div>
 
             {/* ── AVIVAMENTO ── */}
-            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+            <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                 <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
                   style={{ background: '#670000' }}>Enterprise</span>
@@ -792,28 +991,28 @@ export default function Landing() {
 
               <div className="p-7 flex-1 pt-10">
                 <div className="flex items-center gap-3 mb-5">
-                  <Crown size={18} strokeWidth={1.75} style={{ color: '#670000' }} />
+                  <Crown size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   <div>
-                    <p className="font-semibold text-base text-[#161616]">Avivamento</p>
-                    <p className="text-xs text-gray-400">Igrejas acima de 1.000 membros</p>
+                    <p className="font-semibold text-base text-[var(--text-primary)]">Avivamento</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Igrejas acima de 1.000 membros</p>
                   </div>
                 </div>
 
                 <div className="mb-1">
-                  <span className="font-display font-bold text-2xl text-[#161616]">Plano sob medida</span>
+                  <span className="font-display font-bold text-2xl text-[var(--text-primary)]">Plano sob medida</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-4">Proposta dedicada para operações complexas</p>
+                <p className="text-xs text-[var(--text-tertiary)] mb-4">Proposta dedicada para operações complexas</p>
 
-                <div className="rounded-xl p-4 mb-5 border" style={{ background: 'rgba(103,0,0,0.04)', borderColor: 'rgba(103,0,0,0.08)' }}>
-                  <p className="text-xs font-bold text-[#670000] mb-2">Inclui exclusivamente:</p>
+                <div className="rounded-xl p-4 mb-5 border" style={{ background: 'rgba(41,182,255,0.05)', borderColor: 'rgba(41,182,255,0.12)' }}>
+                  <p className="text-xs font-bold text-[var(--color-primary)] mb-2">Inclui exclusivamente:</p>
                   <div className="space-y-1.5">
                     {[
                       'Volunteer Pro — escalas e equipes',
                       'Ministério Infantil (Kids)',
                       'Aplicativo próprio da igreja',
                     ].map(d => (
-                      <div key={d} className="flex items-center gap-2 text-xs font-medium text-[#161616]">
-                        <Check size={13} strokeWidth={2.5} style={{ color: '#670000' }} />
+                      <div key={d} className="flex items-center gap-2 text-xs font-medium text-[var(--text-primary)]">
+                        <Check size={13} strokeWidth={2.5} style={{ color: 'var(--color-primary)' }} />
                         {d}
                       </div>
                     ))}
@@ -830,7 +1029,7 @@ export default function Landing() {
                   ].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
                       <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-                      <span className="text-[#161616]">{f}</span>
+                      <span className="text-[var(--text-primary)]">{f}</span>
                     </li>
                   ))}
                 </ul>
@@ -839,17 +1038,17 @@ export default function Landing() {
                 <button
                   onClick={() => setLeadModal('avivamento')}
                   className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: '#e13500', minHeight: 52 }}>
+                  style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                   Solicitar contato →
                 </button>
-                <p className="text-center text-xs mt-2 text-gray-400">Acompanhamento dedicado</p>
+                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Acompanhamento dedicado</p>
               </div>
             </div>
           </div>
 
           {/* Addons */}
-          <div className="mt-10 bg-white rounded-2xl border border-gray-200 p-6 lg:p-8">
-            <p className="font-semibold text-center mb-6 text-[#161616]">
+          <div className="mt-10 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] p-6 lg:p-8">
+            <p className="font-semibold text-center mb-6 text-[var(--text-primary)]">
               Complementos disponíveis nos planos Chamado e Missão
             </p>
             <div className="grid md:grid-cols-3 gap-6">
@@ -858,12 +1057,12 @@ export default function Landing() {
                 { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Ministério Infantil', price: 'Sob consulta', desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
                 { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional',   price: 'Sob consulta', desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
               ].map((a, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#f9eedc' }}>
-                  <span style={{ color: '#e13500', marginTop: 2 }}>{a.icon}</span>
+                <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: 'var(--bg-active)' }}>
+                  <span style={{ color: 'var(--color-primary)', marginTop: 2 }}>{a.icon}</span>
                   <div>
-                    <p className="font-semibold text-sm text-[#161616]">{a.title}</p>
-                    <p className="text-xs font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
-                    <p className="text-xs mt-0.5 text-gray-400">{a.desc}</p>
+                    <p className="font-semibold text-sm text-[var(--text-primary)]">{a.title}</p>
+                    <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--color-primary)' }}>{a.price}</p>
+                    <p className="text-xs mt-0.5 text-[var(--text-tertiary)]">{a.desc}</p>
                   </div>
                 </div>
               ))}
@@ -873,21 +1072,21 @@ export default function Landing() {
       </section>
 
       {/* ── 10. COMPARATIVO ───────────────────────────────────── */}
-      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: '#FCFAF7' }}>
+      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
         <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[#161616]">
+          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[var(--text-primary)]">
             Por que igrejas migram para o Ekthos Church?
           </h2>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: '#f9eedc' }}>
-                <th className="text-left p-4 font-semibold text-[#161616]">Recurso</th>
-                <th className="p-4 text-center font-semibold text-gray-400">Planilhas</th>
-                <th className="p-4 text-center font-semibold text-gray-400">CRM Genérico</th>
-                <th className="p-4 text-center font-semibold" style={{ color: '#e13500', background: 'rgba(225,53,0,0.05)' }}>Ekthos Church</th>
+              <tr style={{ background: 'var(--bg-active)' }}>
+                <th className="text-left p-4 font-semibold text-[var(--text-primary)]">Recurso</th>
+                <th className="p-4 text-center font-semibold text-[var(--text-tertiary)]">Planilhas</th>
+                <th className="p-4 text-center font-semibold text-[var(--text-tertiary)]">CRM Genérico</th>
+                <th className="p-4 text-center font-semibold" style={{ color: 'var(--color-primary)', background: 'rgba(41,182,255,0.05)' }}>Ekthos Church</th>
               </tr>
             </thead>
             <tbody>
@@ -902,11 +1101,11 @@ export default function Landing() {
                 ['Aplicativo próprio da igreja',         false, false, true],
                 ['Suporte em português',                 false, false, true],
               ].map(([label, col1, col2, col3]) => (
-                <tr key={String(label)} style={{ borderTop: '1px solid #f0f0f0' }}>
-                  <td className="p-4 text-[#161616]">{label}</td>
+                <tr key={String(label)} style={{ borderTop: '1px solid var(--border-default)' }}>
+                  <td className="p-4 text-[var(--text-primary)]">{label}</td>
                   <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                   <td className="p-4 text-center">{col2 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
-                  <td className="p-4 text-center" style={{ background: 'rgba(225,53,0,0.03)' }}>{col3 ? <Check size={16} style={{ color: '#e13500', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
+                  <td className="p-4 text-center" style={{ background: 'rgba(41,182,255,0.03)' }}>{col3 ? <Check size={16} style={{ color: 'var(--color-primary)', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
                 </tr>
               ))}
             </tbody>
@@ -916,11 +1115,11 @@ export default function Landing() {
       </section>
 
       {/* ── 11. DEPOIMENTOS ───────────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#161616] w-full">
+      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(225,53,0,0.8)' }}>O que os pastores dizem</p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#f9eedc' }}>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>O que os pastores dizem</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>
               Pastores que transformaram sua gestão
             </h2>
           </div>
@@ -933,14 +1132,14 @@ export default function Landing() {
               { name: 'Pr. José Ferreira',    church: 'Comunidade Shalom — Fortaleza', text: 'Finalmente tenho números reais. Sei quantos visitantes voltaram e qual ministério precisa de atenção.' },
               { name: 'Pastora Ana Lima',     church: 'IBatista Central — Recife',     text: 'O módulo infantil trouxe mais segurança pro nosso ministério kids. Os pais ficaram muito mais tranquilos.' },
             ].map((t, i) => (
-              <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(249,238,220,0.04)', borderColor: 'rgba(249,238,220,0.08)' }}>
+              <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(41,182,255,0.04)', borderColor: 'rgba(41,182,255,0.08)' }}>
                 <div className="flex gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="#e13500" style={{ color: '#e13500' }} />)}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="var(--color-primary)" style={{ color: 'var(--color-primary)' }} />)}
                 </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(249,238,220,0.75)' }}>"{t.text}"</p>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(245,250,255,0.75)' }}>"{t.text}"</p>
                 <div>
-                  <p className="font-semibold text-sm" style={{ color: '#f9eedc' }}>{t.name}</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(249,238,220,0.4)' }}>{t.church}</p>
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t.name}</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'rgba(245,250,255,0.4)' }}>{t.church}</p>
                 </div>
               </div>
             ))}
@@ -949,27 +1148,27 @@ export default function Landing() {
       </section>
 
       {/* ── 12. FAQ ───────────────────────────────────────────── */}
-      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F6F2EC' }}>
+      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-surface)' }}>
         <div className="max-w-3xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-[#161616]">
+          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Dúvidas frequentes</p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
             Respondemos antes de você perguntar
           </h2>
         </div>
         <div className="space-y-3">
           {FAQ_ITEMS.map((item, i) => (
-            <div key={i} className="rounded-2xl border shadow-sm overflow-hidden" style={{ background: '#FDFAF6', borderColor: '#E4DAD0' }}>
+            <div key={i} className="rounded-2xl border shadow-sm overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
               <button
                 onClick={() => setFaqOpen(faqOpen === i ? null : i)}
                 className="w-full flex items-center justify-between px-6 py-5 text-left">
-                <span className="font-semibold text-base pr-4 text-[#161616]">{item.q}</span>
+                <span className="font-semibold text-base pr-4 text-[var(--text-primary)]">{item.q}</span>
                 <ChevronDown size={18} strokeWidth={2}
-                  style={{ color: '#e13500', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
+                  style={{ color: 'var(--color-primary)', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
               </button>
               {faqOpen === i && (
                 <div className="px-6 pb-5">
-                  <p className="text-sm leading-relaxed text-gray-500">{item.a}</p>
+                  <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{item.a}</p>
                 </div>
               )}
             </div>
@@ -980,7 +1179,7 @@ export default function Landing() {
 
       {/* ── 13. CTA FINAL ─────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 w-full"
-        style={{ background: 'linear-gradient(135deg, #e13500 0%, #670000 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0C1B2B 100%)' }}>
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-sm font-semibold uppercase tracking-widest mb-4 text-white/60">Comece hoje mesmo</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-5">
@@ -995,7 +1194,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={scrollToPricing}
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
-              style={{ color: '#e13500', minHeight: 56 }}>
+              style={{ color: 'var(--color-primary)', minHeight: 56 }}>
               Ver planos
             </button>
             <a href={waHref} target="_blank" rel="noopener noreferrer"
@@ -1008,7 +1207,7 @@ export default function Landing() {
       </section>
 
       {/* ── 14. FOOTER ────────────────────────────────────────── */}
-      <footer className="bg-[#161616] w-full">
+      <footer className="bg-[#07131F] w-full">
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
@@ -1016,53 +1215,53 @@ export default function Landing() {
                 {/* Cruz no footer — canal duplo em branco */}
                 <svg width="38" height="38" viewBox="0 0 40 40" fill="none" aria-hidden>
                   <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z"
-                    stroke="rgba(249,238,220,0.9)" strokeWidth="2.5" strokeLinejoin="round"/>
+                    stroke="rgba(245,250,255,0.9)" strokeWidth="2.5" strokeLinejoin="round"/>
                   <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
-                    stroke="rgba(249,238,220,0.5)" strokeWidth="1.5" strokeLinejoin="round"/>
+                    stroke="rgba(245,250,255,0.5)" strokeWidth="1.5" strokeLinejoin="round"/>
                 </svg>
                 <span className="font-display text-2xl font-bold text-white tracking-tight">
-                  Ekthos <span style={{ color: '#e13500' }}>Church</span>
+                  Ekthos <span style={{ color: 'var(--color-primary)' }}>Church</span>
                 </span>
               </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(249,238,220,0.45)' }}>
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.45)' }}>
                 CRM pastoral com inteligência artificial para igrejas que querem cuidar melhor da sua comunidade.
               </p>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Produto</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>Produto</p>
               <ul className="space-y-2.5">
                 {['Funcionalidades', 'Planos', 'Agentes IA', 'Changelog'].map(l => (
                   <li key={l}>
                     <a href="#" className="text-sm transition-colors"
-                      style={{ color: 'rgba(249,238,220,0.5)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.5)')}>{l}</a>
+                      style={{ color: 'rgba(245,250,255,0.5)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>{l}</a>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Empresa</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>Empresa</p>
               <ul className="space-y-2.5">
                 {['Sobre', 'Blog', 'Afiliados', 'Contato'].map(l => (
                   <li key={l}>
                     <a href="#" className="text-sm transition-colors"
-                      style={{ color: 'rgba(249,238,220,0.5)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.5)')}>{l}</a>
+                      style={{ color: 'rgba(245,250,255,0.5)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>{l}</a>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(249,238,220,0.3)' }}>Legal</p>
+              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>Legal</p>
               <ul className="space-y-2.5">
                 {['Termos de Uso', 'Política de Privacidade', 'LGPD'].map(l => (
                   <li key={l}>
                     <a href="#" className="text-sm transition-colors"
-                      style={{ color: 'rgba(249,238,220,0.5)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#f9eedc')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.5)')}>{l}</a>
+                      style={{ color: 'rgba(245,250,255,0.5)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>{l}</a>
                   </li>
                 ))}
               </ul>
@@ -1070,7 +1269,7 @@ export default function Landing() {
           </div>
           <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
             style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <p className="text-xs" style={{ color: 'rgba(249,238,220,0.3)' }}>
+            <p className="text-xs" style={{ color: 'rgba(245,250,255,0.3)' }}>
               © 2026 Ekthos Church. Feito com fé para a Igreja de Cristo.
             </p>
             <p className="text-xs" style={{ color: 'rgba(249,238,220,0.2)' }}>
@@ -1158,21 +1357,21 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
+      <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
         {/* Header */}
-        <div className="px-8 pt-8 pb-5 border-b border-gray-100">
+        <div className="px-8 pt-8 pb-5 border-b border-[var(--border-default)]">
           <button onClick={onClose}
-            className="absolute top-5 right-5 p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+            className="absolute top-5 right-5 p-1.5 rounded-full text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-gray-100 transition-colors">
             <X size={18} />
           </button>
           <div className="flex items-center gap-3 mb-1">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
-              style={{ background: '#e13500' }}>
+              style={{ background: 'var(--color-primary)' }}>
               <UserPlus size={12} /> Plano {planLabel}
             </span>
           </div>
-          <h2 className="font-display text-xl font-bold text-[#161616]">Solicitar contato</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="font-display text-xl font-bold text-[var(--text-primary)]">Solicitar contato</h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
             Preencha os dados e um consultor entrará em contato em até 24h.
           </p>
         </div>
@@ -1185,13 +1384,13 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
                 style={{ background: 'rgba(45,122,79,0.1)' }}>
                 <Check size={32} strokeWidth={2.5} style={{ color: '#2D7A4F' }} />
               </div>
-              <h3 className="font-display text-xl font-bold text-[#161616] mb-2">Solicitação enviada!</h3>
-              <p className="text-sm text-gray-500 max-w-xs mx-auto">
+              <h3 className="font-display text-xl font-bold text-[var(--text-primary)] mb-2">Solicitação enviada!</h3>
+              <p className="text-sm text-[var(--text-secondary)] max-w-xs mx-auto">
                 Recebemos seu interesse no plano <strong>{planLabel}</strong>! Um consultor entrará em contato em até 24h.
               </p>
               <button onClick={onClose}
                 className="mt-6 px-8 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
-                style={{ background: '#e13500' }}>
+                style={{ background: 'var(--color-primary)' }}>
                 Fechar
               </button>
             </div>
@@ -1204,20 +1403,20 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
                 { name: 'church_name', label: 'Nome da igreja',      type: 'text',  placeholder: 'Ex: Igreja Vida Nova',     required: true },
               ].map(f => (
                 <div key={f.name}>
-                  <label className="block text-xs font-semibold text-[#161616] mb-1.5">
-                    {f.label} {f.required && <span style={{ color: '#e13500' }}>*</span>}
+                  <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
+                    {f.label} {f.required && <span style={{ color: 'var(--color-primary)' }}>*</span>}
                   </label>
                   <input name={f.name} type={f.type} value={form[f.name as keyof typeof form]}
                     onChange={handleChange} required={f.required} placeholder={f.placeholder}
-                    className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                    className="w-full px-4 py-3 rounded-xl text-sm border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                     style={{ background: '#fafafa' }} />
                 </div>
               ))}
 
               <div>
-                <label className="block text-xs font-semibold text-[#161616] mb-1.5">Quantidade de membros</label>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">Quantidade de membros</label>
                 <select name="estimated_members" value={form.estimated_members} onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-200 focus:outline-none focus:border-[#e13500] transition-colors"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
                   style={{ background: '#fafafa' }}>
                   <option value="">Selecione</option>
                   <option value="Até 100">Até 100</option>
@@ -1229,9 +1428,9 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#161616] mb-1.5">Plano de interesse</label>
+                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">Plano de interesse</label>
                 <input value={planLabel} readOnly
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-gray-100 text-gray-400 cursor-default"
+                  className="w-full px-4 py-3 rounded-xl text-sm border border-[var(--border-default)] text-[var(--text-tertiary)] cursor-default"
                   style={{ background: '#f3f3f3' }} />
               </div>
 
@@ -1241,7 +1440,7 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
 
               <button type="submit" disabled={sending}
                 className="w-full py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 mt-2"
-                style={{ background: '#e13500', minHeight: 52 }}>
+                style={{ background: 'var(--color-primary)', minHeight: 52 }}>
                 {sending ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

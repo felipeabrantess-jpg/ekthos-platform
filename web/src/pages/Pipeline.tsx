@@ -54,7 +54,7 @@ function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
         }
       }}
       onClick={() => onClick(person)}
-      className="bg-cream-light rounded-xl border border-cream-dark/50 p-3 shadow-sm cursor-grab active:cursor-grabbing hover:bg-white hover:shadow-md transition-all select-none"
+      className="bg-bg-primary rounded-xl border border-border-default p-3 shadow-sm cursor-grab active:cursor-grabbing hover:bg-white hover:shadow-md transition-all select-none"
     >
       <div className="flex items-start justify-between gap-1">
         <p className="text-sm font-medium text-ekthos-black truncate">{person.name ?? '—'}</p>
@@ -98,12 +98,12 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30" />
       <div
-        className="relative bg-cream-light rounded-2xl shadow-xl p-5 w-full max-w-sm z-50"
+        className="relative bg-bg-primary rounded-2xl shadow-xl p-5 w-full max-w-sm z-50"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-display text-base font-semibold text-ekthos-black">{person.name ?? '—'}</h3>
-          <button onClick={onClose} className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/40 transition-all">
+          <button onClick={onClose} className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-bg-hover transition-all">
             <X size={16} strokeWidth={1.75} />
           </button>
         </div>
@@ -129,7 +129,7 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
             <div className="flex gap-2">
               <span className="text-ekthos-black/40 w-20 shrink-0">SLA</span>
               <span className={
-                status === 'breach'  ? 'font-semibold text-brand-600' :
+                status === 'breach'  ? 'font-semibold text-primary-text' :
                 status === 'warning' ? 'font-semibold text-warning' :
                 'text-ekthos-black'
               }>
@@ -145,7 +145,7 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
               <span className="text-ekthos-black/40 w-20 shrink-0">Tags</span>
               <div className="flex flex-wrap gap-1">
                 {person.tags.map((tag) => (
-                  <span key={tag} className="text-xs bg-brand-50 text-brand-800 rounded-full px-2 py-0.5 font-medium">{tag}</span>
+                  <span key={tag} className="text-xs bg-bg-hover text-primary-text rounded-full px-2 py-0.5 font-medium">{tag}</span>
                 ))}
               </div>
             </div>
@@ -204,14 +204,14 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
 
   return (
     <div
-      className={`flex flex-col rounded-2xl border ${isDragOver ? 'ring-2 ring-brand-600/40 border-brand-200 bg-brand-50/30' : 'border-cream-dark/60 bg-cream-dark/30'} min-w-[260px] max-w-[260px] transition-all`}
+      className={`flex flex-col rounded-2xl border ${isDragOver ? 'ring-2 ring-primary/40 border-border-default bg-bg-hover/30' : 'border-border-default bg-bg-hover'} min-w-[260px] max-w-[260px] transition-all`}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Column header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-cream-dark/60">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-border-default">
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="text-sm font-semibold text-ekthos-black truncate">{stage.name}</h3>
           {stage.sla_hours && (
@@ -220,11 +220,11 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-1">
           {breachCount > 0 && (
-            <span className="text-xs font-semibold text-white bg-brand-600 rounded-full px-1.5 py-0.5 leading-none">
+            <span className="text-xs font-semibold text-white bg-primary rounded-full px-1.5 py-0.5 leading-none">
               {breachCount}
             </span>
           )}
-          <span className="text-xs font-medium text-ekthos-black/60 bg-cream-dark rounded-full px-2 py-0.5">
+          <span className="text-xs font-medium text-ekthos-black/60 bg-bg-hover rounded-full px-2 py-0.5">
             {people.length}
           </span>
         </div>
@@ -275,7 +275,7 @@ function MobileStagePicker({ stages, activeId, board, onSelect }: MobileStagePic
             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0 transition-all active:scale-95 ${
               isActive
                 ? 'text-white shadow-sm'
-                : 'bg-cream-dark/50 text-ekthos-black/60 active:bg-cream-dark'
+                : 'bg-bg-hover text-ekthos-black/60 active:bg-bg-hover'
             }`}
             style={isActive ? { background: (stage as PipelineStage & { color?: string }).color ?? 'var(--color-primary)' } : {}}
           >
@@ -372,7 +372,7 @@ export default function Pipeline() {
         </div>
         <button
           onClick={() => navigate('/configuracoes/discipulado')}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-brand-600 hover:text-brand-600 bg-white transition-colors shrink-0"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-primary hover:text-primary-text bg-white transition-colors shrink-0"
         >
           <Settings2 className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Configurar</span>
@@ -381,7 +381,7 @@ export default function Pipeline() {
 
       {/* SLA alert banner */}
       {totalBreaches > 0 && (
-        <div className="flex items-center gap-2 bg-brand-50 border border-brand-200 rounded-xl px-4 py-2.5 text-sm text-brand-700">
+        <div className="flex items-center gap-2 bg-bg-hover border border-border-default rounded-xl px-4 py-2.5 text-sm text-primary-text">
           <AlertTriangle size={16} strokeWidth={1.75} className="shrink-0" />
           <span>
             <strong>{totalBreaches} {totalBreaches === 1 ? 'pessoa' : 'pessoas'}</strong> com prazo de contato estourado

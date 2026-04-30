@@ -49,11 +49,11 @@ const fmtPct = (v: number, total: number) =>
 
 const PLAN_COLORS: Record<string, string> = {
   chamado:    '#5A5A5A',
-  missao:     '#e13500',
+  missao:     'var(--color-primary)',
   avivamento: '#670000',
 }
 
-const TYPE_COLORS = ['#e13500', '#C4841D', '#4F6EE1']
+const TYPE_COLORS = ['var(--color-primary)', '#C4841D', '#4F6EE1']
 
 // ── Componentes ────────────────────────────────────────────
 
@@ -67,7 +67,7 @@ function BigMetric({ label, value, sub, icon }: {
     <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
       <div className="flex items-start justify-between mb-2">
         <p className="text-xs font-medium" style={{ color: '#8A8A8A' }}>{label}</p>
-        {icon && <span style={{ color: '#e13500' }}>{icon}</span>}
+        {icon && <span style={{ color: 'var(--color-primary)' }}>{icon}</span>}
       </div>
       <p className="font-mono-ekthos text-3xl font-bold text-gray-900">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
@@ -166,7 +166,7 @@ function StripeBootstrapCard() {
       <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <Zap size={15} strokeWidth={1.75} style={{ color: '#e13500' }} />
+            <Zap size={15} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
             Configuração de Pricing (Stripe Bootstrap)
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -252,7 +252,7 @@ function StripeBootstrapCard() {
             onClick={() => void runBootstrap()}
             disabled={running || !canRun}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-40"
-            style={{ background: '#e13500' }}
+            style={{ background: 'var(--color-primary)' }}
           >
             {running
               ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Executando...</>
@@ -508,7 +508,7 @@ export default function AdminRevenue() {
                   label="Resultado"
                   value={data.dre.resultado}
                   bold
-                  color={data.dre.resultado >= 0 ? '#2D7A4F' : '#e13500'}
+                  color={data.dre.resultado >= 0 ? '#2D7A4F' : 'var(--color-primary)'}
                 />
               </div>
             </div>

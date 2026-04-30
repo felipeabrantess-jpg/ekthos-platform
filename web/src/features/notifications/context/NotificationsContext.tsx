@@ -1,25 +1,24 @@
 import { createContext, useContext, type ReactNode } from 'react'
-import { useAuth } from '@/hooks/useAuth'
 import { useNotifications, type AppNotification } from '../hooks/useNotifications'
+import { useAuth } from '@/hooks/useAuth'
 
 interface NotificationsContextValue {
   notifications: AppNotification[]
   loading: boolean
   unreadCount: number
-  refetch: () => Promise<void>
+  refetch: () => void
 }
 
 const NotificationsContext = createContext<NotificationsContextValue>({
   notifications: [],
-  loading: false,
+  loading: true,
   unreadCount: 0,
-  refetch: async () => {},
+  refetch: () => {},
 })
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const value = useNotifications(user?.id)
-
   return (
     <NotificationsContext.Provider value={value}>
       {children}
