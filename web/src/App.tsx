@@ -47,7 +47,8 @@ const Leaders        = lazy(() => import('@/pages/people/Leaders'))
 const Consolidation  = lazy(() => import('@/pages/people/Consolidation'))
 const VolunteersPage = lazy(() => import('@/pages/people/Volunteers'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
-const EventsList     = lazy(() => import('@/pages/events/EventsList'))
+const EventsList       = lazy(() => import('@/pages/events/EventsList'))
+const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
@@ -272,6 +273,10 @@ export default function App() {
             <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
+
+            {/* ── Sprint 3C: Central de Conversas ── */}
+            <Route path="conversas"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
+            <Route path="conversas/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
 
             <Route path="agents" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agents /></Suspense></ErrorBoundary>} />
 
