@@ -7,6 +7,10 @@
 //
 // Body: { person_id: string, event: 'person_created' }
 //
+// Sprint 2 — duas responsabilidades:
+//   A) Criar acolhimento_journey se person_stage='visitante' (independente de n8n)
+//   B) Disparar webhook de boas-vindas para o n8n (se elegível)
+//
 // Lógica de elegibilidade para webhook de boas-vindas:
 //   1. source IN captacao_sources → elegível
 //   2. is_bulk_import = false     → elegível
@@ -112,7 +116,13 @@ Deno.serve(async (req: Request) => {
       id: string; name: string | null; church_id: string; source: string | null
     })
 
-    // ── 2. Verificar elegibilidade ────────────────────────
+    // ── 1c. Criar jornada de acolhimento (Sprint 2) ───────
+    // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
+    if (person.person_stage === 'visitante' && person.is_bulk_import !== true) {
+      await createAcolhimentoJourney(sb, churchId, personId)
+    }
+
+    // ── 2. Verificar elegibilidade para webhook n8n ───────
 
     // 2a. Source elegível?
     if (!WELCOME_SOURCES.has(person.source as string)) {
@@ -248,6 +258,43 @@ Deno.serve(async (req: Request) => {
     return ok()
   }
 })
+
+// ============================================================
+// Helper: criar acolhimento_journey para visitante (Sprint 2)
+// Idempotente: ignora UNIQUE violation (23505) silenciosamente.
+// Try/catch próprio — nunca propaga erro para o handler principal.
+// ============================================================
+async function createAcolhimentoJourney(
+  sb:        ReturnType<typeof createClient>,
+  churchId:  string,
+  personId:  string
+): Promise<void> {
+  try {
+    const { error } = await sb
+      .from('acolhimento_journey')
+      .insert({
+        church_id:          churchId,
+        person_id:          personId,
+        current_touchpoint: 'D+0',
+        next_touchpoint_at: new Date().toISOString(),
+        status:             'pending'
+      })
+
+    if (error) {
+      if (error.code === '23505') {
+        // UNIQUE(church_id, person_id) — jornada já existe, tudo bem
+        console.log(`[dispatch-person-event] Jornada já existe para ${personId}`)
+      } else {
+        console.error(`[dispatch-person-event] createAcolhimentoJourney error:`, error.message)
+      }
+    } else {
+      console.log(`[dispatch-person-event] Jornada de acolhimento criada para ${personId}`)
+    }
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.warn(`[dispatch-person-event] createAcolhimentoJourney falhou (não crítico): ${msg}`)
+  }
+}
 
 // ============================================================
 // Helper: notificar admins/pastores sobre novo cadastro
