@@ -53,6 +53,7 @@ const EventsList     = lazy(() => import('@/pages/events/EventsList'))
 const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
 const AgentDetail  = lazy(() => import('@/pages/agents/AgentDetail'))
 const AgentChat    = lazy(() => import('@/pages/agents/AgentChat'))
+const AgentConfig  = lazy(() => import('@/pages/agents/AgentConfig'))
 const ModuleDetail = lazy(() => import('@/pages/modules/ModuleDetail'))
 
 const ConfiguracoesLayoutPage = lazy(() =>
@@ -279,6 +280,7 @@ export default function App() {
             <Route path="agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></ErrorBoundary>} />
 
             {/* ── Frente D: Chat dedicado por agente ── */}
+            <Route path="agentes/:slug/configurar"           element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentConfig /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
 

@@ -13,10 +13,11 @@
 //   person_id?: string (uuid, opcional)
 // }
 //
-// Fluxo Sprint 2:
+// Fluxo Sprint 2.5:
 //   1. Valida campos obrigatórios
-//   2. Decide canal via agent_channel_routing
-//   3. Verifica canal WhatsApp configurado
+//   2. Decide canal via church_agent_channel_routing (por-igreja, Sprint 2.5)
+//      Fallback: agent_channel_routing global
+//   3. Busca canal WhatsApp ativo (session_status IN testing|active)
 //   4. Enfileira em agent_pending_messages (status: awaiting_retry)
 //   5. Tenta POST imediato ao n8n webhook do agente
 //   6. Se ok → atualiza status para dispatched_to_n8n
@@ -86,27 +87,54 @@ Deno.serve(async (req) => {
       }, 400)
     }
 
-    // 2. Decide canal pelo agent_channel_routing (default: meta_cloud)
-    const { data: routing } = await supabaseAdmin
-      .from('agent_channel_routing')
-      .select('channel_type')
+    // 2. Decide canal pelo church_agent_channel_routing (por-igreja, Sprint 2.5)
+    //    Fallback: agent_channel_routing global (Sprint 2)
+    const { data: churchRouting } = await supabaseAdmin
+      .from('church_agent_channel_routing')
+      .select('context_type')
+      .eq('church_id', church_id)
       .eq('agent_slug', agent_slug)
       .maybeSingle()
 
-    const channelType = routing?.channel_type ?? 'meta_cloud'
+    let channelContextType: string | null = churchRouting?.context_type ?? null
 
-    // 3. Verifica canal WhatsApp configurado
+    if (!channelContextType) {
+      // Fallback global
+      const { data: globalRouting } = await supabaseAdmin
+        .from('agent_channel_routing')
+        .select('channel_type, context_type')
+        .eq('agent_slug', agent_slug)
+        .maybeSingle()
+      channelContextType = globalRouting?.context_type ?? globalRouting?.channel_type ?? 'pastoral'
+    }
+
+    // 3. Busca canal WhatsApp configurado e ativo para este contexto
+    //    Sprint 2.5: context_type (pastoral/operacional) substitui channel_type
+    //    Aceita canais em 'testing' ou 'active'
     const { data: channel } = await supabaseAdmin
       .from('church_whatsapp_channels')
-      .select('id, phone_number')
+      .select('id, phone_number, zapi_instance_id, zapi_token, context_type')
       .eq('church_id', church_id)
-      .eq('channel_type', channelType)
+      .eq('context_type', channelContextType)
       .eq('active', true)
+      .in('session_status', ['testing', 'active'])
       .maybeSingle()
 
     if (!channel) {
-      console.warn(`[dispatch-message] Igreja ${church_id} sem canal ${channelType} ativo`)
+      // Fallback: busca por channel_type legado (compatibilidade Sprint 1/2)
+      const { data: legacyChannel } = await supabaseAdmin
+        .from('church_whatsapp_channels')
+        .select('id, phone_number, zapi_instance_id, zapi_token')
+        .eq('church_id', church_id)
+        .eq('active', true)
+        .maybeSingle()
+
+      if (!legacyChannel) {
+        console.warn(`[dispatch-message] Igreja ${church_id} sem canal WhatsApp ativo`)
+      }
     }
+
+    const activeChannel = channel ?? null
 
     // 4. Enfileira em agent_pending_messages
     const { data: queued, error: insertErr } = await supabaseAdmin
@@ -118,10 +146,11 @@ Deno.serve(async (req) => {
         payload: {
           to_phone,
           message,
-          person_id:         person_id ?? null,
-          channel_type:      channelType,
-          channel_id:        channel?.id ?? null,
-          channel_configured: !!channel
+          person_id:          person_id ?? null,
+          channel_type:       channelContextType,
+          channel_id:         activeChannel?.id ?? null,
+          channel_configured: !!activeChannel,
+          zapi_instance_id:   activeChannel?.zapi_instance_id ?? null,
         },
         status:        'awaiting_retry',
         attempt_count: 0
@@ -144,24 +173,25 @@ Deno.serve(async (req) => {
       return json({
         ok: true,
         queued: true,
-        message_id:        messageId,
-        channel_type:      channelType,
-        channel_configured: !!channel,
-        dispatched_to_n8n: false,
-        note:              'Webhook n8n não configurado para este agente. Worker de retry assumirá.'
+        message_id:         messageId,
+        channel_type:       channelContextType,
+        channel_configured: !!activeChannel,
+        dispatched_to_n8n:  false,
+        note:               'Webhook n8n não configurado para este agente. Worker de retry assumirá.'
       })
     }
 
     try {
       const n8nPayload = {
-        message_id:   messageId,
+        message_id:       messageId,
         church_id,
         agent_slug,
         to_phone,
         message,
-        person_id:    person_id ?? null,
-        channel_type: channelType,
-        queued_at:    new Date().toISOString()
+        person_id:        person_id ?? null,
+        channel_type:     channelContextType,
+        zapi_instance_id: activeChannel?.zapi_instance_id ?? null,
+        queued_at:        new Date().toISOString()
       }
 
       const n8nRes = await fetch(webhookUrl, {
@@ -185,10 +215,10 @@ Deno.serve(async (req) => {
         return json({
           ok: true,
           queued: true,
-          message_id:        messageId,
-          channel_type:      channelType,
-          channel_configured: !!channel,
-          dispatched_to_n8n: true
+          message_id:         messageId,
+          channel_type:       channelContextType,
+          channel_configured: !!activeChannel,
+          dispatched_to_n8n:  true
         })
       } else {
         const errText = await n8nRes.text().catch(() => '')
@@ -197,11 +227,11 @@ Deno.serve(async (req) => {
         return json({
           ok: true,
           queued: true,
-          message_id:        messageId,
-          channel_type:      channelType,
-          channel_configured: !!channel,
-          dispatched_to_n8n: false,
-          n8n_status:        n8nRes.status
+          message_id:         messageId,
+          channel_type:       channelContextType,
+          channel_configured: !!activeChannel,
+          dispatched_to_n8n:  false,
+          n8n_status:         n8nRes.status
         })
       }
 
@@ -212,11 +242,11 @@ Deno.serve(async (req) => {
       return json({
         ok: true,
         queued: true,
-        message_id:        messageId,
-        channel_type:      channelType,
-        channel_configured: !!channel,
-        dispatched_to_n8n: false,
-        error:             'n8n_unreachable'
+        message_id:         messageId,
+        channel_type:       channelContextType,
+        channel_configured: !!activeChannel,
+        dispatched_to_n8n:  false,
+        error:              'n8n_unreachable'
       })
     }
 
