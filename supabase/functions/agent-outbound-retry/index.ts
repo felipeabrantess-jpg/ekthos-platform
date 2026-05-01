@@ -27,17 +27,20 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const MAX_ATTEMPTS     = 3
 const BATCH_SIZE       = 20
 
-// Mapa agente → nome da env var do webhook n8n
-const AGENT_WEBHOOK_ENVS: Record<string, string> = {
-  'agent-acolhimento':   'N8N_WEBHOOK_ACOLHIMENTO',
-  'agent-reengajamento': 'N8N_WEBHOOK_REENGAJAMENTO',
-  'agent-operacao':      'N8N_WEBHOOK_OPERACAO',
+// Mapa agente → env var + fallback hardcoded (URLs públicas, não são segredos)
+const AGENT_WEBHOOK_CONFIG: Record<string, { envVar: string; fallback: string }> = {
+  'agent-acolhimento':   {
+    envVar:   'N8N_WEBHOOK_ACOLHIMENTO',
+    fallback: 'https://ekthosai.app.n8n.cloud/webhook/ekthos-acolhimento-outbound',
+  },
+  'agent-reengajamento': { envVar: 'N8N_WEBHOOK_REENGAJAMENTO', fallback: '' },
+  'agent-operacao':      { envVar: 'N8N_WEBHOOK_OPERACAO',      fallback: '' },
 }
 
 function getWebhookUrl(agentSlug: string): string | null {
-  const varName = AGENT_WEBHOOK_ENVS[agentSlug]
-  if (!varName) return null
-  return Deno.env.get(varName) ?? null
+  const cfg = AGENT_WEBHOOK_CONFIG[agentSlug]
+  if (!cfg) return null
+  return (Deno.env.get(cfg.envVar) ?? cfg.fallback) || null
 }
 
 // Backoff exponencial: 2^attempt minutos em ms
