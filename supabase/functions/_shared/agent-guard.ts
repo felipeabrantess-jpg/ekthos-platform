@@ -33,6 +33,18 @@ export async function guardAgent(
   // Suporte é sempre free — libera sem consultar banco
   if (agentSlug === 'agent-suporte') return { allowed: true }
 
+  // AGENT-DEBT-002: verificar se agente está ativo no catálogo
+  // Bloqueia agentes descontinuados mesmo que subscription_agents ainda exista
+  const { data: catalogEntry } = await supabase
+    .from('agents_catalog')
+    .select('active')
+    .eq('slug', agentSlug)
+    .maybeSingle()
+
+  if (!catalogEntry?.active) {
+    return { allowed: false, reason: 'Agente desativado ou não encontrado no catálogo' }
+  }
+
   // Busca subscription ativa da church
   const { data: sub, error: subErr } = await supabase
     .from('subscriptions')

@@ -1,10 +1,13 @@
 // ============================================================
 // Shared: anthropic-client.ts
 // Factory do cliente Anthropic com:
-//   - Seleção de modelo (todos Haiku para custo mínimo)
+//   - Seleção de modelo (Haiku padrão, Sonnet para agentes premium)
 //   - Prompt caching (cache_control: ephemeral)
 //   - Batch API helpers (50% custo vs síncrono)
 //   - Estimativa de custo
+//
+// Sprint 2 — 01/05/2026: Sonnet habilitado para agentes premium pastorais
+//   Modelo Sonnet atual: claude-sonnet-4-6 (validado em docs.anthropic.com)
 // ============================================================
 
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
@@ -12,12 +15,13 @@ import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
 
 // ── Modelos ────────────────────────────────────────────────
-// Política de custo: TODOS usam Haiku — sem exceção.
+// Haiku:  agentes internos (suporte, onboarding, cadastro, config) — custo mínimo
+// Sonnet: agentes premium pastorais (acolhimento, operacao, reengajamento) — qualidade pastoral
 
 export const MODELS = {
-  haiku:        'claude-haiku-4-5-20251001',      // primary — custo mínimo
-  haiku_legacy: 'claude-3-5-haiku-20241022',      // fallback
-  sonnet:       'claude-3-5-sonnet-20241022',     // reservado — NÃO usar em produção
+  haiku:        'claude-haiku-4-5-20251001',      // primary — agentes internos
+  haiku_legacy: 'claude-3-5-haiku-20241022',      // DEPRECATED — não usar
+  sonnet:       'claude-sonnet-4-6',              // agentes premium pastorais (Sprint 2+)
 } as const
 
 export type ModelTier = keyof typeof MODELS
@@ -65,7 +69,7 @@ const PRICING: Record<
 > = {
   haiku:        { input: 0.00025, output: 0.00125, cacheRead: 0.000025, cacheWrite: 0.0003125 },
   haiku_legacy: { input: 0.00025, output: 0.00125, cacheRead: 0.000025, cacheWrite: 0.0003125 },
-  sonnet:       { input: 0.003,   output: 0.015,   cacheRead: 0.0003,   cacheWrite: 0.00375   },
+  sonnet:       { input: 0.003,   output: 0.015,   cacheRead: 0.0003,   cacheWrite: 0.00375   },  // claude-sonnet-4-6
 }
 
 export function estimateCostCents(
