@@ -131,6 +131,72 @@ export const AGENT_TOOLS = [
       },
       required: ['event_id']
     }
+  },
+
+  // ── Tools de Acolhimento (Sprint 2) ──────────────────────────────────────
+
+  {
+    name: 'create_acolhimento_journey',
+    description: 'Cria a jornada de acolhimento pastoral de 90 dias para uma pessoa nova. ' +
+                 'Deve ser chamada apenas uma vez por pessoa. Retorna erro se jornada já existe.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        person_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da pessoa em people.id'
+        }
+      },
+      required: ['person_id']
+    }
+  },
+
+  {
+    name: 'read_acolhimento_journey',
+    description: 'Lê o histórico completo da jornada de acolhimento de uma pessoa: ' +
+                 'touchpoints enviados, respostas recebidas, observações pastorais e próximo agendamento.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        person_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da pessoa em people.id'
+        }
+      },
+      required: ['person_id']
+    }
+  },
+
+  {
+    name: 'update_acolhimento_journey',
+    description: 'Avança o timer da jornada após um touchpoint enviado e registra observação pastoral. ' +
+                 'Use "complete" para encerrar a jornada quando o membro estiver integrado.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        journey_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da acolhimento_journey.id'
+        },
+        next_touchpoint: {
+          type: 'string',
+          enum: ['D+3', 'D+7', 'D+14', 'D+30', 'D+60', 'D+90', 'complete'],
+          description: 'Próximo ponto de contato. Use "complete" para encerrar a jornada.'
+        },
+        pastoral_note: {
+          type: 'string',
+          description: 'Observação pastoral opcional sobre este touchpoint (máx 500 chars)'
+        },
+        touchpoint_summary: {
+          type: 'string',
+          description: 'Resumo do que foi enviado/aconteceu neste touchpoint (para histórico)'
+        }
+      },
+      required: ['journey_id', 'next_touchpoint']
+    }
   }
 ]
 
@@ -277,6 +343,133 @@ export async function executeTool(
       if (!data) return { ok: false, error: 'event_not_found' }
 
       return { ok: true, event: data }
+    }
+
+    // ── Tool 7: create_acolhimento_journey ──────────────
+    case 'create_acolhimento_journey': {
+      const { data: existing } = await supabaseAdmin
+        .from('acolhimento_journey')
+        .select('id, status, current_touchpoint')
+        .eq('church_id', churchId)
+        .eq('person_id', input.person_id as string)
+        .maybeSingle()
+
+      if (existing) {
+        return {
+          ok: false,
+          error: 'journey_already_exists',
+          journey_id: existing.id,
+          status: existing.status,
+          current_touchpoint: existing.current_touchpoint
+        }
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('acolhimento_journey')
+        .insert({
+          church_id:         churchId,
+          person_id:         input.person_id as string,
+          current_touchpoint: 'D+0',
+          next_touchpoint_at: new Date().toISOString(),
+          status:            'pending'
+        })
+        .select('id, current_touchpoint, next_touchpoint_at, status')
+        .single()
+
+      if (error) return { ok: false, error: error.message }
+      return { ok: true, journey: data }
+    }
+
+    // ── Tool 8: read_acolhimento_journey ─────────────────
+    case 'read_acolhimento_journey': {
+      const { data, error } = await supabaseAdmin
+        .from('acolhimento_journey')
+        .select(
+          'id, current_touchpoint, next_touchpoint_at, touchpoints_sent, ' +
+          'responses_received, pastoral_notes, status, started_at, completed_at'
+        )
+        .eq('church_id', churchId)
+        .eq('person_id', input.person_id as string)
+        .maybeSingle()
+
+      if (error) return { ok: false, error: error.message }
+      if (!data) return { ok: false, error: 'journey_not_found' }
+      return { ok: true, journey: data }
+    }
+
+    // ── Tool 9: update_acolhimento_journey ───────────────
+    case 'update_acolhimento_journey': {
+      const TOUCHPOINT_DAYS: Record<string, number> = {
+        'D+3':  3,
+        'D+7':  7,
+        'D+14': 14,
+        'D+30': 30,
+        'D+60': 60,
+        'D+90': 90,
+      }
+
+      const nextTp = input.next_touchpoint as string
+      const isComplete = nextTp === 'complete'
+
+      // Busca jornada atual para appender touchpoints_sent
+      const { data: current } = await supabaseAdmin
+        .from('acolhimento_journey')
+        .select('touchpoints_sent, pastoral_notes, current_touchpoint')
+        .eq('id', input.journey_id as string)
+        .eq('church_id', churchId)
+        .maybeSingle()
+
+      if (!current) return { ok: false, error: 'journey_not_found' }
+
+      const existingTouchpoints = (current.touchpoints_sent as unknown[]) ?? []
+      const newTouchpointEntry = {
+        touchpoint: current.current_touchpoint,
+        sent_at:    new Date().toISOString(),
+        summary:    (input.touchpoint_summary as string) ?? null,
+      }
+
+      const updatedTouchpoints = [...existingTouchpoints, newTouchpointEntry]
+
+      // Appenda nota pastoral
+      const prevNotes = current.pastoral_notes ?? ''
+      const noteEntry = input.pastoral_note
+        ? `[${new Date().toISOString().slice(0, 10)}] ${input.pastoral_note}`
+        : null
+      const updatedNotes = noteEntry
+        ? (prevNotes ? `${prevNotes}\n${noteEntry}` : noteEntry)
+        : prevNotes || null
+
+      // Calcula próximo next_touchpoint_at
+      const nextAt = isComplete
+        ? null
+        : new Date(Date.now() + TOUCHPOINT_DAYS[nextTp] * 86_400_000).toISOString()
+
+      const updates: Record<string, unknown> = {
+        touchpoints_sent: updatedTouchpoints,
+        pastoral_notes:   updatedNotes,
+        status:           isComplete ? 'completed' : 'pending',
+      }
+      if (!isComplete && nextAt) {
+        updates.current_touchpoint = nextTp
+        updates.next_touchpoint_at = nextAt
+      }
+      if (isComplete) {
+        updates.completed_at = new Date().toISOString()
+      }
+
+      const { error } = await supabaseAdmin
+        .from('acolhimento_journey')
+        .update(updates)
+        .eq('id', input.journey_id as string)
+        .eq('church_id', churchId)
+
+      if (error) return { ok: false, error: error.message }
+      return {
+        ok: true,
+        next_touchpoint: isComplete ? 'complete' : nextTp,
+        next_touchpoint_at: nextAt,
+        status: isComplete ? 'completed' : 'pending'
+      }
     }
 
     default:
