@@ -29,10 +29,9 @@ type AgentState = 'active' | 'contractable' | 'module-bound' | 'unavailable'
 function getAgentState(
   slug: string,
   hasAgent: (s: string) => boolean,
-  planSlug: string,
+  _planSlug: string,
   moduleId?: string
 ): AgentState {
-  if (slug === 'agent-whatsapp' && planSlug !== 'avivamento') return 'unavailable'
   if (hasAgent(slug)) return 'active'
   if (moduleId) return 'module-bound'
   return 'contractable'
