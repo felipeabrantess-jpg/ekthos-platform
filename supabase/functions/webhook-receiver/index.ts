@@ -48,20 +48,83 @@ interface NormalizedInbound {
 
 function parseChatPro(raw: unknown): NormalizedInbound | null {
   if (!raw || typeof raw !== 'object') return null
+
+  // ── Formato 1: ChatPro API v5 — array ["Msg", {cmd, from, body, ...}] ──
+  // ChatPro v5 envia um array onde raw[1] é o objeto da mensagem
+  if (Array.isArray(raw)) {
+    if (raw.length < 2 || !raw[1] || typeof raw[1] !== 'object') return null
+    const p = raw[1] as Record<string, unknown>
+
+    // ACK events têm campo 'ack' — ignorar
+    if (typeof p.ack === 'number') return null
+    // Ignorar mensagens enviadas pelo próprio número (fromMe)
+    if (p.fromMe === true) return null
+    // Precisa ter 'cmd' (tipo de evento) para ser mensagem válida
+    if (p.cmd !== undefined && typeof p.cmd === 'string' && !['chat', 'message', 'text'].includes(p.cmd)) {
+      // cmd presente mas não é de mensagem de texto → ignorar
+      // (mas se cmd não existe, tentar processar assim mesmo)
+    }
+
+    // Telefone: campo 'from' com formato JID (ex: 5521966487878@s.whatsapp.net)
+    const rawPhone = typeof p.from === 'string' ? p.from
+                   : typeof p.phone === 'string' ? p.phone
+                   : null
+    if (!rawPhone) return null
+    const phone = normalizePhone(rawPhone)
+    if (!phone || phone.length < 10) return null
+
+    const text = typeof p.body    === 'string' ? p.body.trim()
+               : typeof p.message === 'string' ? p.message.trim()
+               : null
+    if (!text) return null
+
+    const msgId    = typeof p.id === 'string' ? p.id : ''
+    const tsRaw    = typeof p.t  === 'number' ? p.t * 1000 : Date.now()
+    const timestamp = new Date(tsRaw).toISOString()
+
+    return { from_phone: phone, text, provider_message_id: msgId, timestamp }
+  }
+
   const p = raw as Record<string, unknown>
 
-  // ChatPro envia eventos de status (ack, connection) que não têm body/message
-  // Só processar se tiver campo phone + body/message
-  const phone = typeof p.phone === 'string' ? normalizePhone(p.phone) : null
+  // ── Formato 2: ChatPro Chat — {event, message_data: {message, number, from_me}} ──
+  if (typeof p.event === 'string' && p.event === 'received_message' && p.message_data) {
+    const md = p.message_data as Record<string, unknown>
+    if (md.from_me === true) return null
+
+    const rawPhone = typeof md.number      === 'string' ? md.number
+                   : typeof md.participant === 'string' ? md.participant
+                   : null
+    if (!rawPhone) return null
+    const phone = normalizePhone(rawPhone)
+    if (!phone || phone.length < 10) return null
+
+    const text = typeof md.message === 'string' ? md.message.trim() : null
+    if (!text) return null
+
+    const msgId    = typeof md.id === 'string' ? md.id : ''
+    const tsRaw    = typeof md.ts_receive === 'number' ? md.ts_receive * 1000 : Date.now()
+    const timestamp = new Date(tsRaw).toISOString()
+
+    return { from_phone: phone, text, provider_message_id: msgId, timestamp }
+  }
+
+  // ── Formato 3: flat legado {phone, body/message, fromMe, id, t} ──
+  if (p.fromMe === true) return null
+  // ACK events: têm campo 'ack'
+  if (typeof p.ack === 'number') return null
+
+  const rawPhone = typeof p.phone === 'string' ? p.phone
+                 : typeof p.from  === 'string' ? p.from
+                 : null
+  if (!rawPhone) return null
+  const phone = normalizePhone(rawPhone)
   if (!phone || phone.length < 10) return null
 
   const text = typeof p.body    === 'string' ? p.body.trim()
              : typeof p.message === 'string' ? p.message.trim()
              : null
   if (!text) return null
-
-  // Ignorar mensagens enviadas pelo próprio número conectado (fromMe)
-  if (p.fromMe === true) return null
 
   const msgId    = typeof p.id === 'string' ? p.id : ''
   const tsRaw    = typeof p.t  === 'number' ? p.t * 1000 : Date.now()
@@ -73,19 +136,32 @@ function parseChatPro(raw: unknown): NormalizedInbound | null {
 function parseZApi(raw: unknown): NormalizedInbound | null {
   if (!raw || typeof raw !== 'object') return null
   const p = raw as Record<string, unknown>
+
+  // Filtrar eventos que não são mensagens recebidas
   if (p.isGroup === true) return null
+  // fromMe=true → mensagem enviada por nós (ACK/status de entrega) → ignorar
+  if (p.fromMe === true) return null
+  // Evento de notificação de sistema (ex: CHAT_LABEL_ASSOCIATION) → ignorar
+  if (p.notification !== undefined) return null
+  // type presente mas não é ReceivedCallback → ignorar (DeliveryCallback, ReadCallback, etc.)
   if (p.type && p.type !== 'ReceivedCallback') return null
+
+  // Remetente: campo 'phone' (número de quem enviou)
   const phone = typeof p.phone === 'string' ? normalizePhone(p.phone) : null
-  if (!phone) return null
+  if (!phone || phone.length < 12) return null
+
+  // Texto: Z-API envia text.message (objeto aninhado) ou text direto (string)
   let text: string | null = null
-  if (typeof p.text === 'string') text = p.text
+  if (typeof p.text === 'string') text = p.text.trim()
   else if (p.text && typeof p.text === 'object')
-    text = ((p.text as Record<string, unknown>).message as string) ?? null
+    text = (((p.text as Record<string, unknown>).message as string) ?? '').trim() || null
   if (!text) return null
+
   return {
     from_phone:          phone,
     text,
     provider_message_id: (p.messageId as string | undefined) ?? '',
+    // Z-API usa campo 'momment' (typo deles) em milissegundos
     timestamp:           new Date(typeof p.momment === 'number' ? p.momment : Date.now()).toISOString(),
   }
 }
@@ -101,6 +177,16 @@ Deno.serve(async (req) => {
   const instanceId = url.searchParams.get('instance_id') ?? ''  // zapi legado
 
   const raw = await req.json().catch(() => null)
+
+  // ── DEBUG TEMPORÁRIO: capturar formato real do ChatPro ────
+  console.log('[webhook-receiver] FULL PAYLOAD:', JSON.stringify(raw))
+  console.log('[webhook-receiver] HEADERS:', JSON.stringify({
+    'content-type': req.headers.get('content-type'),
+    'user-agent':   req.headers.get('user-agent'),
+    'x-forwarded-for': req.headers.get('x-forwarded-for'),
+  }))
+  console.log('[webhook-receiver] URL:', req.url)
+  // ── FIM DEBUG ─────────────────────────────────────────────
 
   // Responde 200 imediatamente (ChatPro não pode esperar timeout)
   void processInbound(raw, provider, channelId, instanceId)
@@ -131,13 +217,26 @@ async function processInbound(
       normalized = parseZApi(raw)
       resolvedProvider = 'zapi'
     } else {
-      // Auto-detect: se tem campo 'phone' + 'body'/'message' → ChatPro
-      // se tem campo 'instanceId' → ZApi
+      // Auto-detect
       const p = raw as Record<string, unknown>
-      if (typeof p.phone === 'string' && (typeof p.body === 'string' || typeof p.message === 'string')) {
+      // Array ["Msg", {...}] → ChatPro API v5
+      if (Array.isArray(raw)) {
+        normalized = parseChatPro(raw)
+        resolvedProvider = 'chatpro'
+      // Objeto com event=received_message → ChatPro Chat
+      } else if (typeof p.event === 'string' && p.event === 'received_message') {
+        normalized = parseChatPro(raw)
+        resolvedProvider = 'chatpro'
+      // Z-API: type=ReceivedCallback + phone (sem @suffix) + text
+      } else if (typeof p.type === 'string' && p.type === 'ReceivedCallback') {
+        normalized = parseZApi(raw)
+        resolvedProvider = 'zapi'
+      // Objeto com phone + body/message → ChatPro legado / flat
+      } else if (typeof p.phone === 'string' && (typeof p.body === 'string' || typeof p.message === 'string')) {
         normalized = parseChatPro(raw)
         resolvedProvider = 'chatpro'
       } else {
+        // Fallback: tentar Z-API (formato mais comum)
         normalized = parseZApi(raw)
         resolvedProvider = 'zapi'
       }
@@ -162,15 +261,43 @@ async function processInbound(
         .eq('active', true)
         .maybeSingle()
       channel = data
-    } else if (resolvedProvider === 'zapi' && instanceId) {
-      // Z-API: busca por instance_id
-      const { data } = await sb
-        .from('church_whatsapp_channels')
-        .select('id, church_id, channel_type')
-        .eq('zapi_instance_id', instanceId)
-        .eq('active', true)
-        .maybeSingle()
-      channel = data
+    } else if (resolvedProvider === 'zapi') {
+      if (instanceId) {
+        // Z-API com instance_id explícito na URL: busca precisa
+        const { data } = await sb
+          .from('church_whatsapp_channels')
+          .select('id, church_id, channel_type')
+          .eq('zapi_instance_id', instanceId)
+          .eq('active', true)
+          .maybeSingle()
+        channel = data
+      }
+      if (!channel) {
+        // Fallback: busca o canal zapi ativo (instância única por projeto nessa sprint)
+        // Também tenta extrair instanceId do próprio payload Z-API
+        const payloadInstanceId = raw && typeof raw === 'object'
+          ? (raw as Record<string, unknown>).instanceId as string | undefined
+          : undefined
+        const query = sb
+          .from('church_whatsapp_channels')
+          .select('id, church_id, channel_type')
+          .eq('channel_type', 'zapi')
+          .eq('active', true)
+        if (payloadInstanceId) {
+          const { data } = await query.eq('zapi_instance_id', payloadInstanceId).maybeSingle()
+          channel = data
+        }
+        if (!channel) {
+          const { data } = await sb
+            .from('church_whatsapp_channels')
+            .select('id, church_id, channel_type')
+            .eq('channel_type', 'zapi')
+            .eq('active', true)
+            .limit(1)
+            .maybeSingle()
+          channel = data
+        }
+      }
     } else if (resolvedProvider === 'chatpro') {
       // ChatPro: busca canal chatpro ativo (um por projeto nessa sprint)
       const { data } = await sb

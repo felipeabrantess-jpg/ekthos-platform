@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: channel-dispatcher  v3 — ChatPro
+// Edge Function: channel-dispatcher  v9 — Z-API principal
 // Única função que conhece providers de canal.
 //
 // Fluxo:
@@ -9,7 +9,7 @@
 //   4. Sucesso: status=sent | Falha: backoff / failed
 //
 // Providers suportados:
-//   zapi      → Z-API REST
+//   zapi      → Z-API REST (Client-Token via ZAPI_CLIENT_TOKEN env secret)
 //   chatpro   → chatpro-send EF (credenciais via Secrets)
 //   mock      → MockAdapter (log fake)
 //   meta_cloud → stub (futuro)
@@ -36,15 +36,22 @@ interface ChannelAdapter {
 // ── ZApiAdapter ───────────────────────────────────────────────
 const ZApiAdapter: ChannelAdapter = {
   async send({ instance_id, token, to_phone, text }) {
-    const phone = to_phone.replace(/\D/g, '')
+    // Normalizar: só dígitos + garantir prefixo 55 (Brasil)
+    const digits = to_phone.replace(/\D/g, '')
+    const phone  = digits.startsWith('55') ? digits : `55${digits}`
+    // Client-Token: lido do env secret ZAPI_CLIENT_TOKEN (não do banco)
+    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (clientToken) headers['Client-Token'] = clientToken
     try {
       const res = await fetch(
         `https://api.z-api.io/instances/${instance_id}/token/${token}/send-text`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        { method: 'POST', headers,
           body: JSON.stringify({ phone, message: text }), signal: AbortSignal.timeout(10_000) }
       )
       const body = await res.json().catch(() => ({})) as Record<string, unknown>
-      if (res.ok) return { ok: true, message_id: (body.zaapId ?? body.messageId ?? '') as string }
+      // Z-API retorna { zaapId, messageId, id } — preferir messageId
+      if (res.ok) return { ok: true, message_id: (body.messageId ?? body.zaapId ?? body.id ?? '') as string }
       return { ok: false, error: `Z-API ${res.status}: ${JSON.stringify(body)}` }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
@@ -218,11 +225,12 @@ async function processQueueItem(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channel = (item as any).church_whatsapp_channels as {
     channel_type: string; zapi_instance_id: string | null;
-    zapi_token: string | null; active: boolean; session_status: string;
+    zapi_token: string | null;
+    active: boolean; session_status: string;
   } | null
 
   if (!channel || !channel.active) return await markFailed(sb, item, 'Canal inativo ou não encontrado')
-  if (!['testing', 'active'].includes(channel.session_status)) {
+  if (!['testing', 'active', 'connected'].includes(channel.session_status)) {
     return await markFailed(sb, item, `Canal em estado inválido: ${channel.session_status}`)
   }
 
