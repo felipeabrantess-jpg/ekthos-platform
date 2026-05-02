@@ -151,7 +151,10 @@ async function processQueueItem(
     return await markFailed(sb, item, 'Canal inativo ou não encontrado')
   }
 
-  if (!channel.zapi_instance_id || !channel.zapi_token) {
+  const isMock = channel.channel_type === 'mock'
+
+  // Credenciais Z-API só obrigatórias para canais reais
+  if (!isMock && (!channel.zapi_instance_id || !channel.zapi_token)) {
     return await markFailed(sb, item, 'Credenciais Z-API ausentes no canal')
   }
 
@@ -159,11 +162,11 @@ async function processQueueItem(
     return await markFailed(sb, item, `Canal em estado inválido: ${channel.session_status}`)
   }
 
-  // 3. Enviar via adapter
+  // 3. Enviar via adapter (mock não usa instance_id/token)
   const adapter = resolveAdapter(channel.channel_type ?? 'zapi')
   const result  = await adapter.send({
-    instance_id: channel.zapi_instance_id,
-    token:       channel.zapi_token,
+    instance_id: channel.zapi_instance_id ?? 'mock',
+    token:       channel.zapi_token       ?? 'mock',
     to_phone:    item.to_phone,
     text:        item.content,
   })

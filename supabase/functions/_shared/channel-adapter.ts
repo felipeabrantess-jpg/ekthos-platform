@@ -139,9 +139,39 @@ export const MetaAdapter: ChannelAdapter = {
   },
 }
 
+// ── MockAdapter ───────────────────────────────────────────────
+// Modo de teste sem envio real ao WhatsApp.
+// Ativado quando channel_type = 'mock' no banco.
+// Para desligar: trocar canal da igreja para channel_type = 'zapi'.
+export const MockAdapter: ChannelAdapter = {
+  async send({ to_phone, text }) {
+    const mockId = `mock_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
+    await new Promise(r => setTimeout(r, 150)) // simula latência realista
+    console.log(
+      `[MockAdapter] 📨 MOCK SEND → ${to_phone}\n` +
+      `  message_id: ${mockId}\n` +
+      `  body: "${text.slice(0, 120)}${text.length > 120 ? '…' : ''}"`
+    )
+    return { ok: true, message_id: mockId }
+  },
+  parseWebhook(raw) {
+    if (!raw || typeof raw !== 'object') return null
+    const p = raw as Record<string, unknown>
+    const phone = typeof p.phone === 'string' ? p.phone.replace(/\D/g, '') : null
+    const text  = typeof p.text  === 'string' ? p.text : null
+    if (!phone || !text) return null
+    return {
+      from_phone:          phone,
+      text,
+      provider_message_id: `mock_in_${Date.now().toString(36)}`,
+      timestamp:           new Date().toISOString(),
+      instance_id:         'mock',
+    }
+  },
+}
+
 // ── resolveAdapter ───────────────────────────────────────────
 // Mapeia channel_type do banco para o adapter correto.
-// Sprint 3: só zapi. Sprint futuro: meta_cloud, evolution.
 
 export function resolveAdapter(channelType: string): ChannelAdapter {
   switch (channelType) {
@@ -150,8 +180,9 @@ export function resolveAdapter(channelType: string): ChannelAdapter {
       return ZApiAdapter
     case 'meta_cloud':
       return MetaAdapter
+    case 'mock':
+      return MockAdapter
     default:
-      // Fallback seguro: tenta Z-API e loga aviso
       console.warn(`[channel-adapter] channelType desconhecido: ${channelType} — usando ZApiAdapter`)
       return ZApiAdapter
   }
