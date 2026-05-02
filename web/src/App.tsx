@@ -47,12 +47,14 @@ const Leaders        = lazy(() => import('@/pages/people/Leaders'))
 const Consolidation  = lazy(() => import('@/pages/people/Consolidation'))
 const VolunteersPage = lazy(() => import('@/pages/people/Volunteers'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
-const EventsList     = lazy(() => import('@/pages/events/EventsList'))
+const EventsList       = lazy(() => import('@/pages/events/EventsList'))
+const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
 const AgentDetail  = lazy(() => import('@/pages/agents/AgentDetail'))
 const AgentChat    = lazy(() => import('@/pages/agents/AgentChat'))
+const AgentConfig  = lazy(() => import('@/pages/agents/AgentConfig'))
 const ModuleDetail = lazy(() => import('@/pages/modules/ModuleDetail'))
 
 const ConfiguracoesLayoutPage = lazy(() =>
@@ -272,6 +274,10 @@ export default function App() {
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
 
+            {/* ── Sprint 3C: Central de Conversas ── */}
+            <Route path="conversas"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
+            <Route path="conversas/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
+
             <Route path="agents" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agents /></Suspense></ErrorBoundary>} />
 
             {/* ── Lote A: Agentes IA ── */}
@@ -279,6 +285,7 @@ export default function App() {
             <Route path="agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></ErrorBoundary>} />
 
             {/* ── Frente D: Chat dedicado por agente ── */}
+            <Route path="agentes/:slug/configurar"           element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentConfig /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
 
