@@ -1,21 +1,24 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v2
+// Edge Function: agent-acolhimento  v2 — Sprint 3B
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
-// verify_jwt = false — chamada interna (cron / dispatch-person-event)
+// verify_jwt = false — chamada interna (cron / conversation-router)
 //
 // Modos de operação:
-//   trigger_type: 'cron'     → busca até 10 journeys pendentes e processa batch
-//   trigger_type: 'journey'  → processa journey_id específica (+ church_id obrigatório)
-//   trigger_type: 'internal' → alias de 'journey', usado por dispatch-person-event
+//   trigger_type: 'cron'             → batch de journeys pendentes (proativo)
+//   trigger_type: 'journey'          → processa journey_id específica
+//   trigger_type: 'internal'         → alias de 'journey'
+//   trigger_type: 'inbound_message'  → resposta reativa a mensagem recebida
+//     body: { conversation_id, message_id, church_id, person_id?, inbound_text }
 //
-// Modelo: claude-sonnet-4-6 (Sonnet premium pastoral)
-// Cache: 2 blocos grandes (≥1024 tokens cada) — identidade+regras / perfil+tom
+// MUDANÇAS v2 (Sprint 3B):
+//   - Usa enqueue_message (conversation_messages + channel_dispatch_queue)
+//     ao invés de send_whatsapp → dispatch-message (pipeline legado)
+//   - checkAntiSpam lê conversation_messages (não agent_pending_messages)
+//   - Novo modo inbound_message: resposta contextual via histórico da conversa
 //
-// v2 — 02/05/2026:
-//   - enqueue_message substitui send_whatsapp (pipeline v2: conversation_messages + channel_dispatch_queue)
-//   - checkAntiSpam unificado em _shared/agent-tools.ts
+// Modelo: claude-sonnet-4-6
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -34,13 +37,7 @@ const anthropic  = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 const AGENT_SLUG = 'agent-acolhimento'
 const MODEL      = 'claude-sonnet-4-6'
 const MAX_TOKENS = 2048
-const BATCH_SIZE = 10  // máx journeys por execução de cron
-
-// ── Anti-spam constants ────────────────────────────────────
-const MAX_MSGS_PER_DAY  = 1
-const MAX_TP_PER_WEEK   = 3
-const SILENCE_START_H   = 21  // hora início silêncio (local da igreja)
-const SILENCE_END_H     = 8   // hora fim silêncio
+const BATCH_SIZE = 10
 
 // ── CORS ───────────────────────────────────────────────────
 const CORS = {
@@ -52,7 +49,7 @@ const CORS = {
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' }
+    headers: { ...CORS, 'Content-Type': 'application/json' },
   })
 }
 
@@ -87,7 +84,7 @@ Você tem acesso a ferramentas para:
 2. **read_acolhimento_journey** — Ver histórico da jornada (o que foi enviado, respostas, notas)
 3. **create_acolhimento_journey** — Criar nova jornada para pessoa que ainda não tem
 4. **update_acolhimento_journey** — Avançar o timer e registrar o que aconteceu
-5. **enqueue_message** — Registrar mensagem na conversa e enfileirar para entrega via WhatsApp
+5. **enqueue_message** — Enviar mensagem via WhatsApp (pipeline real de conversas)
 6. **update_pipeline_stage** — Avançar o estágio do pipeline quando a pessoa integrar
 7. **read_church_schedule** — Ver agenda da igreja para convidar para eventos reais
 
@@ -110,7 +107,7 @@ Ao ser chamado para processar um touchpoint:
 3. Avalie o contexto: o que foi enviado antes? Houve resposta? Qual é o tom?
 4. Decida: enviar mensagem? Apenas avançar o timer? Encerrar a jornada?
 5. Se decidir enviar: monte uma mensagem personalizada e natural
-6. Chame enqueue_message com a mensagem
+6. Chame enqueue_message com a mensagem e o person_id ou conversation_id
 7. Chame update_acolhimento_journey para avançar o timer
 8. Se a pessoa já está integrada (aparece em células, batismo confirmado): use "complete"
 
@@ -123,13 +120,13 @@ Ao ser chamado para processar um touchpoint:
 `.trim()
 
 const SYSTEM_BLOCK_B_TEMPLATE = (
-  churchName: string,
-  denomination: string,
-  formality: string,
-  pastoralDepth: string,
-  emojiUsage: string,
+  churchName:      string,
+  denomination:    string,
+  formality:       string,
+  pastoralDepth:   string,
+  emojiUsage:      string,
   preferredVerses: string[],
-  sendWindow: Record<string, unknown> | null,
+  sendWindow:      Record<string, unknown> | null,
   customOverrides: Record<string, unknown> | null,
 ) => `
 ## Perfil da Igreja
@@ -162,16 +159,124 @@ Você escreve mensagens como se fosse um membro da equipe pastoral desta igreja 
 **D+30 (integração):** "Oi [Nome]! Como você tem estado? Já faz um mês desde que você nos visitou e queríamos saber se há algo com que possamos ajudar na sua caminhada. Nossos grupos de célula estão abertos se você quiser conhecer de perto a nossa comunidade 🙏"
 `.trim()
 
+// ── Tools permitidas por modo ──────────────────────────────
+// Modo proativo (jornada/cron): usa enqueue_message com person_id
+// Modo reativo (inbound): usa enqueue_message com conversation_id
+const TOOLS_PROATIVO = AGENT_TOOLS.filter(t =>
+  ['read_person', 'read_acolhimento_journey', 'create_acolhimento_journey',
+   'update_acolhimento_journey', 'enqueue_message', 'update_pipeline_stage',
+   'read_church_schedule'].includes(t.name)
+)
+
+const TOOLS_INBOUND = AGENT_TOOLS.filter(t =>
+  ['read_person', 'read_acolhimento_journey', 'update_acolhimento_journey',
+   'enqueue_message', 'update_pipeline_stage'].includes(t.name)
+)
+
 // ─────────────────────────────────────────────────────────────
-// PROCESSAR UMA JOURNEY
+// BUSCAR CONFIG DA IGREJA
+// ─────────────────────────────────────────────────────────────
+
+async function fetchChurchConfig(churchId: string) {
+  const [{ data: church }, { data: agentConfig }] = await Promise.all([
+    supabaseAdmin
+      .from('churches')
+      .select('name, timezone, city')
+      .eq('id', churchId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('church_agent_config')
+      .select('formality, denomination, preferred_verses, forbidden_topics, pastoral_depth, send_window, emoji_usage, custom_overrides')
+      .eq('church_id', churchId)
+      .eq('agent_slug', AGENT_SLUG)
+      .maybeSingle(),
+  ])
+  return { church, agentConfig }
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOOL LOOP GENÉRICO
+// ─────────────────────────────────────────────────────────────
+
+async function runToolLoop(
+  systemBlocks: Array<{ text: string; cache: boolean }>,
+  userMessage:  string,
+  tools:        typeof AGENT_TOOLS,
+  churchId:     string,
+): Promise<string> {
+  const messages: Anthropic.MessageParam[] = [
+    { role: 'user', content: userMessage },
+  ]
+
+  const system = systemBlocks.map(b => ({
+    type:          'text' as const,
+    text:          b.text,
+    ...(b.cache ? { cache_control: { type: 'ephemeral' as const } } : {}),
+  }))
+
+  let finalResult = 'no_action'
+  let iterations  = 0
+  const MAX_IT    = 10
+
+  while (iterations < MAX_IT) {
+    iterations++
+
+    const response = await anthropic.messages.create({
+      model:      MODEL,
+      max_tokens: MAX_TOKENS,
+      system:     system as Anthropic.TextBlockParam[],
+      tools:      tools as Anthropic.Tool[],
+      messages,
+    })
+
+    messages.push({ role: 'assistant', content: response.content })
+
+    if (response.stop_reason === 'end_turn') {
+      const textBlock = response.content.find(b => b.type === 'text')
+      finalResult = textBlock && 'text' in textBlock ? textBlock.text : 'completed'
+      break
+    }
+
+    if (response.stop_reason === 'tool_use') {
+      const toolResults: Anthropic.ToolResultBlockParam[] = []
+
+      for (const block of response.content) {
+        if (block.type !== 'tool_use') continue
+
+        const result = await executeTool(
+          block.name,
+          block.input as Record<string, unknown>,
+          churchId,
+          AGENT_SLUG,
+        )
+
+        toolResults.push({
+          type:        'tool_result',
+          tool_use_id: block.id,
+          content:     JSON.stringify(result),
+        })
+      }
+
+      messages.push({ role: 'user', content: toolResults })
+      continue
+    }
+
+    break // stop_reason inesperado
+  }
+
+  return finalResult
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROCESSAR UMA JOURNEY (modo proativo)
 // ─────────────────────────────────────────────────────────────
 
 async function processJourney(
   journeyId: string,
-  churchId: string
+  churchId:  string,
 ): Promise<{ ok: boolean; result?: string; error?: string }> {
 
-  // 1. Lock atômico — evita race condition entre instâncias do cron
+  // Lock atômico — evita race condition entre instâncias do cron
   const { data: locked } = await supabaseAdmin
     .from('acolhimento_journey')
     .update({ status: 'processing' })
@@ -189,45 +294,22 @@ async function processJourney(
   const personId = locked.person_id
 
   try {
-    // 2. Buscar configuração da igreja
-    const [{ data: church }, { data: agentConfig }] = await Promise.all([
-      supabaseAdmin
-        .from('churches')
-        .select('name, timezone, city')
-        .eq('id', churchId)
-        .maybeSingle(),
-      supabaseAdmin
-        .from('church_agent_config')
-        .select('formality, denomination, preferred_verses, forbidden_topics, pastoral_depth, send_window, emoji_usage, custom_overrides')
-        .eq('church_id', churchId)
-        .eq('agent_slug', AGENT_SLUG)
-        .maybeSingle(),
-    ])
-
+    const { church, agentConfig } = await fetchChurchConfig(churchId)
     const churchTimezone = church?.timezone || 'America/Sao_Paulo'
 
-    // 3. Anti-spam check (usa v2 unificado do _shared que lê conversation_messages)
-    const spamCheck = await checkAntiSpam(
-      churchId, personId, churchTimezone,
-      SILENCE_START_H, SILENCE_END_H,
-      MAX_MSGS_PER_DAY, MAX_TP_PER_WEEK
-    )
+    // Anti-spam check (v2 — lê conversation_messages)
+    const spamCheck = await checkAntiSpam(churchId, personId, churchTimezone)
     if (!spamCheck.allowed) {
-      // Reagenda pra depois da janela de silêncio se for esse o motivo
       const reschedule: Record<string, unknown> = { status: 'pending' }
-      if (spamCheck.delay_until) {
-        reschedule.next_touchpoint_at = spamCheck.delay_until
-      }
+      if (spamCheck.delay_until) reschedule.next_touchpoint_at = spamCheck.delay_until
       await supabaseAdmin
         .from('acolhimento_journey')
         .update(reschedule)
         .eq('id', journeyId)
         .eq('church_id', churchId)
-
       return { ok: true, result: `skipped_anti_spam:${spamCheck.reason}` }
     }
 
-    // 4. Montar prompt Bloco B com perfil da igreja
     const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
       church?.name || 'Igreja',
       agentConfig?.denomination || '',
@@ -239,7 +321,6 @@ async function processJourney(
       (agentConfig?.custom_overrides as Record<string, unknown>) || null,
     )
 
-    // 5. Montar mensagem de usuário com contexto runtime (sem cache)
     const userMessage = `
 Processe o touchpoint atual da jornada de acolhimento.
 
@@ -248,100 +329,29 @@ Person ID: ${personId}
 Church ID: ${churchId}
 Touchpoint atual: ${locked.current_touchpoint}
 Timestamp: ${new Date().toISOString()}
-Horário local (${churchTimezone}): ${new Date().toLocaleString('pt-BR', { timeZone: churchTimezone || 'America/Sao_Paulo' })}
 
 Passos:
 1. Use read_person para obter os dados da pessoa
 2. Use read_acolhimento_journey para ver o histórico completo
 3. Decida a ação ideal para este momento da jornada
-4. Se for enviar mensagem: use enqueue_message com texto personalizado (forneça person_id)
+4. Se for enviar mensagem: use enqueue_message com person_id="${personId}" e o texto personalizado
 5. Use update_acolhimento_journey para avançar o timer (ou "complete" se encerrar)
 6. Retorne um resumo da ação tomada
 
 Seja conciso, pastoral e humano.
 `.trim()
 
-    // 6. Tool loop com Sonnet — 2 blocos de sistema cacheados
-    const messages: Anthropic.MessageParam[] = [
-      { role: 'user', content: userMessage }
-    ]
-
-    // Filtra as tools relevantes para acolhimento (pipeline v2: enqueue_message)
-    const acolhimentoTools = AGENT_TOOLS.filter(t =>
-      ['read_person', 'read_acolhimento_journey', 'create_acolhimento_journey',
-       'update_acolhimento_journey', 'enqueue_message', 'update_pipeline_stage',
-       'read_church_schedule'].includes(t.name)
+    const finalResult = await runToolLoop(
+      [
+        { text: SYSTEM_BLOCK_A,   cache: true },
+        { text: systemBlockB,     cache: true },
+      ],
+      userMessage,
+      TOOLS_PROATIVO,
+      churchId,
     )
 
-    let finalResult = 'no_action'
-    let iterations = 0
-    const MAX_ITERATIONS = 10
-
-    while (iterations < MAX_ITERATIONS) {
-      iterations++
-
-      const response = await anthropic.messages.create({
-        model:      MODEL,
-        max_tokens: MAX_TOKENS,
-        system: [
-          // Bloco A: Identidade + Regras (≥1024 tokens, cacheado)
-          {
-            type:          'text',
-            text:          SYSTEM_BLOCK_A,
-            cache_control: { type: 'ephemeral' }
-          } as Anthropic.TextBlockParam & { cache_control: { type: 'ephemeral' } },
-          // Bloco B: Perfil da Igreja + Tom (≥1024 tokens, cacheado)
-          {
-            type:          'text',
-            text:          systemBlockB,
-            cache_control: { type: 'ephemeral' }
-          } as Anthropic.TextBlockParam & { cache_control: { type: 'ephemeral' } },
-        ],
-        tools:    acolhimentoTools as Anthropic.Tool[],
-        messages,
-      })
-
-      // Adiciona resposta do assistente ao histórico
-      messages.push({ role: 'assistant', content: response.content })
-
-      if (response.stop_reason === 'end_turn') {
-        // Sonnet terminou — extrai texto final
-        const textBlock = response.content.find(b => b.type === 'text')
-        finalResult = textBlock && 'text' in textBlock ? textBlock.text : 'completed'
-        break
-      }
-
-      if (response.stop_reason === 'tool_use') {
-        // Processar tool calls
-        const toolResults: Anthropic.ToolResultBlockParam[] = []
-
-        for (const block of response.content) {
-          if (block.type !== 'tool_use') continue
-
-          const result = await executeTool(
-            block.name,
-            block.input as Record<string, unknown>,
-            churchId,
-            AGENT_SLUG
-          )
-
-          toolResults.push({
-            type:       'tool_result',
-            tool_use_id: block.id,
-            content:    JSON.stringify(result),
-          })
-        }
-
-        messages.push({ role: 'user', content: toolResults })
-        continue
-      }
-
-      // stop_reason inesperado
-      break
-    }
-
-    // 7. Se journey ainda está 'processing' (Sonnet não chamou update_acolhimento_journey),
-    //    reverter para 'pending' como safety net
+    // Safety: reverter 'processing' se o agente não chamou update_acolhimento_journey
     const { data: journeyAfter } = await supabaseAdmin
       .from('acolhimento_journey')
       .select('status')
@@ -356,15 +366,15 @@ Seja conciso, pastoral e humano.
         .eq('church_id', churchId)
     }
 
-    // 8. Debitar créditos
+    // Debitar créditos (best-effort)
     try {
       await supabaseAdmin.rpc('debit_agent_credits', {
-        p_church_id:        churchId,
-        p_agent_slug:       AGENT_SLUG,
-        p_credits:          1,
-        p_operation_type:   'touchpoint',
+        p_church_id:         churchId,
+        p_agent_slug:        AGENT_SLUG,
+        p_credits:           1,
+        p_operation_type:    'touchpoint',
         p_related_entity_id: journeyId,
-        p_description:      `Touchpoint ${locked.current_touchpoint} — ${personId}`,
+        p_description:       `Touchpoint ${locked.current_touchpoint} — ${personId}`,
       })
     } catch (creditErr) {
       console.warn('[agent-acolhimento] debit_agent_credits falhou (não crítico):', creditErr)
@@ -375,7 +385,7 @@ Seja conciso, pastoral e humano.
   } catch (err) {
     console.error('[agent-acolhimento] processJourney error:', err)
 
-    // Safety: reverter status de 'processing' para 'pending' em caso de erro
+    // Safety: reverter 'processing' para 'pending'
     await supabaseAdmin
       .from('acolhimento_journey')
       .update({ status: 'pending' })
@@ -388,12 +398,124 @@ Seja conciso, pastoral e humano.
 }
 
 // ─────────────────────────────────────────────────────────────
+// PROCESSAR MENSAGEM INBOUND (modo reativo)
+// Chamado pelo conversation-router quando ownership=agent
+// ─────────────────────────────────────────────────────────────
+
+async function processInbound(
+  conversationId: string,
+  _messageId:     string,
+  churchId:       string,
+  inboundText:    string,
+): Promise<{ ok: boolean; result?: string; error?: string }> {
+
+  // 1. Buscar dados da conversa — valida ownership e pega person_id
+  const { data: conv } = await supabaseAdmin
+    .from('conversations')
+    .select('ownership, agent_slug, person_id, contact_phone')
+    .eq('id', conversationId)
+    .maybeSingle()
+
+  if (!conv) {
+    return { ok: false, error: 'conversation_not_found' }
+  }
+
+  // Não responder se humano assumiu — conversation-router já filtra, mas dupla checagem
+  if (conv.ownership !== 'agent') {
+    console.log(`[agent-acolhimento] ${conversationId} ownership=${conv.ownership} — ignorando`)
+    return { ok: true, result: 'skipped_not_agent_ownership' }
+  }
+
+  // 2. Buscar config da igreja
+  const { church, agentConfig } = await fetchChurchConfig(churchId)
+
+  // 3. Buscar histórico da conversa (últimas 20 mensagens, ordem cronológica)
+  const { data: history } = await supabaseAdmin
+    .from('conversation_messages')
+    .select('direction, sender_type, content, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  const historyStr = (history ?? [])
+    .reverse()
+    .map(m => {
+      const label = m.sender_type === 'contact'
+        ? 'Contato'
+        : m.sender_type === 'human'
+        ? 'Pastor/Staff'
+        : 'Agente'
+      return `[${label} · ${new Date(m.created_at as string).toLocaleString('pt-BR')}]: ${m.content}`
+    })
+    .join('\n')
+
+  const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
+    church?.name || 'Igreja',
+    agentConfig?.denomination || '',
+    agentConfig?.formality || 'semiformal',
+    agentConfig?.pastoral_depth || 'moderate',
+    agentConfig?.emoji_usage || 'moderate',
+    agentConfig?.preferred_verses || [],
+    (agentConfig?.send_window as Record<string, unknown>) || null,
+    (agentConfig?.custom_overrides as Record<string, unknown>) || null,
+  )
+
+  const personContext = conv.person_id
+    ? `Person ID disponível: ${conv.person_id} (use read_person para obter os dados)`
+    : `Contato não vinculado a uma pessoa cadastrada. Telefone: ${conv.contact_phone}`
+
+  const userMessage = `
+Você recebeu uma nova mensagem numa conversa de acolhimento pastoral.
+
+conversation_id: ${conversationId}
+${personContext}
+Church ID: ${churchId}
+
+== HISTÓRICO DA CONVERSA ==
+${historyStr || '(Sem mensagens anteriores)'}
+
+== NOVA MENSAGEM RECEBIDA ==
+${inboundText}
+
+Sua tarefa:
+${conv.person_id
+  ? `1. Use read_person para entender quem é essa pessoa
+2. Use read_acolhimento_journey para ver o estágio da jornada (se existir)`
+  : `1. Esta pessoa ainda não está cadastrada. Responda de forma pastoral e acolhedora.`
+}
+3. Responda de forma pastoral, natural e contextualizada com o histórico acima
+4. Use enqueue_message com conversation_id="${conversationId}" para enviar sua resposta
+5. Se a resposta da pessoa indicar integração, avanço ou crise: atualize a jornada ou o pipeline adequadamente
+
+Responda como a equipe pastoral da igreja — com calor, sem pressão, sem revelar que é IA.
+`.trim()
+
+  try {
+    const finalResult = await runToolLoop(
+      [
+        { text: SYSTEM_BLOCK_A, cache: true },
+        { text: systemBlockB,   cache: true },
+      ],
+      userMessage,
+      TOOLS_INBOUND,
+      churchId,
+    )
+
+    return { ok: true, result: finalResult }
+
+  } catch (err) {
+    console.error('[agent-acolhimento] processInbound error:', err)
+    return { ok: false, error: String(err) }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
 // HANDLER PRINCIPAL
 // ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
-  if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405)
+  if (req.method !== 'POST')    return json({ ok: false, error: 'method_not_allowed' }, 405)
 
   let body: Record<string, unknown>
   try {
@@ -402,9 +524,9 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: 'invalid_json' }, 400)
   }
 
-  const triggerType = (body.trigger_type as string) || 'cron'
+  const triggerType = (body.trigger_type ?? body.trigger ?? 'cron') as string
 
-  // ── MODO BATCH (cron) ──────────────────────────────────
+  // ── MODO BATCH (cron) ─────────────────────────────────────
   if (triggerType === 'cron') {
     const { data: journeys } = await supabaseAdmin
       .from('acolhimento_journey')
@@ -430,7 +552,7 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, processed: journeys.length, summary })
   }
 
-  // ── MODO SINGLE JOURNEY (journey / internal) ───────────
+  // ── MODO SINGLE JOURNEY (journey / internal) ─────────────
   if (triggerType === 'journey' || triggerType === 'internal') {
     const journeyId = body.journey_id as string
     const churchId  = body.church_id  as string
@@ -440,6 +562,24 @@ Deno.serve(async (req: Request) => {
     }
 
     const result = await processJourney(journeyId, churchId)
+    return json(result)
+  }
+
+  // ── MODO INBOUND (chamado pelo conversation-router) ───────
+  if (triggerType === 'inbound_message') {
+    const conversationId = body.conversation_id as string
+    const messageId      = body.message_id      as string
+    const churchId       = body.church_id       as string
+    const inboundText    = body.inbound_text    as string
+
+    if (!conversationId || !churchId || !inboundText) {
+      return json({
+        ok: false,
+        error: 'conversation_id, church_id e inbound_text obrigatórios para trigger inbound_message',
+      }, 400)
+    }
+
+    const result = await processInbound(conversationId, messageId, churchId, inboundText)
     return json(result)
   }
 

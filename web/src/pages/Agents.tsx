@@ -21,7 +21,7 @@ function AgentCard({
     agent.pricing_tier === 'free'
       ? 'Grátis'
       : agent.pricing_tier === 'always_paid'
-      ? `R$ ${(agent.price_cents / 100).toFixed(2).replace('.', ',')}/mês`
+      ? 'Sempre incluído'
       : isActive
       ? 'Ativo'
       : 'Disponível'
@@ -30,7 +30,7 @@ function AgentCard({
     agent.pricing_tier === 'free'
       ? 'green'
       : agent.pricing_tier === 'always_paid'
-      ? 'red'
+      ? 'blue'
       : isActive
       ? 'green'
       : 'gray'

@@ -4,7 +4,7 @@ import {
 } from 'recharts'
 import {
   Building2, TrendingUp, TrendingDown,
-  CreditCard, Users, Bot, Activity, RefreshCw,
+  CreditCard, Users, Bot, Activity, RefreshCw, Zap,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
@@ -23,11 +23,12 @@ interface CockpitData {
   new_this_month:      number
   mrr_series: Array<{ mes: string; mrr: number }>
   alerts: {
-    late_payments:       number
-    low_health:          number
-    onboarding_stuck:    number
-    agent_errors:        number
-    tasks_pending:       number
+    late_payments:              number
+    low_health:                 number
+    onboarding_stuck:           number
+    agent_errors:               number
+    tasks_pending:              number
+    agents_pending_activation:  number  // Sprint 2.5
   }
 }
 
@@ -124,6 +125,16 @@ export default function AdminCockpit() {
       })
       if (!res.ok) throw new Error('Erro ao carregar métricas')
       const json = await res.json() as CockpitData
+
+      // Sprint 2.5: conta agentes pendentes de ativação diretamente
+      const { count: pendingCount } = await supabase
+        .from('subscription_agents')
+        .select('id', { count: 'exact', head: true })
+        .eq('activation_status', 'pending_activation')
+
+      if (json.alerts) {
+        json.alerts.agents_pending_activation = pendingCount ?? 0
+      }
       setData(json)
     } catch (err: unknown) {
       // Fallback com dados simulados enquanto a Edge Function não existe
@@ -138,7 +149,7 @@ export default function AdminCockpit() {
         ticket_medio:        0,
         new_this_month:      0,
         mrr_series:          [],
-        alerts: { late_payments: 0, low_health: 0, onboarding_stuck: 0, agent_errors: 0, tasks_pending: 0 },
+        alerts: { late_payments: 0, low_health: 0, onboarding_stuck: 0, agent_errors: 0, tasks_pending: 0, agents_pending_activation: 0 },
       })
       void err
     } finally {
@@ -270,10 +281,44 @@ export default function AdminCockpit() {
             </div>
           </section>
 
+          {/* Alerta destacado: agentes aguardando ativação (Sprint 2.5) */}
+          {data.alerts.agents_pending_activation > 0 && (
+            <section>
+              <div
+                className="rounded-2xl border-2 p-5 flex items-center justify-between gap-4"
+                style={{ background: '#FFFBF0', borderColor: '#C4841D' }}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: '#C4841D20' }}
+                  >
+                    <Zap size={22} strokeWidth={1.75} style={{ color: '#C4841D' }} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base" style={{ color: '#C4841D' }}>
+                      {data.alerts.agents_pending_activation} agente{data.alerts.agents_pending_activation !== 1 ? 's' : ''} aguardando ativação
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: '#8B6914' }}>
+                      Igreja(s) com agente premium contratado — time Ekthos precisa conectar o número WhatsApp
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href="/admin/churches"
+                  className="shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{ background: '#C4841D', color: '#fff' }}
+                >
+                  Ver igrejas
+                </a>
+              </div>
+            </section>
+          )}
+
           {/* Alertas rápidos */}
           <section>
             <h2 className="font-display text-lg font-semibold text-text-primary mb-3">Alertas Operacionais</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
               <AlertCard
                 label="Pagamentos atrasados"
                 count={data.alerts.late_payments}
@@ -298,6 +343,11 @@ export default function AdminCockpit() {
                 label="Tarefas pendentes"
                 count={data.alerts.tasks_pending}
                 severity="info"
+              />
+              <AlertCard
+                label="Ativações pendentes"
+                count={data.alerts.agents_pending_activation}
+                severity={data.alerts.agents_pending_activation > 0 ? 'warn' : 'info'}
               />
             </div>
           </section>
