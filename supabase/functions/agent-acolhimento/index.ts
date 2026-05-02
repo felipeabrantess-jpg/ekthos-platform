@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v1
+// Edge Function: agent-acolhimento  v2
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -13,12 +13,14 @@
 // Modelo: claude-sonnet-4-6 (Sonnet premium pastoral)
 // Cache: 2 blocos grandes (≥1024 tokens cada) — identidade+regras / perfil+tom
 //
-// Sprint 2 — 01/05/2026
+// v2 — 02/05/2026:
+//   - enqueue_message substitui send_whatsapp (pipeline v2: conversation_messages + channel_dispatch_queue)
+//   - checkAntiSpam unificado em _shared/agent-tools.ts
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
-import { AGENT_TOOLS, executeTool } from '../_shared/agent-tools.ts'
+import { AGENT_TOOLS, executeTool, checkAntiSpam } from '../_shared/agent-tools.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -85,7 +87,7 @@ Você tem acesso a ferramentas para:
 2. **read_acolhimento_journey** — Ver histórico da jornada (o que foi enviado, respostas, notas)
 3. **create_acolhimento_journey** — Criar nova jornada para pessoa que ainda não tem
 4. **update_acolhimento_journey** — Avançar o timer e registrar o que aconteceu
-5. **send_whatsapp** — Enviar mensagem via WhatsApp (o canal principal)
+5. **enqueue_message** — Registrar mensagem na conversa e enfileirar para entrega via WhatsApp
 6. **update_pipeline_stage** — Avançar o estágio do pipeline quando a pessoa integrar
 7. **read_church_schedule** — Ver agenda da igreja para convidar para eventos reais
 
@@ -108,7 +110,7 @@ Ao ser chamado para processar um touchpoint:
 3. Avalie o contexto: o que foi enviado antes? Houve resposta? Qual é o tom?
 4. Decida: enviar mensagem? Apenas avançar o timer? Encerrar a jornada?
 5. Se decidir enviar: monte uma mensagem personalizada e natural
-6. Chame send_whatsapp com a mensagem
+6. Chame enqueue_message com a mensagem
 7. Chame update_acolhimento_journey para avançar o timer
 8. Se a pessoa já está integrada (aparece em células, batismo confirmado): use "complete"
 
@@ -161,64 +163,6 @@ Você escreve mensagens como se fosse um membro da equipe pastoral desta igreja 
 `.trim()
 
 // ─────────────────────────────────────────────────────────────
-// ANTI-SPAM
-// ─────────────────────────────────────────────────────────────
-
-async function checkAntiSpam(
-  churchId: string,
-  personId: string,
-  churchTimezone: string
-): Promise<{ allowed: boolean; reason?: string; delay_until?: string }> {
-
-  // 1. Verificar janela de silêncio (horário local da igreja)
-  const now = new Date()
-  const localHour = parseInt(
-    now.toLocaleString('en-US', { hour: 'numeric', hour12: false, timeZone: churchTimezone || 'America/Sao_Paulo' })
-  )
-  if (localHour >= SILENCE_START_H || localHour < SILENCE_END_H) {
-    // Calcular próximo horário permitido (8h local)
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(SILENCE_END_H, 0, 0, 0)
-    return { allowed: false, reason: 'silence_window', delay_until: tomorrow.toISOString() }
-  }
-
-  // 2. Máx 1 mensagem por dia para esta pessoa
-  const todayStart = new Date(now)
-  todayStart.setHours(0, 0, 0, 0)
-  const { count: msgsToday } = await supabaseAdmin
-    .from('agent_pending_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('church_id', churchId)
-    .contains('payload', { person_id: personId })
-    .gte('created_at', todayStart.toISOString())
-    .neq('status', 'failed')
-    .neq('status', 'cancelled')
-
-  if ((msgsToday ?? 0) >= MAX_MSGS_PER_DAY) {
-    return { allowed: false, reason: 'daily_limit_reached' }
-  }
-
-  // 3. Máx 3 touchpoints por semana
-  const weekStart = new Date(now)
-  weekStart.setDate(weekStart.getDate() - 7)
-  const { count: msgsWeek } = await supabaseAdmin
-    .from('agent_pending_messages')
-    .select('id', { count: 'exact', head: true })
-    .eq('church_id', churchId)
-    .contains('payload', { person_id: personId })
-    .gte('created_at', weekStart.toISOString())
-    .neq('status', 'failed')
-    .neq('status', 'cancelled')
-
-  if ((msgsWeek ?? 0) >= MAX_TP_PER_WEEK) {
-    return { allowed: false, reason: 'weekly_limit_reached' }
-  }
-
-  return { allowed: true }
-}
-
-// ─────────────────────────────────────────────────────────────
 // PROCESSAR UMA JOURNEY
 // ─────────────────────────────────────────────────────────────
 
@@ -262,8 +206,12 @@ async function processJourney(
 
     const churchTimezone = church?.timezone || 'America/Sao_Paulo'
 
-    // 3. Anti-spam check
-    const spamCheck = await checkAntiSpam(churchId, personId, churchTimezone)
+    // 3. Anti-spam check (usa v2 unificado do _shared que lê conversation_messages)
+    const spamCheck = await checkAntiSpam(
+      churchId, personId, churchTimezone,
+      SILENCE_START_H, SILENCE_END_H,
+      MAX_MSGS_PER_DAY, MAX_TP_PER_WEEK
+    )
     if (!spamCheck.allowed) {
       // Reagenda pra depois da janela de silêncio se for esse o motivo
       const reschedule: Record<string, unknown> = { status: 'pending' }
@@ -300,12 +248,13 @@ Person ID: ${personId}
 Church ID: ${churchId}
 Touchpoint atual: ${locked.current_touchpoint}
 Timestamp: ${new Date().toISOString()}
+Horário local (${churchTimezone}): ${new Date().toLocaleString('pt-BR', { timeZone: churchTimezone || 'America/Sao_Paulo' })}
 
 Passos:
 1. Use read_person para obter os dados da pessoa
 2. Use read_acolhimento_journey para ver o histórico completo
 3. Decida a ação ideal para este momento da jornada
-4. Se for enviar mensagem: use send_whatsapp com texto personalizado
+4. Se for enviar mensagem: use enqueue_message com texto personalizado (forneça person_id)
 5. Use update_acolhimento_journey para avançar o timer (ou "complete" se encerrar)
 6. Retorne um resumo da ação tomada
 
@@ -317,10 +266,10 @@ Seja conciso, pastoral e humano.
       { role: 'user', content: userMessage }
     ]
 
-    // Filtra as tools relevantes para acolhimento (exclui volunteers placeholder)
+    // Filtra as tools relevantes para acolhimento (pipeline v2: enqueue_message)
     const acolhimentoTools = AGENT_TOOLS.filter(t =>
       ['read_person', 'read_acolhimento_journey', 'create_acolhimento_journey',
-       'update_acolhimento_journey', 'send_whatsapp', 'update_pipeline_stage',
+       'update_acolhimento_journey', 'enqueue_message', 'update_pipeline_stage',
        'read_church_schedule'].includes(t.name)
     )
 
