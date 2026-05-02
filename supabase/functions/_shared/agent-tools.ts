@@ -560,12 +560,14 @@ export async function executeTool(
       const { error: qErr } = await supabaseAdmin
         .from('channel_dispatch_queue')
         .insert({
-          message_id:   msg.id,
-          channel_id:   conv.channel_id,
-          to_phone:     conv.contact_phone,
-          content:      message,
-          status:       'pending',
-          scheduled_at: new Date().toISOString(),
+          message_id:      msg.id,
+          conversation_id: convId,           // NOT NULL — obrigatório
+          church_id:       churchId,         // NOT NULL — obrigatório
+          channel_id:      conv.channel_id,
+          to_phone:        conv.contact_phone,
+          content:         message,
+          status:          'pending',
+          scheduled_at:    new Date().toISOString(),
         })
 
       if (qErr) {
@@ -587,7 +589,8 @@ export async function executeTool(
         .eq('id', convId)
 
       // ── Registra evento de auditoria ──
-      await supabaseAdmin.from('conversation_events').insert({
+      // Nota: PostgrestBuilder é PromiseLike (só .then), NÃO Promise — usar await+if
+      const { error: evtErr } = await supabaseAdmin.from('conversation_events').insert({
         conversation_id: convId,
         church_id:       churchId,
         event_type:      'message_outbound_agent',
@@ -595,10 +598,11 @@ export async function executeTool(
         actor_id:        agentSlug,
         actor_name:      agentSlug,
         message_preview: message.slice(0, 80),
-      }).catch(err => {
-        // Evento é best-effort — não falha a operação
-        console.warn('[agent-tools] conversation_events insert falhou:', err)
       })
+      if (evtErr) {
+        // Evento é best-effort — não falha a operação
+        console.warn('[agent-tools] conversation_events insert falhou:', evtErr.message)
+      }
 
       console.log(`[agent-tools] enqueue_message: conv=${convId} msg=${msg.id} agente=${agentSlug}`)
       return { ok: true, message_id: msg.id, conversation_id: convId }
