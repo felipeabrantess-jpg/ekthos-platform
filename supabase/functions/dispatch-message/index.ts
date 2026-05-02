@@ -13,17 +13,18 @@
 //   person_id?: string (uuid, opcional)
 // }
 //
-// Fluxo Sprint 2:
+// Fluxo Sprint 2+ChatPro:
 //   1. Valida campos obrigatórios
 //   2. Decide canal via agent_channel_routing
 //   3. Verifica canal WhatsApp configurado
 //   4. Enfileira em agent_pending_messages (status: awaiting_retry)
-//   5. Tenta POST imediato ao n8n webhook do agente
-//   6. Se ok → atualiza status para dispatched_to_n8n
-//      Se falha → mantém awaiting_retry (agent-outbound-retry assume)
+//   5. Se channel_type='chatpro' → invoca EF chatpro-send diretamente
+//      Se channel_type='mock'    → log fake, status delivered
+//      Outros (n8n path)         → POST ao webhook n8n configurado
+//   6. Atualiza status conforme resultado
 //
-// Variáveis de ambiente esperadas por agente:
-//   N8N_WEBHOOK_ACOLHIMENTO   → agent-acolhimento
+// Variáveis de ambiente:
+//   N8N_WEBHOOK_ACOLHIMENTO   → agent-acolhimento (path n8n)
 //   N8N_WEBHOOK_REENGAJAMENTO → agent-reengajamento (Sprint 3)
 //   N8N_WEBHOOK_OPERACAO      → agent-operacao      (Sprint 4)
 // ============================================================
@@ -36,7 +37,7 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, content-type'
 }
 
-// Mapa agente → nome da env var + fallback hardcoded (URLs públicas, não são segredos)
+// Mapa agente → webhook n8n (fallback quando não usa ChatPro)
 const AGENT_WEBHOOK_CONFIG: Record<string, { envVar: string; fallback: string }> = {
   'agent-acolhimento':   {
     envVar:   'N8N_WEBHOOK_ACOLHIMENTO',
@@ -59,14 +60,8 @@ function getWebhookUrl(agentSlug: string): string | null {
 }
 
 Deno.serve(async (req) => {
-  // Preflight
-  if (req.method === 'OPTIONS') {
-    return json({ ok: true }, 200)
-  }
-
-  if (req.method !== 'POST') {
-    return json({ ok: false, error: 'method_not_allowed' }, 405)
-  }
+  if (req.method === 'OPTIONS') return json({ ok: true }, 200)
+  if (req.method !== 'POST')    return json({ ok: false, error: 'method_not_allowed' }, 405)
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -98,7 +93,7 @@ Deno.serve(async (req) => {
     // 3. Verifica canal WhatsApp configurado
     const { data: channel } = await supabaseAdmin
       .from('church_whatsapp_channels')
-      .select('id, phone_number')
+      .select('id, phone_number, channel_type')
       .eq('church_id', church_id)
       .eq('channel_type', channelType)
       .eq('active', true)
@@ -114,13 +109,13 @@ Deno.serve(async (req) => {
       .insert({
         church_id,
         agent_slug,
-        scheduled_for: new Date().toISOString(),
+        scheduled_for:  new Date().toISOString(),
         payload: {
           to_phone,
           message,
-          person_id:         person_id ?? null,
-          channel_type:      channelType,
-          channel_id:        channel?.id ?? null,
+          person_id:          person_id ?? null,
+          channel_type:       channelType,
+          channel_id:         channel?.id ?? null,
           channel_configured: !!channel
         },
         status:        'awaiting_retry',
@@ -136,19 +131,128 @@ Deno.serve(async (req) => {
 
     const messageId = queued.id
 
-    // 5. Tenta dispatch imediato ao n8n
+    // 5. Dispatch por provider ─────────────────────────────────
+
+    // ── 5a. ChatPro: invoca EF chatpro-send diretamente ────────
+    if (channelType === 'chatpro') {
+      console.log(`[dispatch-message] Roteando ${messageId} via ChatPro`)
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+
+      try {
+        const chatproRes = await fetch(`${supabaseUrl}/functions/v1/chatpro-send`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ to_phone, message }),
+          signal:  AbortSignal.timeout(20_000),
+        })
+
+        const chatproBody = await chatproRes.json().catch(() => ({}))
+
+        if (chatproRes.ok && (chatproBody as Record<string, unknown>).ok) {
+          await supabaseAdmin
+            .from('agent_pending_messages')
+            .update({
+              status:      'delivered',
+              resolved_at: new Date().toISOString(),
+              payload: {
+                to_phone, message,
+                person_id:          person_id ?? null,
+                channel_type:       channelType,
+                channel_id:         channel?.id ?? null,
+                channel_configured: !!channel,
+                chatpro_message_id: (chatproBody as Record<string, unknown>).message_id ?? null,
+              }
+            })
+            .eq('id', messageId)
+
+          console.log(`[dispatch-message] ✅ ChatPro entregou ${messageId}`)
+          return json({
+            ok:               true,
+            queued:           true,
+            message_id:       messageId,
+            channel_type:     channelType,
+            dispatched_via:   'chatpro',
+            chatpro_message_id: (chatproBody as Record<string, unknown>).message_id ?? null,
+          })
+        }
+
+        // ChatPro retornou erro
+        console.warn(`[dispatch-message] ChatPro falhou para ${messageId}:`, chatproBody)
+        await supabaseAdmin
+          .from('agent_pending_messages')
+          .update({ status: 'awaiting_retry' })
+          .eq('id', messageId)
+
+        return json({
+          ok:              true,
+          queued:          true,
+          message_id:      messageId,
+          channel_type:    channelType,
+          dispatched_via:  'chatpro',
+          chatpro_ok:      false,
+          chatpro_error:   chatproBody,
+          note:            'ChatPro retornou erro. Mensagem ficará como awaiting_retry.',
+        })
+
+      } catch (fetchErr) {
+        const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
+        console.warn(`[dispatch-message] chatpro-send fetch error para ${messageId}: ${msg}`)
+        return json({
+          ok:             true,
+          queued:         true,
+          message_id:     messageId,
+          channel_type:   channelType,
+          dispatched_via: 'chatpro',
+          chatpro_ok:     false,
+          error:          'chatpro_send_unreachable',
+        })
+      }
+    }
+
+    // ── 5b. Mock: log fake, entrega imediata ───────────────────
+    if (channelType === 'mock') {
+      const mockId = `mock_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
+      console.log(`[dispatch-message] 📨 MOCK → ${to_phone}\n  mock_id: ${mockId}\n  body: "${message.slice(0, 80)}..."`)
+
+      await supabaseAdmin
+        .from('agent_pending_messages')
+        .update({
+          status:      'delivered',
+          resolved_at: new Date().toISOString(),
+          payload: {
+            to_phone, message,
+            person_id:          person_id ?? null,
+            channel_type:       'mock',
+            channel_id:         channel?.id ?? null,
+            channel_configured: !!channel,
+            mock_message_id:    mockId,
+          }
+        })
+        .eq('id', messageId)
+
+      return json({
+        ok:             true,
+        queued:         true,
+        message_id:     messageId,
+        channel_type:   'mock',
+        dispatched_via: 'mock',
+        mock_message_id: mockId,
+      })
+    }
+
+    // ── 5c. n8n path (meta_cloud, zapi, etc.) ─────────────────
     const webhookUrl = getWebhookUrl(agent_slug)
 
     if (!webhookUrl) {
-      console.warn(`[dispatch-message] Sem webhook n8n configurado para ${agent_slug}. Mensagem ${messageId} ficará como awaiting_retry.`)
+      console.warn(`[dispatch-message] Sem webhook n8n para ${agent_slug}. ${messageId} → awaiting_retry.`)
       return json({
-        ok: true,
-        queued: true,
+        ok:                true,
+        queued:            true,
         message_id:        messageId,
         channel_type:      channelType,
         channel_configured: !!channel,
         dispatched_to_n8n: false,
-        note:              'Webhook n8n não configurado para este agente. Worker de retry assumirá.'
+        note:              'Webhook n8n não configurado. Worker de retry assumirá.',
       })
     }
 
@@ -172,7 +276,6 @@ Deno.serve(async (req) => {
       })
 
       if (n8nRes.ok) {
-        // 6a. n8n recebeu — atualiza status
         await supabaseAdmin
           .from('agent_pending_messages')
           .update({
@@ -183,35 +286,33 @@ Deno.serve(async (req) => {
 
         console.log(`[dispatch-message] Mensagem ${messageId} → n8n (${n8nRes.status})`)
         return json({
-          ok: true,
-          queued: true,
+          ok:                true,
+          queued:            true,
           message_id:        messageId,
           channel_type:      channelType,
           channel_configured: !!channel,
           dispatched_to_n8n: true
         })
-      } else {
-        const errText = await n8nRes.text().catch(() => '')
-        console.warn(`[dispatch-message] n8n retornou ${n8nRes.status} para ${messageId}: ${errText}`)
-        // mantém awaiting_retry — retry worker assume
-        return json({
-          ok: true,
-          queued: true,
-          message_id:        messageId,
-          channel_type:      channelType,
-          channel_configured: !!channel,
-          dispatched_to_n8n: false,
-          n8n_status:        n8nRes.status
-        })
       }
+
+      const errText = await n8nRes.text().catch(() => '')
+      console.warn(`[dispatch-message] n8n retornou ${n8nRes.status} para ${messageId}: ${errText}`)
+      return json({
+        ok:                true,
+        queued:            true,
+        message_id:        messageId,
+        channel_type:      channelType,
+        channel_configured: !!channel,
+        dispatched_to_n8n: false,
+        n8n_status:        n8nRes.status
+      })
 
     } catch (fetchErr) {
       const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
       console.warn(`[dispatch-message] n8n fetch falhou para ${messageId}: ${msg}`)
-      // mantém awaiting_retry — retry worker assume
       return json({
-        ok: true,
-        queued: true,
+        ok:                true,
+        queued:            true,
         message_id:        messageId,
         channel_type:      channelType,
         channel_configured: !!channel,
