@@ -28,9 +28,10 @@ type AgentState = 'active' | 'contractable' | 'module-bound' | 'unavailable'
 function getAgentState(
   slug: string,
   hasAgent: (s: string) => boolean,
-  _planSlug: string,
+  planSlug: string,
   moduleId?: string
 ): AgentState {
+  if (slug === 'agent-whatsapp' && planSlug !== 'avivamento') return 'unavailable'
   if (hasAgent(slug)) return 'active'
   if (moduleId) return 'module-bound'
   return 'contractable'
@@ -96,11 +97,18 @@ function AgentCTA({ state, slug, moduleId }: CTAProps) {
             </p>
           </div>
         </div>
-        <Link to={`/agentes/${slug}/conversar`}>
-          <Button variant="primary" className="w-full">
-            Conversar com agente →
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          <Link to={`/agentes/${slug}/conversar`} className="flex-1">
+            <Button variant="primary" className="w-full">
+              Conversar com agente →
+            </Button>
+          </Link>
+          <Link to={`/agentes/${slug}/configurar`}>
+            <Button variant="outline" className="px-4">
+              Configurar
+            </Button>
+          </Link>
+        </div>
       </div>
     )
   }

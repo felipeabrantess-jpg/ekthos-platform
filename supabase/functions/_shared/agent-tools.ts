@@ -1,14 +1,19 @@
 // ============================================================
-// Shared: agent-tools.ts
-// 6 tools/function calling para agentes premium pastorais
+// _shared/agent-tools.ts  v2 — Sprint 3B
 //
-// SCHEMA REAL (confirmado diagnóstico Sprint 1 — 30/04/2026):
+// MUDANÇAS v2:
+//   + enqueue_message: nova tool que substitui send_whatsapp no pipeline real.
+//     INSERT direto em conversation_messages + channel_dispatch_queue.
+//     Suporta conversation_id OU person_id (resolve/cria conversa automaticamente).
+//   ~ send_whatsapp: mantida para compatibilidade com agentes ainda não migrados.
+//     Continua chamando dispatch-message EF.
+//   ~ checkAntiSpam refatorado: lê conversation_messages (não agent_pending_messages).
+//
+// SCHEMA REAL (diagnóstico Sprint 1 — 30/04/2026):
 //   people: first_name + last_name (sem full_name), phone (texto livre),
-//           person_stage (enum), pipeline_stage_id (uuid FK — nova),
+//           person_stage (enum), pipeline_stage_id (uuid FK),
 //           observacoes_pastorais, last_attendance_at
 //   event_occurrences: event_id → church_events, occurrence_date, start_datetime
-//
-// Cada tool retorna { ok: boolean, ...dados } ou { ok: false, error: string }
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -19,9 +24,87 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 )
 
+// ── Anti-spam (v2) ───────────────────────────────────────────
+// Lê conversation_messages — não depende mais de agent_pending_messages.
+
+export async function checkAntiSpam(
+  churchId:       string,
+  personId:       string,
+  churchTimezone: string,
+  silenceStartH = 21,
+  silenceEndH   = 8,
+  maxPerDay     = 1,
+  maxPerWeek    = 3,
+): Promise<{ allowed: boolean; reason?: string; delay_until?: string }> {
+
+  // 1. Janela de silêncio (horário local da igreja)
+  const now = new Date()
+  const localHour = parseInt(
+    now.toLocaleString('en-US', {
+      hour: 'numeric', hour12: false,
+      timeZone: churchTimezone || 'America/Sao_Paulo',
+    })
+  )
+  if (localHour >= silenceStartH || localHour < silenceEndH) {
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(silenceEndH, 0, 0, 0)
+    return { allowed: false, reason: 'silence_window', delay_until: tomorrow.toISOString() }
+  }
+
+  // 2. Buscar conversation_ids desta pessoa (two-step — Supabase JS não suporta subquery nativa)
+  const { data: convs } = await supabaseAdmin
+    .from('conversations')
+    .select('id')
+    .eq('church_id', churchId)
+    .eq('person_id', personId)
+
+  const convIds = (convs ?? []).map(c => c.id as string)
+
+  // Sem conversas ainda → pode enviar
+  if (convIds.length === 0) return { allowed: true }
+
+  // 3. Máx mensagens outbound do agente hoje
+  const todayStart = new Date(now)
+  todayStart.setHours(0, 0, 0, 0)
+
+  const { count: msgsToday } = await supabaseAdmin
+    .from('conversation_messages')
+    .select('id', { count: 'exact', head: true })
+    .in('conversation_id', convIds)
+    .eq('direction', 'outbound')
+    .eq('sender_type', 'agent')
+    .neq('status', 'failed')
+    .gte('created_at', todayStart.toISOString())
+
+  if ((msgsToday ?? 0) >= maxPerDay) {
+    return { allowed: false, reason: 'daily_limit_reached' }
+  }
+
+  // 4. Máx touchpoints por semana
+  const weekStart = new Date(now)
+  weekStart.setDate(weekStart.getDate() - 7)
+
+  const { count: msgsWeek } = await supabaseAdmin
+    .from('conversation_messages')
+    .select('id', { count: 'exact', head: true })
+    .in('conversation_id', convIds)
+    .eq('direction', 'outbound')
+    .eq('sender_type', 'agent')
+    .neq('status', 'failed')
+    .gte('created_at', weekStart.toISOString())
+
+  if ((msgsWeek ?? 0) >= maxPerWeek) {
+    return { allowed: false, reason: 'weekly_limit_reached' }
+  }
+
+  return { allowed: true }
+}
+
 // ── Definição das tools (passada para Anthropic messages API) ──
 
 export const AGENT_TOOLS = [
+  // ── Pessoas e pipeline ──────────────────────────────────────
   {
     name: 'read_person',
     description: 'Lê dados de uma pessoa da igreja por ID. Retorna nome completo, telefone, estágio atual, observações pastorais e data da última presença.',
@@ -61,6 +144,8 @@ export const AGENT_TOOLS = [
       required: ['person_id', 'stage_id']
     }
   },
+
+  // ── Agenda e eventos ────────────────────────────────────────
   {
     name: 'read_church_schedule',
     description: 'Lê a agenda da igreja com os próximos eventos e ocorrências programadas.',
@@ -71,48 +156,6 @@ export const AGENT_TOOLS = [
           type: 'number',
           description: 'Quantos dias à frente buscar (padrão: 7, máximo: 30)',
           default: 7
-        }
-      }
-    }
-  },
-  {
-    name: 'send_whatsapp',
-    description: 'Enfileira uma mensagem WhatsApp para ser enviada pela pessoa especificada. O roteamento (Meta Cloud ou Z-API) é automático por agente.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        to_phone: {
-          type: 'string',
-          description: 'Número de telefone no formato usado pela pessoa (ex: 11999998888 ou +5511999998888)'
-        },
-        message: {
-          type: 'string',
-          description: 'Texto da mensagem a ser enviada'
-        },
-        person_id: {
-          type: 'string',
-          format: 'uuid',
-          description: 'UUID da pessoa (opcional, para rastreabilidade)'
-        }
-      },
-      required: ['to_phone', 'message']
-    }
-  },
-  {
-    name: 'read_volunteer_schedule',
-    description: 'Lê a escala de voluntários para um evento específico ou de uma pessoa específica.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        event_id: {
-          type: 'string',
-          format: 'uuid',
-          description: 'UUID do event_occurrence (opcional — filtra por evento)'
-        },
-        person_id: {
-          type: 'string',
-          format: 'uuid',
-          description: 'UUID da pessoa (opcional — filtra por voluntário)'
         }
       }
     }
@@ -133,12 +176,91 @@ export const AGENT_TOOLS = [
     }
   },
 
-  // ── Tools de Acolhimento (Sprint 2) ──────────────────────────────────────
+  // ── Escala ──────────────────────────────────────────────────
+  {
+    name: 'read_volunteer_schedule',
+    description: 'Lê a escala de voluntários para um evento específico ou de uma pessoa específica.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        event_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID do event_occurrence (opcional — filtra por evento)'
+        },
+        person_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da pessoa (opcional — filtra por voluntário)'
+        }
+      }
+    }
+  },
 
+  // ── Mensagens — pipeline real (Sprint 3B) ───────────────────
+  {
+    name: 'enqueue_message',
+    description:
+      'Registra uma mensagem do agente na conversa (conversation_messages) e a enfileira para ' +
+      'entrega via WhatsApp (channel_dispatch_queue). Use sempre este tool para enviar mensagens — ' +
+      'ele garante o pipeline correto de delivery e auditoria. ' +
+      'Forneça conversation_id quando conhecido; caso contrário forneça person_id e o sistema ' +
+      'localiza ou cria a conversa automaticamente.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        message: {
+          type: 'string',
+          description: 'Texto da mensagem a ser enviada'
+        },
+        conversation_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da conversa — use quando já disponível no contexto'
+        },
+        person_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da pessoa — usado para localizar/criar a conversa quando conversation_id não está disponível'
+        }
+      },
+      required: ['message']
+    }
+  },
+
+  // ── Mensagens — legado (manter para agentes não migrados) ───
+  {
+    name: 'send_whatsapp',
+    description:
+      '[LEGADO — use enqueue_message para novos agentes] ' +
+      'Enfileira uma mensagem WhatsApp via dispatch-message EF.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        to_phone: {
+          type: 'string',
+          description: 'Número de telefone no formato usado pela pessoa'
+        },
+        message: {
+          type: 'string',
+          description: 'Texto da mensagem a ser enviada'
+        },
+        person_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da pessoa (opcional, para rastreabilidade)'
+        }
+      },
+      required: ['to_phone', 'message']
+    }
+  },
+
+  // ── Acolhimento ─────────────────────────────────────────────
   {
     name: 'create_acolhimento_journey',
-    description: 'Cria a jornada de acolhimento pastoral de 90 dias para uma pessoa nova. ' +
-                 'Deve ser chamada apenas uma vez por pessoa. Retorna erro se jornada já existe.',
+    description:
+      'Cria a jornada de acolhimento pastoral de 90 dias para uma pessoa nova. ' +
+      'Deve ser chamada apenas uma vez por pessoa. Retorna erro se jornada já existe.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -151,11 +273,11 @@ export const AGENT_TOOLS = [
       required: ['person_id']
     }
   },
-
   {
     name: 'read_acolhimento_journey',
-    description: 'Lê o histórico completo da jornada de acolhimento de uma pessoa: ' +
-                 'touchpoints enviados, respostas recebidas, observações pastorais e próximo agendamento.',
+    description:
+      'Lê o histórico completo da jornada de acolhimento de uma pessoa: ' +
+      'touchpoints enviados, respostas recebidas, observações pastorais e próximo agendamento.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -168,11 +290,11 @@ export const AGENT_TOOLS = [
       required: ['person_id']
     }
   },
-
   {
     name: 'update_acolhimento_journey',
-    description: 'Avança o timer da jornada após um touchpoint enviado e registra observação pastoral. ' +
-                 'Use "complete" para encerrar a jornada quando o membro estiver integrado.',
+    description:
+      'Avança o timer da jornada após um touchpoint enviado e registra observação pastoral. ' +
+      'Use "complete" para encerrar a jornada quando o membro estiver integrado.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -204,12 +326,13 @@ export const AGENT_TOOLS = [
 
 export async function executeTool(
   toolName: string,
-  input: Record<string, unknown>,
+  input:    Record<string, unknown>,
   churchId: string,
   agentSlug: string
 ): Promise<Record<string, unknown>> {
   switch (toolName) {
-    // ── Tool 1: read_person ──────────────────────────────
+
+    // ── read_person ──────────────────────────────────────────
     case 'read_person': {
       const { data, error } = await supabaseAdmin
         .from('people')
@@ -222,25 +345,20 @@ export async function executeTool(
         .maybeSingle()
 
       if (error) return { ok: false, error: error.message }
-      if (!data) return { ok: false, error: 'person_not_found' }
-
+      if (!data)  return { ok: false, error: 'person_not_found' }
       return {
         ok: true,
         person: {
           ...data,
-          // Expõe full_name calculado pra facilitar uso no prompt
-          full_name: [data.first_name, data.last_name].filter(Boolean).join(' ')
+          full_name: [data.first_name, data.last_name].filter(Boolean).join(' '),
         }
       }
     }
 
-    // ── Tool 2: update_pipeline_stage ────────────────────
+    // ── update_pipeline_stage ────────────────────────────────
     case 'update_pipeline_stage': {
-      const updates: Record<string, unknown> = {
-        pipeline_stage_id: input.stage_id as string
-      }
+      const updates: Record<string, unknown> = { pipeline_stage_id: input.stage_id }
 
-      // Appenda razão nas observações pastorais se fornecida
       if (input.reason) {
         const { data: person } = await supabaseAdmin
           .from('people')
@@ -249,7 +367,7 @@ export async function executeTool(
           .eq('church_id', churchId)
           .maybeSingle()
 
-        const ts = new Date().toISOString().slice(0, 10)
+        const ts   = new Date().toISOString().slice(0, 10)
         const prev = person?.observacoes_pastorais ?? ''
         updates.observacoes_pastorais = prev
           ? `${prev}\n[${ts}] ${input.reason}`
@@ -265,10 +383,10 @@ export async function executeTool(
       return error ? { ok: false, error: error.message } : { ok: true }
     }
 
-    // ── Tool 3: read_church_schedule ─────────────────────
+    // ── read_church_schedule ─────────────────────────────────
     case 'read_church_schedule': {
       const daysAhead = Math.min(Number(input.days_ahead ?? 7), 30)
-      const now = new Date()
+      const now   = new Date()
       const until = new Date(now.getTime() + daysAhead * 86_400_000)
 
       const { data, error } = await supabaseAdmin
@@ -289,44 +407,7 @@ export async function executeTool(
       return { ok: true, events: data ?? [] }
     }
 
-    // ── Tool 4: send_whatsapp ────────────────────────────
-    case 'send_whatsapp': {
-      // Delega para dispatch-message (enfileira — worker consome em Sprint 2+)
-      try {
-        const res = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-message`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              church_id: churchId,
-              agent_slug: agentSlug,
-              to_phone: input.to_phone,
-              message: input.message,
-              person_id: input.person_id ?? null
-            })
-          }
-        )
-        return await res.json()
-      } catch (err) {
-        return { ok: false, error: `dispatch_failed: ${err}` }
-      }
-    }
-
-    // ── Tool 5: read_volunteer_schedule ─────────────────
-    case 'read_volunteer_schedule': {
-      // Sprint 1: placeholder — implementação completa em Sprint 4 (agent-operacao)
-      return {
-        ok: true,
-        schedule: [],
-        note: 'Implementação completa disponível a partir do Sprint 4 (módulo Volunteers Pro).'
-      }
-    }
-
-    // ── Tool 6: read_event_status ────────────────────────
+    // ── read_event_status ────────────────────────────────────
     case 'read_event_status': {
       const { data, error } = await supabaseAdmin
         .from('event_occurrences')
@@ -340,12 +421,220 @@ export async function executeTool(
         .maybeSingle()
 
       if (error) return { ok: false, error: error.message }
-      if (!data) return { ok: false, error: 'event_not_found' }
-
+      if (!data)  return { ok: false, error: 'event_not_found' }
       return { ok: true, event: data }
     }
 
-    // ── Tool 7: create_acolhimento_journey ──────────────
+    // ── read_volunteer_schedule ──────────────────────────────
+    case 'read_volunteer_schedule': {
+      // Implementação completa em Sprint 4 (agent-operacao)
+      return {
+        ok: true,
+        schedule: [],
+        note: 'Implementação completa disponível a partir do Sprint 4 (módulo Volunteers Pro).'
+      }
+    }
+
+    // ── enqueue_message (NOVO — Sprint 3B) ───────────────────
+    // Pipeline real: conversation_messages → channel_dispatch_queue → channel-dispatcher
+    case 'enqueue_message': {
+      const message = (input.message as string).trim()
+      if (!message) return { ok: false, error: 'message_empty' }
+
+      let convId = (input.conversation_id as string | undefined) ?? undefined
+
+      // ── Resolve conversa por person_id se conversation_id não fornecido ──
+      if (!convId) {
+        const personId = input.person_id as string | undefined
+        if (!personId) {
+          return { ok: false, error: 'Forneça conversation_id ou person_id' }
+        }
+
+        // Busca telefone da pessoa
+        const { data: person } = await supabaseAdmin
+          .from('people')
+          .select('phone')
+          .eq('id', personId)
+          .eq('church_id', churchId)
+          .maybeSingle()
+
+        if (!person?.phone) return { ok: false, error: 'person_phone_not_found' }
+        const phone = person.phone.replace(/\D/g, '')
+
+        // Resolve context_type do agente para selecionar canal correto
+        const { data: routing } = await supabaseAdmin
+          .from('church_agent_channel_routing')
+          .select('context_type')
+          .eq('church_id', churchId)
+          .eq('agent_slug', agentSlug)
+          .maybeSingle()
+
+        // Fallback para global agent_channel_routing
+        let contextType = routing?.context_type
+        if (!contextType) {
+          const { data: global } = await supabaseAdmin
+            .from('agent_channel_routing')
+            .select('context_type')
+            .eq('agent_slug', agentSlug)
+            .maybeSingle()
+          contextType = global?.context_type ?? 'pastoral'
+        }
+
+        // Canal ativo com o context_type correto
+        const { data: channel } = await supabaseAdmin
+          .from('church_whatsapp_channels')
+          .select('id')
+          .eq('church_id', churchId)
+          .eq('context_type', contextType)
+          .in('session_status', ['testing', 'active'])
+          .eq('active', true)
+          .limit(1)
+          .maybeSingle()
+
+        if (!channel) return { ok: false, error: `no_active_channel_for_context:${contextType}` }
+
+        // UPSERT conversa — cria se não existir, atualiza preview se existir
+        const { data: conv, error: convErr } = await supabaseAdmin
+          .from('conversations')
+          .upsert(
+            {
+              church_id:            churchId,
+              channel_id:           channel.id,
+              contact_phone:        phone,
+              person_id:            personId,
+              status:               'open',
+              ownership:            'agent',
+              agent_slug:           agentSlug,
+              channel_type:         'whatsapp',
+              last_message_at:      new Date().toISOString(),
+              last_message_preview: message.slice(0, 120),
+            },
+            { onConflict: 'church_id,channel_id,contact_phone', ignoreDuplicates: false }
+          )
+          .select('id')
+          .single()
+
+        if (convErr || !conv) {
+          return { ok: false, error: convErr?.message ?? 'upsert_conversation_failed' }
+        }
+        convId = conv.id
+      }
+
+      // ── Busca dados da conversa para preencher a fila ──
+      const { data: conv, error: convLookupErr } = await supabaseAdmin
+        .from('conversations')
+        .select('channel_id, contact_phone, ownership')
+        .eq('id', convId)
+        .maybeSingle()
+
+      if (convLookupErr || !conv) {
+        return { ok: false, error: 'conversation_not_found' }
+      }
+
+      // Não enfileirar se humano assumiu (segurança extra)
+      if (conv.ownership === 'human') {
+        return { ok: false, error: 'conversation_owned_by_human — agente não pode enviar' }
+      }
+
+      // ── INSERT em conversation_messages ──
+      const { data: msg, error: msgErr } = await supabaseAdmin
+        .from('conversation_messages')
+        .insert({
+          conversation_id: convId,
+          church_id:       churchId,
+          direction:       'outbound',
+          sender_type:     'agent',
+          sender_id:       agentSlug,
+          content:         message,
+          content_type:    'text',
+          status:          'pending',
+        })
+        .select('id')
+        .single()
+
+      if (msgErr || !msg) {
+        return { ok: false, error: msgErr?.message ?? 'insert_message_failed' }
+      }
+
+      // ── INSERT em channel_dispatch_queue ──
+      const { error: qErr } = await supabaseAdmin
+        .from('channel_dispatch_queue')
+        .insert({
+          message_id:      msg.id,
+          conversation_id: convId,           // NOT NULL — obrigatório
+          church_id:       churchId,         // NOT NULL — obrigatório
+          channel_id:      conv.channel_id,
+          to_phone:        conv.contact_phone,
+          content:         message,
+          status:          'pending',
+          scheduled_at:    new Date().toISOString(),
+        })
+
+      if (qErr) {
+        // Reverter status da mensagem para evitar mensagem "orphan"
+        await supabaseAdmin
+          .from('conversation_messages')
+          .update({ status: 'failed', error_detail: qErr.message })
+          .eq('id', msg.id)
+        return { ok: false, error: `enqueue_failed: ${qErr.message}` }
+      }
+
+      // ── Atualiza preview da conversa ──
+      await supabaseAdmin
+        .from('conversations')
+        .update({
+          last_message_at:      new Date().toISOString(),
+          last_message_preview: message.slice(0, 120),
+        })
+        .eq('id', convId)
+
+      // ── Registra evento de auditoria ──
+      // Nota: PostgrestBuilder é PromiseLike (só .then), NÃO Promise — usar await+if
+      const { error: evtErr } = await supabaseAdmin.from('conversation_events').insert({
+        conversation_id: convId,
+        church_id:       churchId,
+        event_type:      'message_outbound_agent',
+        actor_type:      'agent',
+        actor_id:        agentSlug,
+        actor_name:      agentSlug,
+        message_preview: message.slice(0, 80),
+      })
+      if (evtErr) {
+        // Evento é best-effort — não falha a operação
+        console.warn('[agent-tools] conversation_events insert falhou:', evtErr.message)
+      }
+
+      console.log(`[agent-tools] enqueue_message: conv=${convId} msg=${msg.id} agente=${agentSlug}`)
+      return { ok: true, message_id: msg.id, conversation_id: convId }
+    }
+
+    // ── send_whatsapp (LEGADO — mantido para agentes não migrados) ──
+    case 'send_whatsapp': {
+      try {
+        const res = await fetch(
+          `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-message`,
+          {
+            method:  'POST',
+            headers: {
+              Authorization:  `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              church_id:  churchId,
+              agent_slug: agentSlug,
+              to_phone:   input.to_phone,
+              message:    input.message,
+              person_id:  input.person_id ?? null,
+            }),
+          }
+        )
+        return await res.json()
+      } catch (err) {
+        return { ok: false, error: `dispatch_failed: ${err}` }
+      }
+    }
+
+    // ── create_acolhimento_journey ───────────────────────────
     case 'create_acolhimento_journey': {
       const { data: existing } = await supabaseAdmin
         .from('acolhimento_journey')
@@ -356,22 +645,22 @@ export async function executeTool(
 
       if (existing) {
         return {
-          ok: false,
+          ok:    false,
           error: 'journey_already_exists',
-          journey_id: existing.id,
-          status: existing.status,
-          current_touchpoint: existing.current_touchpoint
+          journey_id:         existing.id,
+          status:             existing.status,
+          current_touchpoint: existing.current_touchpoint,
         }
       }
 
       const { data, error } = await supabaseAdmin
         .from('acolhimento_journey')
         .insert({
-          church_id:         churchId,
-          person_id:         input.person_id as string,
+          church_id:          churchId,
+          person_id:          input.person_id as string,
           current_touchpoint: 'D+0',
           next_touchpoint_at: new Date().toISOString(),
-          status:            'pending'
+          status:             'pending',
         })
         .select('id, current_touchpoint, next_touchpoint_at, status')
         .single()
@@ -380,7 +669,7 @@ export async function executeTool(
       return { ok: true, journey: data }
     }
 
-    // ── Tool 8: read_acolhimento_journey ─────────────────
+    // ── read_acolhimento_journey ─────────────────────────────
     case 'read_acolhimento_journey': {
       const { data, error } = await supabaseAdmin
         .from('acolhimento_journey')
@@ -393,25 +682,19 @@ export async function executeTool(
         .maybeSingle()
 
       if (error) return { ok: false, error: error.message }
-      if (!data) return { ok: false, error: 'journey_not_found' }
+      if (!data)  return { ok: false, error: 'journey_not_found' }
       return { ok: true, journey: data }
     }
 
-    // ── Tool 9: update_acolhimento_journey ───────────────
+    // ── update_acolhimento_journey ───────────────────────────
     case 'update_acolhimento_journey': {
       const TOUCHPOINT_DAYS: Record<string, number> = {
-        'D+3':  3,
-        'D+7':  7,
-        'D+14': 14,
-        'D+30': 30,
-        'D+60': 60,
-        'D+90': 90,
+        'D+3': 3, 'D+7': 7, 'D+14': 14, 'D+30': 30, 'D+60': 60, 'D+90': 90,
       }
 
-      const nextTp = input.next_touchpoint as string
+      const nextTp     = input.next_touchpoint as string
       const isComplete = nextTp === 'complete'
 
-      // Busca jornada atual para appender touchpoints_sent
       const { data: current } = await supabaseAdmin
         .from('acolhimento_journey')
         .select('touchpoints_sent, pastoral_notes, current_touchpoint')
@@ -422,24 +705,23 @@ export async function executeTool(
       if (!current) return { ok: false, error: 'journey_not_found' }
 
       const existingTouchpoints = (current.touchpoints_sent as unknown[]) ?? []
-      const newTouchpointEntry = {
-        touchpoint: current.current_touchpoint,
-        sent_at:    new Date().toISOString(),
-        summary:    (input.touchpoint_summary as string) ?? null,
-      }
+      const updatedTouchpoints  = [
+        ...existingTouchpoints,
+        {
+          touchpoint: current.current_touchpoint,
+          sent_at:    new Date().toISOString(),
+          summary:    (input.touchpoint_summary as string) ?? null,
+        },
+      ]
 
-      const updatedTouchpoints = [...existingTouchpoints, newTouchpointEntry]
-
-      // Appenda nota pastoral
-      const prevNotes = current.pastoral_notes ?? ''
-      const noteEntry = input.pastoral_note
+      const prevNotes   = current.pastoral_notes ?? ''
+      const noteEntry   = input.pastoral_note
         ? `[${new Date().toISOString().slice(0, 10)}] ${input.pastoral_note}`
         : null
       const updatedNotes = noteEntry
         ? (prevNotes ? `${prevNotes}\n${noteEntry}` : noteEntry)
         : prevNotes || null
 
-      // Calcula próximo next_touchpoint_at
       const nextAt = isComplete
         ? null
         : new Date(Date.now() + TOUCHPOINT_DAYS[nextTp] * 86_400_000).toISOString()
@@ -465,10 +747,10 @@ export async function executeTool(
 
       if (error) return { ok: false, error: error.message }
       return {
-        ok: true,
-        next_touchpoint: isComplete ? 'complete' : nextTp,
-        next_touchpoint_at: nextAt,
-        status: isComplete ? 'completed' : 'pending'
+        ok:                  true,
+        next_touchpoint:     isComplete ? 'complete' : nextTp,
+        next_touchpoint_at:  nextAt,
+        status:              isComplete ? 'completed' : 'pending',
       }
     }
 

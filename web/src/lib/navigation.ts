@@ -24,6 +24,7 @@ import {
   Calendar,
   CalendarDays,
   ShieldCheck,
+  MessageSquare,
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,    moduleKey: 'agenda'      },
   { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,     moduleKey: 'gabinete'    },
   { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,          moduleKey: 'financeiro'  },
+  { path: '/conversas',  label: 'Conversas',   Icon: MessageSquare,   moduleKey: null           },
 ]
 
 // ── Módulos add-on — sempre bloqueados até Fase 4 ─────────────────────────────
