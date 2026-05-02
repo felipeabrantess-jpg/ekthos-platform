@@ -248,10 +248,10 @@ interface AgentesSubProps {
 
 function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, planLoading }: AgentesSubProps) {
   const catalogSlugs = allAgents.map(a => a.slug)
-  const activeContent    = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && hasAgent(c.slug))
-  const standaloneContent = AGENTS_CONTENT.filter(c => !c.moduleId && catalogSlugs.includes(c.slug) && !hasAgent(c.slug) && !c.badge?.includes('Avivamento'))
-  const moduleAgents     = AGENTS_CONTENT.filter(c => !!c.moduleId)
-  const exclusiveAgents  = AGENTS_CONTENT.filter(c => c.badge?.includes('Avivamento') && planSlug !== 'avivamento' && !hasAgent(c.slug))
+  // Apenas os 7 agentes do catálogo frontend (4 interno + 3 premium)
+  const activeContent     = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && hasAgent(c.slug))
+  const standaloneContent = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && !hasAgent(c.slug))
+  const exclusiveAgents   = AGENTS_CONTENT.filter(c => c.badge?.includes('Avivamento') && planSlug !== 'avivamento' && !hasAgent(c.slug))
 
   const navItemBase: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10,
@@ -322,22 +322,6 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, plan
         </>
       )}
 
-      {moduleAgents.length > 0 && (
-        <>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
-            style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Via módulo</p>
-          {moduleAgents.map(c => (
-            <div key={c.slug}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
-              style={{ color: 'var(--text-tertiary)', opacity: 0.5 }}>
-              <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
-              <span className="flex-1 truncate text-[13px]">{c.name}</span>
-              <Lock size={10} strokeWidth={2} className="shrink-0" />
-            </div>
-          ))}
-        </>
-      )}
-
       {exclusiveAgents.length > 0 && (
         <>
           <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
@@ -359,7 +343,7 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, plan
         </>
       )}
 
-      {activeContent.length === 0 && standaloneContent.length === 0 && moduleAgents.length === 0 && (
+      {activeContent.length === 0 && standaloneContent.length === 0 && (
         <p className="text-[11px] px-3 py-4 text-center" style={{ color: 'var(--text-tertiary)' }}>
           Nenhum agente configurado
         </p>
