@@ -1,19 +1,19 @@
 /**
  * AgentsList.tsx — /agentes
  *
- * Três seções:
+ * Catálogo de 7 agentes (4 interno + 3 premium pastoral).
+ * Agentes de módulo NÃO aparecem aqui — apenas dentro do detalhe do módulo.
+ *
+ * Duas seções:
  *  1. ATIVOS          — agentes que a igreja já usa (hasAgent = true)
- *  2. CONTRATAR AVULSO — elegíveis sem moduleId, não ativos (standalone)
- *  3. VIA MÓDULO       — agentes vinculados a módulos pagos (moduleId != null)
+ *  2. CONTRATAR AVULSO — elegíveis, não ativos (standalone)
  *
  * Regras:
  *  - "Testar 7 dias grátis" DESABILITADO (placeholder Fase 6)
- *  - agent-whatsapp: badge "Exclusivo Avivamento" (apenas info)
- *  - Botões de contratar: disabled + tooltip "Em breve"
  */
 
 import { Link } from 'react-router-dom'
-import { Lock, Sparkles, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { Sparkles, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { usePlan } from '@/hooks/usePlan'
 import { AGENTS_CONTENT, type AgentContent } from '@/lib/agents-content'
 
@@ -85,36 +85,6 @@ function StandaloneAgentCard({ content }: { content: AgentContent }) {
   )
 }
 
-// ── Card: Agente de Módulo ────────────────────────────────────────────────────
-
-function ModuleAgentCard({ content, moduleName }: { content: AgentContent; moduleName: string }) {
-  const { Icon } = content
-  const moduleId = content.moduleId!
-
-  return (
-    <Link
-      to={`/modulos/${moduleId}`}
-      className="group flex items-start gap-4 p-4 bg-white border border-cream-dark/60 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-300 transition-all"
-    >
-      <div className="h-10 w-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0">
-        <Icon size={20} className="text-gray-400" strokeWidth={1.75} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-ekthos-black/60">{content.name}</span>
-          <Lock size={11} className="text-gray-400" strokeWidth={2} />
-        </div>
-        <p className="text-xs text-ekthos-black/40 mt-0.5 line-clamp-1">{content.shortDesc}</p>
-        <p className="text-[11px] text-ekthos-black/30 mt-1.5">
-          Disponível no módulo{' '}
-          <span className="font-semibold text-brand-500">{moduleName}</span>
-        </p>
-      </div>
-      <ChevronRight size={16} className="text-ekthos-black/15 group-hover:text-ekthos-black/30 transition-colors shrink-0 mt-1" />
-    </Link>
-  )
-}
-
 // ── Seção com título ──────────────────────────────────────────────────────────
 
 function Section({
@@ -144,32 +114,19 @@ function Section({
 export default function AgentsList() {
   const { hasAgent, allAgents, isLoading } = usePlan()
 
-  // Mapear slugs do catálogo DB para conteúdo enriquecido
+  // Catálogo frontend: 7 agentes (4 interno + 3 premium)
+  // Filtra pelo catálogo DB para garantir que só exibe o que está ativo no banco
   const catalogSlugs = allAgents.map(a => a.slug)
 
-  // 1. ATIVOS
+  // 1. ATIVOS — já em uso pela igreja
   const activeContent = AGENTS_CONTENT.filter(
     c => catalogSlugs.includes(c.slug) && hasAgent(c.slug)
   )
 
-  // 2. CONTRATAR AVULSO (standalone: sem moduleId, no catálogo, não ativo)
+  // 2. CONTRATAR AVULSO — no catálogo, ainda não ativos
   const standaloneContent = AGENTS_CONTENT.filter(
-    c => !c.moduleId && catalogSlugs.includes(c.slug) && !hasAgent(c.slug)
+    c => catalogSlugs.includes(c.slug) && !hasAgent(c.slug)
   )
-
-  // 3. VIA MÓDULO (tem moduleId)
-  const moduleAgents = AGENTS_CONTENT.filter(c => !!c.moduleId)
-
-  // Lookup nome do módulo a partir de MODULE_ADDONS
-  const moduleNameMap: Record<string, string> = {
-    'volunteer-pro':  'Volunteer Pro',
-    'kids-pro':       'Kids Pro',
-    'financeiro-pro': 'Financeiro Pro',
-  }
-  // Enriquecer com nome do módulo pai
-  function getModuleName(moduleId: string): string {
-    return moduleNameMap[moduleId] ?? moduleId
-  }
 
   return (
     <div className="space-y-8">
@@ -215,25 +172,11 @@ export default function AgentsList() {
       {standaloneContent.length > 0 && (
         <Section
           title="Contratar avulso"
-          subtitle="Adicione agentes ao seu plano — R$ 149,90/mês cada"
+          subtitle="Agentes premium pastorais — consultive, fale com um especialista"
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {standaloneContent.map(c => (
               <StandaloneAgentCard key={c.slug} content={c} />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* 3. VIA MÓDULO */}
-      {moduleAgents.length > 0 && (
-        <Section
-          title="Disponíveis via módulo"
-          subtitle="Agentes exclusivos dos módulos Volunteer Pro, Kids Pro e Financeiro Pro"
-        >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {moduleAgents.map(c => (
-              <ModuleAgentCard key={c.slug} content={c} moduleName={getModuleName(c.moduleId!)} />
             ))}
           </div>
         </Section>

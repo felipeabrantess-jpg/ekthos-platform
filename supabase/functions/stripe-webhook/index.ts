@@ -37,8 +37,7 @@ const STRIPE_WEBHOOK_SECRET     = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') ?? 'https://ekthos-platform.vercel.app'
-// Bypass de assinatura para smoke tests internos (NUNCA setar true em produção)
-const SKIP_SIG                  = Deno.env.get('STRIPE_WEBHOOK_SKIP_SIG') === 'true'
+const SKIP_SIG = Deno.env.get('STRIPE_WEBHOOK_SKIP_SIG') === 'true'
 
 if (!STRIPE_SECRET_KEY)         throw new Error('[stripe-webhook] STRIPE_SECRET_KEY not set')
 if (!STRIPE_WEBHOOK_SECRET)     throw new Error('[stripe-webhook] STRIPE_WEBHOOK_SECRET not set')
