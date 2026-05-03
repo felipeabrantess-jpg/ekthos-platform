@@ -1,8 +1,33 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare } from 'lucide-react'
+import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare, Zap } from 'lucide-react'
 import { useLogout } from '@/hooks/useAuth'
+import { usePendingActivations } from '@/hooks/usePendingActivations'
 
-const NAV = [
+function NavItem({ to, label, icon, badge }: { to: string; label: string; icon: React.ReactNode; badge?: number }) {
+  return (
+    <NavLink
+      key={to}
+      to={to}
+      className={({ isActive }) =>
+        `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
+          isActive
+            ? 'bg-white/10 text-white font-medium'
+            : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+        }`
+      }
+    >
+      {icon}
+      <span className="flex-1">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-amber-900 leading-none">
+          {badge}
+        </span>
+      )}
+    </NavLink>
+  )
+}
+
+const BASE_NAV = [
   { to: '/admin/cockpit',      label: 'Cockpit',      icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
   { to: '/admin/leads',        label: 'Leads',        icon: <Inbox           size={16} strokeWidth={1.75} /> },
   { to: '/admin/churches',     label: 'Igrejas',      icon: <Building2       size={16} strokeWidth={1.75} /> },
@@ -16,7 +41,9 @@ const NAV = [
 
 export default function AdminLayout() {
   const navigate = useNavigate()
-  const logout = useLogout()
+  const logout   = useLogout()
+  const { data: activations } = usePendingActivations()
+  const pendingCount = activations?.filter(a => a.activation_status === 'pending_activation').length ?? 0
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)' }}>
@@ -51,22 +78,20 @@ export default function AdminLayout() {
           <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-3 mb-2">
             Navegação
           </p>
-          {NAV.map(({ to, label, icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all ${
-                  isActive
-                    ? 'bg-white/10 text-white font-medium'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-                }`
-              }
-            >
-              {icon}
-              {label}
-            </NavLink>
+          {BASE_NAV.map(({ to, label, icon }) => (
+            <NavItem key={to} to={to} label={label} icon={icon} />
           ))}
+
+          {/* Seção Agentes */}
+          <p className="text-[10px] font-semibold text-white/20 uppercase tracking-widest px-3 mt-3 mb-1">
+            Agentes IA
+          </p>
+          <NavItem
+            to="/admin/cockpit/ativacoes"
+            label="Ativações"
+            icon={<Zap size={16} strokeWidth={1.75} />}
+            badge={pendingCount}
+          />
 
           {/* Logout */}
           <div className="mt-auto pt-4 border-t border-white/10">
