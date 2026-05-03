@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v2 — Sprint 3B
+// Edge Function: agent-acolhimento  v3 — Passo 6 mínimo viável
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -11,6 +11,12 @@
 //   trigger_type: 'internal'         → alias de 'journey'
 //   trigger_type: 'inbound_message'  → resposta reativa a mensagem recebida
 //     body: { conversation_id, message_id, church_id, person_id?, inbound_text }
+//
+// MUDANÇAS v3 (Passo 6 mínimo viável):
+//   - fetchChurchConfig passa a chamar get_agent_prompt_resolved (RPC)
+//   - resolved_prompt substitui SYSTEM_BLOCK_A + SYSTEM_BLOCK_B_TEMPLATE
+//   - Fallback seguro: se RPC falhar, usa hardcoded (comportamento v2)
+//   - Log estruturado: { used_template, template_version, has_custom_instructions }
 //
 // MUDANÇAS v2 (Sprint 3B):
 //   - Usa enqueue_message (conversation_messages + channel_dispatch_queue)
@@ -54,7 +60,9 @@ function json(data: unknown, status = 200): Response {
 }
 
 // ─────────────────────────────────────────────────────────────
-// BLOCOS DE SISTEMA — 2 blocos cacheados grandes (≥1024 tokens)
+// BLOCOS DE SISTEMA HARDCODED — mantidos como FALLBACK SEGURO
+// Usados se get_agent_prompt_resolved falhar (RPC indisponível ou erro)
+// NÃO DELETAR — garantem continuidade operacional mesmo sem DB
 // ─────────────────────────────────────────────────────────────
 
 const SYSTEM_BLOCK_A = `
@@ -174,24 +182,114 @@ const TOOLS_INBOUND = AGENT_TOOLS.filter(t =>
 )
 
 // ─────────────────────────────────────────────────────────────
-// BUSCAR CONFIG DA IGREJA
+// TIPOS
 // ─────────────────────────────────────────────────────────────
 
-async function fetchChurchConfig(churchId: string) {
-  const [{ data: church }, { data: agentConfig }] = await Promise.all([
+interface ResolvedPrompt {
+  resolved_prompt:      string
+  template_version:     number
+  has_custom_config:    boolean
+  custom_instructions:  string | null
+}
+
+interface LegacyConfig {
+  formality:        string | null
+  denomination:     string | null
+  preferred_verses: string[] | null
+  pastoral_depth:   string | null
+  send_window:      Record<string, unknown> | null
+  emoji_usage:      string | null
+  custom_overrides: Record<string, unknown> | null
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUSCAR CONFIG DA IGREJA (v3 — via RPC get_agent_prompt_resolved)
+// ─────────────────────────────────────────────────────────────
+
+async function fetchChurchConfig(churchId: string): Promise<{
+  church:      { name?: string; timezone?: string; city?: string } | null
+  agentConfig: LegacyConfig | null
+  resolved:    ResolvedPrompt | null
+}> {
+  const [{ data: church }, rpcResult] = await Promise.all([
     supabaseAdmin
       .from('churches')
       .select('name, timezone, city')
       .eq('id', churchId)
       .maybeSingle(),
     supabaseAdmin
+      .rpc('get_agent_prompt_resolved', {
+        p_church_id:  churchId,
+        p_agent_slug: AGENT_SLUG,
+      })
+      .single(),
+  ])
+
+  // Fallback: se RPC falhar, buscamos config legada para o SYSTEM_BLOCK_B_TEMPLATE
+  let agentConfig: LegacyConfig | null = null
+  let resolved:    ResolvedPrompt | null = null
+
+  if (rpcResult.error || !rpcResult.data) {
+    console.warn('[agent-acolhimento] RPC get_agent_prompt_resolved falhou, usando fallback hardcoded:', rpcResult.error?.message)
+    // Buscar config estruturada para o fallback
+    const { data: cfg } = await supabaseAdmin
       .from('church_agent_config')
       .select('formality, denomination, preferred_verses, forbidden_topics, pastoral_depth, send_window, emoji_usage, custom_overrides')
       .eq('church_id', churchId)
       .eq('agent_slug', AGENT_SLUG)
-      .maybeSingle(),
-  ])
-  return { church, agentConfig }
+      .maybeSingle()
+    agentConfig = cfg as LegacyConfig | null
+  } else {
+    resolved = rpcResult.data as ResolvedPrompt
+  }
+
+  return { church, agentConfig, resolved }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MONTAR BLOCOS DE SISTEMA (v3)
+// Usa resolved_prompt da RPC se disponível; cai no hardcoded se não
+// ─────────────────────────────────────────────────────────────
+
+function buildSystemBlocks(
+  resolved:    ResolvedPrompt | null,
+  church:      { name?: string } | null,
+  agentConfig: LegacyConfig | null,
+  churchId:    string,
+): { text: string; cache: boolean }[] {
+
+  if (resolved) {
+    // Caminho principal: prompt resolvido pela RPC (Camada 1 + 2 + 3)
+    console.log('[agent-acolhimento] prompt source', {
+      church_id:               churchId,
+      used_template:           true,
+      template_version:        resolved.template_version,
+      has_custom_config:       resolved.has_custom_config,
+      has_custom_instructions: resolved.custom_instructions != null,
+    })
+    return [{ text: resolved.resolved_prompt, cache: true }]
+  }
+
+  // Fallback hardcoded (v2) — garante operação se RPC indisponível
+  console.warn('[agent-acolhimento] prompt source', {
+    church_id:     churchId,
+    used_template: false,
+    reason:        'rpc_failed_using_hardcoded_fallback',
+  })
+  const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
+    church?.name || 'Igreja',
+    agentConfig?.denomination || '',
+    agentConfig?.formality || 'semiformal',
+    agentConfig?.pastoral_depth || 'moderate',
+    agentConfig?.emoji_usage || 'moderate',
+    agentConfig?.preferred_verses || [],
+    (agentConfig?.send_window as Record<string, unknown>) || null,
+    (agentConfig?.custom_overrides as Record<string, unknown>) || null,
+  )
+  return [
+    { text: SYSTEM_BLOCK_A, cache: true },
+    { text: systemBlockB,   cache: true },
+  ]
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -294,7 +392,7 @@ async function processJourney(
   const personId = locked.person_id
 
   try {
-    const { church, agentConfig } = await fetchChurchConfig(churchId)
+    const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
     const churchTimezone = church?.timezone || 'America/Sao_Paulo'
 
     // Anti-spam check (v2 — lê conversation_messages)
@@ -310,16 +408,7 @@ async function processJourney(
       return { ok: true, result: `skipped_anti_spam:${spamCheck.reason}` }
     }
 
-    const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
-      church?.name || 'Igreja',
-      agentConfig?.denomination || '',
-      agentConfig?.formality || 'semiformal',
-      agentConfig?.pastoral_depth || 'moderate',
-      agentConfig?.emoji_usage || 'moderate',
-      agentConfig?.preferred_verses || [],
-      (agentConfig?.send_window as Record<string, unknown>) || null,
-      (agentConfig?.custom_overrides as Record<string, unknown>) || null,
-    )
+    const systemBlocks = buildSystemBlocks(resolved, church, agentConfig, churchId)
 
     const userMessage = `
 Processe o touchpoint atual da jornada de acolhimento.
@@ -342,10 +431,7 @@ Seja conciso, pastoral e humano.
 `.trim()
 
     const finalResult = await runToolLoop(
-      [
-        { text: SYSTEM_BLOCK_A,   cache: true },
-        { text: systemBlockB,     cache: true },
-      ],
+      systemBlocks,
       userMessage,
       TOOLS_PROATIVO,
       churchId,
@@ -426,8 +512,8 @@ async function processInbound(
     return { ok: true, result: 'skipped_not_agent_ownership' }
   }
 
-  // 2. Buscar config da igreja
-  const { church, agentConfig } = await fetchChurchConfig(churchId)
+  // 2. Buscar config da igreja (v3 — via RPC)
+  const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
 
   // 3. Buscar histórico da conversa (últimas 20 mensagens, ordem cronológica)
   const { data: history } = await supabaseAdmin
@@ -449,16 +535,7 @@ async function processInbound(
     })
     .join('\n')
 
-  const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
-    church?.name || 'Igreja',
-    agentConfig?.denomination || '',
-    agentConfig?.formality || 'semiformal',
-    agentConfig?.pastoral_depth || 'moderate',
-    agentConfig?.emoji_usage || 'moderate',
-    agentConfig?.preferred_verses || [],
-    (agentConfig?.send_window as Record<string, unknown>) || null,
-    (agentConfig?.custom_overrides as Record<string, unknown>) || null,
-  )
+  const systemBlocks = buildSystemBlocks(resolved, church, agentConfig, churchId)
 
   const personContext = conv.person_id
     ? `Person ID disponível: ${conv.person_id} (use read_person para obter os dados)`
@@ -492,10 +569,7 @@ Responda como a equipe pastoral da igreja — com calor, sem pressão, sem revel
 
   try {
     const finalResult = await runToolLoop(
-      [
-        { text: SYSTEM_BLOCK_A, cache: true },
-        { text: systemBlockB,   cache: true },
-      ],
+      systemBlocks,
       userMessage,
       TOOLS_INBOUND,
       churchId,

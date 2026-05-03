@@ -50,7 +50,7 @@ export function useChurchAgentConfig(
   })
 }
 
-// ── Mutation ──────────────────────────────────────────────────────────────────
+// ── Mutation: upsert ──────────────────────────────────────────────────────────
 
 export function useUpsertChurchAgentConfig() {
   const qc = useQueryClient()
@@ -67,6 +67,27 @@ export function useUpsertChurchAgentConfig() {
       })
       if (error) throw new Error(error.message)
       return data
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['church_agent_config', vars.church_id, vars.agent_slug] })
+    },
+  })
+}
+
+// ── Mutation: reset (zera apenas custom_instructions → NULL) ──────────────────
+
+export function useResetChurchAgentConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: {
+      church_id:  string
+      agent_slug: string
+    }) => {
+      const { error } = await supabase.rpc('reset_church_agent_config', {
+        p_church_id:  params.church_id,
+        p_agent_slug: params.agent_slug,
+      })
+      if (error) throw new Error(error.message)
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['church_agent_config', vars.church_id, vars.agent_slug] })
