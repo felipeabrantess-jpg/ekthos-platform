@@ -253,7 +253,7 @@ export default function AtivacaoDetail() {
               'Setup iniciado! Status atualizado para "Em setup".'
             )}
             disabled={startSetup.isPending}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-sm font-semibold rounded-2xl transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold rounded-2xl transition-colors"
           >
             {startSetup.isPending
               ? <><Loader2 size={15} className="animate-spin" /> Salvando…</>
@@ -276,7 +276,7 @@ export default function AtivacaoDetail() {
           </button>
         )}
 
-        {!isActive && (
+        {['pending_activation', 'in_setup', 'paused'].includes(item.activation_status) && (
           <div className="flex gap-2.5">
             <button
               onClick={() => runAction(
