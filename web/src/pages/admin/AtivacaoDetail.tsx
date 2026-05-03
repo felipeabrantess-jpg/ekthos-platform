@@ -5,7 +5,7 @@
  * Checklist visual + botões de ação (Iniciar setup, Ativar, Pausar, Cancelar).
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Clock, Wrench, CheckCircle2, XCircle,
@@ -19,6 +19,8 @@ import {
   usePauseAgent,
   useCancelAgent,
 } from '@/hooks/usePendingActivations'
+import { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import PromptCustomizadoSection from './PromptCustomizadoSection'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -34,10 +36,13 @@ const CHECKLIST = [
   'Contatou pastor via WhatsApp ou e-mail',
   'Agendou call de configuração',
   'Conectou canal (WhatsApp da igreja ou webhook)',
-  'Configurou tom pastoral em church_agent_config',
+  'Prompt customizado da igreja configurado',       // index 4 — derivado automaticamente
   'Smoke test enviado e validado pelo pastor',
   'Pastor confirmou que recebeu a primeira mensagem',
 ]
+
+// Índice do item "Prompt customizado" — controlado pelo backend, não pelo usuário
+const PROMPT_CHECKLIST_IDX = 4
 
 // ── Toast inline ─────────────────────────────────────────────────────────────
 
@@ -67,12 +72,27 @@ export default function AtivacaoDetail() {
   const pauseAgent    = usePauseAgent()
   const cancelAgent   = useCancelAgent()
 
+  // Prompt customizado — lido para derivar item 4 do checklist
+  const { data: agentConfig, refetch: refetchConfig } = useChurchAgentConfig(
+    item?.church_id,
+    item?.agent_slug,
+  )
+  const promptConfigured = !!agentConfig?.custom_instructions?.trim()
+
   const [notes, setNotes]       = useState('')
   const [checked, setChecked]   = useState<boolean[]>(CHECKLIST.map(() => false))
   const [toast, setToast]       = useState<{ ok: boolean; msg: string } | null>(null)
 
-  const toggleCheck = (i: number) =>
+  // Checklist derivado: item PROMPT_CHECKLIST_IDX é controlado pelo backend
+  const effectiveChecked = useMemo(
+    () => checked.map((v, i) => i === PROMPT_CHECKLIST_IDX ? promptConfigured : v),
+    [checked, promptConfigured],
+  )
+
+  const toggleCheck = (i: number) => {
+    if (i === PROMPT_CHECKLIST_IDX) return  // somente leitura
     setChecked(prev => prev.map((v, idx) => idx === i ? !v : v))
+  }
 
   const runAction = async (fn: () => Promise<unknown>, successMsg: string) => {
     setToast(null)
@@ -212,25 +232,43 @@ export default function AtivacaoDetail() {
             Checklist de ativação
           </p>
           <ul className="space-y-2.5">
-            {CHECKLIST.map((item, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2.5 cursor-pointer group"
-                onClick={() => toggleCheck(i)}
-              >
-                {checked[i]
-                  ? <CheckSquare size={16} className="text-green-500 shrink-0 mt-0.5" strokeWidth={2} />
-                  : <Square size={16} className="text-ekthos-black/25 group-hover:text-ekthos-black/50 shrink-0 mt-0.5" strokeWidth={1.5} />}
-                <span className={`text-sm leading-snug ${checked[i] ? 'line-through text-ekthos-black/35' : 'text-ekthos-black/70'}`}>
-                  {item}
-                </span>
-              </li>
-            ))}
+            {CHECKLIST.map((label, i) => {
+              const isReadOnly = i === PROMPT_CHECKLIST_IDX
+              const isChecked  = effectiveChecked[i]
+              return (
+                <li
+                  key={i}
+                  className={`flex items-start gap-2.5 group ${isReadOnly ? 'cursor-default' : 'cursor-pointer'}`}
+                  onClick={() => toggleCheck(i)}
+                >
+                  {isChecked
+                    ? <CheckSquare size={16} className="text-green-500 shrink-0 mt-0.5" strokeWidth={2} />
+                    : <Square size={16} className={`shrink-0 mt-0.5 ${isReadOnly ? 'text-ekthos-black/20' : 'text-ekthos-black/25 group-hover:text-ekthos-black/50'}`} strokeWidth={1.5} />}
+                  <span className={`text-sm leading-snug ${isChecked ? 'line-through text-ekthos-black/35' : 'text-ekthos-black/70'} ${isReadOnly ? 'italic' : ''}`}>
+                    {label}
+                    {isReadOnly && (
+                      <span className="ml-1.5 text-[10px] font-medium not-italic text-ekthos-black/30 bg-black/5 px-1.5 py-0.5 rounded-full">
+                        auto
+                      </span>
+                    )}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
           <p className="text-[10px] text-ekthos-black/30 mt-3">
-            {checked.filter(Boolean).length}/{CHECKLIST.length} itens concluídos — checklist visual apenas, não salvo no banco.
+            {effectiveChecked.filter(Boolean).length}/{CHECKLIST.length} itens concluídos
+            {' '}— item "auto" deriva do prompt abaixo, demais são visuais (não salvos no banco).
           </p>
         </div>
+
+        {/* Prompt customizado */}
+        <PromptCustomizadoSection
+          churchId={item.church_id}
+          agentSlug={item.agent_slug}
+          churchName={item.church_name}
+          onSaved={() => refetchConfig()}
+        />
 
         {/* Notas */}
         <div className="p-5">
