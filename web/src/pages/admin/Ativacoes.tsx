@@ -106,7 +106,7 @@ function ActivationRow({ item }: { item: PendingActivation }) {
 // ── Página ────────────────────────────────────────────────────────────────────
 
 export default function Ativacoes() {
-  const { data, isLoading, isError, refetch, isFetching } = usePendingActivations()
+  const { data, isLoading, isError, error, refetch, isFetching } = usePendingActivations()
 
   const pending  = data?.filter(d => d.activation_status === 'pending_activation') ?? []
   const inSetup  = data?.filter(d => d.activation_status === 'in_setup') ?? []
@@ -160,9 +160,14 @@ export default function Ativacoes() {
         )}
 
         {isError && (
-          <div className="flex items-center gap-2.5 p-5 text-sm text-red-700">
-            <AlertCircle size={16} strokeWidth={1.75} />
-            Erro ao carregar ativações. Verifique permissão admin.
+          <div className="flex items-start gap-2.5 p-5 text-sm text-red-700">
+            <AlertCircle size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium">Erro ao carregar ativações</p>
+              <p className="text-xs text-red-500 mt-0.5 font-mono">
+                {error instanceof Error ? error.message : 'Erro desconhecido'}
+              </p>
+            </div>
           </div>
         )}
 
