@@ -43,7 +43,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-suporte',
-    name:       'Suporte 24h',
+    name:       'Agente Suporte',
     Icon:       MessageCircle,
     category:   'interno',
     shortDesc:  'Tira dúvidas sobre o Ekthos a qualquer hora, sem espera.',
@@ -59,7 +59,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-onboarding',
-    name:       'Onboarding de Líderes',
+    name:       'Agente Onboarding',
     Icon:       Rocket,
     category:   'interno',
     shortDesc:  'Guia novos líderes no primeiro acesso e nas primeiras semanas.',
@@ -76,7 +76,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-cadastro',
-    name:       'Assistente de Cadastro',
+    name:       'Agente Cadastro',
     Icon:       UserPlus,
     category:   'interno',
     shortDesc:  'Cadastra membros e visitantes via conversa, sem formulário.',
@@ -93,7 +93,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-config',
-    name:       'Configurador Inteligente',
+    name:       'Agente Config',
     Icon:       Settings2,
     category:   'interno',
     shortDesc:  'Configura pipeline, áreas e ministérios via conversa natural.',
@@ -112,7 +112,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-acolhimento',
-    name:       'Acolhimento Pastoral',
+    name:       'Agente Acolhimento Pastoral',
     Icon:       Heart,
     category:   'premium',
     shortDesc:  'Acolhe visitantes e conduz os primeiros 90 dias na Igreja.',
@@ -131,7 +131,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-operacao',
-    name:       'Operação Pastoral',
+    name:       'Agente Operação Pastoral',
     Icon:       Zap,
     category:   'premium',
     shortDesc:  'Orquestra antes, durante e depois de cada culto ou evento.',
@@ -150,7 +150,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-reengajamento',
-    name:       'Reengajamento Pastoral',
+    name:       'Agente Reengajamento Pastoral',
     Icon:       UserCheck,
     category:   'premium',
     shortDesc:  'Detecta membros esfriando e retoma o vínculo antes que se percam.',
