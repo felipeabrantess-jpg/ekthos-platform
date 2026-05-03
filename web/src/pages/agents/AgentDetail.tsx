@@ -20,6 +20,7 @@ import { usePlan } from '@/hooks/usePlan'
 import { getAgentContent } from '@/lib/agents-content'
 import { useAddonActions } from '@/hooks/useAddonActions'
 import Button from '@/components/ui/Button'
+import { AgentStatusBlock } from '@/components/agents/AgentStatusBlock'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
@@ -242,6 +243,9 @@ export default function AgentDetail() {
         <ArrowLeft size={13} strokeWidth={2} />
         Agentes IA
       </button>
+
+      {/* C1: Bloco de status de ativação (pending_activation, in_setup, paused, cancelled) */}
+      <AgentStatusBlock slug={slug!} />
 
       {/* Hero */}
       <div className="flex items-start gap-5">
