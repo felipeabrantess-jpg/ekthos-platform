@@ -7,6 +7,7 @@
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { jsonError } from '../_shared/errors.ts'
 
 const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -76,7 +77,7 @@ Deno.serve(async (req: Request) => {
 
   if (error) {
     console.error('[admin-churches-list]', error)
-    return json({ error: error.message }, 500)
+    return jsonError(CORS)
   }
 
   return json({
