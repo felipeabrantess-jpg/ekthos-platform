@@ -20,22 +20,28 @@
 // Resposta:  { zaapId, messageId, id }
 // ============================================================
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-}
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({ ok: true })
+  if (req.method === 'OPTIONS') return json({ error: 'method_not_allowed' }, 405)
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405)
+
+  // ── Auth interna (Bearer SERVICE_ROLE_KEY) ───────────────────
+  if (!SERVICE_ROLE_KEY) {
+    console.error('[zapi-send] SUPABASE_SERVICE_ROLE_KEY não configurado')
+    return json({ ok: false, error: 'misconfigured' }, 500)
+  }
+  const authHeader = req.headers.get('Authorization') ?? ''
+  if (authHeader !== `Bearer ${SERVICE_ROLE_KEY}`) {
+    return json({ ok: false, error: 'unauthorized' }, 401)
+  }
 
   // ── Credenciais ─────────────────────────────────────────────
   const ZAPI_INSTANCE_ID  = Deno.env.get('ZAPI_INSTANCE_ID')  ?? ''

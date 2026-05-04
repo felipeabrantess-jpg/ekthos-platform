@@ -5,9 +5,13 @@
 // POST /functions/v1/chatpro-send
 // verify_jwt = false — chamada interna entre EFs (service_role)
 //
+// Auth: Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>
+// Sem CORS — EF interna, não acessada diretamente por browsers.
+//
 // Body: { to_phone: string, message: string }
 //
 // Variáveis de ambiente necessárias:
+//   SUPABASE_SERVICE_ROLE_KEY — validação de auth interna
 //   CHATPRO_INSTANCE_ID  — ex: chatpro-xi70lpoh5q
 //   CHATPRO_TOKEN        — token do painel ChatPro
 //   CHATPRO_BASE_URL     — ex: https://v5.chatpro.com.br/chatpro-xi70lpoh5q
@@ -19,22 +23,28 @@
 // Auth:      Authorization: {CHATPRO_TOKEN}  ← sem "Bearer"
 // ============================================================
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-}
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({ ok: true })
+  if (req.method === 'OPTIONS') return json({ error: 'method_not_allowed' }, 405)
   if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405)
+
+  // ── Auth interna (Bearer SERVICE_ROLE_KEY) ───────────────────
+  if (!SERVICE_ROLE_KEY) {
+    console.error('[chatpro-send] SUPABASE_SERVICE_ROLE_KEY não configurado')
+    return json({ ok: false, error: 'misconfigured' }, 500)
+  }
+  const authHeader = req.headers.get('Authorization') ?? ''
+  if (authHeader !== `Bearer ${SERVICE_ROLE_KEY}`) {
+    return json({ ok: false, error: 'unauthorized' }, 401)
+  }
 
   // ── Credenciais ─────────────────────────────────────────────
   const CHATPRO_INSTANCE_ID = Deno.env.get('CHATPRO_INSTANCE_ID') ?? ''
