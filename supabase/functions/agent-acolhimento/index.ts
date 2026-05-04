@@ -513,6 +513,47 @@ async function processInbound(
     return { ok: true, result: 'skipped_not_agent_ownership' }
   }
 
+  // Rate limit: máx 5 respostas automáticas por conversa em 5 minutos
+  // DEVE ocorrer antes de qualquer chamada ao Claude Sonnet
+  // NOTA: count: 'exact' com head:true retorna null no Deno runtime (bug supabase-js v2).
+  //       Usamos select('id').limit(5) e medimos data.length — mais confiável.
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  const { data: recentMsgs } = await supabaseAdmin
+    .from('conversation_messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('direction', 'outbound')
+    .eq('sender_type', 'agent')
+    .gte('created_at', fiveMinAgo)
+    .limit(5)
+
+  const recentCount = recentMsgs?.length ?? 0
+
+  if (recentCount >= 5) {
+    console.warn(`[agent-acolhimento] RATE_LIMIT conv=${conversationId} outbound_agent_5min=${recentCount}`)
+    // Notificar admins (best-effort)
+    try {
+      const { data: admins } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id')
+        .eq('church_id', churchId)
+        .in('role', ['admin', 'pastor_celulas'])
+      for (const admin of admins ?? []) {
+        await supabaseAdmin.from('notifications').insert({
+          church_id:       churchId,
+          user_id:         admin.user_id,
+          title:           'Rate limit atingido — resposta automática pausada',
+          body:            `A conversa atingiu 5 respostas automáticas em 5 minutos. Possível spam ou loop.`,
+          type:            'warning',
+          read:            false,
+          link:            `/conversas/${conversationId}`,
+          automation_name: 'inbound_rate_limit',
+        })
+      }
+    } catch { /* não crítico */ }
+    return { ok: false, error: 'rate_limit_exceeded', result: 'max 5 respostas automáticas por conversa em 5 minutos' }
+  }
+
   // 2. Buscar config da igreja (v3 — via RPC)
   const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
 
