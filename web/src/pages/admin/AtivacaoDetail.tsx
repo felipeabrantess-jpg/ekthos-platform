@@ -20,7 +20,9 @@ import {
   useCancelAgent,
 } from '@/hooks/usePendingActivations'
 import { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import { useChurchChannels } from '@/hooks/useChurchChannels'
 import PromptCustomizadoSection from './PromptCustomizadoSection'
+import CanaisIgrejaSection from '@/components/admin/CanaisIgrejaSection'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,8 +43,9 @@ const CHECKLIST = [
   'Pastor confirmou que recebeu a primeira mensagem',
 ]
 
-// Índice do item "Prompt customizado" — controlado pelo backend, não pelo usuário
-const PROMPT_CHECKLIST_IDX = 4
+// Índices derivados automaticamente pelo backend — não editáveis pelo usuário
+const CHANNEL_CHECKLIST_IDX = 3  // "Conectou canal" — deriva de church_channels.status='connected'
+const PROMPT_CHECKLIST_IDX  = 4  // "Prompt customizado" — deriva de church_agent_configs
 
 // ── Toast inline ─────────────────────────────────────────────────────────────
 
@@ -72,7 +75,11 @@ export default function AtivacaoDetail() {
   const pauseAgent    = usePauseAgent()
   const cancelAgent   = useCancelAgent()
 
-  // Prompt customizado — lido para derivar item 4 do checklist
+  // Canais da igreja — deriva item 3 do checklist (status='connected')
+  const { data: channels, refetch: refetchChannels } = useChurchChannels(item?.church_id)
+  const channelConnected = channels?.some(ch => ch.status === 'connected') ?? false
+
+  // Prompt customizado — deriva item 4 do checklist
   const { data: agentConfig, refetch: refetchConfig } = useChurchAgentConfig(
     item?.church_id,
     item?.agent_slug,
@@ -83,14 +90,18 @@ export default function AtivacaoDetail() {
   const [checked, setChecked]   = useState<boolean[]>(CHECKLIST.map(() => false))
   const [toast, setToast]       = useState<{ ok: boolean; msg: string } | null>(null)
 
-  // Checklist derivado: item PROMPT_CHECKLIST_IDX é controlado pelo backend
+  // Checklist derivado: itens 3 e 4 são controlados pelo backend (somente leitura)
   const effectiveChecked = useMemo(
-    () => checked.map((v, i) => i === PROMPT_CHECKLIST_IDX ? promptConfigured : v),
-    [checked, promptConfigured],
+    () => checked.map((v, i) => {
+      if (i === CHANNEL_CHECKLIST_IDX) return channelConnected
+      if (i === PROMPT_CHECKLIST_IDX)  return promptConfigured
+      return v
+    }),
+    [checked, channelConnected, promptConfigured],
   )
 
   const toggleCheck = (i: number) => {
-    if (i === PROMPT_CHECKLIST_IDX) return  // somente leitura
+    if (i === CHANNEL_CHECKLIST_IDX || i === PROMPT_CHECKLIST_IDX) return  // somente leitura
     setChecked(prev => prev.map((v, idx) => idx === i ? !v : v))
   }
 
@@ -233,7 +244,7 @@ export default function AtivacaoDetail() {
           </p>
           <ul className="space-y-2.5">
             {CHECKLIST.map((label, i) => {
-              const isReadOnly = i === PROMPT_CHECKLIST_IDX
+              const isReadOnly = i === CHANNEL_CHECKLIST_IDX || i === PROMPT_CHECKLIST_IDX
               const isChecked  = effectiveChecked[i]
               return (
                 <li
@@ -258,7 +269,7 @@ export default function AtivacaoDetail() {
           </ul>
           <p className="text-[10px] text-ekthos-black/30 mt-3">
             {effectiveChecked.filter(Boolean).length}/{CHECKLIST.length} itens concluídos
-            {' '}— item "auto" deriva do prompt abaixo, demais são visuais (não salvos no banco).
+            {' '}— itens "auto" derivam do canal conectado e do prompt configurado, demais são visuais (não salvos no banco).
           </p>
         </div>
 
@@ -268,6 +279,13 @@ export default function AtivacaoDetail() {
           agentSlug={item.agent_slug}
           churchName={item.church_name}
           onSaved={() => refetchConfig()}
+        />
+
+        {/* Canais da igreja */}
+        <CanaisIgrejaSection
+          churchId={item.church_id}
+          churchName={item.church_name}
+          onChanged={() => refetchChannels()}
         />
 
         {/* Notas */}
