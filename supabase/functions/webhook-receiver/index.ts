@@ -15,11 +15,11 @@
 //   { phone: "5521...", body: "texto", id: "msg_id" }
 //   ou { phone: "5521...", message: "texto", id: "msg_id" }
 //
-// Regras desta sprint (A2):
+// Regras desta sprint (B):
 //   ✅ Gravar mensagem inbound em conversation_messages (direction=inbound)
 //   ✅ Identificar/criar pessoa por from_phone
 //   ✅ Upsert conversation com person_id vinculado
-//   🚫 NÃO chamar conversation-router / NÃO responder automaticamente
+//   ✅ Chamar conversation-router (fire-and-forget, 5s timeout) para roteamento
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -429,6 +429,27 @@ async function processInbound(
     }).eq('id', conv.id)
 
     console.log(`[webhook-receiver] ✅ inbound gravado: msg=${msg.id} conv=${conv.id} person=${person?.id ?? 'n/a'} from=${normalized.from_phone}`)
+
+    // ── 8. Rotear para agente/humano (fire-and-forget) ────────
+    fetch(`${SUPABASE_URL}/functions/v1/conversation-router`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        conversation_id: conv.id,
+        message_id:      msg.id,
+        church_id:       churchId,
+        ownership:       conv.ownership,
+        agent_slug:      conv.agent_slug ?? null,
+        person_id:       person?.id ?? null,
+        inbound_text:    normalized.text,
+      }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(err => {
+      console.warn('[webhook-receiver] conversation-router call falhou (não crítico):', (err as Error).message)
+    })
 
   } catch (err) {
     console.error('[webhook-receiver] unhandled error:', err)

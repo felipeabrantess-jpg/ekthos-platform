@@ -61,6 +61,18 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
+    // ── Verificar se conversa está fechada/arquivada ────────
+    const { data: convStatus } = await sb
+      .from('conversations')
+      .select('status')
+      .eq('id', conversation_id)
+      .maybeSingle()
+
+    if (!convStatus || convStatus.status === 'closed' || convStatus.status === 'archived') {
+      console.log(`[conversation-router] ${conversation_id} status=${convStatus?.status ?? 'not_found'} — ignorando`)
+      return json({ ok: true, routed_to: 'none', note: `conversation_status: ${convStatus?.status ?? 'not_found'}` })
+    }
+
     // ── unassigned: assign para agente default ─────────────
     let effectiveOwnership  = ownership
     let effectiveAgentSlug  = agent_slug ?? DEFAULT_AGENT
