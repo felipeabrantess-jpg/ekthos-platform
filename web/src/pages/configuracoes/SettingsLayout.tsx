@@ -12,7 +12,7 @@
  */
 
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { Building2, Palette, CreditCard, Users, Package, GitBranch, QrCode } from 'lucide-react'
+import { Building2, Palette, CreditCard, Users, Package, GitBranch, QrCode, Radio } from 'lucide-react'
 
 const TABS = [
   { path: 'dados',           label: 'Dados',           Icon: Building2,  description: 'Nome, endereço e CNPJ' },
@@ -22,6 +22,7 @@ const TABS = [
   { path: 'modulos',         label: 'Módulos',         Icon: Package,    description: 'Add-ons pagos' },
   { path: 'discipulado',     label: 'Discipulado',     Icon: GitBranch,  description: 'Etapas da jornada espiritual' },
   { path: 'qr-visitante',    label: 'QR Visitante',    Icon: QrCode,     description: 'Captura de visitantes via QR' },
+  { path: 'canais',          label: 'Canais',          Icon: Radio,      description: 'Canais de comunicação ativos' },
 ]
 
 export function ConfiguracoesLayout() {

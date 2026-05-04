@@ -413,6 +413,10 @@ function ConfigSubPanel() {
       <ConfigLink to="/configuracoes/modulos" label="Módulos e Add-ons" />
 
       <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)' }}>Comunicação</p>
+      <ConfigLink to="/configuracoes/canais" label="Canais" />
+
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
         style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Integrações</p>
       <InactiveLink label="Integrações" />
 

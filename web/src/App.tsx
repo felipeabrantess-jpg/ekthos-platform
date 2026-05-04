@@ -84,6 +84,9 @@ const DiscipleshipSettingsPage = lazy(() =>
 const QrVisitorPage = lazy(() =>
   import('@/pages/configuracoes/QrVisitor').then(m => ({ default: m.QrVisitor }))
 )
+const CanaisPage = lazy(() =>
+  import('@/pages/configuracoes/Canais').then(m => ({ default: m.Canais }))
+)
 // Settings legados — mantidos para backward compat
 const SettingsLayoutPage = lazy(() =>
   import('@/pages/settings/Layout').then(m => ({ default: m.SettingsLayout }))
@@ -304,6 +307,7 @@ export default function App() {
               <Route path="modulos"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModulosPage /></Suspense></ErrorBoundary>} />
               <Route path="discipulado"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DiscipleshipSettingsPage /></Suspense></ErrorBoundary>} />
               <Route path="qr-visitante" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><QrVisitorPage /></Suspense></ErrorBoundary>} />
+              <Route path="canais"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CanaisPage /></Suspense></ErrorBoundary>} />
             </Route>
 
             {/* ── Settings legados (backward compat) ── */}
