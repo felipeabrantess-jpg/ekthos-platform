@@ -82,7 +82,10 @@ const ChatProAdapter: ChannelAdapter = {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/chatpro-send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        },
         body: JSON.stringify({ to_phone, message: text }),
         signal: AbortSignal.timeout(20_000),
       })
