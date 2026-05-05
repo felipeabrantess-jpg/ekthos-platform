@@ -60,6 +60,7 @@ Deno.serve(async (req: Request) => {
     healthRes,
     usersRes,
     agentsRes,
+    agentGrantsRes,
     adminEventsRes,
     notesRes,
     membersRes,
@@ -98,6 +99,13 @@ Deno.serve(async (req: Request) => {
     supabase
       .from('subscription_agents')
       .select('agent_slug, source, active')
+      .eq('church_id', churchId)
+      .eq('active', true),
+
+    // Agent grants (cockpit-granted — sem subscription_id)
+    supabase
+      .from('agent_grants')
+      .select('agent_slug, grant_type, ends_at, starts_at, active')
       .eq('church_id', churchId)
       .eq('active', true),
 
@@ -177,6 +185,33 @@ Deno.serve(async (req: Request) => {
     metadata:   e.after ?? {},
   }))
 
+  // Build merged agents list: subscription_agents + agent_grants (sem duplicar por slug)
+  const subAgentsList = (agentsRes.data ?? []) as Array<{ agent_slug: string; active: boolean }>
+  const agentGrantsList = (agentGrantsRes.data ?? []) as Array<{
+    agent_slug: string; grant_type: string; ends_at: string | null; starts_at: string; active: boolean
+  }>
+  const subSlugs = new Set(subAgentsList.map(a => a.agent_slug))
+  const mergedAgents = [
+    ...subAgentsList.map(a => ({
+      id:            a.agent_slug,
+      name:          a.agent_slug,
+      status:        'active',
+      calls_30d:     0,
+      source:        'subscription',
+      grant_ends_at: null as null,
+    })),
+    ...agentGrantsList
+      .filter(g => !subSlugs.has(g.agent_slug))
+      .map(g => ({
+        id:            g.agent_slug,
+        name:          g.agent_slug,
+        status:        'active',
+        calls_30d:     0,
+        source:        g.grant_type,
+        grant_ends_at: g.ends_at,
+      })),
+  ]
+
   return json({
     // Identificação
     id:           church.id,
@@ -219,13 +254,8 @@ Deno.serve(async (req: Request) => {
       role: u.role,
     })),
 
-    // Agentes
-    agents: (agentsRes.data ?? []).map(a => ({
-      id:       a.agent_slug,
-      name:     a.agent_slug,
-      status:   a.active ? 'active' : 'inactive',
-      calls_30d: 0,
-    })),
+    // Agentes (subscription_agents + agent_grants mesclados)
+    agents: mergedAgents,
 
     // Notas internas
     notes: notesRes.data ?? [],
