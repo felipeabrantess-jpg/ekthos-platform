@@ -161,6 +161,19 @@ Deno.serve(async (req: Request) => {
   const sub    = subRes.data ?? null
   const health = healthRes.data ?? null
 
+  // Busca emails dos usuários da igreja via auth.admin API
+  const roleRows = usersRes.data ?? []
+  const authEmailMap: Record<string, { email: string; last_sign_in_at: string | null }> = {}
+  for (const row of roleRows) {
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(row.user_id)
+    if (authUser) {
+      authEmailMap[row.user_id] = {
+        email:            authUser.email ?? '',
+        last_sign_in_at:  authUser.last_sign_in_at ?? null,
+      }
+    }
+  }
+
   // MRR calculado com preço customizado ou preço padrão do plano
   let mrrCents = 0
   if (sub) {
@@ -251,9 +264,11 @@ Deno.serve(async (req: Request) => {
     health_components: health?.components ?? {},
 
     // Usuários
-    users: (usersRes.data ?? []).map(u => ({
-      id:   u.user_id,
-      role: u.role,
+    users: roleRows.map(u => ({
+      id:           u.user_id,
+      role:         u.role,
+      email:        authEmailMap[u.user_id]?.email        ?? null,
+      last_sign_in: authEmailMap[u.user_id]?.last_sign_in_at ?? null,
     })),
 
     // Agentes (subscription_agents + agent_grants mesclados)

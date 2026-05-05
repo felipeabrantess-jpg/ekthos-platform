@@ -190,10 +190,10 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                   style={{ background: 'var(--color-primary)' }}
                 >
-                  {u.email.charAt(0).toUpperCase()}
+                  {(u.email ?? u.id).charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-800 truncate">{u.email}</p>
+                  <p className="text-xs font-medium text-gray-800 truncate">{u.email ?? u.id}</p>
                   <p className="text-[10px] text-gray-400">{u.role}</p>
                 </div>
                 <span className="text-[10px] text-gray-400">{relDate(u.last_sign_in ?? null)}</span>
