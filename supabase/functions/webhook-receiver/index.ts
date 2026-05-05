@@ -19,7 +19,7 @@
 //   ✅ Gravar mensagem inbound em conversation_messages (direction=inbound)
 //   ✅ Identificar/criar pessoa por from_phone
 //   ✅ Upsert conversation com person_id vinculado
-//   ✅ Chamar conversation-router (fire-and-forget, 5s timeout) para roteamento
+//   ✅ Chamar agent-haiku-triagem (fire-and-forget, 5s timeout) para triagem e roteamento
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -177,16 +177,6 @@ Deno.serve(async (req) => {
   const instanceId = url.searchParams.get('instance_id') ?? ''  // zapi legado
 
   const raw = await req.json().catch(() => null)
-
-  // ── DEBUG TEMPORÁRIO: capturar formato real do ChatPro ────
-  console.log('[webhook-receiver] FULL PAYLOAD:', JSON.stringify(raw))
-  console.log('[webhook-receiver] HEADERS:', JSON.stringify({
-    'content-type': req.headers.get('content-type'),
-    'user-agent':   req.headers.get('user-agent'),
-    'x-forwarded-for': req.headers.get('x-forwarded-for'),
-  }))
-  console.log('[webhook-receiver] URL:', req.url)
-  // ── FIM DEBUG ─────────────────────────────────────────────
 
   // Responde 200 imediatamente (ChatPro não pode esperar timeout)
   void processInbound(raw, provider, channelId, instanceId)
@@ -430,8 +420,11 @@ async function processInbound(
 
     console.log(`[webhook-receiver] ✅ inbound gravado: msg=${msg.id} conv=${conv.id} person=${person?.id ?? 'n/a'} from=${normalized.from_phone}`)
 
-    // ── 8. Rotear para agente/humano (fire-and-forget) ────────
-    fetch(`${SUPABASE_URL}/functions/v1/conversation-router`, {
+    // ── 8. Rotear para agente de triagem (fire-and-forget) ────────
+    // Sprint 1: agent-haiku-triagem substitui conversation-router como ponto de entrada.
+    // agent-haiku-triagem classifica com Haiku 4.5 e escalona ao Sonnet se necessário.
+    // conversation-router é mantido mas não mais chamado diretamente pelo webhook.
+    fetch(`${SUPABASE_URL}/functions/v1/agent-haiku-triagem`, {
       method:  'POST',
       headers: {
         'Content-Type':  'application/json',
@@ -448,7 +441,7 @@ async function processInbound(
       }),
       signal: AbortSignal.timeout(5_000),
     }).catch(err => {
-      console.warn('[webhook-receiver] conversation-router call falhou (não crítico):', (err as Error).message)
+      console.warn('[webhook-receiver] agent-haiku-triagem call falhou (não crítico):', (err as Error).message)
     })
 
   } catch (err) {

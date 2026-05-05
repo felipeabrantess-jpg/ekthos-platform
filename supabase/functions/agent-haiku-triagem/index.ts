@@ -1,0 +1,424 @@
+// ============================================================
+// Edge Function: agent-haiku-triagem  v1 — Sprint 1
+//
+// POST /functions/v1/agent-haiku-triagem
+// verify_jwt = false — chamada interna via webhook-receiver
+//
+// Recebe:
+//   { conversation_id, message_id, church_id, ownership,
+//     agent_slug, person_id, inbound_text }
+//
+// Responsabilidades:
+//   1. Classificar mensagens inbound com Haiku 4.5 (barato, rápido)
+//   2. Rotear:
+//      - ownership='human'     → notificar liderança, não processar
+//      - category=handoff_humano → transferir, notificar, confirmar ao membro
+//      - escalate_to_sonnet    → fire-and-forget ao agent-acolhimento
+//      - trivial/informativa   → responder diretamente via Haiku
+//   3. Salvar classificação em conversation_messages.metadata
+//   4. Notificar via internal_notifications quando necessário
+//
+// Modelo: claude-haiku-4-5-20251001 (via ANTHROPIC_HAIKU_MODEL env)
+// Cache: 3 system blocks com cache_control:ephemeral
+// ============================================================
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
+
+const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
+const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!
+const HAIKU_MODEL       = Deno.env.get('ANTHROPIC_HAIKU_MODEL') ?? 'claude-haiku-4-5-20251001'
+const AGENT_SLUG        = 'agent-haiku-triagem'
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+
+interface InboundPayload {
+  conversation_id: string
+  message_id:      string
+  church_id:       string
+  ownership:       string
+  agent_slug:      string | null
+  person_id:       string | null
+  inbound_text:    string
+}
+
+interface HaikuClassification {
+  category:           'trivial' | 'informativa' | 'pastoral' | 'handoff_humano'
+  sentiment:          'positive' | 'neutral' | 'negative' | 'distressed'
+  intent:             'saudacao' | 'duvida_agenda' | 'pedido_oracao' | 'crise_emocional' | 'informacao' | 'handoff_request' | 'agradecimento' | 'outro'
+  confidence:         number
+  escalate_to_sonnet: boolean
+  haiku_response:     string | null
+  reasoning:          string
+}
+
+// ─── System blocks (cached) ───────────────────────────────────────────────────
+
+const SYSTEM_BLOCK_A = {
+  type: 'text' as const,
+  text: `Você é o agente de triagem da Ekthos Church — um CRM pastoral para igrejas evangélicas brasileiras. Seu papel é classificar mensagens recebidas via WhatsApp de membros e visitantes, e decidir o roteamento mais adequado. Você opera com latência mínima; seja preciso, eficiente e pastoral.`.trim(),
+  cache_control: { type: 'ephemeral' as const },
+}
+
+const SYSTEM_BLOCK_B = {
+  type: 'text' as const,
+  text: `## Regras de Classificação
+
+### Categorias (escolha exatamente 1)
+- **trivial**: saudações curtas, "ok", "obrigado", confirmações simples ("sim", "não"), emojis isolados, respostas de uma palavra
+- **informativa**: dúvidas sobre horários, endereço, eventos, datas, programação, pedidos de informação factual sobre a igreja
+- **pastoral**: pedidos de oração, aconselhamento, relatos de dificuldades espirituais, busca por Deus, perguntas de fé, desabafos de tristeza, relatos de problemas familiares
+- **handoff_humano**: pedido explícito de falar com um humano ("quero falar com alguém", "pode me passar para o pastor?", "preciso de uma pessoa", "fala comigo você", "não quero falar com robô")
+
+### Sentimento (escolha exatamente 1)
+- **positive**: alegria, gratidão, entusiasmo, fé afirmativa, celebração
+- **neutral**: tom informativo, neutro, sem carga emocional clara
+- **negative**: frustração, decepção, reclamação, tristeza comum, desânimo
+- **distressed**: angústia intensa, crise emocional aguda, desespero, menção a suicídio, pensamentos de desistir da vida, trauma agudo, abandono extremo, pânico
+
+### Intent (escolha exatamente 1)
+- **saudacao**: oi, olá, bom dia, boa tarde, boa noite, tudo bem?
+- **duvida_agenda**: horário de culto, datas de eventos, programação da semana
+- **pedido_oracao**: pedir intercessão, oração por situação específica
+- **crise_emocional**: sofrimento intenso, crise existencial, desespero declarado
+- **informacao**: dados factuais sobre a igreja (endereço, pastor, atividades)
+- **handoff_request**: quer falar com humano explicitamente
+- **agradecimento**: obrigado, grato, que Deus abençoe, gratidão
+- **outro**: não se encaixa claramente em nenhuma categoria acima
+
+### Regras de escalamento para Sonnet (escalate_to_sonnet)
+Defina **escalate_to_sonnet: true** quando QUALQUER das condições abaixo for verdadeira:
+1. category = "pastoral" OU category = "handoff_humano"
+2. sentiment = "distressed"
+3. confidence < 0.70 (incerteza alta sobre a classificação)
+
+### haiku_response
+- Para **trivial** ou **informativa** com confidence ≥ 0.70: gere uma resposta curta (máximo 3 frases), calorosa e pastoral em português brasileiro. Sem markdown, sem emojis excessivos. Tom de quem cuida da pessoa.
+- Para todos os outros casos (escalate_to_sonnet = true): defina **haiku_response: null**. O Sonnet responderá.`.trim(),
+  cache_control: { type: 'ephemeral' as const },
+}
+
+const SYSTEM_BLOCK_C = {
+  type: 'text' as const,
+  text: `## Formato de Saída Obrigatório
+
+Responda APENAS com JSON válido, sem blocos markdown, sem texto antes ou depois:
+
+{"category":"trivial|informativa|pastoral|handoff_humano","sentiment":"positive|neutral|negative|distressed","intent":"saudacao|duvida_agenda|pedido_oracao|crise_emocional|informacao|handoff_request|agradecimento|outro","confidence":0.95,"escalate_to_sonnet":false,"haiku_response":"Texto da resposta aqui, ou null","reasoning":"Motivo breve em 1 frase"}
+
+Não inclua nada além do JSON. Não use aspas simples. Não use comentários.`.trim(),
+  cache_control: { type: 'ephemeral' as const },
+}
+
+// ─── Classificação Haiku ──────────────────────────────────────────────────────
+
+async function classifyMessage(
+  anthropic: Anthropic,
+  inboundText: string,
+): Promise<HaikuClassification> {
+  const response = await anthropic.messages.create({
+    model:     HAIKU_MODEL,
+    max_tokens: 512,
+    system:    [SYSTEM_BLOCK_A, SYSTEM_BLOCK_B, SYSTEM_BLOCK_C],
+    messages:  [
+      {
+        role:    'user',
+        content: `Mensagem recebida via WhatsApp:\n\n"${inboundText.slice(0, 2000)}"\n\nClassifique e decida o roteamento.`,
+      },
+    ],
+  })
+
+  // T6: Log cache tokens para validação
+  const usage = response.usage as Record<string, number>
+  console.log(`[${AGENT_SLUG}] usage: input=${usage.input_tokens} output=${usage.output_tokens} cache_write=${usage.cache_creation_input_tokens ?? 0} cache_read=${usage.cache_read_input_tokens ?? 0}`)
+
+  const rawText = response.content[0].type === 'text' ? response.content[0].text.trim() : ''
+  // Strip markdown code fences que o Haiku às vezes inclui apesar da instrução
+  const raw = rawText
+    .replace(/^```(?:json)?\s*/m, '')
+    .replace(/\s*```\s*$/m, '')
+    .trim()
+
+  try {
+    return JSON.parse(raw) as HaikuClassification
+  } catch {
+    // Escalate to Sonnet on parse error (safe fallback)
+    console.error(`[${AGENT_SLUG}] JSON parse error — raw: ${raw.slice(0, 300)}`)
+    return {
+      category:           'pastoral',
+      sentiment:          'neutral',
+      intent:             'outro',
+      confidence:         0.0,
+      escalate_to_sonnet: true,
+      haiku_response:     null,
+      reasoning:          `Parse error — escalando para Sonnet. Raw: ${raw.slice(0, 100)}`,
+    }
+  }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+async function enqueueOutboundMessage(
+  supabase: ReturnType<typeof createClient>,
+  conversationId: string,
+  churchId: string,
+  text: string,
+): Promise<void> {
+  // Busca channel_id e contact_phone da conversa
+  const { data: conv, error: convErr } = await supabase
+    .from('conversations')
+    .select('channel_id, contact_phone')
+    .eq('id', conversationId)
+    .maybeSingle()
+
+  if (convErr || !conv) {
+    console.error(`[${AGENT_SLUG}] enqueueOutbound: conversa não encontrada`, convErr?.message)
+    return
+  }
+
+  // INSERT em conversation_messages
+  const { data: msg, error: msgErr } = await supabase
+    .from('conversation_messages')
+    .insert({
+      conversation_id: conversationId,
+      church_id:       churchId,
+      direction:       'outbound',
+      sender_type:     'agent',
+      sender_id:       AGENT_SLUG,
+      content:         text,
+      content_type:    'text',
+      status:          'pending',
+    })
+    .select('id')
+    .single()
+
+  if (msgErr || !msg) {
+    console.error(`[${AGENT_SLUG}] enqueueOutbound: insert conversation_messages falhou`, msgErr?.message)
+    return
+  }
+
+  // INSERT em channel_dispatch_queue
+  const { error: qErr } = await supabase
+    .from('channel_dispatch_queue')
+    .insert({
+      message_id:      msg.id,
+      conversation_id: conversationId,
+      church_id:       churchId,
+      channel_id:      conv.channel_id,
+      to_phone:        conv.contact_phone,
+      content:         text,
+      status:          'pending',
+      scheduled_at:    new Date().toISOString(),
+    })
+
+  if (qErr) {
+    console.error(`[${AGENT_SLUG}] enqueueOutbound: insert channel_dispatch_queue falhou`, qErr.message)
+    // Reverter status da mensagem
+    await supabase
+      .from('conversation_messages')
+      .update({ status: 'failed', error_detail: qErr.message })
+      .eq('id', msg.id)
+    return
+  }
+
+  // Atualiza preview da conversa
+  await supabase
+    .from('conversations')
+    .update({
+      last_message_at:      new Date().toISOString(),
+      last_message_preview: text.slice(0, 120),
+    })
+    .eq('id', conversationId)
+
+  console.log(`[${AGENT_SLUG}] enqueueOutbound: msg=${msg.id} conv=${conversationId}`)
+}
+
+async function notifyInternal(
+  supabase: ReturnType<typeof createClient>,
+  churchId: string,
+  conversationId: string,
+  title: string,
+  message: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('internal_notifications')
+    .insert({
+      notification_type: 'general',
+      church_id:         churchId,
+      agent_slug:        AGENT_SLUG,
+      title,
+      message,
+      metadata:          { conversation_id: conversationId },
+      status:            'pending',
+    })
+
+  if (error) {
+    console.error(`[${AGENT_SLUG}] notifyInternal error:`, error.message)
+  }
+}
+
+function escalateToSonnet(
+  conversationId: string,
+  messageId: string,
+  churchId: string,
+  inboundText: string,
+): void {
+  const url = `${SUPABASE_URL}/functions/v1/agent-acolhimento`
+  fetch(url, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({
+      conversation_id: conversationId,
+      message_id:      messageId,
+      church_id:       churchId,
+      inbound_text:    inboundText,
+      trigger_type:    'inbound_message',
+    }),
+    signal: AbortSignal.timeout(3_000),
+  }).catch(err => console.error(`[${AGENT_SLUG}] escalateToSonnet error:`, err?.message))
+}
+
+// ─── CORS ─────────────────────────────────────────────────────────────────────
+
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const CORS = {
+  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+function json(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  })
+}
+
+// ─── Handler principal ────────────────────────────────────────────────────────
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS })
+  }
+
+  if (req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, 405)
+  }
+
+  let body: InboundPayload
+  try {
+    body = await req.json()
+  } catch {
+    return json({ error: 'Invalid JSON' }, 400)
+  }
+
+  const { conversation_id, message_id, church_id, ownership, inbound_text } = body
+
+  if (!conversation_id || !message_id || !church_id || !inbound_text) {
+    return json({ error: 'Missing required fields: conversation_id, message_id, church_id, inbound_text' }, 400)
+  }
+
+  const supabase  = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+
+  console.log(`[${AGENT_SLUG}] inbound conv=${conversation_id} ownership=${ownership} len=${inbound_text.length}`)
+
+  // ── 1. Roteamento por ownership ──────────────────────────────────────────────
+  if (ownership === 'human') {
+    // Conversa já pertence a humano — notificar sem classificar
+    await notifyInternal(
+      supabase,
+      church_id,
+      conversation_id,
+      '💬 Nova mensagem (conversa humana)',
+      `Nova mensagem em conversa atribuída a humano: "${inbound_text.slice(0, 100)}"`,
+    )
+    console.log(`[${AGENT_SLUG}] routed=human (skip classification)`)
+    return json({ ok: true, routed: 'human' })
+  }
+
+  // ── 2. Classificação com Haiku ───────────────────────────────────────────────
+  let classification: HaikuClassification
+  try {
+    classification = await classifyMessage(anthropic, inbound_text)
+  } catch (err) {
+    console.error(`[${AGENT_SLUG}] classifyMessage threw:`, err)
+    // Fallback seguro: escalate ao Sonnet
+    escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+    return json({ ok: true, routed: 'sonnet_fallback', error: 'classification_failed' })
+  }
+
+  console.log(`[${AGENT_SLUG}] classification:`, JSON.stringify({
+    category:    classification.category,
+    sentiment:   classification.sentiment,
+    confidence:  classification.confidence,
+    escalate:    classification.escalate_to_sonnet,
+  }))
+
+  // ── 3. Persistir classificação em conversation_messages.metadata ─────────────
+  await supabase
+    .from('conversation_messages')
+    .update({ metadata: { haiku_classification: classification } })
+    .eq('id', message_id)
+    .then(({ error }) => {
+      if (error) console.error(`[${AGENT_SLUG}] metadata update error:`, error.message)
+    })
+
+  // ── 4. Roteamento por categoria/sentiment ────────────────────────────────────
+
+  const { category, sentiment, escalate_to_sonnet, haiku_response } = classification
+
+  // ── 4a. Handoff para humano ─────────────────────────────────────────────────
+  if (category === 'handoff_humano') {
+    // Transfere ownership para humano
+    await supabase
+      .from('conversations')
+      .update({ ownership: 'human' })
+      .eq('id', conversation_id)
+
+    // Notifica liderança
+    await notifyInternal(
+      supabase,
+      church_id,
+      conversation_id,
+      '🤝 Membro pediu falar com humano',
+      `Um membro solicitou atendimento humano. Motivo: ${classification.reasoning}`,
+    )
+
+    // Confirma ao membro que alguém vai atender
+    await enqueueOutboundMessage(
+      supabase,
+      conversation_id,
+      church_id,
+      'Entendido! Vou chamar alguém da nossa equipe para continuar essa conversa com você. Um momento! 🙏',
+    )
+
+    console.log(`[${AGENT_SLUG}] routed=handoff_humano`)
+    return json({ ok: true, routed: 'handoff_humano', classification })
+  }
+
+  // ── 4b. Escalate para Sonnet ─────────────────────────────────────────────────
+  if (escalate_to_sonnet || sentiment === 'distressed') {
+    escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+    console.log(`[${AGENT_SLUG}] routed=sonnet (escalate=${escalate_to_sonnet} distressed=${sentiment === 'distressed'})`)
+    return json({ ok: true, routed: 'sonnet', classification })
+  }
+
+  // ── 4c. Haiku responde diretamente (trivial/informativa, alta confiança) ──────
+  if (haiku_response) {
+    await enqueueOutboundMessage(supabase, conversation_id, church_id, haiku_response)
+    console.log(`[${AGENT_SLUG}] routed=haiku (direct response, confidence=${classification.confidence})`)
+    return json({ ok: true, routed: 'haiku', classification })
+  }
+
+  // Fallback: escalate se haiku_response for null mas não escalado acima
+  escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+  console.log(`[${AGENT_SLUG}] routed=sonnet_fallback (haiku_response null without escalate flag)`)
+  return json({ ok: true, routed: 'sonnet_fallback', classification })
+})
