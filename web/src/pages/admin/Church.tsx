@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Building2, CreditCard, Users, Activity,
   Heart, DollarSign, FileText, Bot, UserCheck,
@@ -227,6 +227,12 @@ function TabOperacao({ data }: { data: ChurchDetail }) {
                   {a.status === 'active' ? 'Ativo' : 'Inativo'}
                 </span>
                 <span className="font-mono-ekthos text-xs text-gray-400">{a.calls_30d} chamadas/30d</span>
+                <Link
+                  to={`/admin/churches/${data.id}/agentes/${a.id}`}
+                  className="text-xs font-medium text-[#e13500] hover:underline flex items-center gap-1 ml-2"
+                >
+                  Configurar →
+                </Link>
               </div>
             ))}
           </div>
