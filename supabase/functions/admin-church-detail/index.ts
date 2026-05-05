@@ -11,7 +11,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const ALLOWED_ORIGIN           = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -21,37 +20,40 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+function cors(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') ?? 'https://ekthos-platform.vercel.app'
+  return {
+    'Access-Control-Allow-Origin':  origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  }
 }
 
-function json(data: unknown, status = 200) {
+function json(data: unknown, status: number, req: Request) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...cors(req), 'Content-Type': 'application/json' },
   })
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
-  if (req.method !== 'GET')    return new Response('Method Not Allowed', { status: 405, headers: CORS })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(req) })
+  if (req.method !== 'GET')    return new Response('Method Not Allowed', { status: 405, headers: cors(req) })
 
   // ── Auth ──────────────────────────────────────────────────
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
-  if (!token) return json({ error: 'Unauthorized' }, 401)
+  if (!token) return json({ error: 'Unauthorized' }, 401, req)
 
   const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
-  if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+  if (authErr || !user) return json({ error: 'Unauthorized' }, 401, req)
 
   const isAdmin =
     user.app_metadata?.is_ekthos_admin === true ||
     user.user_metadata?.is_ekthos_admin === true
-  if (!isAdmin) return json({ error: 'Forbidden' }, 403)
+  if (!isAdmin) return json({ error: 'Forbidden' }, 403, req)
 
   const churchId = new URL(req.url).searchParams.get('id')
-  if (!churchId) return json({ error: 'id é obrigatório' }, 400)
+  if (!churchId) return json({ error: 'id é obrigatório' }, 400, req)
 
   // ── Consultas em paralelo ──────────────────────────────────
   const [
@@ -152,7 +154,7 @@ Deno.serve(async (req: Request) => {
   ])
 
   if (churchRes.error || !churchRes.data) {
-    return json({ error: 'Igreja não encontrada' }, 404)
+    return json({ error: 'Igreja não encontrada' }, 404, req)
   }
 
   const church = churchRes.data
@@ -264,5 +266,5 @@ Deno.serve(async (req: Request) => {
     logs,
 
     generated_at: new Date().toISOString(),
-  })
+  }, 200, req)
 })

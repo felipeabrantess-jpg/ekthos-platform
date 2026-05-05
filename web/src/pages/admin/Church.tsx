@@ -207,12 +207,12 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
 }
 
 function TabOperacao({ data, onAgentChange }: { data: ChurchDetail; onAgentChange: () => void }) {
-  const [grantModalOpen, setGrantModalOpen] = useState(false)
-  const [revokingSlug,   setRevokingSlug]   = useState<string | null>(null)
-  const [revokeError,    setRevokeError]    = useState<string | null>(null)
+  const [grantModalOpen,    setGrantModalOpen]    = useState(false)
+  const [revokingSlug,      setRevokingSlug]      = useState<string | null>(null)
+  const [confirmRevokeSlug, setConfirmRevokeSlug] = useState<string | null>(null)
+  const [revokeError,       setRevokeError]       = useState<string | null>(null)
 
   async function handleRevoke(agentSlug: string) {
-    if (!window.confirm(`Revogar acesso ao agente "${agentSlug}" para esta igreja?`)) return
     setRevokingSlug(agentSlug)
     setRevokeError(null)
 
@@ -301,15 +301,36 @@ function TabOperacao({ data, onAgentChange }: { data: ChurchDetail; onAgentChang
 
                 {/* Botão Revogar (apenas grants manuais) */}
                 {a.source && a.source !== 'subscription' && (
-                  <button
-                    type="button"
-                    onClick={() => handleRevoke(a.id)}
-                    disabled={revokingSlug === a.id}
-                    className="text-xs text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
-                    title="Revogar acesso"
-                  >
-                    {revokingSlug === a.id ? '…' : '✕'}
-                  </button>
+                  confirmRevokeSlug === a.id ? (
+                    <span className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setConfirmRevokeSlug(null); void handleRevoke(a.id) }}
+                        disabled={revokingSlug === a.id}
+                        className="text-[10px] font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        Confirmar
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRevokeSlug(null)}
+                        className="text-[10px] text-gray-400 hover:text-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRevokeSlug(a.id)}
+                      disabled={revokingSlug === a.id}
+                      className="text-xs text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      title="Revogar acesso"
+                    >
+                      {revokingSlug === a.id ? '…' : '✕'}
+                    </button>
+                  )
                 )}
               </div>
             ))}
