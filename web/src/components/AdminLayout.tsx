@@ -43,7 +43,10 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const logout   = useLogout()
   const { data: activations } = usePendingActivations()
-  const pendingCount = activations?.filter(a => a.activation_status === 'pending_activation').length ?? 0
+  const pendingCount = activations?.filter(a =>
+    a.activation_status === 'pending_activation' ||
+    a.activation_status === 'pending_config'
+  ).length ?? 0
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-primary)' }}>

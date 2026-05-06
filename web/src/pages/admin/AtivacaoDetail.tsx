@@ -141,9 +141,10 @@ export default function AtivacaoDetail() {
     )
   }
 
-  const isPending = item.activation_status === 'pending_activation'
-  const isInSetup = item.activation_status === 'in_setup'
-  const isActive  = item.activation_status === 'active'
+  const isPending       = item.activation_status === 'pending_activation'
+  const isInSetup       = item.activation_status === 'in_setup'
+  const isActive        = item.activation_status === 'active'
+  const isPendingConfig = item.activation_status === 'pending_config'
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -189,6 +190,18 @@ export default function AtivacaoDetail() {
           <div>
             <p className="text-sm font-semibold text-green-900">Agente ativo</p>
             <p className="text-xs text-green-700 mt-0.5">Ativação concluída com sucesso.</p>
+          </div>
+        </div>
+      )}
+
+      {isPendingConfig && (
+        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
+          <Wrench size={18} className="text-amber-600 shrink-0 mt-0.5" strokeWidth={2} />
+          <div>
+            <p className="text-sm font-semibold text-amber-900">Aguardando configuração</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              Grant ativo sem configuração preenchida. Configure o agente pela aba Identidade/Prompt — o item sai da fila automaticamente após salvar.
+            </p>
           </div>
         </div>
       )}

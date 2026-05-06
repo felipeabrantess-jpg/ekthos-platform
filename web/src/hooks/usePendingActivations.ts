@@ -15,7 +15,7 @@ export interface PendingActivation {
   church_name:         string
   agent_slug:          string
   agent_name:          string
-  activation_status:   'pending_activation' | 'in_setup' | 'active' | 'paused' | 'cancelled'
+  activation_status:   'pending_activation' | 'in_setup' | 'pending_config' | 'active' | 'paused' | 'cancelled'
   package_type:        string | null
   credits_balance:     number | null
   credits_total:       number | null

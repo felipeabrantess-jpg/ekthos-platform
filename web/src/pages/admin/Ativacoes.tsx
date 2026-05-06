@@ -32,6 +32,14 @@ function StatusBadge({ status }: { status: string }) {
       </span>
     )
   }
+  if (status === 'pending_config') {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+        <Wrench size={11} strokeWidth={2.5} />
+        Aguardando config
+      </span>
+    )
+  }
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
       {status}
@@ -108,9 +116,10 @@ function ActivationRow({ item }: { item: PendingActivation }) {
 export default function Ativacoes() {
   const { data, isLoading, isError, error, refetch, isFetching } = usePendingActivations()
 
-  const pending  = data?.filter(d => d.activation_status === 'pending_activation') ?? []
-  const inSetup  = data?.filter(d => d.activation_status === 'in_setup') ?? []
-  const total    = (data?.length ?? 0)
+  const pending       = data?.filter(d => d.activation_status === 'pending_activation') ?? []
+  const inSetup       = data?.filter(d => d.activation_status === 'in_setup') ?? []
+  const pendingConfig = data?.filter(d => d.activation_status === 'pending_config') ?? []
+  const total         = (data?.length ?? 0)
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
@@ -135,7 +144,7 @@ export default function Ativacoes() {
       </div>
 
       {/* Counters */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="bg-white border border-amber-100 rounded-2xl p-4">
           <p className="text-[11px] font-semibold text-amber-700/70 uppercase tracking-widest">Aguardando</p>
           <p className="text-3xl font-bold text-amber-700 mt-1 font-mono">{pending.length}</p>
@@ -143,6 +152,10 @@ export default function Ativacoes() {
         <div className="bg-white border border-orange-100 rounded-2xl p-4">
           <p className="text-[11px] font-semibold text-orange-700/70 uppercase tracking-widest">Em Setup</p>
           <p className="text-3xl font-bold text-orange-700 mt-1 font-mono">{inSetup.length}</p>
+        </div>
+        <div className="bg-white border border-amber-100 rounded-2xl p-4">
+          <p className="text-[11px] font-semibold text-amber-700/70 uppercase tracking-widest">Ag. Config</p>
+          <p className="text-3xl font-bold text-amber-700 mt-1 font-mono">{pendingConfig.length}</p>
         </div>
         <div className="bg-white border border-black/8 rounded-2xl p-4">
           <p className="text-[11px] font-semibold text-ekthos-black/40 uppercase tracking-widest">Total</p>
