@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Building2, CreditCard, Users, Activity,
   Heart, DollarSign, FileText, Bot, UserCheck,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalHabilitarAgente from '@/components/admin/ModalHabilitarAgente'
 
 // ── Tipos ──────────────────────────────────────────────────
 
@@ -35,7 +36,14 @@ interface ChurchDetail {
   // Usuários
   users: Array<{ id: string; email: string; role: string; last_sign_in?: string }>
   // Agentes
-  agents: Array<{ id: string; name: string; status: string; calls_30d: number }>
+  agents: Array<{
+    id:             string
+    name:           string
+    status:         string
+    calls_30d:      number
+    source?:        'subscription' | 'trial' | 'courtesy' | 'paid'
+    grant_ends_at?: string | null
+  }>
   // Logs
   logs: Array<{ id: string; action: string; created_at: string; metadata?: Record<string, unknown> }>
   // Precificação customizada
@@ -182,10 +190,10 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
                   style={{ background: 'var(--color-primary)' }}
                 >
-                  {u.email.charAt(0).toUpperCase()}
+                  {(u.email ?? u.id).charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-800 truncate">{u.email}</p>
+                  <p className="text-xs font-medium text-gray-800 truncate">{u.email ?? u.id}</p>
                   <p className="text-[10px] text-gray-400">{u.role}</p>
                 </div>
                 <span className="text-[10px] text-gray-400">{relDate(u.last_sign_in ?? null)}</span>
@@ -198,7 +206,39 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
   )
 }
 
-function TabOperacao({ data }: { data: ChurchDetail }) {
+function TabOperacao({ data, onAgentChange }: { data: ChurchDetail; onAgentChange: () => void }) {
+  const [grantModalOpen,    setGrantModalOpen]    = useState(false)
+  const [revokingSlug,      setRevokingSlug]      = useState<string | null>(null)
+  const [confirmRevokeSlug, setConfirmRevokeSlug] = useState<string | null>(null)
+  const [revokeError,       setRevokeError]       = useState<string | null>(null)
+
+  async function handleRevoke(agentSlug: string) {
+    setRevokingSlug(agentSlug)
+    setRevokeError(null)
+
+    const { data: sessionData } = await supabase.auth.getSession()
+    const token = sessionData.session?.access_token
+    if (!token) { setRevokeError('Sessão inválida.'); setRevokingSlug(null); return }
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-agent-grant`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ church_id: data.id, agent_slug: agentSlug }),
+        }
+      )
+      const json = await res.json()
+      if (!res.ok || !json.ok) { setRevokeError(json.error ?? 'Erro ao revogar.'); return }
+      onAgentChange()
+    } catch (e: unknown) {
+      setRevokeError((e as Error).message ?? 'Erro de rede.')
+    } finally {
+      setRevokingSlug(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -208,7 +248,24 @@ function TabOperacao({ data }: { data: ChurchDetail }) {
         <MetricMini label="Etapas" value={data.pipeline_stages} color="#4F6EE1" />
       </div>
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-800 mb-3">Agentes de IA ({data.agents.length})</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-800">
+            Agentes de IA ({data.agents.length})
+          </h3>
+          <button
+            type="button"
+            onClick={() => setGrantModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
+            style={{ background: '#e13500' }}
+          >
+            + Habilitar agente
+          </button>
+        </div>
+
+        {revokeError && (
+          <p className="text-xs text-red-600 mb-2">{revokeError}</p>
+        )}
+
         {data.agents.length === 0 ? (
           <p className="text-sm text-gray-400 py-4 text-center">Nenhum agente configurado</p>
         ) : (
@@ -217,20 +274,75 @@ function TabOperacao({ data }: { data: ChurchDetail }) {
               <div key={a.id} className="flex items-center gap-3 py-2 border-b border-black/[0.04] last:border-0">
                 <Bot size={16} strokeWidth={1.75} className="text-gray-400 shrink-0" />
                 <span className="flex-1 text-sm text-gray-700">{a.name}</span>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    a.status === 'active'
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {a.status === 'active' ? 'Ativo' : 'Inativo'}
+
+                {/* Badge de source (grants manuais) */}
+                {a.source && a.source !== 'subscription' && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    a.source === 'trial'     ? 'bg-amber-50 text-amber-700' :
+                    a.source === 'courtesy'  ? 'bg-emerald-50 text-emerald-700' :
+                                               'bg-blue-50 text-blue-700'
+                  }`}>
+                    {a.source === 'trial'
+                      ? `Trial${a.grant_ends_at ? ` até ${new Date(a.grant_ends_at).toLocaleDateString('pt-BR')}` : ''}`
+                      : a.source === 'courtesy' ? 'Cortesia' : 'Pago manual'}
+                  </span>
+                )}
+
+                <span className="bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                  Ativo
                 </span>
                 <span className="font-mono-ekthos text-xs text-gray-400">{a.calls_30d} chamadas/30d</span>
+                <Link
+                  to={`/admin/churches/${data.id}/agentes/${a.id}`}
+                  className="text-xs font-medium text-[#e13500] hover:underline flex items-center gap-1 ml-2"
+                >
+                  Configurar →
+                </Link>
+
+                {/* Botão Revogar (apenas grants manuais) */}
+                {a.source && a.source !== 'subscription' && (
+                  confirmRevokeSlug === a.id ? (
+                    <span className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setConfirmRevokeSlug(null); void handleRevoke(a.id) }}
+                        disabled={revokingSlug === a.id}
+                        className="text-[10px] font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
+                      >
+                        Confirmar
+                      </button>
+                      <span className="text-gray-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRevokeSlug(null)}
+                        className="text-[10px] text-gray-400 hover:text-gray-600"
+                      >
+                        Cancelar
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRevokeSlug(a.id)}
+                      disabled={revokingSlug === a.id}
+                      className="text-xs text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      title="Revogar acesso"
+                    >
+                      {revokingSlug === a.id ? '…' : '✕'}
+                    </button>
+                  )
+                )}
               </div>
             ))}
           </div>
         )}
+
+        <ModalHabilitarAgente
+          open={grantModalOpen}
+          onClose={() => setGrantModalOpen(false)}
+          churchId={data.id}
+          onSuccess={onAgentChange}
+        />
       </div>
     </div>
   )
@@ -798,7 +910,7 @@ export default function AdminChurch() {
       {/* Conteúdo da tab */}
       {tab === 'resumo'     && <TabResumo      data={data} />}
       {tab === 'assinatura' && <TabAssinatura  data={data} />}
-      {tab === 'operacao'   && <TabOperacao    data={data} />}
+      {tab === 'operacao'   && <TabOperacao    data={data} onAgentChange={load} />}
       {tab === 'saude'      && <TabSaude       data={data} />}
       {tab === 'financeiro' && <TabFinanceiro  data={data} />}
       {tab === 'pricing'    && <TabPricing data={data} churchId={id ?? ''} onSaved={load} />}
