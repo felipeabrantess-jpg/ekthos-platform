@@ -77,8 +77,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401, origin)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403, origin)
 
   // ── Parse body ────────────────────────────────────────────

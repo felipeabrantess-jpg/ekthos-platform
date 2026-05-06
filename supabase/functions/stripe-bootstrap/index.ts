@@ -112,8 +112,7 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Busca planos com colunas reais ────────────────────────

@@ -34,6 +34,24 @@ Ou: F9 sem permitir uso de cupons até F11 estar pronta.
 
 ---
 
+## OPS-DEBT-001 — Deletar EF test-r23
+
+**Registrado em:** 06/05/2026 (sessão H2 — Frente 2)
+**Origem:** EF temporária `test-r23` criada para executar R23
+(privilege escalation test) durante a closure da vulnerabilidade H2.
+A EF foi tombstonada (retorna 404 para todas as chamadas sem header
+especial) mas ainda existe no registro de Edge Functions do Supabase.
+
+**Ação necessária:**
+Deletar via Supabase Dashboard > Edge Functions > test-r23 > Delete.
+Ou via CLI: `supabase functions delete test-r23 --project-ref mlqjywqnchilvgkbvicd`
+
+**Risco:** Baixo (tombstonada, não executa nada útil). Não bloqueia nenhuma feature.
+
+**Critério de pronto:** EF `test-r23` não aparece mais na lista de Edge Functions.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.

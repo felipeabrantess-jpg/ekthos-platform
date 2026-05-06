@@ -155,8 +155,7 @@ Deno.serve(async (req: Request) => {
       return json({ valid: false, reason: 'invalid_token' }, 401, origin)
     }
     const isAdmin =
-      user.app_metadata?.is_ekthos_admin === true ||
-      user.user_metadata?.is_ekthos_admin === true
+      user.app_metadata?.is_ekthos_admin === true
     if (!isAdmin) {
       return json({ valid: false, reason: 'forbidden' }, 403, origin)
     }
