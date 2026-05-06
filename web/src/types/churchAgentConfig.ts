@@ -127,20 +127,8 @@ export interface ChurchAgentFullConfig {
 
 // Form state global (persistente entre trocas de aba)
 export interface AgentCockpitFormState {
-  // Aba 1 — Identidade (churches)
-  church_name: string
-  church_city: string
-  church_state: string
-  church_region: string
-  church_denomination: string
-  church_vision_statement: string
-  church_address_full: string
-  church_main_phone: string
-  church_website_url: string
-  church_pastor_titular_name: string
-  church_pastor_titular_phone: string
-  church_social_media_handles: { instagram?: string; youtube?: string; facebook?: string }
   // Aba 1 — Overrides de agente (church_agent_config)
+  // Dados da Igreja ficam na aba Cadastro de Church.tsx (editados via useChurchIdentity)
   agent_name: string
   pastor_name: string
   church_name_short: string

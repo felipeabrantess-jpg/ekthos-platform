@@ -1,30 +1,31 @@
 // web/src/pages/admin/agent-tabs/TabIdentidade.tsx
+import { useNavigate } from 'react-router-dom'
+import { ExternalLink } from 'lucide-react'
 import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
 type Hook = ReturnType<typeof useChurchAgentFullConfig>
 
 interface Props { hook: Hook }
 
-function FieldGroup({ title }: { title: string }) {
-  return <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 mt-6 first:mt-0">{title}</h3>
-}
+const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e13500]/30 focus:border-[#e13500] transition-colors'
 
-function Field({
-  label, children, hint,
-}: { label: string; children: React.ReactNode; hint?: string }) {
+function ReadOnlyField({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      {children}
-      {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+    <div className="mb-3">
+      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+      <p className="text-sm text-gray-800">
+        {value || <span className="text-gray-400 italic">—</span>}
+      </p>
     </div>
   )
 }
 
-const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e13500]/30 focus:border-[#e13500] transition-colors'
-
 export function TabIdentidade({ hook }: Props) {
-  const { formData, setFormData, saving, saveIdentidade, markDirty } = hook
+  const { formData, setFormData, saving, saveIdentidade, markDirty, church } = hook
+  const navigate = useNavigate()
+
+  const churchId = (church?.id as string) ?? ''
+  const sm = (church?.social_media_handles as { instagram?: string; youtube?: string } | null) ?? {}
 
   function update<K extends keyof typeof formData>(key: K, value: typeof formData[K]) {
     setFormData(prev => ({ ...prev, [key]: value }))
@@ -32,118 +33,78 @@ export function TabIdentidade({ hook }: Props) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/[0.04]">
-      <FieldGroup title="Igreja" />
+    <div className="space-y-4">
+      {/* Bloco read-only da Igreja */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/[0.04]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Dados da Igreja</h3>
+          <button
+            type="button"
+            onClick={() => navigate(`/admin/churches/${churchId}?tab=cadastro`)}
+            disabled={!churchId}
+            className="flex items-center gap-1.5 text-xs text-[#e13500] hover:text-[#FF4D1A] font-medium transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <ExternalLink size={12} />
+            Editar cadastro da Igreja
+          </button>
+        </div>
 
-      <Field label="Nome da Igreja">
-        <input className={inputCls} value={formData.church_name}
-          onChange={e => update('church_name', e.target.value)} />
-      </Field>
+        <div className="grid grid-cols-2 gap-x-6">
+          <ReadOnlyField label="Nome" value={church?.name as string} />
+          <ReadOnlyField label="Denominação" value={church?.denomination as string} />
+          <ReadOnlyField label="Cidade" value={church?.city as string} />
+          <ReadOnlyField label="Estado" value={church?.state as string} />
+          <ReadOnlyField label="Pastor Titular" value={church?.pastor_titular_name as string} />
+          <ReadOnlyField label="Telefone do Pastor" value={church?.pastor_titular_phone as string} />
+          <ReadOnlyField label="E-mail Principal" value={church?.main_email as string} />
+          <ReadOnlyField label="Telefone Principal" value={church?.main_phone as string} />
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Cidade">
-          <input className={inputCls} value={formData.church_city}
-            onChange={e => update('church_city', e.target.value)} />
-        </Field>
-        <Field label="Estado (UF)">
-          <input className={inputCls} maxLength={2} value={formData.church_state}
-            onChange={e => update('church_state', e.target.value.toUpperCase())} />
-        </Field>
+        <ReadOnlyField label="Visão / Missão" value={church?.vision_statement as string} />
+        <ReadOnlyField label="Instagram" value={sm.instagram} />
       </div>
 
-      <Field label="Região / Bairro">
-        <input className={inputCls} value={formData.church_region}
-          onChange={e => update('church_region', e.target.value)} />
-      </Field>
+      {/* Overrides do Agente */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-black/[0.04]">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">
+          Configurações do Agente (override)
+        </h3>
 
-      <Field label="Denominação">
-        <input className={inputCls} placeholder="ex: Assembleia de Deus"
-          value={formData.church_denomination}
-          onChange={e => update('church_denomination', e.target.value)} />
-      </Field>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Agente</label>
+          <p className="text-xs text-gray-400 mb-1.5">Como o agente se apresenta. Ex: 'Assistente da Igreja X'</p>
+          <input className={inputCls} value={formData.agent_name}
+            onChange={e => update('agent_name', e.target.value)} />
+        </div>
 
-      <Field label="Visão / Missão" hint="Até 500 caracteres">
-        <textarea className={inputCls} rows={3} maxLength={500}
-          value={formData.church_vision_statement}
-          onChange={e => update('church_vision_statement', e.target.value)} />
-      </Field>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nome do Pastor (mencionado pelo agente)
+          </label>
+          <p className="text-xs text-gray-400 mb-1.5">Nome que o agente usa ao referenciar o pastor</p>
+          <input className={inputCls} value={formData.pastor_name}
+            onChange={e => update('pastor_name', e.target.value)} />
+        </div>
 
-      <Field label="Endereço Completo">
-        <input className={inputCls} value={formData.church_address_full}
-          onChange={e => update('church_address_full', e.target.value)} />
-      </Field>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nome Curto da Igreja (override)
+          </label>
+          <p className="text-xs text-gray-400 mb-1.5">Substitui o nome completo em mensagens. Ex: 'AD Centro'</p>
+          <input className={inputCls} value={formData.church_name_short}
+            onChange={e => update('church_name_short', e.target.value)} />
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Telefone Principal">
-          <input className={inputCls} type="tel" value={formData.church_main_phone}
-            onChange={e => update('church_main_phone', e.target.value)} />
-        </Field>
-        <Field label="Site">
-          <input className={inputCls} type="url" placeholder="https://"
-            value={formData.church_website_url}
-            onChange={e => update('church_website_url', e.target.value)} />
-        </Field>
-      </div>
-
-      <FieldGroup title="Pastor Titular" />
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Nome do Pastor Titular">
-          <input className={inputCls} value={formData.church_pastor_titular_name}
-            onChange={e => update('church_pastor_titular_name', e.target.value)} />
-        </Field>
-        <Field label="Telefone do Pastor (interno)">
-          <input className={inputCls} type="tel" value={formData.church_pastor_titular_phone}
-            onChange={e => update('church_pastor_titular_phone', e.target.value)} />
-        </Field>
-      </div>
-
-      <FieldGroup title="Redes Sociais" />
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Instagram">
-          <input className={inputCls} placeholder="@igrejax"
-            value={formData.church_social_media_handles.instagram ?? ''}
-            onChange={e => update('church_social_media_handles', {
-              ...formData.church_social_media_handles, instagram: e.target.value,
-            })} />
-        </Field>
-        <Field label="YouTube (channel ID)">
-          <input className={inputCls} placeholder="UCxxxxx"
-            value={formData.church_social_media_handles.youtube ?? ''}
-            onChange={e => update('church_social_media_handles', {
-              ...formData.church_social_media_handles, youtube: e.target.value,
-            })} />
-        </Field>
-      </div>
-
-      <FieldGroup title="Configurações do Agente (override)" />
-
-      <Field label="Nome do Agente" hint="Como o agente se apresenta. Ex: 'Assistente da Igreja X'">
-        <input className={inputCls} value={formData.agent_name}
-          onChange={e => update('agent_name', e.target.value)} />
-      </Field>
-
-      <Field label="Nome do Pastor (mencionado pelo agente)"
-        hint="Nome que o agente usa ao referenciar o pastor">
-        <input className={inputCls} value={formData.pastor_name}
-          onChange={e => update('pastor_name', e.target.value)} />
-      </Field>
-
-      <Field label="Nome Curto da Igreja (override)"
-        hint="Substitui o nome completo em mensagens. Ex: 'AD Centro'">
-        <input className={inputCls} value={formData.church_name_short}
-          onChange={e => update('church_name_short', e.target.value)} />
-      </Field>
-
-      <div className="flex justify-end mt-6">
-        <button
-          onClick={saveIdentidade}
-          disabled={saving}
-          className="px-6 py-2.5 rounded-xl bg-[#e13500] text-white text-sm font-semibold disabled:opacity-50 hover:bg-[#FF4D1A] transition-colors"
-        >
-          {saving ? 'Salvando...' : 'Salvar Identidade'}
-        </button>
+        <div className="flex justify-end mt-6">
+          <button
+            type="button"
+            onClick={() => void saveIdentidade()}
+            disabled={saving}
+            className="px-6 py-2.5 rounded-xl bg-[#e13500] text-white text-sm font-semibold disabled:opacity-50 hover:bg-[#FF4D1A] transition-colors"
+          >
+            {saving ? 'Salvando...' : 'Salvar Overrides'}
+          </button>
+        </div>
       </div>
     </div>
   )

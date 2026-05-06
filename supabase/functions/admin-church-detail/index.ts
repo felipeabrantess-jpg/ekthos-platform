@@ -240,6 +240,18 @@ Deno.serve(async (req: Request) => {
     is_matrix:    church.is_matrix  ?? false,
     parent_church_id: church.parent_church_id ?? null,
 
+    // Identidade (campos editáveis na aba Cadastro)
+    pastor_titular_name:   church.pastor_titular_name   ?? null,
+    pastor_titular_phone:  church.pastor_titular_phone  ?? null,
+    denomination:          church.denomination          ?? null,
+    vision_statement:      church.vision_statement      ?? null,
+    address_full:          church.address_full          ?? null,
+    main_phone:            church.main_phone            ?? null,
+    main_email:            church.main_email            ?? null,
+    website_url:           church.website_url           ?? null,
+    social_media_handles:  church.social_media_handles  ?? {},
+    region:                church.region                ?? null,
+
     // Assinatura
     subscription_id:          sub?.id                       ?? null,
     plan_slug:                 sub?.plan_slug               ?? null,
