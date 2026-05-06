@@ -93,6 +93,31 @@ Ou via CLI: `supabase functions delete setup-playwright-user --project-ref mlqjy
 
 ---
 
+## OPS-DEBT-004 — Credenciais Playwright efêmeras por CI run
+
+**Registrado em:** 06/05/2026 (sessão H2 — Frente 2.5 — code review Sonnet M1)
+**Origem:** Conta estática `playwright@ekthosai.net` com senha de longa duração.
+Code review identificou que o ideal para conta com `is_ekthos_admin=true` é
+credencial efêmera por pipeline (TTL ~1h), não rotação manual periódica.
+
+**Ação necessária:**
+Criar Edge Function `mint-e2e-session` que:
+1. Verifica IP allowlist (apenas IPs do GitHub Actions)
+2. Autentica como playwright@ekthosai.net internamente via service_role
+3. Retorna token de sessão com TTL de 1h
+4. Cada CI run usa um token diferente — senha de longa duração deixa de existir
+
+Quando implementado, OPS-DEBT-002 (rotação 30d) fica obsoleto.
+
+**Bloqueia:** Nada (melhoria de segurança, não feature).
+**Pré-requisito:** CI/CD com GitHub Actions configurado.
+
+**Risco atual (até implementação):** Mitigado por OPS-DEBT-002 (rotação 30d).
+
+**Critério de pronto:** CI run usa token efêmero; conta não tem senha estática.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
