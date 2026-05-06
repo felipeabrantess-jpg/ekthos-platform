@@ -740,7 +740,6 @@ export default function Landing() {
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-primary)' }}>R$ 289,90/mês</p>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Escalas, check-in, confirmação WhatsApp e métricas de voluntários.
               </p>
@@ -776,7 +775,6 @@ export default function Landing() {
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-primary)' }}>R$ 349,90/mês</p>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Check-in QR Code, validação de responsáveis e alertas aos pais.
               </p>
@@ -812,7 +810,6 @@ export default function Landing() {
                 <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
                   style={{ background: '#670000' }}>Avivamento</span>
               </div>
-              <p className="text-sm font-semibold mb-4" style={{ color: 'var(--color-primary)' }}>R$ 489,90/mês</p>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Folha, DRE, NF, conciliação e agente financeiro com IA.
               </p>
