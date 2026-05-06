@@ -2,9 +2,9 @@
 import { useState } from 'react'
 import { Send, CheckCircle2, XCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
-type Hook = ReturnType<typeof useChurchAgentConfig>
+type Hook = ReturnType<typeof useChurchAgentFullConfig>
 interface Props { hook: Hook; churchId: string; agentSlug: string }
 
 export function TabTestes({ churchId, agentSlug }: Props) {

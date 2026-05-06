@@ -84,6 +84,9 @@ const DiscipleshipSettingsPage = lazy(() =>
 const QrVisitorPage = lazy(() =>
   import('@/pages/configuracoes/QrVisitor').then(m => ({ default: m.QrVisitor }))
 )
+const CanaisPage = lazy(() =>
+  import('@/pages/configuracoes/Canais').then(m => ({ default: m.Canais }))
+)
 // Settings legados — mantidos para backward compat
 const SettingsLayoutPage = lazy(() =>
   import('@/pages/settings/Layout').then(m => ({ default: m.SettingsLayout }))
@@ -110,7 +113,9 @@ const AdminPricing     = lazy(() => import('@/pages/admin/Pricing'))
 const AdminAffiliates  = lazy(() => import('@/pages/admin/Affiliates'))
 const AffiliateDetail  = lazy(() => import('@/pages/admin/AffiliateDetail'))
 const AdminComunicacao = lazy(() => import('@/pages/admin/AdminComunicacao'))
-const AgentConfigCockpit = lazy(() => import('@/pages/admin/AgentConfigCockpit'))
+const AgentConfigCockpit  = lazy(() => import('@/pages/admin/AgentConfigCockpit'))
+const AdminAtivacoes      = lazy(() => import('@/pages/admin/Ativacoes'))
+const AdminAtivacaoDetail = lazy(() => import('@/pages/admin/AtivacaoDetail'))
 
 // ── Loaders ────────────────────────────────────────────────
 
@@ -303,6 +308,7 @@ export default function App() {
               <Route path="modulos"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModulosPage /></Suspense></ErrorBoundary>} />
               <Route path="discipulado"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DiscipleshipSettingsPage /></Suspense></ErrorBoundary>} />
               <Route path="qr-visitante" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><QrVisitorPage /></Suspense></ErrorBoundary>} />
+              <Route path="canais"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CanaisPage /></Suspense></ErrorBoundary>} />
             </Route>
 
             {/* ── Settings legados (backward compat) ── */}
@@ -338,6 +344,8 @@ export default function App() {
             <Route path="afiliados"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAffiliates /></Suspense></ErrorBoundary>} />
             <Route path="afiliados/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AffiliateDetail /></Suspense></ErrorBoundary>} />
             <Route path="comunicacao"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminComunicacao /></Suspense></ErrorBoundary>} />
+            <Route path="cockpit/ativacoes"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAtivacoes /></Suspense></ErrorBoundary>} />
+            <Route path="cockpit/ativacoes/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAtivacaoDetail /></Suspense></ErrorBoundary>} />
           </Route>
         </Routes>
       </Suspense>

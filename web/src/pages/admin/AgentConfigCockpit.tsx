@@ -5,7 +5,7 @@ import {
   ArrowLeft, Building2, MessageSquare, GitBranch,
   AlertTriangle, Radio, Zap, History, CheckCircle2, XCircle,
 } from 'lucide-react'
-import { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import { useChurchAgentFullConfig } from "@/hooks/useChurchAgentConfig"
 import Spinner from '@/components/ui/Spinner'
 import { TabIdentidade }     from './agent-tabs/TabIdentidade'
 import { TabPromptTom }      from './agent-tabs/TabPromptTom'
@@ -30,7 +30,7 @@ export default function AgentConfigCockpit() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('identidade')
 
-  const hook = useChurchAgentConfig(churchId, agentSlug)
+  const hook = useChurchAgentFullConfig(churchId, agentSlug)
   const { loading, error, toast, dirtyTabs } = hook
 
   const handleTabChange = useCallback((tabId: string) => {

@@ -1,7 +1,7 @@
 // web/src/pages/admin/agent-tabs/TabIdentidade.tsx
-import type { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
-type Hook = ReturnType<typeof useChurchAgentConfig>
+type Hook = ReturnType<typeof useChurchAgentFullConfig>
 
 interface Props { hook: Hook }
 

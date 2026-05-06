@@ -1,4 +1,22 @@
+/**
+ * useChurchAgentConfig — Leitura e upsert de church_agent_config
+ *
+ * Sprint 2A Onda B — versão base (useQuery/useMutation)
+ * Usada por: AtivacaoDetail, PromptCustomizadoSection
+ *
+ * INTEGRAÇÃO COM EDGE FUNCTION (futuro PASSO 6):
+ *
+ * No agent-acolhimento (e demais agentes premium), o prompt final será montado:
+ *   prompt_final = agent_prompt_templates.system_prompt_template (global)
+ *                + church_agent_config.custom_instructions (por igreja)
+ *                + dados runtime (pessoa, igreja, contexto da mensagem)
+ *
+ * Este hook apenas cria a base. A Edge Function continuará usando prompt
+ * estático até o PASSO 6 implementar a leitura.
+ */
+
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type {
   ChurchAgentFullConfig,
@@ -6,6 +24,90 @@ import type {
   ChurchAgentConfigPayload,
   ChurchFollowupConfigPayload,
 } from '@/types/churchAgentConfig'
+
+// ── Tipos (Sprint 2A Onda B) ──────────────────────────────────────────────────
+
+export interface ChurchAgentConfig {
+  church_id:           string
+  agent_slug:          string
+  custom_instructions: string | null
+  formality:           string | null
+  denomination:        string | null
+  updated_by:          string | null
+  created_at:          string
+  updated_at:          string
+}
+
+// ── useChurchAgentConfig (Sprint 2A Onda B — useQuery) ───────────────────────
+
+export function useChurchAgentConfig(
+  churchId: string | null | undefined,
+  agentSlug: string | null | undefined
+) {
+  return useQuery({
+    queryKey: ['church_agent_config', churchId, agentSlug],
+    queryFn: async () => {
+      if (!churchId || !agentSlug) return null
+      const { data, error } = await supabase.rpc('get_church_agent_config', {
+        p_church_id:  churchId,
+        p_agent_slug: agentSlug,
+      })
+      if (error) throw new Error(error.message)
+      return (data?.[0] as ChurchAgentConfig | undefined) ?? null
+    },
+    enabled: !!churchId && !!agentSlug,
+    staleTime: 30_000,
+  })
+}
+
+// ── useUpsertChurchAgentConfig (Sprint 2A Onda B) ─────────────────────────────
+
+export function useUpsertChurchAgentConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: {
+      church_id:           string
+      agent_slug:          string
+      custom_instructions: string
+    }) => {
+      const { data, error } = await supabase.rpc('upsert_church_agent_config', {
+        p_church_id:           params.church_id,
+        p_agent_slug:          params.agent_slug,
+        p_custom_instructions: params.custom_instructions,
+      })
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['church_agent_config', vars.church_id, vars.agent_slug] })
+    },
+  })
+}
+
+// ── useResetChurchAgentConfig (Sprint 2A Onda B) ──────────────────────────────
+
+export function useResetChurchAgentConfig() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (params: {
+      church_id:  string
+      agent_slug: string
+    }) => {
+      const { error } = await supabase.rpc('reset_church_agent_config', {
+        p_church_id:  params.church_id,
+        p_agent_slug: params.agent_slug,
+      })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['church_agent_config', vars.church_id, vars.agent_slug] })
+    },
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── useChurchAgentFullConfig (Sprint 3A.1 — AgentConfigCockpit) ───────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 
 // Estado inicial vazio do formulário
 const EMPTY_FORM: AgentCockpitFormState = {
@@ -31,7 +133,6 @@ function hydrateForm(
   fullConfig: ChurchAgentFullConfig,
   church: Record<string, unknown>
 ): AgentCockpitFormState {
-  // Defensive: config/followup may be null on first-time load before any upsert
   const c = fullConfig.config ?? null
   const f = fullConfig.followup ?? null
   const esc = (f?.escalation_conditions ?? {}) as Record<string, unknown>
@@ -77,7 +178,7 @@ function hydrateForm(
   }
 }
 
-export function useChurchAgentConfig(churchId: string, agentSlug: string) {
+export function useChurchAgentFullConfig(churchId: string, agentSlug: string) {
   const [fullConfig, setFullConfig] = useState<ChurchAgentFullConfig | null>(null)
   const [church, setChurch] = useState<Record<string, unknown> | null>(null)
   const [formData, setFormData] = useState<AgentCockpitFormState>(EMPTY_FORM)
@@ -88,7 +189,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
   const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Clear timer on unmount to prevent state update on unmounted component
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
@@ -109,7 +209,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
     setDirtyTabs(prev => { const s = new Set(prev); s.delete(tab); return s })
   }, [])
 
-  // Carregar dados
   useEffect(() => {
     if (!churchId || !agentSlug) return
     let cancelled = false
@@ -118,7 +217,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
       setLoading(true)
       setError(null)
       try {
-        // 1. RPC full config (agente)
         const { data: configData, error: configErr } = await supabase
           .rpc('get_church_agent_full_config', {
             p_church_id: churchId,
@@ -126,7 +224,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
           })
         if (configErr) throw configErr
 
-        // 2. Igreja (campos expandidos)
         const { data: churchData, error: churchErr } = await supabase
           .from('churches')
           .select('id,name,city,state,region,denomination,vision_statement,address_full,main_phone,website_url,pastor_titular_name,pastor_titular_phone,social_media_handles,logo_url,timezone,status,slug')
@@ -151,11 +248,9 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
     return () => { cancelled = true }
   }, [churchId, agentSlug])
 
-  // Save Identidade (Aba 1) — churches + church_agent_config overrides
   const saveIdentidade = useCallback(async () => {
     setSaving(true)
     try {
-      // 1. UPDATE churches (requer policy churches_admin_update)
       const { error: churchErr } = await supabase
         .from('churches')
         .update({
@@ -176,7 +271,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
         .eq('id', churchId)
       if (churchErr) throw churchErr
 
-      // 2. RPC overrides de agente
       const payload: ChurchAgentConfigPayload = {
         agent_name:       formData.agent_name || undefined,
         pastor_name:      formData.pastor_name || undefined,
@@ -199,7 +293,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
     }
   }, [churchId, agentSlug, formData, clearDirty, showToast])
 
-  // Save Prompt + Tom (Aba 2)
   const savePromptTom = useCallback(async () => {
     setSaving(true)
     try {
@@ -226,7 +319,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
     }
   }, [churchId, agentSlug, formData, clearDirty, showToast])
 
-  // Save Follow-up (Aba 3)
   const saveFollowup = useCallback(async () => {
     setSaving(true)
     try {
@@ -252,11 +344,9 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
     }
   }, [churchId, agentSlug, formData, clearDirty, showToast])
 
-  // Save Escalonamento (Aba 4)
   const saveEscalonamento = useCallback(async () => {
     setSaving(true)
     try {
-      // escalation_config em church_agent_config
       const agentPayload: ChurchAgentConfigPayload = {
         escalation_config: {
           enabled: formData.escalation_enabled,
@@ -273,7 +363,6 @@ export function useChurchAgentConfig(churchId: string, agentSlug: string) {
       })
       if (e1) throw e1
 
-      // escalation_conditions em church_followup_config
       const followupPayload: ChurchFollowupConfigPayload = {
         escalation_conditions: {
           on_no_response_days: formData.escalation_on_no_response_days

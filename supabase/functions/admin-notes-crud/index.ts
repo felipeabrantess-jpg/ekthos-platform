@@ -9,6 +9,7 @@
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { jsonError } from '../_shared/errors.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -66,7 +67,7 @@ Deno.serve(async (req: Request) => {
       .order('created_at', { ascending: false })
       .limit(100)
 
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-notes-crud] GET', error); return jsonError(CORS) }
     return json({ data: data ?? [] })
   }
 
@@ -89,7 +90,7 @@ Deno.serve(async (req: Request) => {
       .select()
       .single()
 
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-notes-crud] POST', error); return jsonError(CORS) }
     return json(data, 201)
   }
 
@@ -106,7 +107,7 @@ Deno.serve(async (req: Request) => {
       .delete()
       .eq('id', body.id as string)
 
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-notes-crud] DELETE', error); return jsonError(CORS) }
     return json({ ok: true })
   }
 

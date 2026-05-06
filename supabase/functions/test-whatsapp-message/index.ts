@@ -3,7 +3,7 @@
 // Envio de mensagem de teste via Z-API direto (sem passar por n8n).
 //
 // POST /functions/v1/test-whatsapp-message
-// verify_jwt = false — chamada interna via service_role Bearer
+// verify_jwt = false — validação JWT manual (supabaseAuth.auth.getUser)
 //
 // Usado pelo botão "Enviar mensagem de teste" na tela /agentes/:slug/configurar.
 // O canal precisa estar com session_status IN ('testing', 'active').
@@ -15,9 +15,11 @@
 // }
 //
 // Fluxo:
-//   1. Busca church_whatsapp_channels com session_status IN (testing, active)
-//   2. Chama Z-API diretamente com zapi_instance_id + zapi_token
-//   3. Retorna { ok, zapi_status, message_id? }
+//   1. Valida JWT do usuário via supabaseAuth.auth.getUser
+//   2. Verifica church_id do token === church_id do body
+//   3. Busca church_whatsapp_channels com session_status IN (testing, active)
+//   4. Chama Z-API diretamente com zapi_instance_id + zapi_token
+//   5. Retorna { ok, zapi_status, message_id? }
 //
 // Nunca afeta agent_pending_messages — caminho separado do fluxo de produção.
 // ============================================================
@@ -25,7 +27,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Origin':  Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, content-type',
 }
@@ -39,6 +41,26 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') {
     return json({ ok: false, error: 'method_not_allowed' }, 405)
   }
+
+  // ── JWT validation ───────────────────────────────────────────
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+  if (!token) return json({ ok: false, error: 'unauthorized' }, 401)
+
+  const supabaseAuth = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    }
+  )
+
+  const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
+  if (authErr || !user) return json({ ok: false, error: 'unauthorized' }, 401)
+
+  // ── Church ID guard ──────────────────────────────────────────
+  const tokenChurchId = user.app_metadata?.church_id as string | undefined
 
   const sb = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -60,6 +82,13 @@ Deno.serve(async (req) => {
         error: 'missing_fields',
         required: ['church_id', 'to_phone', 'message'],
       }, 400)
+    }
+
+    if (!tokenChurchId) {
+      return json({ ok: false, error: 'forbidden: sem church_id no token' }, 403)
+    }
+    if (church_id !== tokenChurchId) {
+      return json({ ok: false, error: 'forbidden: church_id não pertence ao usuário' }, 403)
     }
 
     // 1. Busca canal ativo da igreja (testing ou active)
@@ -109,7 +138,13 @@ Deno.serve(async (req) => {
       signal:  AbortSignal.timeout(10_000),
     })
 
-    const zapiBody = await zapiRes.json().catch(() => ({ raw: await zapiRes.text().catch(() => '') }))
+    // Fix: usar async callback para evitar await em contexto não-async
+    let zapiBody: unknown
+    try {
+      zapiBody = await zapiRes.json()
+    } catch {
+      zapiBody = { raw: await zapiRes.text().catch(() => '') }
+    }
 
     if (zapiRes.ok) {
       console.log(`[test-whatsapp-message] Z-API ok (${zapiRes.status}):`, JSON.stringify(zapiBody))

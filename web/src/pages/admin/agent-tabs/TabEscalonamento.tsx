@@ -1,9 +1,9 @@
 // web/src/pages/admin/agent-tabs/TabEscalonamento.tsx
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import type { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
-type Hook = ReturnType<typeof useChurchAgentConfig>
+type Hook = ReturnType<typeof useChurchAgentFullConfig>
 interface Props { hook: Hook }
 
 const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e13500]/30 focus:border-[#e13500] transition-colors'

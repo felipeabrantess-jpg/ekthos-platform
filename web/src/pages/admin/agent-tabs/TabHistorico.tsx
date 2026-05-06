@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react'
 import { Clock, User } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
-type Hook = ReturnType<typeof useChurchAgentConfig>
+type Hook = ReturnType<typeof useChurchAgentFullConfig>
 interface Props { hook: Hook; churchId: string; agentSlug: string }
 
 function relDate(iso: string) {

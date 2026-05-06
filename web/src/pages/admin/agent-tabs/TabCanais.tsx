@@ -2,9 +2,9 @@
 import { supabase } from '@/lib/supabase'
 import { useEffect, useState } from 'react'
 import { Phone, Wifi } from 'lucide-react'
-import type { useChurchAgentConfig } from '@/hooks/useChurchAgentConfig'
+import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
-type Hook = ReturnType<typeof useChurchAgentConfig>
+type Hook = ReturnType<typeof useChurchAgentFullConfig>
 interface Props { hook: Hook }
 
 interface Channel {

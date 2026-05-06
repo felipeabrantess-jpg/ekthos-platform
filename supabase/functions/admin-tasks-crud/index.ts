@@ -10,6 +10,7 @@
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { jsonError } from '../_shared/errors.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -72,7 +73,7 @@ Deno.serve(async (req: Request) => {
     if (churchId)         query = query.eq('church_id', churchId)
 
     const { data, error } = await query
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-tasks-crud] GET', error); return jsonError(CORS) }
     return json({ data: data ?? [], total: data?.length ?? 0 })
   }
 
@@ -97,7 +98,7 @@ Deno.serve(async (req: Request) => {
       .select()
       .single()
 
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-tasks-crud] POST', error); return jsonError(CORS) }
     return json(data, 201)
   }
 
@@ -124,7 +125,7 @@ Deno.serve(async (req: Request) => {
       .select()
       .single()
 
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-tasks-crud] PATCH', error); return jsonError(CORS) }
     return json(data)
   }
 
@@ -140,7 +141,7 @@ Deno.serve(async (req: Request) => {
       .update({ status: 'cancelled', updated_at: new Date().toISOString() })
       .eq('id', body.id as string)
 
-    if (error) return json({ error: error.message }, 500)
+    if (error) { console.error('[admin-tasks-crud] DELETE', error); return jsonError(CORS) }
     return json({ ok: true })
   }
 

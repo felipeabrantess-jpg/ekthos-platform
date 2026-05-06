@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: channel-dispatcher  v3 — ChatPro
+// Edge Function: channel-dispatcher  v9 — Z-API principal
 // Única função que conhece providers de canal.
 //
 // Fluxo:
@@ -9,7 +9,7 @@
 //   4. Sucesso: status=sent | Falha: backoff / failed
 //
 // Providers suportados:
-//   zapi      → Z-API REST
+//   zapi      → Z-API REST (Client-Token via ZAPI_CLIENT_TOKEN env secret)
 //   chatpro   → chatpro-send EF (credenciais via Secrets)
 //   mock      → MockAdapter (log fake)
 //   meta_cloud → stub (futuro)
@@ -29,22 +29,33 @@ interface NormalizedInbound {
 }
 interface SendResult { ok: boolean; message_id?: string; error?: string }
 interface ChannelAdapter {
-  send(params: { instance_id: string; token: string; to_phone: string; text: string }): Promise<SendResult>
+  send(params: {
+    instance_id: string; token: string; to_phone: string; text: string
+    // Contexto extra para adapters que buscam creds diretamente (ex: N8nAdapter)
+    church_id?: string; channel_id?: string
+  }): Promise<SendResult>
   parseWebhook(raw: unknown): NormalizedInbound | null
 }
 
 // ── ZApiAdapter ───────────────────────────────────────────────
 const ZApiAdapter: ChannelAdapter = {
   async send({ instance_id, token, to_phone, text }) {
-    const phone = to_phone.replace(/\D/g, '')
+    // Normalizar: só dígitos + garantir prefixo 55 (Brasil)
+    const digits = to_phone.replace(/\D/g, '')
+    const phone  = digits.startsWith('55') ? digits : `55${digits}`
+    // Client-Token: lido do env secret ZAPI_CLIENT_TOKEN (não do banco)
+    const clientToken = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (clientToken) headers['Client-Token'] = clientToken
     try {
       const res = await fetch(
         `https://api.z-api.io/instances/${instance_id}/token/${token}/send-text`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        { method: 'POST', headers,
           body: JSON.stringify({ phone, message: text }), signal: AbortSignal.timeout(10_000) }
       )
       const body = await res.json().catch(() => ({})) as Record<string, unknown>
-      if (res.ok) return { ok: true, message_id: (body.zaapId ?? body.messageId ?? '') as string }
+      // Z-API retorna { zaapId, messageId, id } — preferir messageId
+      if (res.ok) return { ok: true, message_id: (body.messageId ?? body.zaapId ?? body.id ?? '') as string }
       return { ok: false, error: `Z-API ${res.status}: ${JSON.stringify(body)}` }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
@@ -75,7 +86,10 @@ const ChatProAdapter: ChannelAdapter = {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/chatpro-send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        },
         body: JSON.stringify({ to_phone, message: text }),
         signal: AbortSignal.timeout(20_000),
       })
@@ -124,12 +138,63 @@ const MockAdapter: ChannelAdapter = {
   },
 }
 
+// ── N8nAdapter ────────────────────────────────────────────────
+// Adapter para channel_type='n8n' — entrega via webhook n8n.
+// Feature flag: N8N_OUTBOUND_ENABLED='true' (Supabase Secrets).
+// Rollback instantâneo: setar N8N_OUTBOUND_ENABLED=false no Dashboard,
+// sem necessidade de redeploy.
+const N8N_OUTBOUND_ENABLED     = Deno.env.get('N8N_OUTBOUND_ENABLED') === 'true'
+const N8N_OUTBOUND_WEBHOOK_URL =
+  Deno.env.get('N8N_OUTBOUND_WEBHOOK_URL')
+  ?? 'https://ekthosai.app.n8n.cloud/webhook/ekthos-acolhimento-outbound'
+
+const N8nAdapter: ChannelAdapter = {
+  async send({ to_phone, text, instance_id, token, church_id, channel_id }) {
+    const outboundSecret = Deno.env.get('EKTHOS_N8N_OUTBOUND_SECRET') ?? ''
+    // Log mascarado: não expõe telefone completo nem creds
+    const maskedPhone = to_phone.replace(/(\d{4})\d+(\d{4})/, '$1****$2')
+    console.log(`[N8nAdapter] → ${maskedPhone} church=${church_id ?? '?'} channel=${channel_id ?? '?'}`)
+    try {
+      const res = await fetch(N8N_OUTBOUND_WEBHOOK_URL, {
+        method:  'POST',
+        headers: {
+          'Content-Type':             'application/json',
+          'x-ekthos-outbound-secret': outboundSecret,
+        },
+        // Passa instance_id/token/client_token diretamente — n8n não precisa buscar no Supabase
+        // client_token necessário para o header Client-Token da Z-API
+        body: JSON.stringify({ to_phone, message: text, instance_id, token, client_token: Deno.env.get('ZAPI_CLIENT_TOKEN') ?? '' }),
+        signal: AbortSignal.timeout(20_000),
+      })
+      const body = await res.json().catch(() => ({})) as Record<string, unknown>
+      if (res.ok && (body.ok === true)) {
+        return { ok: true, message_id: (body.message_id as string) ?? undefined }
+      }
+      return { ok: false, error: `n8n ${res.status}: ${JSON.stringify(body)}` }
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  },
+  parseWebhook() { return null },
+}
+
+// Stub quando N8N_OUTBOUND_ENABLED=false — falha controlada,
+// queue fica com error_message='n8n_outbound_disabled'
+const N8nDisabledAdapter: ChannelAdapter = {
+  async send() { return { ok: false, error: 'n8n_outbound_disabled' } },
+  parseWebhook() { return null },
+}
+
 function resolveAdapter(channelType: string): ChannelAdapter {
   switch (channelType) {
     case 'zapi': case 'z-api': return ZApiAdapter
     case 'chatpro':             return ChatProAdapter
     case 'meta_cloud':          return MetaAdapter
     case 'mock':                return MockAdapter
+    case 'n8n':
+      // Feature flag: N8N_OUTBOUND_ENABLED=true ativa o adapter
+      // Rollback instantâneo: setar false no Dashboard sem redeploy
+      return N8N_OUTBOUND_ENABLED ? N8nAdapter : N8nDisabledAdapter
     default:
       console.warn(`[channel-dispatcher] channelType desconhecido: ${channelType} — usando ZApiAdapter`)
       return ZApiAdapter
@@ -197,7 +262,7 @@ async function processQueueItem(
   const { data: item, error: itemErr } = await sb
     .from('channel_dispatch_queue')
     .select(`
-      id, message_id, to_phone, content,
+      id, message_id, to_phone, content, church_id,
       attempt_count, max_attempts, status, channel_id,
       church_whatsapp_channels!channel_id (
         channel_type, zapi_instance_id, zapi_token, active, session_status
@@ -218,19 +283,22 @@ async function processQueueItem(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const channel = (item as any).church_whatsapp_channels as {
     channel_type: string; zapi_instance_id: string | null;
-    zapi_token: string | null; active: boolean; session_status: string;
+    zapi_token: string | null;
+    active: boolean; session_status: string;
   } | null
 
   if (!channel || !channel.active) return await markFailed(sb, item, 'Canal inativo ou não encontrado')
-  if (!['testing', 'active'].includes(channel.session_status)) {
+  if (!['testing', 'active', 'connected'].includes(channel.session_status)) {
     return await markFailed(sb, item, `Canal em estado inválido: ${channel.session_status}`)
   }
 
   const isChatPro = channel.channel_type === 'chatpro'
   const isMock    = channel.channel_type === 'mock'
+  const isN8n     = channel.channel_type === 'n8n'
 
   // ZApi: precisa de credenciais na linha do canal
-  if (!isMock && !isChatPro && (!channel.zapi_instance_id || !channel.zapi_token)) {
+  // ChatPro, Mock e N8n não usam zapi_instance_id/token diretamente
+  if (!isMock && !isChatPro && !isN8n && (!channel.zapi_instance_id || !channel.zapi_token)) {
     return await markFailed(sb, item, 'Credenciais Z-API ausentes no canal')
   }
 
@@ -240,6 +308,10 @@ async function processQueueItem(
     token:       channel.zapi_token       ?? 'mock',
     to_phone:    item.to_phone,
     text:        item.content,
+    // Contexto para N8nAdapter buscar credenciais no Supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    church_id:  (item as any).church_id  ?? undefined,
+    channel_id: (item as any).channel_id ?? undefined,
   })
 
   const now = new Date().toISOString()
