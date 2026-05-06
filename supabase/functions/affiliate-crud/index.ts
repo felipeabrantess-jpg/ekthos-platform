@@ -38,8 +38,7 @@ async function requireAdmin(req: Request) {
   const { data: { user }, error } = await supabaseAuth.auth.getUser(token)
   if (error || !user) return null
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   return isAdmin ? user : null
 }
 
