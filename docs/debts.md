@@ -52,6 +52,72 @@ Ou via CLI: `supabase functions delete test-r23 --project-ref mlqjywqnchilvgkbvi
 
 ---
 
+## OPS-DEBT-002 — Rotação de senha Playwright a cada 90 dias
+
+**Registrado em:** 06/05/2026 (sessão H2 — Frente 2.5)
+**Origem:** Usuário `playwright@ekthosai.net` criado com senha longa gerada via crypto.
+Senha armazenada em Vercel (encrypted) + `web/.env.local` (gitignored).
+Sem rotação automática configurada.
+
+**Ação necessária a cada 90 dias:**
+1. Fazer deploy de nova versão de `setup-playwright-user` (ou usar Admin API diretamente)
+   com action `reset_password`
+2. Capturar nova senha e atualizar:
+   - Vercel env `PLAYWRIGHT_ADMIN_PASSWORD` (encrypted) via Dashboard ou API
+   - `web/.env.local` localmente
+3. Deletar `.auth.json` cacheado: `rm -f web/tests/e2e/.auth.json`
+4. Confirmar que smoke test passa: `npx playwright test --config=playwright.prod.config.ts`
+
+**Próxima rotação:** 05/06/2026 (30 dias — conta com `is_ekthos_admin=true` exige ciclo curto)
+
+**Risco:** Médio-Alto (conta admin de teste sem rotação pode virar vetor de acesso persistente).
+Senha é `is_ekthos_admin=true` — rotação a cada **30 dias** (não 90).
+
+**Critério de pronto:** Senha atualizada nos dois destinos, smoke test verde.
+
+---
+
+## OPS-DEBT-003 — Deletar EF setup-playwright-user
+
+**Registrado em:** 06/05/2026 (sessão H2 — Frente 2.5)
+**Origem:** EF temporária `setup-playwright-user` criada para provisionar `playwright@ekthosai.net`.
+Tombstonada (retorna 404 para todas as chamadas).
+
+**Ação necessária:**
+Deletar via Supabase Dashboard > Edge Functions > setup-playwright-user > Delete.
+Ou via CLI: `supabase functions delete setup-playwright-user --project-ref mlqjywqnchilvgkbvicd`
+
+**Risco:** Baixo (tombstonada, não executa nada útil). Não bloqueia nenhuma feature.
+
+**Critério de pronto:** EF `setup-playwright-user` não aparece mais na lista de Edge Functions.
+
+---
+
+## OPS-DEBT-004 — Credenciais Playwright efêmeras por CI run
+
+**Registrado em:** 06/05/2026 (sessão H2 — Frente 2.5 — code review Sonnet M1)
+**Origem:** Conta estática `playwright@ekthosai.net` com senha de longa duração.
+Code review identificou que o ideal para conta com `is_ekthos_admin=true` é
+credencial efêmera por pipeline (TTL ~1h), não rotação manual periódica.
+
+**Ação necessária:**
+Criar Edge Function `mint-e2e-session` que:
+1. Verifica IP allowlist (apenas IPs do GitHub Actions)
+2. Autentica como playwright@ekthosai.net internamente via service_role
+3. Retorna token de sessão com TTL de 1h
+4. Cada CI run usa um token diferente — senha de longa duração deixa de existir
+
+Quando implementado, OPS-DEBT-002 (rotação 30d) fica obsoleto.
+
+**Bloqueia:** Nada (melhoria de segurança, não feature).
+**Pré-requisito:** CI/CD com GitHub Actions configurado.
+
+**Risco atual (até implementação):** Mitigado por OPS-DEBT-002 (rotação 30d).
+
+**Critério de pronto:** CI run usa token efêmero; conta não tem senha estática.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
