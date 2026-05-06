@@ -111,11 +111,6 @@ export function useResetChurchAgentConfig() {
 
 // Estado inicial vazio do formulário
 const EMPTY_FORM: AgentCockpitFormState = {
-  church_name: '', church_city: '', church_state: '', church_region: '',
-  church_denomination: '', church_vision_statement: '', church_address_full: '',
-  church_main_phone: '', church_website_url: '',
-  church_pastor_titular_name: '', church_pastor_titular_phone: '',
-  church_social_media_handles: {},
   agent_name: '', pastor_name: '', church_name_short: '',
   formality: '', emoji_usage: '', pastoral_depth: '', first_contact_delay: '',
   custom_instructions: '', preferred_verses: [], forbidden_topics: [],
@@ -131,25 +126,13 @@ const EMPTY_FORM: AgentCockpitFormState = {
 
 function hydrateForm(
   fullConfig: ChurchAgentFullConfig,
-  church: Record<string, unknown>
+  _church: Record<string, unknown>   // mantido como parâmetro para compatibilidade, não usado
 ): AgentCockpitFormState {
   const c = fullConfig.config ?? null
   const f = fullConfig.followup ?? null
   const esc = (f?.escalation_conditions ?? {}) as Record<string, unknown>
   const agentEsc = c?.escalation_config ?? null
   return {
-    church_name: (church.name as string) ?? '',
-    church_city: (church.city as string) ?? '',
-    church_state: (church.state as string) ?? '',
-    church_region: (church.region as string) ?? '',
-    church_denomination: (church.denomination as string) ?? '',
-    church_vision_statement: (church.vision_statement as string) ?? '',
-    church_address_full: (church.address_full as string) ?? '',
-    church_main_phone: (church.main_phone as string) ?? '',
-    church_website_url: (church.website_url as string) ?? '',
-    church_pastor_titular_name: (church.pastor_titular_name as string) ?? '',
-    church_pastor_titular_phone: (church.pastor_titular_phone as string) ?? '',
-    church_social_media_handles: (church.social_media_handles as Record<string, string>) ?? {},
     agent_name: c?.agent_name ?? '',
     pastor_name: c?.pastor_name ?? '',
     church_name_short: c?.church_name_short ?? '',
@@ -226,7 +209,7 @@ export function useChurchAgentFullConfig(churchId: string, agentSlug: string) {
 
         const { data: churchData, error: churchErr } = await supabase
           .from('churches')
-          .select('id,name,city,state,region,denomination,vision_statement,address_full,main_phone,website_url,pastor_titular_name,pastor_titular_phone,social_media_handles,logo_url,timezone,status,slug')
+          .select('id,name,city,state,region,denomination,vision_statement,address_full,main_phone,main_email,website_url,pastor_titular_name,pastor_titular_phone,social_media_handles,logo_url,timezone,status,slug')
           .eq('id', churchId)
           .single()
         if (churchErr) throw churchErr
@@ -251,43 +234,23 @@ export function useChurchAgentFullConfig(churchId: string, agentSlug: string) {
   const saveIdentidade = useCallback(async () => {
     setSaving(true)
     try {
-      const { error: churchErr } = await supabase
-        .from('churches')
-        .update({
-          name:                  formData.church_name || undefined,
-          city:                  formData.church_city || undefined,
-          state:                 formData.church_state || undefined,
-          region:                formData.church_region || undefined,
-          denomination:          formData.church_denomination || undefined,
-          vision_statement:      formData.church_vision_statement || undefined,
-          address_full:          formData.church_address_full || undefined,
-          main_phone:            formData.church_main_phone || undefined,
-          website_url:           formData.church_website_url || undefined,
-          pastor_titular_name:   formData.church_pastor_titular_name || undefined,
-          pastor_titular_phone:  formData.church_pastor_titular_phone || undefined,
-          social_media_handles:  Object.keys(formData.church_social_media_handles).length > 0
-            ? formData.church_social_media_handles : undefined,
-        })
-        .eq('id', churchId)
-      if (churchErr) throw churchErr
-
       const payload: ChurchAgentConfigPayload = {
-        agent_name:       formData.agent_name || undefined,
-        pastor_name:      formData.pastor_name || undefined,
+        agent_name:        formData.agent_name        || undefined,
+        pastor_name:       formData.pastor_name       || undefined,
         church_name_short: formData.church_name_short || undefined,
       }
       const { error: rpcErr } = await supabase
         .rpc('upsert_church_agent_config_admin', {
-          p_church_id: churchId,
+          p_church_id:  churchId,
           p_agent_slug: agentSlug,
-          p_data: payload,
+          p_data:       payload,
         })
       if (rpcErr) throw rpcErr
 
       clearDirty('identidade')
-      showToast(true, 'Identidade salva com sucesso.')
+      showToast(true, 'Overrides do agente salvos com sucesso.')
     } catch (e: unknown) {
-      showToast(false, (e as Error).message ?? 'Erro ao salvar identidade')
+      showToast(false, (e as Error).message ?? 'Erro ao salvar overrides')
     } finally {
       setSaving(false)
     }

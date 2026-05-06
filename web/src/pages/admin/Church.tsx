@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, Building2, CreditCard, Users, Activity,
   Heart, DollarSign, FileText, Bot, UserCheck,
-  Loader, StickyNote, Save, Trash2,
+  Loader, StickyNote, Save, Trash2, CheckCircle2, XCircle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalHabilitarAgente from '@/components/admin/ModalHabilitarAgente'
+import { useChurchIdentity } from '@/hooks/useChurchIdentity'
 
 // ── Tipos ──────────────────────────────────────────────────
 
@@ -52,6 +53,17 @@ interface ChurchDetail {
   custom_user_price_cents:  number | null
   custom_agent_price_cents: number | null
   price_notes:              string | null
+  // Identidade da Igreja
+  pastor_titular_name:   string | null
+  pastor_titular_phone:  string | null
+  denomination:          string | null
+  vision_statement:      string | null
+  address_full:          string | null
+  main_phone:            string | null
+  main_email:            string | null
+  website_url:           string | null
+  social_media_handles:  { instagram?: string; youtube?: string; facebook?: string } | null
+  region:                string | null
   // Notas internas
   notes: Array<{
     id:            string
@@ -80,6 +92,7 @@ function relDate(iso: string | null): string {
 
 const TABS = [
   { id: 'resumo',      label: 'Resumo',          icon: <Building2    size={14} strokeWidth={1.75} /> },
+  { id: 'cadastro',    label: 'Cadastro',         icon: <UserCheck    size={14} strokeWidth={1.75} /> },
   { id: 'assinatura',  label: 'Assinatura',       icon: <CreditCard   size={14} strokeWidth={1.75} /> },
   { id: 'operacao',    label: 'Operação',         icon: <Activity     size={14} strokeWidth={1.75} /> },
   { id: 'saude',       label: 'Saúde',            icon: <Heart        size={14} strokeWidth={1.75} /> },
@@ -771,6 +784,145 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
   )
 }
 
+function TabCadastro({ churchId }: { churchId: string }) {
+  const { fields, update, loading, saving, dirty, toast, save } = useChurchIdentity(churchId)
+
+  const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e13500]/30 focus:border-[#e13500] transition-colors'
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="w-5 h-5 border-2 border-[#e13500] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
+          toast.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {toast.ok
+            ? <CheckCircle2 size={16} className="text-green-600" />
+            : <XCircle size={16} className="text-red-600" />}
+          {toast.msg}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">Igreja</h3>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Nome da Igreja</label>
+          <input className={inputCls} value={fields.name} onChange={e => update('name', e.target.value)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label>
+            <input className={inputCls} value={fields.city} onChange={e => update('city', e.target.value)} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Estado (UF)</label>
+            <input className={inputCls} maxLength={2} value={fields.state} onChange={e => update('state', e.target.value.toUpperCase())} />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Região / Bairro</label>
+          <input className={inputCls} value={fields.region} onChange={e => update('region', e.target.value)} />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Denominação</label>
+          <input className={inputCls} placeholder="ex: Assembleia de Deus" value={fields.denomination} onChange={e => update('denomination', e.target.value)} />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Visão / Missão</label>
+          <textarea className={inputCls} rows={3} maxLength={500} value={fields.vision_statement} onChange={e => update('vision_statement', e.target.value)} />
+          <p className="mt-1 text-xs text-gray-400">Até 500 caracteres</p>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Endereço Completo</label>
+          <input className={inputCls} value={fields.address_full} onChange={e => update('address_full', e.target.value)} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Telefone Principal</label>
+            <input className={inputCls} type="tel" value={fields.main_phone} onChange={e => update('main_phone', e.target.value)} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">E-mail Principal</label>
+            <input className={inputCls} type="email" value={fields.main_email} onChange={e => update('main_email', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Site</label>
+          <input className={inputCls} type="url" placeholder="https://" value={fields.website_url} onChange={e => update('website_url', e.target.value)} />
+        </div>
+
+        <h3 className="text-sm font-semibold text-gray-800 mb-4 mt-6">Pastor Titular</h3>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nome do Pastor Titular</label>
+            <input className={inputCls} value={fields.pastor_titular_name} onChange={e => update('pastor_titular_name', e.target.value)} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Telefone do Pastor (interno)</label>
+            <input className={inputCls} type="tel" value={fields.pastor_titular_phone} onChange={e => update('pastor_titular_phone', e.target.value)} />
+          </div>
+        </div>
+
+        <h3 className="text-sm font-semibold text-gray-800 mb-4 mt-6">Redes Sociais</h3>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Instagram</label>
+            <input className={inputCls} placeholder="@igrejax"
+              value={fields.social_media_handles.instagram ?? ''}
+              onChange={e => update('social_media_handles', { ...fields.social_media_handles, instagram: e.target.value })} />
+          </div>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-gray-600 mb-1">YouTube (channel ID)</label>
+            <input className={inputCls} placeholder="UCxxxxx"
+              value={fields.social_media_handles.youtube ?? ''}
+              onChange={e => update('social_media_handles', { ...fields.social_media_handles, youtube: e.target.value })} />
+          </div>
+        </div>
+
+        <h3 className="text-sm font-semibold text-gray-800 mb-4 mt-6">Configurações Técnicas</h3>
+
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1">Timezone</label>
+          <input className={inputCls} placeholder="America/Sao_Paulo" value={fields.timezone} onChange={e => update('timezone', e.target.value)} />
+          <p className="mt-1 text-xs text-gray-400">Ex: America/Sao_Paulo, America/Fortaleza</p>
+        </div>
+
+        <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+          {dirty && <span className="text-xs text-amber-600 font-medium">Alterações não salvas</span>}
+          <div className="ml-auto">
+            <button
+              onClick={() => void save()}
+              disabled={saving || !dirty}
+              className="px-6 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-colors"
+              style={{ background: 'var(--color-primary)' }}
+            >
+              {saving ? 'Salvando...' : 'Salvar Cadastro'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Página principal ───────────────────────────────────────
 
 const EMPTY_DETAIL: ChurchDetail = {
@@ -782,14 +934,21 @@ const EMPTY_DETAIL: ChurchDetail = {
   users: [], agents: [], logs: [],
   subscription_id: null, custom_plan_price_cents: null, custom_user_price_cents: null,
   custom_agent_price_cents: null, price_notes: null, notes: [],
+  // Identidade
+  pastor_titular_name: null, pastor_titular_phone: null,
+  denomination: null, vision_statement: null, address_full: null,
+  main_phone: null, main_email: null, website_url: null,
+  social_media_handles: null, region: null,
 }
 
 export default function AdminChurch() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') ?? 'resumo'
+  const setTab = (t: string) => setSearchParams({ tab: t }, { replace: true })
   const [data,    setData]    = useState<ChurchDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tab,     setTab]     = useState('resumo')
 
   async function load() {
     if (!id) return
@@ -909,6 +1068,7 @@ export default function AdminChurch() {
 
       {/* Conteúdo da tab */}
       {tab === 'resumo'     && <TabResumo      data={data} />}
+      {tab === 'cadastro'   && <TabCadastro    churchId={id ?? ''} />}
       {tab === 'assinatura' && <TabAssinatura  data={data} />}
       {tab === 'operacao'   && <TabOperacao    data={data} onAgentChange={load} />}
       {tab === 'saude'      && <TabSaude       data={data} />}
