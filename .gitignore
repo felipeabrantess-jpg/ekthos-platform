@@ -137,3 +137,9 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Playwright — relatórios e artefatos de testes E2E
+# (traces/vídeos podem conter dados de sessão)
+web/playwright-report/
+web/test-results/
+web/tests/e2e/.auth.json
