@@ -194,8 +194,8 @@ export default function AdminChurches() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (!res.ok) throw new Error('Erro ao carregar igrejas')
-      const json = await res.json() as ChurchRow[]
-      setRows(json)
+      const result = await res.json() as { data: ChurchRow[]; total: number; page: number }
+      setRows(result.data ?? [])
     } catch {
       // Fallback: query direta via Supabase (requer políticas admin)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
