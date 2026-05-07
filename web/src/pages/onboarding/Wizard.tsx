@@ -351,6 +351,8 @@ function Step1Form({
 
       if (data?.onboarding_step === 'pastoral') {
         onComplete()
+      } else {
+        setApiError('Erro inesperado no servidor. Tente novamente.')
       }
     } catch {
       setApiError('Falha de conexão. Verifique sua internet e tente novamente.')
@@ -680,9 +682,6 @@ function Step1Form({
         </form>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg) } }
-      `}</style>
     </>
   )
 }
@@ -754,6 +753,8 @@ function Step2Form({
 
       if (data?.onboarding_step === 'completed') {
         onComplete()
+      } else {
+        setApiError('Erro inesperado no servidor. Tente novamente.')
       }
     } catch {
       setApiError('Falha de conexão. Verifique sua internet e tente novamente.')
@@ -967,9 +968,6 @@ function Step2Form({
         </form>
       </div>
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg) } }
-      `}</style>
     </>
   )
 }
@@ -1079,6 +1077,7 @@ export default function Wizard() {
   const [churchId, setChurchId] = useState<string | null>(null)
   const [step, setStep] = useState<OnboardingStep>('pending')
   const [showCompletion, setShowCompletion] = useState(false)
+  const [initError, setInitError] = useState<string | null>(null)
 
   useEffect(() => {
     async function init() {
@@ -1105,20 +1104,22 @@ export default function Wizard() {
         })
 
         if (error || !data) {
-          // Non-blocking: default to pending if RPC fails
-          setStep('pending')
+          setInitError('Não foi possível carregar o status do cadastro. Verifique sua conexão e tente novamente.')
           setLoading(false)
           return
         }
 
-        const state = data as OnboardingState
-
-        if (state.step === 'completed') {
+        const rawStep = (data as { step?: string })?.step
+        if (rawStep === 'pending' || rawStep === 'pastoral') {
+          setStep(rawStep)
+        } else if (rawStep === 'completed') {
           navigate('/onboarding')
           return
+        } else {
+          // Step desconhecido — default seguro com aviso
+          console.warn('[Wizard] step desconhecido do RPC:', rawStep)
+          setStep('pending')
         }
-
-        setStep(state.step)
       } catch {
         navigate('/login')
       } finally {
@@ -1148,7 +1149,23 @@ export default function Wizard() {
           style={{ animation: 'spin 1s linear infinite' }}
         />
         <p style={{ fontSize: 14, color: '#6b7280' }}>Carregando seu perfil...</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+      </div>
+    )
+  }
+
+  if (initError) {
+    return (
+      <div className="h-screen flex items-center justify-center p-6" style={{ background: '#f9eedc' }}>
+        <div className="bg-white rounded-2xl border border-red-100 p-6 max-w-sm w-full text-center">
+          <p className="text-sm text-red-700 mb-4">{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: '#e13500' }}
+          >
+            Tentar novamente
+          </button>
+        </div>
       </div>
     )
   }
@@ -1161,6 +1178,8 @@ export default function Wizard() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f9eedc' }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+
       {step === 'pending' && (
         <Step1Form
           churchId={churchId}
