@@ -143,14 +143,15 @@ Deno.serve(async (req: Request) => {
   const { data: church, error: churchErr } = await supabase
     .from('churches')
     .insert({
-      name:     churchName,
-      slug:     uniqueSlug,
-      city:     city?.trim()  ?? null,
-      state:    state?.trim() ?? null,
-      timezone: tz,
-      status:   'onboarding',
+      name:            churchName,
+      slug:            uniqueSlug,
+      city:            city?.trim()  ?? null,
+      state:           state?.trim() ?? null,
+      timezone:        tz,
+      status:          'onboarding',
+      onboarding_step: 'pending',  // R12 — Frente 3A
     })
-    .select('id, name, status, created_at')
+    .select('id, name, status, onboarding_step, created_at')
     .single()
 
   if (churchErr || !church) {
