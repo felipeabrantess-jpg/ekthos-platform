@@ -246,35 +246,46 @@ function TabContratante({ churchId }: { churchId: string }) {
     if (!validate()) return
     setSaving(true)
     try {
-      const { error } = await supabase.rpc('upsert_church_cadastro_cristalino', {
-        p_church_id:      churchId,
-        p_church_data:    {},
-        p_contractor_data: {
-          name:            form.name.trim(),
-          person_type:     form.person_type,
-          document_type:   form.document_type,
-          document_number: form.document_number.replace(/\D/g, ''),
-          role_label:      form.role_label.trim(),
-          email:           form.email.trim() || null,
-          phone:           form.phone.trim() || null,
-          notes:           form.notes.trim() || null,
-        },
-      })
-      if (error) throw error
+      // Chama EF admin dedicada — valida is_ekthos_admin server-side
+      // e registra admin_events de forma síncrona (não fire-and-forget).
+      // NÃO usa a RPC do pastor (upsert_church_cadastro_cristalino) —
+      // isso violaria a regra de separação Cockpit/CRM (CLAUDE.md).
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.')
 
-      // fire-and-forget audit (não bloqueia o save)
-      void (async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (!session) return
-          await supabase.from('admin_events').insert({
-            church_id:     churchId,
-            admin_user_id: session.user.id,
-            action:        'admin_update_contractor',
-            after:         { contractor_name: form.name, document_type: form.document_type },
-          })
-        } catch { /* ignore audit failures */ }
-      })()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-contractor`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            church_id: churchId,
+            contractor_data: {
+              name:            form.name.trim(),
+              person_type:     form.person_type,
+              document_type:   form.document_type,
+              document_number: form.document_number.replace(/\D/g, ''),
+              role_label:      form.role_label.trim(),
+              email:           form.email.trim()  || null,
+              phone:           form.phone.trim()  || null,
+              notes:           form.notes.trim()  || null,
+            },
+          }),
+        }
+      )
+
+      const payload = await res.json() as { error?: string }
+      if (!res.ok) {
+        const errMsg = payload?.error ?? 'Erro ao salvar contratante.'
+        const display = errMsg.startsWith('validation_error:')
+          ? errMsg.replace('validation_error:', '').trim()
+          : errMsg
+        showToast({ ok: false, msg: display })
+        return
+      }
 
       showToast({ ok: true, msg: 'Contratante salvo com sucesso.' })
       void load()
@@ -533,39 +544,44 @@ function TabPastoral({ churchId }: { churchId: string }) {
   async function save() {
     setSaving(true)
     try {
-      const { error } = await supabase.rpc('upsert_church_onboarding_pastoral', {
-        p_church_id:    churchId,
-        p_pastoral_data: {
-          estilo_comunicacao:         form.estilo_comunicacao         || null,
-          horarios_culto:             form.horarios_culto.trim()      || null,
-          maior_desafio:              form.maior_desafio.trim()       || null,
-          foco_pastoral_30_dias:      form.foco_pastoral_30_dias.trim()      || null,
-          algo_importante_comunidade: form.algo_importante_comunidade.trim() || null,
-        },
-      })
+      // Chama EF admin dedicada — valida is_ekthos_admin server-side
+      // e registra admin_events de forma síncrona (não fire-and-forget).
+      // NÃO usa a RPC do pastor (upsert_church_onboarding_pastoral) —
+      // essa RPC tem efeito colateral de mudar onboarding_step, o que
+      // o admin NÃO deve disparar. Regra de separação Cockpit/CRM (CLAUDE.md).
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.')
 
-      if (error) {
-        if (error.code === 'P0001' || error.message?.includes('precondition_failed')) {
-          showToast({ ok: false, msg: 'Etapa 1 (Contratante) precisa ser preenchida primeiro.' })
-        } else {
-          throw error
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-pastoral-profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            church_id: churchId,
+            pastoral_data: {
+              estilo_comunicacao:         form.estilo_comunicacao         || null,
+              horarios_culto:             form.horarios_culto.trim()      || null,
+              maior_desafio:              form.maior_desafio.trim()       || null,
+              foco_pastoral_30_dias:      form.foco_pastoral_30_dias.trim()      || null,
+              algo_importante_comunidade: form.algo_importante_comunidade.trim() || null,
+            },
+          }),
         }
+      )
+
+      const payload = await res.json() as { error?: string }
+      if (!res.ok) {
+        const errMsg = payload?.error ?? 'Erro ao salvar perfil pastoral.'
+        const display = errMsg.startsWith('validation_error:')
+          ? errMsg.replace('validation_error:', '').trim()
+          : errMsg
+        showToast({ ok: false, msg: display })
         return
       }
-
-      // fire-and-forget audit (não bloqueia o save)
-      void (async () => {
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (!session) return
-          await supabase.from('admin_events').insert({
-            church_id:     churchId,
-            admin_user_id: session.user.id,
-            action:        'admin_update_pastoral_profile',
-            after:         { estilo_comunicacao: form.estilo_comunicacao },
-          })
-        } catch { /* ignore audit failures */ }
-      })()
 
       showToast({ ok: true, msg: 'Perfil pastoral salvo com sucesso.' })
       void load()
