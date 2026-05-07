@@ -233,6 +233,69 @@ Substituir por `page.waitForLoadState('networkidle')` ou `page.waitForSelector('
 
 ---
 
+## OPS-DEBT-012 — Login.tsx `if (loading) return null` — DOM vazio durante auth init
+
+**Registrado em:** 07/05/2026 (Frente 3B — Cadastro Cristalino)
+**Origem:** `Login.tsx` retorna `null` enquanto o `AuthProvider` inicializa (estado
+`loading=true`). Isso causa:
+
+1. **UX degrado:** Usuário vê tela em branco por 1-3s no carregamento inicial
+2. **Test flakiness:** Playwright (e outros e2e) não encontra `input[type="email"]`
+   durante o período de loading, causando timeout em ambientes frios
+
+**Evidência encontrada:** Smoke tests Frente 3B falhavam na primeira tentativa com
+`TimeoutError: waiting for locator('input[type="email"]')` — passavam no retry
+porque o dev server já estava quente.
+
+**Fix recomendado:**
+```tsx
+// Login.tsx — substituir:
+if (loading) return null
+
+// Por:
+if (loading) return (
+  <div className="flex items-center justify-center h-screen bg-[#f9eedc]">
+    <div className="w-8 h-8 border-4 border-[#e13500] border-t-transparent rounded-full animate-spin" />
+  </div>
+)
+```
+
+**Impacto:** Baixo-médio. Afeta apenas primeira carga cold-start.
+**Critério de pronto:** Login.tsx nunca retorna `null`. Loading state visual ativo.
+Smoke tests passam 10/10 na primeira tentativa sem retry.
+
+---
+
+## OPS-DEBT-013 — Edge Function temporária `set-test-pastor-password` em produção
+
+**Registrado em:** 07/05/2026 (Frente 3B — debugging auth GoTrue)
+**Origem:** Durante criação do usuário `pastor-test-3b@ekthosai.net` via SQL direto,
+o GoTrue rejeitava o login por campos `NULL` e `instance_id=NULL`. Uma Edge Function
+temporária foi deployada (`set-test-pastor-password`) para chamar o Admin API
+`PUT /auth/v1/admin/users/{id}` e setar a senha via GoTrue.
+
+**Estado atual:** Função está ATIVA em produção. Hardcoda userId e password de teste.
+**Risco:** Baixo (não expõe dados sensíveis — apenas um usuário de teste). Mas deve
+ser removida para manter ambiente limpo.
+
+**Fix:** Deletar a Edge Function `set-test-pastor-password` do projeto Supabase.
+```bash
+supabase functions delete set-test-pastor-password --project-ref mlqjywqnchilvgkbvicd
+```
+
+**Armadilha documentada:** Ao criar usuários diretamente em `auth.users` via SQL
+(sem Admin API), os seguintes campos DEVEM estar corretos:
+1. `instance_id = '00000000-0000-0000-0000-000000000000'` (não NULL)
+2. `confirmation_token`, `recovery_token`, `email_change_token_new`, `email_change`
+   e demais campos de token como `''` (empty string, NÃO NULL)
+3. Senha NUNCA via SQL `crypt()` — sempre via Admin API `PUT /admin/users/{id}`
+4. O método correto é `PUT` (não `PATCH`)
+
+**Critério de pronto:** EF `set-test-pastor-password` deletada. Armadilha adicionada
+ao CLAUDE.md como item #28.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
