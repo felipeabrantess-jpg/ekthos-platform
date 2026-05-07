@@ -1,4 +1,3 @@
-Using workdir C:\Users\rmiam\Downloads\ekthos-platform-main\ekthos-platform-main
 export type Json =
   | string
   | number
@@ -7181,4 +7180,4 @@ export const Constants = {
     },
   },
 } as const
-<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />
+

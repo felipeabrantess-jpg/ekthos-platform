@@ -262,12 +262,19 @@ function TabContratante({ churchId }: { churchId: string }) {
       })
       if (error) throw error
 
-      // fire-and-forget audit
-      supabase.from('admin_events').insert({
-        church_id: churchId,
-        action:    'admin_update_contractor',
-        metadata:  { contractor_name: form.name, document_type: form.document_type },
-      }).catch(console.error)
+      // fire-and-forget audit (não bloqueia o save)
+      void (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) return
+          await supabase.from('admin_events').insert({
+            church_id:     churchId,
+            admin_user_id: session.user.id,
+            action:        'admin_update_contractor',
+            after:         { contractor_name: form.name, document_type: form.document_type },
+          })
+        } catch { /* ignore audit failures */ }
+      })()
 
       showToast({ ok: true, msg: 'Contratante salvo com sucesso.' })
       void load()
@@ -546,12 +553,19 @@ function TabPastoral({ churchId }: { churchId: string }) {
         return
       }
 
-      // fire-and-forget audit
-      supabase.from('admin_events').insert({
-        church_id: churchId,
-        action:    'admin_update_pastoral_profile',
-        metadata:  { estilo_comunicacao: form.estilo_comunicacao },
-      }).catch(console.error)
+      // fire-and-forget audit (não bloqueia o save)
+      void (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (!session) return
+          await supabase.from('admin_events').insert({
+            church_id:     churchId,
+            admin_user_id: session.user.id,
+            action:        'admin_update_pastoral_profile',
+            after:         { estilo_comunicacao: form.estilo_comunicacao },
+          })
+        } catch { /* ignore audit failures */ }
+      })()
 
       showToast({ ok: true, msg: 'Perfil pastoral salvo com sucesso.' })
       void load()

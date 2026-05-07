@@ -32,15 +32,6 @@ const UF_LIST = [
 
 type OnboardingStep = 'pending' | 'pastoral' | 'completed'
 
-interface OnboardingState {
-  church_id: string
-  step: OnboardingStep
-  contractor_complete: boolean
-  pastoral_complete: boolean
-  blocked: boolean
-  completed_at: string | null
-}
-
 interface Step1Church {
   name: string
   city: string
@@ -349,7 +340,7 @@ function Step1Form({
         return
       }
 
-      if (data?.onboarding_step === 'pastoral') {
+      if ((data as { onboarding_step?: string } | null)?.onboarding_step === 'pastoral') {
         onComplete()
       } else {
         setApiError('Erro inesperado no servidor. Tente novamente.')
@@ -751,7 +742,7 @@ function Step2Form({
         return
       }
 
-      if (data?.onboarding_step === 'completed') {
+      if ((data as { onboarding_step?: string } | null)?.onboarding_step === 'completed') {
         onComplete()
       } else {
         setApiError('Erro inesperado no servidor. Tente novamente.')
