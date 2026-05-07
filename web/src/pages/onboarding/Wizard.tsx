@@ -1143,6 +1143,7 @@ export default function Wizard() {
           gap: 16,
         }}
       >
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         <Loader2
           size={32}
           color="#e13500"
