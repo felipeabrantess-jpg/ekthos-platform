@@ -27,6 +27,7 @@ const ResetPassword         = lazy(() => import('@/pages/ResetPassword'))
 const ChoosePlan            = lazy(() => import('@/pages/ChoosePlan'))
 const Onboarding            = lazy(() => import('@/pages/Onboarding'))
 const OnboardingConfiguring = lazy(() => import('@/pages/onboarding/Configuring'))
+const OnboardingWizard      = lazy(() => import('@/pages/onboarding/Wizard'))
 const Blocked               = lazy(() => import('@/pages/Blocked'))
 const Cancelled             = lazy(() => import('@/pages/Cancelled'))
 const PaymentPending        = lazy(() => import('@/pages/PaymentPending'))
@@ -211,6 +212,7 @@ export default function App() {
           <Route path="/choose-plan" element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
           <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
           <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
+          <Route path="/onboarding/wizard" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><OnboardingWizard /></Suspense></ErrorBoundary>} />
 
           {/* ── Páginas de status de conta ── */}
           <Route
