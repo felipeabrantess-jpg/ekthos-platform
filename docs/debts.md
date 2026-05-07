@@ -183,6 +183,56 @@ Caminho A é aditivo.
 
 ---
 
+## OPS-DEBT-007 — GRANT EXECUTE explícito para authenticated nas 3 RPCs Frente 3A
+
+**Registrado em:** 07/05/2026 (sessão H3 — code review Sonnet, MIN-05)
+**Origem:** `CREATE FUNCTION` faz GRANT para `PUBLIC` por padrão (inclui `anon` + `authenticated`).
+M8 revoga de `anon`. Mas se um hardening futuro rodar `REVOKE ALL ON FUNCTION ... FROM PUBLIC`,
+as 3 RPCs quebrariam silenciosamente para `authenticated`.
+
+**Ação necessária:**
+```sql
+GRANT EXECUTE ON FUNCTION public.get_church_onboarding_state(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.upsert_church_cadastro_cristalino(uuid, jsonb, jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.upsert_church_onboarding_pastoral(uuid, jsonb) TO authenticated;
+```
+
+**Risco:** Baixo (só quebra se houver hardening global de REVOKE, que não existe hoje).
+**Bloqueia:** Nada. Adicionado como medida defensiva pré-hardening futuro.
+
+**Critério de pronto:** GRANTs explícitos aplicados antes de qualquer migration de hardening global.
+
+---
+
+## OPS-DEBT-008 — `churches.uf` sem CHECK de formato
+
+**Registrado em:** 07/05/2026 (sessão H3 — code review Sonnet, MIN-02)
+**Origem:** Coluna `uf` aceita qualquer texto. `OPS-DEBT-005` documenta que a solução definitiva
+inclui `CHECK (uf ~ '^[A-Z]{2}$')`, mas não tem prazo definido.
+
+**Risco:** Frontend pode enviar `'São Paulo'` ou `'sp'` e passar sem erro.
+**Bloqueia:** Frente 3B (frontend do wizard) deve tratar essa validação no formulário.
+Antes do CHECK no banco, o frontend é a única barreira.
+
+**Critério de pronto:** `ALTER TABLE churches ADD CONSTRAINT chk_uf_format CHECK (uf ~ '^[A-Z]{2}$')`
+aplicado junto com backfill completo de `uf` (pré-requisito de OPS-DEBT-005).
+
+---
+
+## OPS-DEBT-009 — Smoke test Frente 3A com waitForTimeout hardcoded
+
+**Registrado em:** 07/05/2026 (sessão H3 — code review Sonnet, MIN-03)
+**Origem:** `frente-3a-smoke.prod.spec.ts` usa `page.waitForTimeout(2_000)` e `waitForTimeout(1_500)`.
+Em CI com network lenta ou cold-start no Vercel, pode ser flaky.
+
+**Ação necessária:**
+Substituir por `page.waitForLoadState('networkidle')` ou `page.waitForSelector('tbody tr')`.
+
+**Risco:** Baixo (2s cobre a maioria dos casos). Flakiness apenas em CI muito lento.
+**Critério de pronto:** Smoke test passa 10/10 no CI sem timeout flakiness.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
