@@ -118,6 +118,71 @@ Quando implementado, OPS-DEBT-002 (rotação 30d) fica obsoleto.
 
 ---
 
+## OPS-DEBT-005 — Deprecar churches.state (coluna legado)
+
+**Registrado em:** 07/05/2026 (sessão H3 — Frente 3A)
+**Origem:** Coluna `churches.state` tem valores inconsistentes em produção:
+`''` (string vazia), `'Rio de Janeiro'` (nome completo), `'RJ'` (sigla).
+A nova coluna `churches.uf` (M2 Frente 3A) é o source-of-truth para estado.
+
+**Evidência:**
+```sql
+SELECT DISTINCT state FROM public.churches ORDER BY state;
+-- '', 'Rio de Janeiro', 'RJ', ...
+```
+
+**Ação necessária:**
+1. Migração de dados: popular `uf` com sigla normalizada a partir de `state`
+   para igrejas existentes (backfill manual ou via script)
+2. Deprecated: remover `state` do payload de criação (já feito em `admin-church-create` — campo ignorado a partir de R12)
+3. Remover coluna: `ALTER TABLE churches DROP COLUMN state` — apenas após frontend não usar mais `state`
+4. Adicionar CHECK em `uf`: `CHECK (uf ~ '^[A-Z]{2}$')` — garante sempre sigla
+
+**Risco:** Baixo para novos registros (onboarding_step='pending' usa `uf`).
+Médio para registros antigos com `state` inconsistente.
+
+**Bloqueia:** Frontend que exibe estado da igreja pode mostrar valores errados
+enquanto a normalização não for feita.
+
+**Critério de pronto:**
+- `uf` populado para todas as igrejas ativas em produção
+- `state` removido do schema
+- Frontend usa apenas `uf`
+
+---
+
+## OPS-DEBT-006 — Stripe self-service church creation (Caminho A)
+
+**Registrado em:** 07/05/2026 (sessão H3 — Frente 3A)
+**Origem:** O fluxo atual de criação de igrejas é 100% manual via cockpit
+(Caminho B — trial manual 7 dias). Caminho A (self-service com Stripe Checkout)
+foi descartado para o lançamento mas é a evolução natural pós-PMF.
+
+**Descrição do Caminho A:**
+1. Pastor acessa landing → escolhe plano → Stripe Checkout
+2. Stripe Checkout cria sessão → webhook `checkout.session.completed`
+3. Webhook cria church + subscription + access_grant + invite automaticamente
+4. Pastor recebe e-mail com link para definir senha
+
+**Itens necessários:**
+1. Edge Function `stripe-checkout-create` (gera Payment Link ou Session)
+2. Webhook handler para `checkout.session.completed`
+3. Lógica de slug único sem colisão (retry automático)
+4. Tela de "aguardando pagamento" no frontend
+5. Testes E2E com Stripe test mode
+
+**Pré-requisito:** F9 (Stripe live) estar funcionando.
+
+**Risco:** Sem impacto no fluxo atual (Caminho B continua funcionando).
+Caminho A é aditivo.
+
+**Critério de pronto:**
+- Igreja criada automaticamente após pagamento Stripe
+- Zero intervenção manual da equipe Ekthos
+- Webhook idempotente (retries seguros)
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
