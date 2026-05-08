@@ -81,10 +81,17 @@ async function resolveAuthFromUser(user: User, session: Session): Promise<AuthSt
     try {
       const raw = localStorage.getItem('impersonating')
       if (raw) {
-        const parsed = JSON.parse(raw) as { church_id: string }
-        impersonatedChurchId = parsed.church_id ?? null
+        const parsed = JSON.parse(raw) as { church_id: string; session_id?: string }
+        // Consistência: se tem church_id mas não tem session_id, estado é pré-Frente-4A
+        // → limpa localStorage para forçar re-impersonação via EF
+        if (parsed.church_id && !parsed.session_id) {
+          localStorage.removeItem('impersonating')
+        } else {
+          impersonatedChurchId = parsed.church_id ?? null
+        }
       }
     } catch {
+      localStorage.removeItem('impersonating')
       impersonatedChurchId = null
     }
   }
@@ -195,4 +202,22 @@ export function useLogout() {
     localStorage.removeItem('impersonating')
     await supabase.auth.signOut()
   }, [])
+}
+
+// ── Helper: headers de impersonation ─────────────────────────
+// Retorna { 'x-impersonation-session-id': session_id } se admin está
+// impersonando uma igreja. Spread este objeto em qualquer fetch para
+// EFs que precisam auditar a ação com contexto de impersonation.
+
+export function getImpersonationHeaders(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem('impersonating')
+    if (raw) {
+      const parsed = JSON.parse(raw) as { church_id?: string; session_id?: string }
+      if (parsed.session_id) {
+        return { 'x-impersonation-session-id': parsed.session_id }
+      }
+    }
+  } catch { /* ignore */ }
+  return {}
 }

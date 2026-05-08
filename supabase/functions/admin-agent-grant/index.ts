@@ -123,5 +123,35 @@ Deno.serve(async (req: Request) => {
   if (error) {
     return jsonResponse({ error: error.message }, 400, cors)
   }
+
+  // ── Registra grant via record_audit_event ──────────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabaseUser.rpc('record_audit_event', {
+    p_church_id:                church_id as string,
+    p_admin_user_id:            user.id,
+    p_action:                   'church.agent.grant',
+    p_before:                   null,
+    p_after: {
+      agent_slug,
+      grant_type,
+      duration_days: duration_days != null ? Number(duration_days) : null,
+      stripe_payment_intent_id,
+      notes,
+    },
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'church_agent_subscriptions',
+    p_resource_id:              null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   church_id as string,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-agent-grant] audit failed:', auditErr.message)
+
   return jsonResponse(data, 201, cors)
 })

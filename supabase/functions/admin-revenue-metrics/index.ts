@@ -137,6 +137,29 @@ Deno.serve(async (req: Request) => {
   const currentMrr = series.at(-1)?.mrr_cents ?? 0
   const currentArr = currentMrr * 12
 
+  // ── Audit: record_audit_event RPC (READ sensível) ───────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                null,
+    p_admin_user_id:            user.id,
+    p_action:                   'revenue.metrics.read.sensitive',
+    p_before:                   null,
+    p_after:                    null,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'subscriptions',
+    p_resource_id:              null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   null,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-revenue-metrics] audit failed:', auditErr.message)
+
   return json({
     mrr_cents:    currentMrr,
     arr_cents:    currentArr,

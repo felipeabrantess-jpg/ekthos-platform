@@ -1036,21 +1036,32 @@ function TabFinanceiro({ data }: { data: ChurchDetail }) {
   )
 }
 
-function TabLogs({ data, onImpersonate }: { data: ChurchDetail; onImpersonate: () => void }) {
+function TabLogs({ data, onImpersonate, impersonateLoading, impersonateError }: {
+  data: ChurchDetail
+  onImpersonate: () => void
+  impersonateLoading: boolean
+  impersonateError: string | null
+}) {
   return (
     <div className="space-y-6">
       {/* Ações rápidas */}
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">Ações Admin</h3>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={onImpersonate}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-            style={{ background: '#670000' }}
-          >
-            <UserCheck size={15} strokeWidth={1.75} />
-            Entrar como pastor
-          </button>
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={onImpersonate}
+              disabled={impersonateLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+              style={{ background: '#670000' }}
+            >
+              <UserCheck size={15} strokeWidth={1.75} />
+              {impersonateLoading ? 'Iniciando...' : 'Entrar como pastor'}
+            </button>
+            {impersonateError && (
+              <p className="text-xs text-red-600 mt-1">{impersonateError}</p>
+            )}
+          </div>
           <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all">
             <Users size={15} strokeWidth={1.75} />
             Convidar usuário
@@ -1546,6 +1557,8 @@ export default function AdminChurch() {
   const setTab = (t: string) => setSearchParams({ tab: t }, { replace: true })
   const [data,    setData]    = useState<ChurchDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [impersonateLoading, setImpersonateLoading] = useState(false)
+  const [impersonateError, setImpersonateError]     = useState<string | null>(null)
 
   async function load() {
     if (!id) return
@@ -1572,27 +1585,46 @@ export default function AdminChurch() {
   useEffect(() => { void load() }, [id])
 
   async function startImpersonate() {
-    if (!data) return
-    // Registra sessão de impersonação na tabela de auditoria
+    if (!data || impersonateLoading) return
+    setImpersonateLoading(true)
+    setImpersonateError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('impersonate_sessions').insert({
-          admin_user_id: session.user.id,
-          church_id:     data.id,
-          notes:         `Impersonação iniciada via detalhe da igreja — ${data.name}`,
-        })
+      if (!session?.access_token) throw new Error('Sessão expirada')
+
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-start-impersonation`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          church_id: data.id,
+          notes:     `Impersonação iniciada via detalhe da igreja — ${data.name}`,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? `Erro ${res.status} ao iniciar sessão`)
       }
+      const result = await res.json() as { session_id: string; started_at: string; church_name: string }
+
+      // Seta localStorage APENAS após 200 — inclui session_id para audit
+      localStorage.setItem('impersonating', JSON.stringify({
+        church_id:   data.id,
+        church_name: data.name,
+        session_id:  result.session_id,
+      }))
+      navigate('/dashboard')
+      window.location.reload()
     } catch (err) {
-      console.error('[impersonate] failed to log session:', err)
+      const msg = err instanceof Error ? err.message : 'Falha ao iniciar sessão de impersonação'
+      setImpersonateError(msg)
+      console.error('[impersonate] start failed:', err)
+    } finally {
+      setImpersonateLoading(false)
     }
-    localStorage.setItem('impersonating', JSON.stringify({
-      church_id:   data.id,
-      church_name: data.name,
-    }))
-    navigate('/dashboard')
-    window.location.reload()
   }
 
   if (loading) {
@@ -1634,14 +1666,20 @@ export default function AdminChurch() {
           </div>
         </div>
         {/* Botão impersonate */}
-        <button
-          onClick={startImpersonate}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-          style={{ background: '#670000' }}
-        >
-          <UserCheck size={15} strokeWidth={1.75} />
-          Entrar como pastor
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={() => void startImpersonate()}
+            disabled={impersonateLoading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
+            style={{ background: '#670000' }}
+          >
+            <UserCheck size={15} strokeWidth={1.75} />
+            {impersonateLoading ? 'Iniciando...' : 'Entrar como pastor'}
+          </button>
+          {impersonateError && (
+            <p className="text-xs text-red-600">{impersonateError}</p>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -1674,7 +1712,7 @@ export default function AdminChurch() {
       {tab === 'financeiro'   && <TabFinanceiro   data={data} />}
       {tab === 'pricing'      && <TabPricing data={data} churchId={id ?? ''} onSaved={load} />}
       {tab === 'notas'        && <TabNotas   data={data} churchId={id ?? ''} onSaved={load} />}
-      {tab === 'logs'         && <TabLogs         data={data} onImpersonate={startImpersonate} />}
+      {tab === 'logs'         && <TabLogs         data={data} onImpersonate={() => void startImpersonate()} impersonateLoading={impersonateLoading} impersonateError={impersonateError} />}
     </div>
   )
 }

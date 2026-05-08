@@ -170,29 +170,37 @@ Deno.serve(async (req: Request) => {
     updatedContractor = inserted as Record<string, unknown>
   }
 
-  // ── 6. Registrar admin_events (síncrono, server-side) ───────
-  const { error: auditErr } = await supabaseAdmin
-    .from('admin_events')
-    .insert({
-      church_id,
-      admin_user_id: user.id,
-      action: 'admin_update_contractor',
-      before: beforeData
-        ? {
-            name:            (beforeData as Record<string, unknown>).name,
-            document_type:   (beforeData as Record<string, unknown>).document_type,
-            document_number: (beforeData as Record<string, unknown>).document_number,
-            role_label:      (beforeData as Record<string, unknown>).role_label,
-          }
-        : null,
-      after: { name, document_type, document_number, role_label },
-    })
-
-  if (auditErr) {
-    // Dados já salvos — loga o erro mas não bloqueia o retorno
-    // Frontend recebe sucesso; inconsistência de audit fica registrada nos logs da EF
-    console.error('[admin-update-contractor] audit insert failed:', auditErr.message)
-  }
+  // ── 6. Audit: record_audit_event RPC ────────────────────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const beforePayload = beforeData
+    ? {
+        name:            (beforeData as Record<string, unknown>).name,
+        document_type:   (beforeData as Record<string, unknown>).document_type,
+        document_number: (beforeData as Record<string, unknown>).document_number,
+        role_label:      (beforeData as Record<string, unknown>).role_label,
+      }
+    : null
+  const afterPayload = { name, document_type, document_number, role_label }
+  const { error: auditErr } = await supabaseAdmin.rpc('record_audit_event', {
+    p_church_id:                church_id,
+    p_admin_user_id:            user.id,
+    p_action:                   'contractor.update',
+    p_before:                   beforePayload,
+    p_after:                    afterPayload,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'contractors',
+    p_resource_id:              (updatedContractor.id as string) ?? null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   church_id,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-update-contractor] audit failed:', auditErr.message)
 
   return json({ success: true, contractor: updatedContractor }, 200, origin)
 })

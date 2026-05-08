@@ -98,6 +98,30 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (error) { console.error('[admin-tasks-crud] POST', error); return jsonError(CORS) }
+
+    // Audit: admin_task.create
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                null,
+      p_admin_user_id:            user.id,
+      p_action:                   'admin_task.create',
+      p_before:                   null,
+      p_after:                    data ?? null,
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'admin_tasks',
+      p_resource_id:              data?.id ?? null,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
+    })
+    if (auditErr) console.error('[admin-tasks-crud] audit failed (create):', auditErr.message)
+
     return json(data, 201)
   }
 
@@ -108,6 +132,15 @@ Deno.serve(async (req: Request) => {
 
     const { id, ...rest } = body
     if (!id) return json({ error: 'id é obrigatório' }, 400)
+
+    // Fetch tarefa antes de atualizar (para p_before)
+    const { data: beforeData, error: fetchErr } = await supabase
+      .from('admin_tasks')
+      .select('*')
+      .eq('id', id as string)
+      .single()
+
+    if (fetchErr) { console.error('[admin-tasks-crud] PATCH fetch', fetchErr); return jsonError(CORS) }
 
     const allowedFields = ['status', 'title', 'priority', 'due_date', 'description', 'assigned_to']
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -125,6 +158,30 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (error) { console.error('[admin-tasks-crud] PATCH', error); return jsonError(CORS) }
+
+    // Audit: admin_task.update
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                null,
+      p_admin_user_id:            user.id,
+      p_action:                   'admin_task.update',
+      p_before:                   beforeData ?? null,
+      p_after:                    data ?? null,
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'admin_tasks',
+      p_resource_id:              data?.id ?? null,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
+    })
+    if (auditErr) console.error('[admin-tasks-crud] audit failed (update):', auditErr.message)
+
     return json(data)
   }
 
@@ -135,12 +192,48 @@ Deno.serve(async (req: Request) => {
 
     if (!body.id) return json({ error: 'id é obrigatório' }, 400)
 
-    const { error } = await supabase
+    // Fetch tarefa antes de atualizar (para p_before)
+    const { data: beforeData, error: fetchErr } = await supabase
       .from('admin_tasks')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .select('*')
       .eq('id', body.id as string)
+      .single()
+
+    if (fetchErr) { console.error('[admin-tasks-crud] DELETE fetch', fetchErr); return jsonError(CORS) }
+
+    const updateTimestamp = new Date().toISOString()
+    const { data: afterData, error } = await supabase
+      .from('admin_tasks')
+      .update({ status: 'cancelled', updated_at: updateTimestamp })
+      .eq('id', body.id as string)
+      .select()
+      .single()
 
     if (error) { console.error('[admin-tasks-crud] DELETE', error); return jsonError(CORS) }
+
+    // Audit: admin_task.delete
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                null,
+      p_admin_user_id:            user.id,
+      p_action:                   'admin_task.delete',
+      p_before:                   beforeData ?? null,
+      p_after:                    afterData ?? null,
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'admin_tasks',
+      p_resource_id:              beforeData?.id ?? null,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
+    })
+    if (auditErr) console.error('[admin-tasks-crud] audit failed (delete):', auditErr.message)
+
     return json({ ok: true })
   }
 

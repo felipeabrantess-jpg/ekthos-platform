@@ -141,25 +141,35 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'db_error: falha ao salvar perfil pastoral' }, 500, origin)
   }
 
-  // ── 6. Registrar admin_events (síncrono, server-side) ───────
-  const { error: auditErr } = await supabaseAdmin
-    .from('admin_events')
-    .insert({
-      church_id,
-      admin_user_id: user.id,
-      action: 'admin_update_pastoral_profile',
-      before: beforeData
-        ? {
-            estilo_comunicacao: (beforeData as Record<string, unknown>).estilo_comunicacao,
-            horarios_culto:     (beforeData as Record<string, unknown>).horarios_culto,
-          }
-        : null,
-      after: { estilo_comunicacao, horarios_culto },
-    })
-
-  if (auditErr) {
-    console.error('[admin-update-pastoral-profile] audit insert failed:', auditErr.message)
-  }
+  // ── 6. Audit: record_audit_event RPC ────────────────────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const beforePayload = beforeData
+    ? {
+        estilo_comunicacao: (beforeData as Record<string, unknown>).estilo_comunicacao,
+        horarios_culto:     (beforeData as Record<string, unknown>).horarios_culto,
+      }
+    : null
+  const afterPayload = { estilo_comunicacao, horarios_culto }
+  const { error: auditErr } = await supabaseAdmin.rpc('record_audit_event', {
+    p_church_id:                church_id,
+    p_admin_user_id:            user.id,
+    p_action:                   'pastoral_profile.update',
+    p_before:                   beforePayload,
+    p_after:                    afterPayload,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'church_pastoral_profile',
+    p_resource_id:              (upserted.id as string) ?? null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   church_id,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-update-pastoral-profile] audit failed:', auditErr.message)
 
   return json({ success: true, pastoral_profile: upserted }, 200, origin)
 })
