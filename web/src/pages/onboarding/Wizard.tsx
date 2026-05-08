@@ -1032,7 +1032,8 @@ function CompletionScreen() {
         </p>
 
         <button
-          onClick={() => navigate('/onboarding')}
+          // window.location.href força reload completo para rehydratar auth context (CLAUDE.md armadilha #8)
+          onClick={() => { window.location.href = '/onboarding' }}
           style={{
             width: '100%',
             padding: '14px 24px',
@@ -1073,16 +1074,18 @@ export default function Wizard() {
   useEffect(() => {
     async function init() {
       try {
+        // getUser() valida JWT server-side — seguro para wizard que grava CPF/CNPJ
         const {
-          data: { session },
-        } = await supabase.auth.getSession()
+          data: { user },
+          error: userErr,
+        } = await supabase.auth.getUser()
 
-        if (!session) {
+        if (userErr || !user) {
           navigate('/login')
           return
         }
 
-        const cid: string | undefined = session.user.app_metadata?.church_id
+        const cid: string | undefined = user.app_metadata?.church_id
         if (!cid) {
           navigate('/login')
           return

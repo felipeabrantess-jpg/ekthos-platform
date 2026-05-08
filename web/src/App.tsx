@@ -212,7 +212,13 @@ export default function App() {
           <Route path="/choose-plan" element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
           <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
           <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
-          <Route path="/onboarding/wizard" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><OnboardingWizard /></Suspense></ErrorBoundary>} />
+          <Route path="/onboarding/wizard" element={
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <Suspense fallback={<FullScreenSpinner />}><OnboardingWizard /></Suspense>
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
 
           {/* ── Páginas de status de conta ── */}
           <Route

@@ -296,6 +296,77 @@ ao CLAUDE.md como item #28.
 
 ---
 
+---
+
+## OPS-DEBT-014 — Audit silencioso em `admin-update-contractor` / `admin-update-pastoral-profile`
+
+**Data:** 2026-05-07  
+**Categoria:** Observabilidade  
+**Trigger:** Pré-1ª igreja real  
+
+**Contexto:** As EFs admin de escrita (Frente 3B) inserem em `admin_events` e logam
+erro se falhar (`console.error`), mas retornam `success: true` ao frontend sem
+sinalizar o problema. Um admin pode salvar dados sem registro de auditoria sem saber.
+
+**Tarefa:**
+- Incluir `audit_warning: true` no response JSON quando `admin_events` INSERT falhar
+- Logar em canal de monitoramento (Sentry ou alert Supabase) para detecção imediata
+- Frontend deve exibir aviso não-bloqueante ("Salvo, mas auditoria pendente") quando
+  `audit_warning: true` estiver presente
+
+**Critério de pronto:** Frontend trata `audit_warning`; alerta monitoramento configurado.
+
+---
+
+## OPS-DEBT-015 — Validação aritmética CPF/CNPJ (dígito verificador)
+
+**Data:** 2026-05-07  
+**Categoria:** Validação de dados  
+**Trigger:** Pré-1ª igreja real (Decisão 110 cravou validação algorítmica no MVP)  
+
+**Contexto:** Atualmente `admin-update-contractor` valida apenas comprimento
+(11 dígitos CPF, 14 dígitos CNPJ) via regex `^\d{N}$`. Números inválidos mas com
+comprimento correto passam sem erro.
+
+**Tarefa:**
+- Criar `web/src/utils/cpfCnpj.ts` com funções `isValidCPF(s)` e `isValidCNPJ(s)`
+  usando cálculo de dígito verificador (mod 11)
+- Aplicar tanto no Wizard (frontend, step ContratantePendente) quanto na EF
+  `admin-update-contractor` (Deno side — inline sem lib externa)
+- Exibir erro claro: "CPF inválido — verifique os dígitos"
+
+**Critério de pronto:** CPF/CNPJ com comprimento correto mas dígito errado é rejeitado
+tanto no frontend quanto na EF.
+
+---
+
+## OPS-DEBT-016 — Setar `is_test_account=true` no `pastor-test-3b`
+
+**Data:** 2026-05-07  
+**Categoria:** Rastreabilidade de test fixtures  
+**Trigger:** Próxima rotação de credentials  
+
+**Contexto:** Usuário `pastor-test-3b@ekthosai.net` foi criado na sessão Frente 3B
+para E2E smoke tests mas não tem `is_test_account: true` no `raw_user_meta_data`.
+Sem essa flag, o usuário de teste é indistinguível de um usuário real em queries
+de produção e dashboards.
+
+**Tarefa:**
+```sql
+UPDATE auth.users
+SET raw_user_meta_data = jsonb_set(
+  COALESCE(raw_user_meta_data, '{}'::jsonb),
+  '{is_test_account}',
+  'true'
+)
+WHERE email = 'pastor-test-3b@ekthosai.net';
+```
+
+**Critério de pronto:** `raw_user_meta_data->>'is_test_account' = 'true'` confirmado
+via SELECT.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
