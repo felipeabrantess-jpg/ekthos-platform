@@ -370,3 +370,172 @@ via SELECT.
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
+
+---
+
+## OPS-DEBT-024 — Canal real de alerta para audit failures
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A)
+**Categoria:** Observabilidade / SRE
+**Trigger:** Pré-1ª igreja real
+
+**Contexto:** `record_audit_event()` tem `EXCEPTION WHEN OTHERS` que engole falhas silenciosamente.
+EFs logam `console.error` mas não há canal de alerta (Sentry / Slack / e-mail) configurado.
+Uma falha de auditoria em operação administrativa sensível pode passar despercebida por dias.
+
+**Tarefa:**
+- Integrar Sentry (ou equivalente) nas Edge Functions admin críticas
+- Configurar alerta Supabase para `console.error` com pattern `audit failed`
+- Alternativa leve: webhook Slack via `N8N_AUDIT_ALERT_URL` chamado quando `auditErr` ocorre
+
+**Estimativa:** ~3h
+**Critério de pronto:** Falha de audit gera alerta em canal monitorado em <5 min.
+
+---
+
+## OPS-DEBT-025 — Remover `is_ekthos_admin: boolean` legado
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A)
+**Categoria:** Tech debt / schema cleanup
+**Trigger:** Pós-Frente 4B (gestão de roles via UI)
+
+**Contexto:** `app_metadata.is_ekthos_admin = true` é o flag legado de admin.
+Frente 4A introduziu `app_metadata.ekthos_roles: string[]` como sistema cumulativo.
+As 22+ EFs admin ainda fazem dupla verificação (`is_ekthos_admin === true`).
+Após Frente 4B ter UI de gestão de roles, o flag legado pode ser removido.
+
+**Tarefa:**
+1. Migrar todas as EFs para verificar apenas `ekthos_roles.includes('admin')`
+2. Remover `is_ekthos_admin` do `app_metadata` dos usuários existentes
+3. Remover função SQL `is_ekthos_admin()` (se existir como RLS helper)
+4. Atualizar `admin-set-ekthos-roles` para não setar mais o flag legado
+
+**Estimativa:** ~4h (depende de quantas EFs precisam de ajuste)
+**Bloqueia:** Frente 4B deve estar completa antes
+**Critério de pronto:** Zero referências a `is_ekthos_admin` no codebase. Todas as EFs usam `ekthos_roles`.
+
+---
+
+## OPS-DEBT-026 — Cron para fechar `impersonate_sessions` zumbis
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A)
+**Categoria:** Integridade de dados / segurança
+**Trigger:** Pré-1ª impersonação em produção real
+
+**Contexto:** Se um admin fechar o browser sem clicar em "Sair da impersonação",
+a sessão em `impersonate_sessions` fica com `ended_at = NULL` indefinidamente.
+`last_action_at` pode ser usado para detectar sessões inativas >4h.
+
+**Tarefa:**
+```sql
+-- pg_cron a cada hora:
+SELECT cron.schedule(
+  'close-zombie-impersonate-sessions',
+  '0 * * * *',
+  $$
+  UPDATE public.impersonate_sessions
+  SET ended_at = now(), ended_reason = 'auto_timeout'
+  WHERE ended_at IS NULL
+    AND last_action_at < now() - INTERVAL '4 hours';
+  $$
+);
+```
+
+**Estimativa:** ~1h
+**Critério de pronto:** Cron ativo. Sessões sem atividade >4h têm `ended_at` preenchido automaticamente.
+
+---
+
+## OPS-DEBT-027 — Auditar EF `stripe-bootstrap` (one-shot legado)
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A)
+**Categoria:** Tech debt / segurança
+**Trigger:** Baixa prioridade — pós-F9 Stripe live
+
+**Contexto:** `stripe-bootstrap` é uma EF one-shot criada para configuração inicial
+do Stripe (products, prices). Ainda está ativa em produção. Não tem `record_audit_event`.
+Se chamada acidentalmente pode criar duplicatas no Stripe.
+
+**Tarefa:**
+1. Auditar se a EF ainda é necessária (provavelmente não pós-bootstrap)
+2. Se não: tombstonar (retornar 404) ou deletar
+3. Se ainda necessária: adicionar guard `if (bootstrapAlreadyDone) return 409`
+   verificando existência de prices no banco
+
+**Estimativa:** ~1h
+**Critério de pronto:** EF deletada ou protegida contra execução acidental.
+
+---
+
+## OPS-DEBT-028 — Rate-limiting de audit em READs sensíveis
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A)
+**Categoria:** Segurança / performance
+**Trigger:** Pré-escala (>10 admins ativos)
+
+**Contexto:** EFs como `admin-churches-list`, `admin-cockpit-metrics` e `admin-events-list`
+não têm rate-limiting. Um admin malicioso (ou bug em loop) pode fazer centenas de
+chamadas por minuto, aumentando custo de Edge Function e expondo dados em bulk.
+
+**Tarefa:**
+- Implementar rate-limit por `adminUser.id` usando Supabase KV ou Redis (Upstash)
+- Limiar sugerido: 60 req/min por admin para EFs de leitura bulk
+- Retornar `429 Too Many Requests` com `Retry-After` header quando exceder
+
+**Estimativa:** ~4h (depende da solução de KV escolhida)
+**Critério de pronto:** Admin não consegue fazer >60 req/min nas EFs bulk. 429 retornado corretamente.
+
+---
+
+## OPS-DEBT-029 — `jsonError` duplicado em 4 Edge Functions
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A)
+**Categoria:** Tech debt / DRY
+**Trigger:** Manutenção futura
+
+**Contexto:** Durante Frente 4A, helper `jsonError()` foi planejado como shared module
+(`supabase/functions/_shared/errors.ts`). O deploy via Supabase MCP não suporta
+imports relativos entre funções — cada EF é deployada como bundle isolado.
+A função foi inlinada em 4 EFs como workaround.
+
+**EFs afetadas:** `admin-start-impersonation`, `admin-end-impersonation`,
+`admin-set-ekthos-roles`, `admin-events-list`
+
+**Tarefa:**
+- Investigar deploy via Supabase CLI com `--no-verify-jwt` e bundler step
+- Alternativa: `supabase functions deploy` com `import_map.json` apontando para `_shared/`
+- Se viável: extrair helpers comuns (`jsonError`, `getAdmin`, `CORS`) para `_shared/`
+  e atualizar as 4 EFs
+
+**Estimativa:** ~2h
+**Critério de pronto:** `_shared/` funciona em deploy. Zero duplicação de helpers entre EFs.
+
+---
+
+## OPS-DEBT-030 — Schema mismatch em affiliate Edge Functions
+
+**Registrado em:** 08/05/2026 (sessão H4 — Frente 4A — validação empírica G3)
+**Categoria:** Bug / schema mismatch
+**Trigger:** Pré-ativação do programa de afiliados
+
+**Contexto:** Detectado durante validação empírica G3 (Frente 4A). As EFs de afiliados
+fazem referência a colunas que não existem na tabela `affiliate_payment_batches`:
+
+**EF `affiliate-commissions-export-csv`:**
+- Seleciona coluna `amount_cents` — coluna real é `commission_amount_cents`
+- Insere `row_count` e `created_by` em `affiliate_payment_batches` — colunas inexistentes
+
+**EF `affiliate-commissions-mark-paid`:**
+- Atualiza coluna `comprovante_url` — não existe na tabela `affiliate_payment_batches`
+- Retorna 500 em qualquer chamada que tente marcar lote como pago
+
+**Tarefa:**
+1. Verificar schema atual de `affiliate_payment_batches` via `list_tables`
+2. Decidir: adicionar colunas faltantes via migration OU corrigir as EFs
+3. Opção A (recomendada): migration adicionando `row_count int`, `created_by uuid`,
+   `comprovante_url text` e renomeando (ou adicionando alias) `commission_amount_cents`
+4. Opção B: corrigir as EFs para usar os nomes de coluna existentes
+5. Adicionar smoke test cobrindo `affiliate-commissions-mark-paid`
+
+**Estimativa:** ~1h
+**Critério de pronto:** `affiliate-commissions-mark-paid` retorna 200. `export-csv` gera CSV sem erro.

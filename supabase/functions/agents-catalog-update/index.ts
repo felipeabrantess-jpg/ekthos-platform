@@ -29,7 +29,7 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, x-impersonation-session-id, x-request-id',
 }
 
 function json(data: unknown, status = 200) {
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
     p_actor_email: user.email ?? null,
     p_actor_roles: (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
     p_resource: 'agents_catalog',
-    p_resource_id: slug,
+    p_resource_id: null,
     p_status: 'success',
     p_error_msg: null,
     p_impersonation_session_id: impersonationSessionId,

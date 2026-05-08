@@ -6,15 +6,19 @@ import MobileHeader from './MobileHeader'
 import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
 import { NotificationsProvider } from '@/features/notifications/context/NotificationsContext'
+import { supabase } from '@/lib/supabase'
 
 interface ImpersonatingState {
   church_id:   string
   church_name: string
+  session_id?: string
 }
 
-function ImpersonateBanner({ state, onExit }: {
+function ImpersonateBanner({ state, onExit, exitLoading, exitError }: {
   state: ImpersonatingState
   onExit: () => void
+  exitLoading: boolean
+  exitError: string | null
 }) {
   return (
     <div
@@ -25,12 +29,16 @@ function ImpersonateBanner({ state, onExit }: {
         <Eye size={13} strokeWidth={2} />
         <span>Visualizando como:</span>
         <span className="font-semibold text-white">{state.church_name}</span>
+        {exitError && (
+          <span className="text-white/70 ml-2">({exitError})</span>
+        )}
       </div>
       <button
         onClick={onExit}
-        className="text-xs text-white/70 hover:text-white underline transition-colors"
+        disabled={exitLoading}
+        className="text-xs text-white/70 hover:text-white underline transition-colors disabled:opacity-50"
       >
-        Sair da visualização
+        {exitLoading ? 'Encerrando...' : 'Sair da visualização'}
       </button>
     </div>
   )
@@ -70,8 +78,45 @@ export default function Layout() {
     }
   }, [])
 
-  function exitImpersonate() {
+  const [exitLoading, setExitLoading] = useState(false)
+  const [exitError,   setExitError]   = useState<string | null>(null)
+
+  async function exitImpersonate() {
+    if (exitLoading) return
+    setExitLoading(true)
+    setExitError(null)
+
+    const session_id = impersonating?.session_id ?? null
+
+    if (session_id) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-end-impersonation`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type':  'application/json',
+            },
+            body: JSON.stringify({ session_id, ended_reason: 'manual_exit' }),
+          })
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({})) as { error?: string }
+            // Logar erro mas não bloquear o logout — always limpa localStorage
+            console.error('[impersonate] end failed:', body.error)
+            setExitError(body.error ?? 'Erro ao encerrar sessão')
+          }
+        }
+      } catch (err) {
+        console.error('[impersonate] end error:', err)
+        // Não bloquear — limpar localStorage de qualquer forma
+      }
+    }
+
+    // Sempre limpa localStorage (mesmo se EF falhou)
     localStorage.removeItem('impersonating')
+    setExitLoading(false)
     navigate('/admin/churches')
     window.location.reload()
   }
@@ -88,7 +133,7 @@ export default function Layout() {
           <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
 
           {impersonating && (
-            <ImpersonateBanner state={impersonating} onExit={exitImpersonate} />
+            <ImpersonateBanner state={impersonating} onExit={() => void exitImpersonate()} exitLoading={exitLoading} exitError={exitError} />
           )}
 
           {/* Desktop: topbar (sino + avatar) — ACIMA do main, fora do overflow-y-auto */}

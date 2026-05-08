@@ -217,7 +217,7 @@ Deno.serve(async (req: Request) => {
     p_actor_roles: (adminUser.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
     p_resource: 'church_channels',
     p_resource_id: channelId,
-    p_status: finalErrorMessage ? 'error' : 'success',
+    p_status: finalErrorMessage ? 'failed' : 'success',
     p_error_msg: finalErrorMessage,
     p_impersonation_session_id: impersonationSessionId,
     p_impersonated_church_id: channel.church_id,
