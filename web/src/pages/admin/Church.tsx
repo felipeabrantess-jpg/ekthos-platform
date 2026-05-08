@@ -80,6 +80,8 @@ interface ChurchDetail {
 const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 
+const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e13500]/30 focus:border-[#e13500] transition-colors'
+
 function relDate(iso: string | null): string {
   if (!iso) return '—'
   return new Intl.DateTimeFormat('pt-BR', {
@@ -91,15 +93,17 @@ function relDate(iso: string | null): string {
 // ── Tab system ─────────────────────────────────────────────
 
 const TABS = [
-  { id: 'resumo',      label: 'Resumo',          icon: <Building2    size={14} strokeWidth={1.75} /> },
-  { id: 'cadastro',    label: 'Cadastro',         icon: <UserCheck    size={14} strokeWidth={1.75} /> },
-  { id: 'assinatura',  label: 'Assinatura',       icon: <CreditCard   size={14} strokeWidth={1.75} /> },
-  { id: 'operacao',    label: 'Operação',         icon: <Activity     size={14} strokeWidth={1.75} /> },
-  { id: 'saude',       label: 'Saúde',            icon: <Heart        size={14} strokeWidth={1.75} /> },
-  { id: 'financeiro',  label: 'Financeiro',       icon: <DollarSign   size={14} strokeWidth={1.75} /> },
-  { id: 'pricing',     label: 'Precificação',      icon: <DollarSign   size={14} strokeWidth={1.75} /> },
-  { id: 'notas',       label: 'Notas Internas',   icon: <FileText     size={14} strokeWidth={1.75} /> },
-  { id: 'logs',        label: 'Logs e Ações',     icon: <FileText     size={14} strokeWidth={1.75} /> },
+  { id: 'resumo',       label: 'Resumo',          icon: <Building2   size={14} strokeWidth={1.75} /> },
+  { id: 'cadastro',     label: 'Cadastro',         icon: <UserCheck   size={14} strokeWidth={1.75} /> },
+  { id: 'contratante',  label: 'Contratante',      icon: <FileText    size={14} strokeWidth={1.75} /> },
+  { id: 'pastoral',     label: 'Perfil Pastoral',  icon: <Heart       size={14} strokeWidth={1.75} /> },
+  { id: 'assinatura',   label: 'Assinatura',       icon: <CreditCard  size={14} strokeWidth={1.75} /> },
+  { id: 'operacao',     label: 'Operação',         icon: <Activity    size={14} strokeWidth={1.75} /> },
+  { id: 'saude',        label: 'Saúde',            icon: <Heart       size={14} strokeWidth={1.75} /> },
+  { id: 'financeiro',   label: 'Financeiro',       icon: <DollarSign  size={14} strokeWidth={1.75} /> },
+  { id: 'pricing',      label: 'Precificação',     icon: <DollarSign  size={14} strokeWidth={1.75} /> },
+  { id: 'notas',        label: 'Notas Internas',   icon: <FileText    size={14} strokeWidth={1.75} /> },
+  { id: 'logs',         label: 'Logs e Ações',     icon: <FileText    size={14} strokeWidth={1.75} /> },
 ]
 
 // ── Componentes de sub-seção ───────────────────────────────
@@ -140,6 +144,601 @@ function HealthBar({ score, label }: { score: number; label: string }) {
 }
 
 // ── Tabs ───────────────────────────────────────────────────
+
+// ── Interfaces internas ────────────────────────────────────
+
+interface ContractorRow {
+  id:              string
+  name:            string
+  document_type:   string
+  document_number: string
+  person_type:     string
+  role_label:      string
+  email:           string | null
+  phone:           string | null
+  notes:           string | null
+  is_active:       boolean
+  created_at:      string
+}
+
+interface PastoralProfileRow {
+  church_id:                  string
+  estilo_comunicacao:         string | null
+  horarios_culto:             string | null
+  maior_desafio:              string | null
+  foco_pastoral_30_dias:      string | null
+  algo_importante_comunidade: string | null
+  updated_at:                 string
+}
+
+interface ToastState {
+  ok:  boolean
+  msg: string
+}
+
+// ── TabContratante ─────────────────────────────────────────
+
+function TabContratante({ churchId }: { churchId: string }) {
+  const [contractor, setContractor] = useState<ContractorRow | null>(null)
+  const [loadState, setLoadState]   = useState<'loading' | 'empty' | 'error' | 'ok'>('loading')
+
+  const [form, setForm] = useState({
+    name:            '',
+    person_type:     'pf',
+    document_type:   'cpf',
+    document_number: '',
+    role_label:      '',
+    email:           '',
+    phone:           '',
+    notes:           '',
+  })
+
+  const [saving,  setSaving]  = useState(false)
+  const [toast,   setToast]   = useState<ToastState | null>(null)
+  const [errors,  setErrors]  = useState<Record<string, string>>({})
+
+  function showToast(t: ToastState) {
+    setToast(t)
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  async function load() {
+    setLoadState('loading')
+    const { data, error } = await supabase
+      .from('contractors')
+      .select('*')
+      .eq('church_id', churchId)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (error) { setLoadState('error'); return }
+    if (!data)  { setLoadState('empty'); return }
+
+    setContractor(data as ContractorRow)
+    setForm({
+      name:            data.name ?? '',
+      person_type:     data.person_type ?? 'pf',
+      document_type:   data.document_type ?? 'cpf',
+      document_number: data.document_number ?? '',
+      role_label:      data.role_label ?? '',
+      email:           data.email ?? '',
+      phone:           data.phone ?? '',
+      notes:           data.notes ?? '',
+    })
+    setLoadState('ok')
+  }
+
+  useEffect(() => { void load() }, [churchId])
+
+  function validate(): boolean {
+    const errs: Record<string, string> = {}
+    if (!form.name.trim())       errs.name = 'Nome obrigatório'
+    if (!form.role_label.trim()) errs.role_label = 'Cargo obrigatório'
+    const digits = form.document_number.replace(/\D/g, '')
+    if (form.document_type === 'cpf'  && digits.length !== 11) errs.document_number = 'CPF deve ter 11 dígitos'
+    if (form.document_type === 'cnpj' && digits.length !== 14) errs.document_number = 'CNPJ deve ter 14 dígitos'
+    if (form.person_type === 'pj' && form.document_type !== 'cnpj') errs.document_type = 'PJ deve usar CNPJ'
+    setErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  async function save() {
+    if (!validate()) return
+    setSaving(true)
+    try {
+      // Chama EF admin dedicada — valida is_ekthos_admin server-side
+      // e registra admin_events de forma síncrona (não fire-and-forget).
+      // NÃO usa a RPC do pastor (upsert_church_cadastro_cristalino) —
+      // isso violaria a regra de separação Cockpit/CRM (CLAUDE.md).
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.')
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-contractor`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            church_id: churchId,
+            contractor_data: {
+              name:            form.name.trim(),
+              person_type:     form.person_type,
+              document_type:   form.document_type,
+              document_number: form.document_number.replace(/\D/g, ''),
+              role_label:      form.role_label.trim(),
+              email:           form.email.trim()  || null,
+              phone:           form.phone.trim()  || null,
+              notes:           form.notes.trim()  || null,
+            },
+          }),
+        }
+      )
+
+      const payload = await res.json() as { error?: string }
+      if (!res.ok) {
+        const errMsg = payload?.error ?? 'Erro ao salvar contratante.'
+        const display = errMsg.startsWith('validation_error:')
+          ? errMsg.replace('validation_error:', '').trim()
+          : errMsg
+        showToast({ ok: false, msg: display })
+        return
+      }
+
+      showToast({ ok: true, msg: 'Contratante salvo com sucesso.' })
+      void load()
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? 'Erro ao salvar contratante.'
+      showToast({ ok: false, msg })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loadState === 'loading') {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="w-5 h-5 border-2 border-[#e13500] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-sm text-red-700">
+        Erro ao carregar contratante. Tente recarregar a página.
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
+          toast.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {toast.ok
+            ? <CheckCircle2 size={16} className="text-green-600" />
+            : <XCircle     size={16} className="text-red-600"   />}
+          {toast.msg}
+        </div>
+      )}
+
+      {loadState === 'empty' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-amber-800">
+          Nenhum contratante ativo. O wizard Etapa 1 ainda não foi concluído.
+          Você pode preencher os dados abaixo para criar o primeiro contratante.
+        </div>
+      )}
+
+      {(loadState === 'ok' || loadState === 'empty') && (
+        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-800">
+            {contractor ? `Contratante ativo — ${contractor.name}` : 'Novo Contratante'}
+          </h3>
+
+          {/* Nome */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nome completo *</label>
+            <input
+              className={inputCls}
+              value={form.name}
+              disabled={saving}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            />
+            {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
+          </div>
+
+          {/* Tipo de pessoa */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de pessoa *</label>
+            <div className="flex gap-4">
+              {(['pf', 'pj'] as const).map(t => (
+                <label key={t} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="person_type"
+                    value={t}
+                    checked={form.person_type === t}
+                    disabled={saving}
+                    onChange={() => setForm(f => ({
+                      ...f,
+                      person_type:   t,
+                      document_type: t === 'pj' ? 'cnpj' : 'cpf',
+                    }))}
+                    className="accent-[#e13500]"
+                  />
+                  {t === 'pf' ? 'Pessoa Física' : 'Pessoa Jurídica'}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Tipo de documento */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de documento *</label>
+            <div className="flex gap-4">
+              {(['cpf', 'cnpj'] as const).map(t => (
+                <label key={t} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="document_type"
+                    value={t}
+                    checked={form.document_type === t}
+                    disabled={saving}
+                    onChange={() => setForm(f => ({ ...f, document_type: t }))}
+                    className="accent-[#e13500]"
+                  />
+                  {t.toUpperCase()}
+                </label>
+              ))}
+            </div>
+            {errors.document_type && <p className="text-xs text-red-600 mt-1">{errors.document_type}</p>}
+          </div>
+
+          {/* Número do documento */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Número do documento * {form.document_type === 'cpf' ? '(11 dígitos)' : '(14 dígitos)'}
+            </label>
+            <input
+              className={inputCls}
+              value={form.document_number}
+              disabled={saving}
+              onChange={e => setForm(f => ({ ...f, document_number: e.target.value }))}
+              placeholder={form.document_type === 'cpf' ? '000.000.000-00' : '00.000.000/0000-00'}
+            />
+            {errors.document_number && <p className="text-xs text-red-600 mt-1">{errors.document_number}</p>}
+          </div>
+
+          {/* Cargo */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Cargo / Função *</label>
+            <input
+              className={inputCls}
+              value={form.role_label}
+              disabled={saving}
+              onChange={e => setForm(f => ({ ...f, role_label: e.target.value }))}
+              placeholder="Ex: Pastor Titular, Tesoureiro..."
+            />
+            {errors.role_label && <p className="text-xs text-red-600 mt-1">{errors.role_label}</p>}
+          </div>
+
+          {/* E-mail */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">E-mail do contratante</label>
+            <input
+              className={inputCls}
+              type="email"
+              value={form.email}
+              disabled={saving}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            />
+          </div>
+
+          {/* Telefone */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Telefone</label>
+            <input
+              className={inputCls}
+              type="tel"
+              value={form.phone}
+              disabled={saving}
+              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            />
+          </div>
+
+          {/* Observações */}
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Observações</label>
+            <textarea
+              className={inputCls}
+              rows={3}
+              value={form.notes}
+              disabled={saving}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            />
+          </div>
+
+          {/* Botão salvar */}
+          <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+            <button
+              onClick={() => void save()}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+              style={{ background: 'var(--color-primary)' }}
+            >
+              {saving
+                ? <Loader size={14} strokeWidth={2} className="animate-spin" />
+                : <Save   size={14} strokeWidth={2} />}
+              {saving ? 'Salvando...' : 'Salvar Contratante'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── TabPastoral ────────────────────────────────────────────
+
+function TabPastoral({ churchId }: { churchId: string }) {
+  const [profile,        setProfile]        = useState<PastoralProfileRow | null>(null)
+  const [onboardingStep, setOnboardingStep] = useState<string | null>(null)
+  const [loadState,      setLoadState]      = useState<'loading' | 'error' | 'ok'>('loading')
+
+  const [form, setForm] = useState({
+    estilo_comunicacao:         '',
+    horarios_culto:             '',
+    maior_desafio:              '',
+    foco_pastoral_30_dias:      '',
+    algo_importante_comunidade: '',
+  })
+
+  const [saving, setSaving]  = useState(false)
+  const [toast,  setToast]   = useState<ToastState | null>(null)
+
+  function showToast(t: ToastState) {
+    setToast(t)
+    setTimeout(() => setToast(null), 3500)
+  }
+
+  async function load() {
+    setLoadState('loading')
+    const [profileRes, churchRes] = await Promise.all([
+      supabase
+        .from('church_pastoral_profile')
+        .select('*')
+        .eq('church_id', churchId)
+        .maybeSingle(),
+      supabase
+        .from('churches')
+        .select('onboarding_step')
+        .eq('id', churchId)
+        .maybeSingle(),
+    ])
+
+    if (profileRes.error || churchRes.error) { setLoadState('error'); return }
+
+    setOnboardingStep((churchRes.data as { onboarding_step?: string } | null)?.onboarding_step ?? null)
+
+    const p = profileRes.data as PastoralProfileRow | null
+    setProfile(p)
+    if (p) {
+      setForm({
+        estilo_comunicacao:         p.estilo_comunicacao         ?? '',
+        horarios_culto:             p.horarios_culto             ?? '',
+        maior_desafio:              p.maior_desafio              ?? '',
+        foco_pastoral_30_dias:      p.foco_pastoral_30_dias      ?? '',
+        algo_importante_comunidade: p.algo_importante_comunidade ?? '',
+      })
+    }
+    setLoadState('ok')
+  }
+
+  useEffect(() => { void load() }, [churchId])
+
+  async function save() {
+    setSaving(true)
+    try {
+      // Chama EF admin dedicada — valida is_ekthos_admin server-side
+      // e registra admin_events de forma síncrona (não fire-and-forget).
+      // NÃO usa a RPC do pastor (upsert_church_onboarding_pastoral) —
+      // essa RPC tem efeito colateral de mudar onboarding_step, o que
+      // o admin NÃO deve disparar. Regra de separação Cockpit/CRM (CLAUDE.md).
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada. Faça login novamente.')
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-pastoral-profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            church_id: churchId,
+            pastoral_data: {
+              estilo_comunicacao:         form.estilo_comunicacao         || null,
+              horarios_culto:             form.horarios_culto.trim()      || null,
+              maior_desafio:              form.maior_desafio.trim()       || null,
+              foco_pastoral_30_dias:      form.foco_pastoral_30_dias.trim()      || null,
+              algo_importante_comunidade: form.algo_importante_comunidade.trim() || null,
+            },
+          }),
+        }
+      )
+
+      const payload = await res.json() as { error?: string }
+      if (!res.ok) {
+        const errMsg = payload?.error ?? 'Erro ao salvar perfil pastoral.'
+        const display = errMsg.startsWith('validation_error:')
+          ? errMsg.replace('validation_error:', '').trim()
+          : errMsg
+        showToast({ ok: false, msg: display })
+        return
+      }
+
+      showToast({ ok: true, msg: 'Perfil pastoral salvo com sucesso.' })
+      void load()
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? 'Erro ao salvar perfil pastoral.'
+      showToast({ ok: false, msg })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const stepBadge = () => {
+    if (!onboardingStep) return null
+    const map: Record<string, { label: string; cls: string }> = {
+      pending:   { label: 'Pendente',  cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+      pastoral:  { label: 'Pastoral',  cls: 'bg-blue-50 text-blue-700 border-blue-200'       },
+      completed: { label: 'Concluído', cls: 'bg-green-50 text-green-700 border-green-200'    },
+    }
+    const badge = map[onboardingStep] ?? { label: onboardingStep, cls: 'bg-gray-100 text-gray-600 border-gray-200' }
+    return (
+      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${badge.cls}`}>
+        {badge.label}
+      </span>
+    )
+  }
+
+  if (loadState === 'loading') {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="w-5 h-5 border-2 border-[#e13500] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-sm text-red-700">
+        Erro ao carregar perfil pastoral. Tente recarregar a página.
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${
+          toast.ok ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
+        }`}>
+          {toast.ok
+            ? <CheckCircle2 size={16} className="text-green-600" />
+            : <XCircle     size={16} className="text-red-600"   />}
+          {toast.msg}
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-800">
+            {profile ? 'Editar Perfil Pastoral' : 'Perfil Pastoral (não preenchido ainda)'}
+          </h3>
+          {stepBadge()}
+        </div>
+
+        {/* Estilo de comunicação */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Estilo de comunicação</label>
+          <div className="flex gap-4 flex-wrap">
+            {(['formal', 'intermediario', 'casual'] as const).map(v => (
+              <label key={v} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="estilo_comunicacao"
+                  value={v}
+                  checked={form.estilo_comunicacao === v}
+                  disabled={saving}
+                  onChange={() => setForm(f => ({ ...f, estilo_comunicacao: v }))}
+                  className="accent-[#e13500]"
+                />
+                {v === 'formal' ? 'Formal' : v === 'intermediario' ? 'Intermediário' : 'Casual'}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Horários dos cultos */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Horários dos cultos</label>
+          <textarea
+            className={inputCls}
+            rows={2}
+            value={form.horarios_culto}
+            disabled={saving}
+            onChange={e => setForm(f => ({ ...f, horarios_culto: e.target.value }))}
+            placeholder="Ex: Domingo 9h e 18h, Quarta 19h30..."
+          />
+        </div>
+
+        {/* Maior desafio */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Maior desafio pastoral</label>
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={form.maior_desafio}
+            disabled={saving}
+            onChange={e => setForm(f => ({ ...f, maior_desafio: e.target.value }))}
+            placeholder="Descreva o principal desafio da congregação..."
+          />
+        </div>
+
+        {/* Foco 30 dias */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Foco pastoral nos próximos 30 dias</label>
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={form.foco_pastoral_30_dias}
+            disabled={saving}
+            onChange={e => setForm(f => ({ ...f, foco_pastoral_30_dias: e.target.value }))}
+            placeholder="O que a liderança está priorizando no próximo mês..."
+          />
+        </div>
+
+        {/* Algo importante */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Algo importante sobre a comunidade</label>
+          <textarea
+            className={inputCls}
+            rows={3}
+            value={form.algo_importante_comunidade}
+            disabled={saving}
+            onChange={e => setForm(f => ({ ...f, algo_importante_comunidade: e.target.value }))}
+            placeholder="Contexto cultural, histórico ou especificidades da congregação..."
+          />
+        </div>
+
+        {/* Botão salvar */}
+        <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
+          <button
+            onClick={() => void save()}
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50"
+            style={{ background: 'var(--color-primary)' }}
+          >
+            {saving
+              ? <Loader size={14} strokeWidth={2} className="animate-spin" />
+              : <Save   size={14} strokeWidth={2} />}
+            {saving ? 'Salvando...' : 'Salvar Perfil Pastoral'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── TabResumo ──────────────────────────────────────────────
 
 function TabResumo({ data }: { data: ChurchDetail }) {
   return (
@@ -787,8 +1386,6 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
 function TabCadastro({ churchId }: { churchId: string }) {
   const { fields, update, loading, saving, dirty, toast, save } = useChurchIdentity(churchId)
 
-  const inputCls = 'w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#e13500]/30 focus:border-[#e13500] transition-colors'
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -1067,15 +1664,17 @@ export default function AdminChurch() {
       </div>
 
       {/* Conteúdo da tab */}
-      {tab === 'resumo'     && <TabResumo      data={data} />}
-      {tab === 'cadastro'   && <TabCadastro    churchId={id ?? ''} />}
-      {tab === 'assinatura' && <TabAssinatura  data={data} />}
-      {tab === 'operacao'   && <TabOperacao    data={data} onAgentChange={load} />}
-      {tab === 'saude'      && <TabSaude       data={data} />}
-      {tab === 'financeiro' && <TabFinanceiro  data={data} />}
-      {tab === 'pricing'    && <TabPricing data={data} churchId={id ?? ''} onSaved={load} />}
-      {tab === 'notas'      && <TabNotas   data={data} churchId={id ?? ''} onSaved={load} />}
-      {tab === 'logs'       && <TabLogs        data={data} onImpersonate={startImpersonate} />}
+      {tab === 'resumo'       && <TabResumo       data={data} />}
+      {tab === 'cadastro'     && <TabCadastro     churchId={id ?? ''} />}
+      {tab === 'contratante'  && <TabContratante  churchId={id ?? ''} />}
+      {tab === 'pastoral'     && <TabPastoral     churchId={id ?? ''} />}
+      {tab === 'assinatura'   && <TabAssinatura   data={data} />}
+      {tab === 'operacao'     && <TabOperacao     data={data} onAgentChange={load} />}
+      {tab === 'saude'        && <TabSaude        data={data} />}
+      {tab === 'financeiro'   && <TabFinanceiro   data={data} />}
+      {tab === 'pricing'      && <TabPricing data={data} churchId={id ?? ''} onSaved={load} />}
+      {tab === 'notas'        && <TabNotas   data={data} churchId={id ?? ''} onSaved={load} />}
+      {tab === 'logs'         && <TabLogs         data={data} onImpersonate={startImpersonate} />}
     </div>
   )
 }

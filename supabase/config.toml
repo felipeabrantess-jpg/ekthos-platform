@@ -107,6 +107,12 @@ verify_jwt = false   # JWT validado manualmente — admin only
 [functions.coupon-validate]
 verify_jwt = false   # Auth condicional: anônimo p/ landing, JWT p/ cockpit_assisted
 
+[functions.admin-update-contractor]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-update-pastoral-profile]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
 # ── Auth — configurações de produção ─────────────────────────────────────────
 [auth]
 site_url = "https://ekthos-platform.vercel.app"

@@ -594,6 +594,24 @@ export default function Onboarding() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading, streamingContent, logoConfirm])
 
+  // Guard: se church já está no wizard (step pending/pastoral), redireciona
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return
+      const churchId = session.user.app_metadata?.church_id as string | undefined
+      if (!churchId) return
+      const { data } = await supabase
+        .from('churches')
+        .select('onboarding_step')
+        .eq('id', churchId)
+        .maybeSingle()
+      const step = (data as { onboarding_step: string } | null)?.onboarding_step
+      if (step === 'pending' || step === 'pastoral') {
+        navigate('/onboarding/wizard')
+      }
+    })
+  }, [navigate])
+
   async function sendMessage(text?: string) {
     const content = (text ?? input).trim()
     if (!content || loading) return
