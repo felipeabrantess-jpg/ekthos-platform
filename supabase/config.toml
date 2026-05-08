@@ -113,6 +113,15 @@ verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
 [functions.admin-update-pastoral-profile]
 verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
 
+[functions.admin-set-ekthos-roles]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-start-impersonation]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-end-impersonation]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
 # ── Auth — configurações de produção ─────────────────────────────────────────
 [auth]
 site_url = "https://ekthos-platform.vercel.app"
