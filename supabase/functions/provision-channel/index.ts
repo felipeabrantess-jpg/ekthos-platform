@@ -202,6 +202,30 @@ Deno.serve(async (req: Request) => {
     error_message:   finalErrorMessage,
   })
 
+  // ── Record audit event ────────────────────────────────────────────────────
+
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id: channel.church_id,
+    p_admin_user_id: adminUser.id,
+    p_action: 'channel.provision',
+    p_before: { status: 'pending' },
+    p_after: { status: finalStatus, error_message: finalErrorMessage },
+    p_reason: `Provisioning via n8n — provider: ${channel.provider}`,
+    p_actor_email: adminUser.email ?? null,
+    p_actor_roles: (adminUser.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource: 'church_channels',
+    p_resource_id: channelId,
+    p_status: finalErrorMessage ? 'error' : 'success',
+    p_error_msg: finalErrorMessage,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id: channel.church_id,
+    p_source: 'cockpit',
+    p_request_id: requestId,
+  })
+  if (auditErr) console.error('[provision-channel] audit failed:', auditErr.message)
+
   return json({
     channel_id:    channelId,
     status:        finalStatus,

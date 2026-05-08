@@ -90,6 +90,30 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (error) { console.error('[admin-notes-crud] POST', error); return jsonError(CORS) }
+
+    // Audit: church.note.create
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                body.church_id as string,
+      p_admin_user_id:            user.id,
+      p_action:                   'church.note.create',
+      p_before:                   null,
+      p_after:                    data ?? null,
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'church_notes',
+      p_resource_id:              data?.id ?? null,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   body.church_id as string,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
+    })
+    if (auditErr) console.error('[admin-notes-crud] audit failed (create):', auditErr.message)
+
     return json(data, 201)
   }
 
@@ -100,6 +124,15 @@ Deno.serve(async (req: Request) => {
 
     if (!body.id) return json({ error: 'id é obrigatório' }, 400)
 
+    // Fetch nota antes de deletar (para p_before)
+    const { data: beforeData, error: fetchErr } = await supabase
+      .from('church_notes')
+      .select('*')
+      .eq('id', body.id as string)
+      .single()
+
+    if (fetchErr) { console.error('[admin-notes-crud] DELETE fetch', fetchErr); return jsonError(CORS) }
+
     // Garante que só o autor pode deletar (ou qualquer admin — aqui qualquer admin)
     const { error } = await supabase
       .from('church_notes')
@@ -107,6 +140,30 @@ Deno.serve(async (req: Request) => {
       .eq('id', body.id as string)
 
     if (error) { console.error('[admin-notes-crud] DELETE', error); return jsonError(CORS) }
+
+    // Audit: church.note.delete
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                beforeData?.church_id ?? null,
+      p_admin_user_id:            user.id,
+      p_action:                   'church.note.delete',
+      p_before:                   beforeData ?? null,
+      p_after:                    null,
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'church_notes',
+      p_resource_id:              beforeData?.id ?? null,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   beforeData?.church_id ?? null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
+    })
+    if (auditErr) console.error('[admin-notes-crud] audit failed (delete):', auditErr.message)
+
     return json({ ok: true })
   }
 

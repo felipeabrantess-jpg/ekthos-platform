@@ -270,12 +270,15 @@ Deno.serve(async (req: Request) => {
     console.warn('[admin-church-create] Falha ao atualizar app_metadata (não fatal):', metaErr.message)
   }
 
-  // ── 9. Registra evento ────────────────────────────────────
-  await supabase.from('admin_events').insert({
-    church_id:     church.id,
-    admin_user_id: user.id,
-    action:        'church_created',
-    after: {
+  // ── 9. Registra evento via record_audit_event ──────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                church.id,
+    p_admin_user_id:            user.id,
+    p_action:                   'church.create',
+    p_before:                   null,
+    p_after: {
       name:                    churchName,
       plan_slug:               planSlug,
       admin_email:             pastorEmail,
@@ -285,8 +288,19 @@ Deno.serve(async (req: Request) => {
       trial_days:              7,
       custom_plan_price_cents,
     },
-    reason: 'Criação manual via cockpit admin — trial manual 7 dias',
+    p_reason:                   'Criação manual via cockpit admin — trial manual 7 dias',
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'churches',
+    p_resource_id:              church.id,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   church.id,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
+  if (auditErr) console.error('[admin-church-create] audit failed:', auditErr.message)
 
   return json({
     success:     true,

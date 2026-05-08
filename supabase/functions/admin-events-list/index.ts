@@ -73,5 +73,28 @@ Deno.serve(async (req: Request) => {
     return jsonError(CORS)
   }
 
+  // Audit: admin_events.list
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                null,
+    p_admin_user_id:            user.id,
+    p_action:                   'admin_events.list',
+    p_before:                   null,
+    p_after:                    null,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'admin_events',
+    p_resource_id:              null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   null,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-events-list] audit failed:', auditErr.message)
+
   return json({ data: data ?? [], total: data?.length ?? 0 })
 })
