@@ -1,6 +1,6 @@
 // ============================================================
 // Edge Function: admin-coupon-create
-// Cria cupom no Stripe LIVE e persiste em stripe_coupons
+// Cria coupon + promotion code no Stripe LIVE e persiste em stripe_coupons
 // Acesso: APENAS ekthos_admin
 // ============================================================
 
@@ -34,22 +34,33 @@ function rand6(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
-async function stripePost(path: string, params: Record<string, string>) {
-  const body = new URLSearchParams(params)
-  const res = await fetch(`https://api.stripe.com${path}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: body.toString(),
-  })
-  return res.json()
+const STRIPE_HEADERS = {
+  Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+  'Content-Type': 'application/x-www-form-urlencoded',
+  'Stripe-Version': '2024-06-20',
+}
+
+async function stripeRequest(method: string, path: string, params?: Record<string, string>) {
+  const options: RequestInit = {
+    method,
+    headers: STRIPE_HEADERS,
+  }
+  if (params) {
+    options.body = new URLSearchParams(params).toString()
+  }
+  const res = await fetch(`https://api.stripe.com${path}`, options)
+  const data = await res.json()
+  return { ok: res.ok, status: res.status, data }
 }
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST') return json({ error: 'Method Not Allowed' }, 405)
+
+  // ── Guarda: Stripe LIVE obrigatório ──────────────────────────
+  if (!STRIPE_SECRET_KEY?.startsWith('sk_live_')) {
+    return json({ error: 'Stripe key não está em modo LIVE. Configure STRIPE_SECRET_KEY com sk_live_.' }, 500)
+  }
 
   // ── Auth: valida JWT e confirma ekthos_admin ──────────────
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
@@ -108,7 +119,7 @@ Deno.serve(async (req: Request) => {
   const couponId = code?.trim().toUpperCase() ||
     `EKTHOS_${Date.now().toString(36).toUpperCase()}_${rand6()}`
 
-  // ── Cria no Stripe ─────────────────────────────────────────
+  // ── 1. Cria Coupon no Stripe ─────────────────────────────────
   const stripeParams: Record<string, string> = {
     id: couponId,
     currency,
@@ -129,12 +140,35 @@ Deno.serve(async (req: Request) => {
     stripeParams[`metadata[${k}]`] = v
   })
 
-  const stripeCoupon = await stripePost('/v1/coupons', stripeParams)
-  if (stripeCoupon.error) {
-    return json({ error: 'Erro Stripe: ' + stripeCoupon.error.message }, 400)
+  const couponRes = await stripeRequest('POST', '/v1/coupons', stripeParams)
+  if (!couponRes.ok || couponRes.data.error) {
+    return json({
+      error: 'stripe_coupon_failed',
+      stripe_error: couponRes.data.error?.message ?? `HTTP ${couponRes.status}`,
+    }, 400)
+  }
+  const stripeCoupon = couponRes.data
+
+  // ── 2. Cria PromotionCode no Stripe (mesmo código para prefilled_promo_code) ──
+  const promoRes = await stripeRequest('POST', '/v1/promotion_codes', {
+    coupon: couponId,
+    code: couponId,
+    'metadata[admin_id]': user.id,
+    'metadata[created_by_ef]': 'admin-coupon-create',
+  })
+
+  let stripePromoCodeId: string | null = null
+  let stripePromoCode: string | null = null
+
+  if (promoRes.ok && !promoRes.data.error) {
+    stripePromoCodeId = promoRes.data.id   // promo_XXXX
+    stripePromoCode   = promoRes.data.code // "AMIGO_PILOTO_R1" — o que o cliente digita
+  } else {
+    // PromotionCode falhou — não bloqueia, mas loga
+    console.warn('[admin-coupon-create] promo code creation failed:', promoRes.data.error?.message)
   }
 
-  // ── Persiste em stripe_coupons ─────────────────────────────
+  // ── 3. Persiste em stripe_coupons ─────────────────────────────────────────
   const { error: insertErr } = await supabase.from('stripe_coupons').insert({
     id: stripeCoupon.id,
     name: name.trim(),
@@ -152,34 +186,47 @@ Deno.serve(async (req: Request) => {
     livemode: stripeCoupon.livemode,
     created_by: user.id,
     last_synced_at: new Date().toISOString(),
+    stripe_promo_code_id: stripePromoCodeId,
+    promo_code: stripePromoCode,
   } as any)
 
   if (insertErr) {
-    console.error('[admin-coupon-create] insert error:', insertErr.message)
-    return json({ error: 'Cupom criado no Stripe mas falhou ao persistir: ' + insertErr.message }, 500)
+    // Rollback: deleta coupon e promo code no Stripe para evitar drift
+    console.error('[admin-coupon-create] insert error, rolling back Stripe:', insertErr.message)
+    await stripeRequest('DELETE', `/v1/coupons/${couponId}`)
+    if (stripePromoCodeId) {
+      // PromotionCodes não têm DELETE direto — desativar via update
+      await stripeRequest('POST', `/v1/promotion_codes/${stripePromoCodeId}`, { active: 'false' })
+    }
+    return json({
+      error: 'db_insert_failed',
+      detail: 'Cupom criado no Stripe mas falhou ao persistir. Rollback executado.',
+    }, 500)
   }
 
-  // ── Audit event ────────────────────────────────────────────
+  // ── 4. Audit event ────────────────────────────────────────────
   await supabase.rpc('record_audit_event', {
     p_church_id:                null,
     p_admin_user_id:            user.id,
     p_action:                   'coupon.created',
     p_before:                   null,
     p_after: {
-      coupon_id:        stripeCoupon.id,
-      name:             name.trim(),
+      coupon_id:            stripeCoupon.id,
+      name:                 name.trim(),
       discount_type,
-      amount_off:       amount_off ?? null,
-      percent_off:      percent_off ?? null,
+      amount_off:           amount_off ?? null,
+      percent_off:          percent_off ?? null,
       duration,
-      max_redemptions:  max_redemptions ?? null,
-      livemode:         stripeCoupon.livemode,
+      max_redemptions:      max_redemptions ?? null,
+      livemode:             stripeCoupon.livemode,
+      stripe_promo_code_id: stripePromoCodeId,
+      promo_code:           stripePromoCode,
     },
     p_reason:                   'Cupom criado via cockpit admin',
     p_actor_email:              user.email ?? null,
     p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
     p_resource:                 'coupon',
-    p_resource_id:              null, // coupon_id é text não uuid — incluído em p_after
+    p_resource_id:              null,
     p_status:                   'success',
     p_error_msg:                null,
     p_impersonation_session_id: null,
@@ -188,11 +235,17 @@ Deno.serve(async (req: Request) => {
     p_request_id:               req.headers.get('x-request-id') ?? null,
   })
 
+  // Usa promo code se criado, senão cai de volta no coupon ID
+  const codeForLink = stripePromoCode ?? couponId
+
   return json({
-    coupon_id: stripeCoupon.id,
-    code: stripeCoupon.id,
-    livemode: stripeCoupon.livemode,
-    valid: stripeCoupon.valid,
-    payment_link_with_coupon: `https://buy.stripe.com/7sY9AT69n4Gw7EZ4AT5os00?prefilled_promo_code=${stripeCoupon.id}`,
+    coupon_id:            stripeCoupon.id,
+    code:                 stripeCoupon.id,
+    promo_code:           stripePromoCode,
+    stripe_promo_code_id: stripePromoCodeId,
+    livemode:             stripeCoupon.livemode,
+    valid:                stripeCoupon.valid,
+    payment_link_chamado:    `https://buy.stripe.com/7sY9AT69n4Gw7EZ4AT5os00?prefilled_promo_code=${codeForLink}`,
+    payment_link_acolhimento: `https://buy.stripe.com/cNibJ1fJX5KA1gB6J15os01?prefilled_promo_code=${codeForLink}`,
   }, 201)
 })

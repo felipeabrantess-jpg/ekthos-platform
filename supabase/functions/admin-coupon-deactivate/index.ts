@@ -62,11 +62,26 @@ Deno.serve(async (req: Request) => {
   if (!coupon) return json({ error: 'Cupom não encontrado' }, 404)
   if (!coupon.active) return json({ error: 'Cupom já está arquivado' }, 400)
 
-  // ── Deleta no Stripe ─────────────────────────────────────────
+  const stripeHeaders = {
+    Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Stripe-Version': '2024-06-20',
+  }
+
+  // ── Desativa PromotionCode no Stripe (se existir) ────────────
+  if (coupon.stripe_promo_code_id) {
+    await fetch(`https://api.stripe.com/v1/promotion_codes/${coupon.stripe_promo_code_id}`, {
+      method: 'POST',
+      headers: stripeHeaders,
+      body: 'active=false',
+    }).catch(() => { /* não bloqueia se falhar */ })
+  }
+
+  // ── Deleta Coupon no Stripe ───────────────────────────────────
   // Stripe só aceita DELETE — cupons já usados continuam válidos nas subs existentes
   const stripeRes = await fetch(`https://api.stripe.com/v1/coupons/${coupon_id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${STRIPE_SECRET_KEY}` },
+    headers: stripeHeaders,
   })
   const stripeData = await stripeRes.json()
 
