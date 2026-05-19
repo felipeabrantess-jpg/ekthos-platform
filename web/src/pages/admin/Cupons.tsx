@@ -5,7 +5,7 @@
  * Permite criar, listar, ver detalhes e arquivar cupons LIVE.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Tag, Plus, RefreshCw, Copy, ExternalLink, Archive,
   CheckCircle, AlertCircle, X, ChevronDown, Loader,
@@ -87,8 +87,51 @@ function formatDateTime(iso: string) {
   })
 }
 
-function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text).catch(() => {})
+// ── Toast ────────────────────────────────────────────────────
+
+interface ToastState { msg: string; type: 'success' | 'error'; key: number }
+
+function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 4000)
+    return () => clearTimeout(t)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm max-w-sm border"
+      style={{
+        background: type === 'success' ? '#f0fdf4' : '#fef2f2',
+        borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
+        color: type === 'success' ? '#166534' : '#991b1b',
+      }}
+    >
+      {type === 'success'
+        ? <CheckCircle size={16} className="shrink-0" />
+        : <AlertCircle size={16} className="shrink-0" />}
+      <span>{msg}</span>
+      <button onClick={onClose} className="ml-auto opacity-50 hover:opacity-100"><X size={14} /></button>
+    </div>
+  )
+}
+
+// ── Copy ─────────────────────────────────────────────────────
+
+async function copyToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    // fallback para ambientes sem clipboard API (iframe, http)
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.focus()
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+  }
 }
 
 // ── StatusBadge ────────────────────────────────────────────────────────────
@@ -143,7 +186,13 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [created, setCreated] = useState<{ id: string; payment_link_with_coupon: string } | null>(null)
+  const [created, setCreated] = useState<{ id: string; payment_link_chamado: string; payment_link_acolhimento: string; promo_code: string | null } | null>(null)
+  const [copyToast, setCopyToast] = useState<ToastState | null>(null)
+
+  async function handleCopy(text: string, label: string) {
+    await copyToClipboard(text)
+    setCopyToast({ msg: `${label} copiado!`, type: 'success', key: Date.now() })
+  }
 
   function field(key: keyof typeof form) {
     return {
@@ -199,7 +248,9 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
   const labelCls = 'block text-xs font-semibold text-gray-700 mb-1'
 
   if (created) {
-    const msg = `Olá! Temos uma condição especial pra você começar no Ekthos.\n\nAcesse o link abaixo e use o cupom *${created.id}* no campo de código promocional:\n\n${created.payment_link_with_coupon}`
+    const linkChamado = created.payment_link_chamado ?? ''
+    const codeForMsg  = created.promo_code ?? created.id
+    const msg = `Olá! Temos uma condição especial pra você começar no Ekthos.\n\nAcesse o link abaixo e use o cupom *${codeForMsg}* no campo de código promocional:\n\n${linkChamado}`
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full space-y-5">
@@ -209,7 +260,7 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">Cupom criado!</h3>
-              <p className="text-xs text-gray-500">Ativo no Stripe LIVE</p>
+              <p className="text-xs text-gray-500">Ativo no Stripe LIVE + Promotion Code gerado</p>
             </div>
           </div>
 
@@ -217,23 +268,32 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-500">Código</span>
               <div className="flex items-center gap-2">
-                <code className="text-sm font-bold text-[#e13500] font-mono">{created.id}</code>
-                <button onClick={() => copyToClipboard(created.id)} className="text-gray-400 hover:text-gray-600">
+                <code className="text-sm font-bold text-[#e13500] font-mono">{codeForMsg}</code>
+                <button onClick={() => handleCopy(codeForMsg, 'Código')} className="text-gray-400 hover:text-gray-600">
                   <Copy size={13} />
                 </button>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-500">Payment Link</span>
-              <a href={created.payment_link_with_coupon} target="_blank" rel="noreferrer"
+              <span className="text-xs text-gray-500">Link Plano Chamado</span>
+              <a href={linkChamado} target="_blank" rel="noreferrer"
                 className="text-xs text-[#e13500] hover:underline flex items-center gap-1">
                 Abrir <ExternalLink size={11} />
               </a>
             </div>
+            {created.payment_link_acolhimento && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Link Acolhimento</span>
+                <a href={created.payment_link_acolhimento} target="_blank" rel="noreferrer"
+                  className="text-xs text-[#e13500] hover:underline flex items-center gap-1">
+                  Abrir <ExternalLink size={11} />
+                </a>
+              </div>
+            )}
           </div>
 
           <button
-            onClick={() => copyToClipboard(msg)}
+            onClick={() => handleCopy(msg, 'Mensagem WhatsApp')}
             className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold border-2 border-[#e13500] text-[#e13500] hover:bg-[#e13500]/5 transition-colors flex items-center justify-center gap-2"
           >
             <Copy size={14} />
@@ -247,6 +307,11 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
             Fechar
           </button>
         </div>
+
+        {/* Toast de cópia */}
+        {copyToast && (
+          <Toast key={copyToast.key} msg={copyToast.msg} type={copyToast.type} onClose={() => setCopyToast(null)} />
+        )}
       </div>
     )
   }
@@ -400,9 +465,9 @@ function CouponDetailModal({
     onClose()
   }
 
-  function copyLink() {
+  async function copyLink() {
     if (!data) return
-    copyToClipboard(data.payment_link_with_coupon)
+    await copyToClipboard(data.payment_link_with_coupon)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
