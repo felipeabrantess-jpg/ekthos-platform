@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare, Zap } from 'lucide-react'
+import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare, Zap, Ticket } from 'lucide-react'
 import { useLogout } from '@/hooks/useAuth'
 import { usePendingActivations } from '@/hooks/usePendingActivations'
 
@@ -94,6 +94,11 @@ export default function AdminLayout() {
             label="Ativações"
             icon={<Zap size={16} strokeWidth={1.75} />}
             badge={pendingCount}
+          />
+          <NavItem
+            to="/admin/cockpit/cupons"
+            label="Cupons"
+            icon={<Ticket size={16} strokeWidth={1.75} />}
           />
 
           {/* Logout */}
