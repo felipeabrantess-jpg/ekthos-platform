@@ -65,6 +65,7 @@ const CSS_KEYFRAMES = `
 @keyframes orbPulse{0%,100%{box-shadow:0 0 0 12px rgba(59,130,246,0.08),0 0 0 28px rgba(59,130,246,0.04),0 0 60px rgba(59,130,246,0.35)}50%{box-shadow:0 0 0 18px rgba(59,130,246,0.12),0 0 0 40px rgba(59,130,246,0.06),0 0 90px rgba(59,130,246,0.5)}}
 @keyframes orbitRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes floatCard{0%,100%{transform:translate(-50%,-50%) translateY(0)}50%{transform:translate(-50%,-50%) translateY(-8px)}}
+@keyframes floatBubble{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes waveBar{0%,100%{transform:scaleY(0.3);opacity:0.4}50%{transform:scaleY(1);opacity:0.9}}
 @keyframes travelLine{0%{background-position:-30% 0}100%{background-position:130% 0}}
 @keyframes waPulse{0%,100%{box-shadow:0 0 0 0 rgba(37,211,102,0.4)}50%{box-shadow:0 0 0 8px rgba(37,211,102,0)}}
@@ -188,7 +189,7 @@ function AvatarIASection() {
               IA Pastoral Operando
             </div>
             <div className="absolute bottom-10 -right-4 z-20 px-3 py-2 rounded-xl text-xs text-white max-w-[148px]"
-              style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', animation: 'floatCard 5s ease-in-out infinite', animationDelay: '1s' }}>
+              style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', animation: 'floatBubble 5s ease-in-out infinite', animationDelay: '1s' }}>
               "Visitante João acolhido — D+3 agendado"
             </div>
           </div>
@@ -1148,7 +1149,7 @@ export default function Landing() {
       </section>
 
       {/* ── FOOTER ─────────────────────────────────────────── */}
-      <footer style={{ background: '#071525' }} className="w-full border-t" style={{ borderColor: 'rgba(59,130,246,0.1)' }}>
+      <footer className="w-full border-t" style={{ background: '#071525', borderColor: 'rgba(59,130,246,0.1)' }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
