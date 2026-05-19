@@ -1,31 +1,26 @@
 // ============================================================
-// Landing Page — Ekthos Church
-// Skills: ekthos-frontend + landing-page-ekthos
-// Design: bg-white, cream sections, vermelho var(--color-primary)
-// Rebuilt 2026-04-22: alternating layouts, no icon circles,
-// no CSS mockups, no fake numbers, Preview MCP validated
+// Landing Page — Ekthos Church (Premium Evolution)
+// feat/landing-premium-evolucao — 2026-05-19
+// Design: dark-first, glassmorfismo, orbital hero, CSS animations only
 // ============================================================
 
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Check, ChevronDown, Menu, X, Star, Zap, Crown,
-  Users, BarChart2,
-  Bot, MessageCircle, Bell, Shield, TrendingUp,
-  UserPlus, ShieldCheck, Smartphone, DollarSign,
+  Users, BarChart2, Bot, MessageCircle, Bell, Shield,
+  TrendingUp, UserPlus, ShieldCheck, Smartphone, DollarSign,
+  ArrowRight,
 } from 'lucide-react'
 import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
 import LogoEkthos from '@/components/LogoEkthos'
 
-// ── Env ────────────────────────────────────────────────────
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-
-// ── Pagamentos & contato ───────────────────────────────────
-const CHAMADO_PAYMENT_LINK    = 'https://buy.stripe.com/7sY9AT69n4Gw7EZ4AT5os00'
+// ── Env & Pagamentos ───────────────────────────────────────
+const SUPABASE_URL             = import.meta.env.VITE_SUPABASE_URL as string
+const CHAMADO_PAYMENT_LINK     = 'https://buy.stripe.com/7sY9AT69n4Gw7EZ4AT5os00'
 const ACOLHIMENTO_PAYMENT_LINK = 'https://buy.stripe.com/cNibJ1fJX5KA1gB6J15os01'
-const WA_NUMBER = '5521966487878'
-const WA_BASE   = `https://wa.me/${WA_NUMBER}`
-function waLink(text: string) { return `${WA_BASE}?text=${encodeURIComponent(text)}` }
+const WA_BASE = 'https://wa.me/5521966487878'
+function waLink(t: string) { return `${WA_BASE}?text=${encodeURIComponent(t)}` }
 const WA = {
   hero:          waLink('Olá! Quero conhecer o Ekthos Church'),
   missao:        waLink('Olá! Tenho interesse no plano Missão do Ekthos Church'),
@@ -40,192 +35,187 @@ const WA = {
   cta:           waLink('Olá! Quero começar com o Ekthos Church. Podem me ajudar?'),
 }
 
-// ── Ekthos Cross — canal duplo, funciona em fundo claro ────
-const EKTHOS_CROSS = (
-  <svg width="38" height="38" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-    {/* Linha externa da cruz */}
-    <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z"
-      stroke="var(--color-primary)" strokeWidth="2.5" strokeLinejoin="round"/>
-    {/* Linha interna — cria o canal duplo característico */}
-    <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z"
-      stroke="var(--color-primary-dark)" strokeWidth="1.5" strokeLinejoin="round" opacity="0.7"/>
-  </svg>
-)
-
+// ── SVGs ───────────────────────────────────────────────────
 const WA_ICON = (
   <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden>
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
   </svg>
 )
 
+// ── Intersection Observer hook ─────────────────────────────
+function useInView(threshold = 0.15) {
+  const ref = useRef<HTMLElement>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [threshold])
+  return { ref, visible }
+}
+
 // ── UTMs ───────────────────────────────────────────────────
 function getUtmParams() {
   const p = new URLSearchParams(window.location.search)
-  return {
-    source:   p.get('utm_source')   ?? '',
-    medium:   p.get('utm_medium')   ?? '',
-    campaign: p.get('utm_campaign') ?? '',
-    content:  p.get('utm_content')  ?? '',
-  }
+  return { source: p.get('utm_source') ?? '', medium: p.get('utm_medium') ?? '', campaign: p.get('utm_campaign') ?? '', content: p.get('utm_content') ?? '' }
 }
 
 // ── FAQ ────────────────────────────────────────────────────
 const FAQ_ITEMS = [
-  {
-    q: 'Preciso ter conhecimento técnico para usar o Ekthos Church?',
-    a: 'Não. O Ekthos Church foi projetado para pastores e líderes, não para programadores. A interface é intuitiva e o onboarding é guiado por um assistente que configura tudo por você em menos de 30 minutos.',
-  },
-  {
-    q: 'Meus dados ficam seguros?',
-    a: 'Sim. Utilizamos infraestrutura de nível bancário (Supabase + PostgreSQL com criptografia em repouso e em trânsito). Seus membros e dados pastorais ficam 100% privados e você pode exportar tudo a qualquer momento.',
-  },
-  {
-    q: 'Como funciona o onboarding?',
-    a: 'Após contratar, você recebe acesso imediato. Nosso Agente de Onboarding — um assistente com IA — guia você em 20 perguntas simples e configura todo o CRM em menos de 30 minutos.',
-  },
-  {
-    q: 'Os agentes de IA realmente funcionam para igrejas?',
-    a: 'Sim. Os agentes foram treinados com conhecimento pastoral e entendem o contexto da liderança evangélica. Eles falam a língua do pastor, não do desenvolvedor.',
-  },
-  {
-    q: 'Quantos membros posso cadastrar?',
-    a: 'Não há limite de membros cadastrados em nenhum plano. O número de usuários refere-se à equipe com acesso administrativo ao sistema, não ao número de membros da igreja.',
-  },
-  {
-    q: 'O que inclui o módulo de Voluntários?',
-    a: 'O módulo Volunteer Pro inclui organização de equipes, escalas automáticas com IA, confirmação de presença via WhatsApp, check-in/check-out e métricas de engajamento. Está incluso no plano Avivamento.',
-  },
-  {
-    q: 'Como funciona o aplicativo próprio da igreja?',
-    a: 'No plano Avivamento, sua igreja recebe um aplicativo exclusivo com sua identidade visual — logo, cores e nome. Seus membros baixam e acessam eventos, células, pedidos de oração e comunicados diretamente pelo celular.',
-  },
-  {
-    q: 'Como funciona a consultoria nos planos Missão e Avivamento?',
-    a: 'Ao solicitar contato, um consultor pastoral entra em contato em até 24h para entender a realidade da sua igreja e apresentar uma proposta personalizada. O processo é guiado e sem pressão.',
-  },
+  { q: 'O que exatamente fazem os agentes de IA do Ekthos Church?', a: 'Os agentes operam 24 horas por dia usando os dados do CRM da sua igreja. O Agente de Acolhimento aborda novos visitantes no WhatsApp automaticamente; o Agente de Reengajamento identifica pessoas que esfriaram e as reconecta. Tudo sem intervenção manual.' },
+  { q: 'Preciso ter conhecimento técnico para usar o Ekthos Church?', a: 'Não. O Ekthos Church foi projetado para pastores e líderes, não para programadores. A interface é intuitiva e o onboarding é guiado por um assistente que configura tudo por você em menos de 30 minutos.' },
+  { q: 'Os agentes Acolhimento e Reengajamento já estão disponíveis?', a: 'Sim. Ambos estão operacionais e em produção. O Agente de Acolhimento foi validado em ambiente real e o Agente de Reengajamento roda com cron autônomo. O Agente de Operação estará disponível em breve (Sprint 2B).' },
+  { q: 'Meus dados ficam seguros?', a: 'Sim. Utilizamos infraestrutura de nível bancário (Supabase + PostgreSQL com criptografia em repouso e em trânsito). Seus membros e dados pastorais ficam 100% privados e você pode exportar tudo a qualquer momento.' },
+  { q: 'Como funciona o onboarding?', a: 'Após contratar, você recebe acesso imediato. Nosso Agente de Onboarding guia você em 20 perguntas simples e configura todo o CRM em menos de 30 minutos.' },
+  { q: 'Quantos membros posso cadastrar?', a: 'Não há limite de membros cadastrados em nenhum plano. O número de usuários refere-se à equipe com acesso administrativo ao sistema.' },
+  { q: 'Qual a diferença do Ekthos Church para um CRM comum?', a: 'Um CRM comum guarda dados e espera você consultar. O Ekthos Church tem agentes que agem sobre esses dados 24h: acolhem visitantes, reengajam pessoas, alertam liderança e organizam rotinas. É uma operação pastoral com IA, não uma planilha sofisticada.' },
+  { q: 'Como funciona o plano Chamado?', a: 'É o plano de entrada com acesso imediato, sem consultoria. Inclui CRM completo, 5 usuários, Agente Suporte, Agente Onboarding e Agente Cadastro. Você pode adicionar os agentes premium Acolhimento e Reengajamento separadamente.' },
 ]
 
 // ══════════════════════════════════════════════════════════
-// VIDEO PREMIUM BLOCK
+// HERO ORB — visual orbital animado em CSS puro
 // ══════════════════════════════════════════════════════════
 
-function VideoSection() {
+function HeroOrbVisual() {
   return (
-    <section className="pb-16 lg:pb-24 px-5 lg:px-8 max-w-5xl mx-auto text-center">
-      {/* Tag editorial */}
-      <div className="flex items-center justify-center gap-2 mb-5">
-        <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
-        <span className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: 'var(--color-primary)' }}>
-          PAINEL PASTORAL
-        </span>
-        <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
-      </div>
+    <div className="relative flex items-center justify-center" style={{ width: '100%', height: 480 }}>
+      {/* Grid de fundo */}
+      <svg className="absolute inset-0 w-full h-full opacity-[0.04]" aria-hidden>
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+      </svg>
 
-      {/* Container premium — preview estático do painel */}
-      <div
-        className="relative rounded-3xl overflow-hidden"
+      {/* Rings externos */}
+      <div className="absolute rounded-full border"
+        style={{ width: 420, height: 420, borderColor: 'rgba(225,53,0,0.08)', animation: 'orbitRing 12s linear infinite' }} />
+      <div className="absolute rounded-full border"
+        style={{ width: 340, height: 340, borderColor: 'rgba(225,53,0,0.12)', animation: 'orbitRing 9s linear infinite reverse' }} />
+      <div className="absolute rounded-full border"
+        style={{ width: 260, height: 260, borderColor: 'rgba(225,53,0,0.16)', animation: 'orbitRing 7s linear infinite' }} />
+
+      {/* Orb central */}
+      <div className="relative z-10 rounded-full flex items-center justify-center"
         style={{
-          background: 'linear-gradient(135deg, rgba(41,182,255,0.08) 0%, rgba(76,234,216,0.06) 50%, rgba(41,182,255,0.04) 100%)',
-          border: '1px solid rgba(41,182,255,0.15)',
-          boxShadow: '0 8px 40px rgba(41,182,255,0.12), 0 0 0 1px rgba(41,182,255,0.08)',
-        }}
-      >
-        <div className="aspect-video relative">
-          <img
-            src="/screenshots/painel.png"
-            alt="Dashboard Ekthos Church"
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{ background: 'linear-gradient(160deg, rgba(41,182,255,0.08) 0%, transparent 60%)' }}
-          />
-        </div>
+          width: 120, height: 120,
+          background: 'radial-gradient(circle at 35% 35%, rgba(255,100,50,0.9) 0%, rgba(225,53,0,0.8) 40%, rgba(103,0,0,0.9) 100%)',
+          boxShadow: '0 0 0 12px rgba(225,53,0,0.08), 0 0 0 28px rgba(225,53,0,0.04), 0 0 60px rgba(225,53,0,0.4)',
+          animation: 'orbPulse 3s ease-in-out infinite',
+        }}>
+        {/* Cruz Ekthos central */}
+        <svg width="44" height="44" viewBox="0 0 40 40" fill="none" aria-hidden>
+          <path d="M14 1 H26 V14 H39 V26 H26 V39 H14 V26 H1 V14 H14 Z" stroke="rgba(255,255,255,0.9)" strokeWidth="2.5" strokeLinejoin="round"/>
+          <path d="M16.5 3.5 H23.5 V16.5 H36.5 V23.5 H23.5 V36.5 H16.5 V23.5 H3.5 V16.5 H16.5 Z" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" strokeLinejoin="round"/>
+        </svg>
       </div>
 
-      {/* Caption editorial */}
-      <p className="mt-4 text-sm text-[var(--text-tertiary)] max-w-md mx-auto leading-relaxed">
-        Visão 360° da saúde pastoral da sua comunidade — membros, células,
-        visitantes e alertas de afastamento em tempo real.
-      </p>
-    </section>
+      {/* Agent cards orbitais — posicionados absolutamente */}
+      {[
+        { label: 'Acolhimento', sub: 'Visitante acolhido', icon: <MessageCircle size={14}/>, deg: -60, status: 'ativo', delay: '0s' },
+        { label: 'Reengajamento', sub: 'Membro reconectado', icon: <TrendingUp size={14}/>, deg: 60, status: 'ativo', delay: '0.15s' },
+        { label: 'Operação', sub: 'Em breve', icon: <Zap size={14}/>, deg: 180, status: 'breve', delay: '0.3s' },
+        { label: 'CRM Ativo', sub: '247 membros', icon: <Users size={14}/>, deg: -180, status: 'dado', delay: '0.45s' },
+      ].map(({ label, sub, icon, deg, status, delay }) => {
+        const rad = (deg * Math.PI) / 180
+        const r = 175
+        const x = Math.cos(rad) * r
+        const y = Math.sin(rad) * r
+        return (
+          <div key={label}
+            className="absolute z-20 rounded-xl px-3.5 py-2.5 flex items-center gap-2.5"
+            style={{
+              left: `calc(50% + ${x}px)`, top: `calc(50% + ${y}px)`,
+              transform: 'translate(-50%, -50%)',
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid ${status === 'ativo' ? 'rgba(225,53,0,0.35)' : 'rgba(255,255,255,0.1)'}`,
+              backdropFilter: 'blur(12px)',
+              boxShadow: status === 'ativo' ? '0 0 20px rgba(225,53,0,0.15)' : 'none',
+              animation: `floatCard 4s ease-in-out infinite`,
+              animationDelay: delay,
+              minWidth: 148,
+              whiteSpace: 'nowrap',
+            }}>
+            <span style={{ color: status === 'ativo' ? '#e13500' : status === 'dado' ? '#2D7A4F' : 'rgba(255,255,255,0.4)' }}>{icon}</span>
+            <div>
+              <p className="text-white text-xs font-semibold leading-none mb-0.5">{label}</p>
+              <p className="text-[10px] leading-none" style={{ color: 'rgba(255,255,255,0.45)' }}>{sub}</p>
+            </div>
+            {status === 'ativo' && (
+              <span className="w-1.5 h-1.5 rounded-full ml-auto shrink-0" style={{ background: '#2D7A4F', animation: 'pulse 2s ease-in-out infinite', boxShadow: '0 0 6px #2D7A4F' }} />
+            )}
+          </div>
+        )
+      })}
+
+      {/* Linha conectora SVG */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden style={{ opacity: 0.18 }}>
+        <line x1="50%" y1="50%" x2="50%" y2="10%" stroke="#e13500" strokeWidth="0.8" strokeDasharray="4 6"/>
+        <line x1="50%" y1="50%" x2="85%" y2="65%" stroke="#e13500" strokeWidth="0.8" strokeDasharray="4 6"/>
+      </svg>
+    </div>
   )
 }
 
 // ══════════════════════════════════════════════════════════
-// ECOSSISTEMA — GLASS OUTLINE ICONS
+// ECOSSISTEMA
 // ══════════════════════════════════════════════════════════
 
 const ECOSSISTEMA_ITEMS: { icon: EkthosIconName; label: string; desc: string }[] = [
-  { icon: 'pessoas',       label: 'Pessoas',          desc: 'Cadastro pastoral completo com histórico de cada membro' },
-  { icon: 'discipulado',   label: 'Discipulado',       desc: 'Pipeline editável do visitante ao líder em 11 etapas' },
-  { icon: 'eventos',       label: 'Eventos',           desc: 'Calendário recorrente com checklist e presença automática' },
-  { icon: 'celulas',       label: 'Células',           desc: 'Gestão de grupos, líderes, relatórios e frequência' },
-  { icon: 'voluntarios',   label: 'Voluntários',       desc: 'Escalas inteligentes com confirmação por WhatsApp' },
-  { icon: 'notificacoes',  label: 'Notificações',      desc: 'Alertas pastorais em tempo real — ausências, aniversários, crises' },
-  { icon: 'qr-entrada',    label: 'QR de Entrada',     desc: 'Check-in por QR code e presença em cultos sem fricção' },
-  { icon: 'mensageria-ia', label: 'Mensageria IA',     desc: 'Agentes pastorais que se comunicam automaticamente com os membros' },
-  { icon: 'cockpit',       label: 'Cockpit Pastoral',  desc: 'Visão 360° da saúde espiritual e operacional da sua igreja' },
+  { icon: 'pessoas',       label: 'Pessoas',         desc: 'Cadastro pastoral completo com histórico de cada membro' },
+  { icon: 'discipulado',   label: 'Discipulado',      desc: 'Pipeline editável do visitante ao líder em 11 etapas' },
+  { icon: 'eventos',       label: 'Eventos',          desc: 'Calendário recorrente com checklist e presença automática' },
+  { icon: 'celulas',       label: 'Células',          desc: 'Gestão de grupos, líderes, relatórios e frequência' },
+  { icon: 'voluntarios',   label: 'Voluntários',      desc: 'Escalas inteligentes com confirmação por WhatsApp' },
+  { icon: 'notificacoes',  label: 'Notificações',     desc: 'Alertas pastorais em tempo real — ausências, aniversários, crises' },
+  { icon: 'qr-entrada',    label: 'QR de Entrada',    desc: 'Check-in por QR code e presença em cultos sem fricção' },
+  { icon: 'mensageria-ia', label: 'Mensageria IA',    desc: 'Agentes pastorais que se comunicam automaticamente com membros' },
+  { icon: 'cockpit',       label: 'Cockpit Pastoral', desc: 'Visão 360° da saúde espiritual e operacional da sua igreja' },
 ]
 
 function EcossistemaSection() {
+  const { ref, visible } = useInView()
   return (
-    <section className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#07131F]">
+    <section ref={ref as React.RefObject<HTMLElement>} className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#07131F]">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-14">
-          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: 'var(--color-primary)' }}>
-            Ecossistema completo
-          </p>
+        <div className="text-center mb-14" style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
+          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: '#e13500' }}>Ecossistema completo</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-white leading-tight">
-            Tudo que sua igreja precisa,<br className="hidden lg:block" /> em um só lugar
+            Tudo que sua igreja precisa,<br className="hidden lg:block"/> em um só lugar
           </h2>
-          <p className="text-base text-white/50 max-w-xl mx-auto leading-relaxed">
-            Cada módulo foi pensado para o cotidiano pastoral —
-            não para o relatório corporativo.
+          <p className="text-base max-w-xl mx-auto leading-relaxed" style={{ color: 'rgba(245,250,255,0.5)' }}>
+            Cada módulo foi pensado para o cotidiano pastoral — não para o relatório corporativo.
           </p>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {ECOSSISTEMA_ITEMS.map(({ icon, label, desc }) => (
-            <div
-              key={icon}
-              className="group relative rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5"
+          {ECOSSISTEMA_ITEMS.map(({ icon, label, desc }, i) => (
+            <div key={icon}
+              className="group relative rounded-2xl p-5 transition-all duration-300 hover:-translate-y-0.5"
               style={{
                 background: 'rgba(255,255,255,0.03)',
                 border: '1px solid rgba(255,255,255,0.07)',
                 backdropFilter: 'blur(8px)',
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'none' : 'translateY(20px)',
+                transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${i * 0.05}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${i * 0.05}s, box-shadow 0.3s, border-color 0.3s`,
               }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLDivElement).style.background = 'rgba(41,182,255,0.06)'
-                ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(41,182,255,0.2)'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'
-                ;(e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)'
-              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(225,53,0,0.06)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(225,53,0,0.2)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.03)'; (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.07)' }}
             >
-              {/* Glow sutil no hover */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 30% 30%, rgba(41,182,255,0.08) 0%, transparent 70%)' }}
-              />
-
-              <div className="flex items-start gap-4 relative">
-                <div
-                  className="shrink-0 flex items-center justify-center rounded-xl"
-                  style={{
-                    width: 44, height: 44,
-                    background: 'rgba(41,182,255,0.1)',
-                    border: '1px solid rgba(41,182,255,0.18)',
-                    color: 'var(--color-primary)',
-                  }}
-                >
-                  <EkthosIcon name={icon} size={22} strokeWidth={1.5} />
+              <div className="flex items-start gap-4">
+                <div className="shrink-0 flex items-center justify-center rounded-xl" style={{ width: 44, height: 44, background: 'rgba(225,53,0,0.1)', border: '1px solid rgba(225,53,0,0.18)', color: '#e13500' }}>
+                  <EkthosIcon name={icon} size={22} strokeWidth={1.5}/>
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-white mb-1">{label}</p>
-                  <p className="text-xs leading-relaxed text-white/45">{desc}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: 'rgba(245,250,255,0.45)' }}>{desc}</p>
                 </div>
               </div>
             </div>
@@ -237,20 +227,247 @@ function EcossistemaSection() {
 }
 
 // ══════════════════════════════════════════════════════════
+// AVATAR INSTITUCIONAL
+// ══════════════════════════════════════════════════════════
+
+function AvatarIASection() {
+  const { ref, visible } = useInView()
+  return (
+    <section ref={ref as React.RefObject<HTMLElement>} className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#07131F]">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+
+          {/* Visual abstrato — esfera institucional */}
+          <div className="shrink-0 flex items-center justify-center" style={{ width: 320, height: 320, position: 'relative' }}>
+            {/* Rings */}
+            {[280, 230, 180].map((s, i) => (
+              <div key={s} className="absolute rounded-full border"
+                style={{ width: s, height: s, borderColor: `rgba(225,53,0,${0.06 + i * 0.04})`, animation: `orbitRing ${10 + i * 3}s linear infinite ${i % 2 === 0 ? '' : 'reverse'}` }}/>
+            ))}
+            {/* Esfera central */}
+            <div className="relative z-10 rounded-full flex flex-col items-center justify-center gap-3"
+              style={{
+                width: 140, height: 140,
+                background: 'radial-gradient(circle at 40% 35%, rgba(255,90,40,0.8) 0%, rgba(225,53,0,0.7) 50%, rgba(80,0,0,0.9) 100%)',
+                boxShadow: '0 0 0 16px rgba(225,53,0,0.06), 0 0 80px rgba(225,53,0,0.3)',
+                animation: 'orbPulse 4s ease-in-out infinite',
+              }}>
+              {/* Waveform SVG */}
+              <svg width="60" height="24" viewBox="0 0 60 24" aria-hidden>
+                {[0,1,2,3,4,5,6,7].map(i => (
+                  <rect key={i} x={i * 8} y={0} width={4} height={24} rx={2} fill="rgba(255,255,255,0.7)"
+                    style={{ transformOrigin: `${i * 8 + 2}px 12px`, animation: `waveBar 1.2s ease-in-out infinite`, animationDelay: `${i * 0.1}s` }}/>
+                ))}
+              </svg>
+            </div>
+            {/* Badge flutuante */}
+            <div className="absolute top-4 right-4 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ background: 'rgba(45,122,79,0.15)', border: '1px solid rgba(45,122,79,0.3)', color: '#4ADE80' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ animation: 'pulse 2s infinite' }}/>
+              IA Pastoral Operando
+            </div>
+            {/* Chat bubble */}
+            <div className="absolute bottom-10 -right-4 z-20 px-3 py-2 rounded-xl text-xs text-white max-w-[140px]"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', animation: 'floatCard 5s ease-in-out infinite', animationDelay: '1s' }}>
+              "Visitante João acolhido — D+3 agendado"
+            </div>
+          </div>
+
+          {/* Texto institucional */}
+          <div style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateX(32px)', transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s' }}>
+            <p className="text-xs font-bold tracking-[0.18em] uppercase mb-4" style={{ color: '#e13500' }}>
+              Inteligência Operacional
+            </p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-6 text-white leading-tight">
+              Os agentes trabalham.<br/>O pastor cuida de pessoas.
+            </h2>
+            <p className="text-lg leading-relaxed mb-8" style={{ color: 'rgba(245,250,255,0.65)' }}>
+              Os agentes do Ekthos operam 24 horas por dia. Enquanto sua liderança cuida das pessoas, nossos agentes acompanham visitantes, enviam lembretes, identificam pendências e transformam interações em visão pastoral real.
+            </p>
+            <ul className="space-y-4">
+              {[
+                ['Acolhimento automático no WhatsApp', 'Visitante novo → agente responde em segundos'],
+                ['Reengajamento de quem esfriou', 'CRM identifica + agente reconecta com mensagem personalizada'],
+                ['Alertas de afastamento em tempo real', 'Liderança notificada antes que o membro se perca'],
+                ['Visão pastoral consolidada', 'Dashboard com dados reais — não planilha morta'],
+              ].map(([title, sub]) => (
+                <li key={title} className="flex items-start gap-3">
+                  <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(225,53,0,0.15)', border: '1px solid rgba(225,53,0,0.3)' }}>
+                    <Check size={11} strokeWidth={2.5} style={{ color: '#e13500' }}/>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{title}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(245,250,255,0.45)' }}>{sub}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// COMPARATIVO — NÃO É UM CRM COMUM
+// ══════════════════════════════════════════════════════════
+
+function CrmComparisonSection() {
+  const { ref, visible } = useInView()
+  return (
+    <section ref={ref as React.RefObject<HTMLElement>} className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary, #fff)' }}>
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-12" style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
+          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Diferença fundamental</p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#07131F' }}>
+            Não é um CRM comum.
+          </h2>
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: '#5A5A5A' }}>
+            Um CRM guarda dados. O Ekthos Church age sobre eles — 24 horas por dia, sete dias por semana.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Coluna esquerda — CRM comum */}
+          <div className="rounded-2xl p-7 border"
+            style={{ background: '#F5F5F5', borderColor: '#E0E0E0', opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateX(-24px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.1s' }}>
+            <div className="flex items-center gap-2.5 mb-6">
+              <X size={16} style={{ color: '#999' }}/>
+              <h3 className="font-semibold text-base" style={{ color: '#666' }}>CRM Comum</h3>
+            </div>
+            <ul className="space-y-3.5">
+              {[
+                'Cadastra pessoas — e espera você consultar',
+                'Guarda dados — mas não age sobre eles',
+                'Depende de voluntários para contatar visitantes',
+                'Exige busca manual para identificar quem afastou',
+                'Relatórios estáticos que ninguém lê',
+                'Pastor recebe planilha morta',
+                'Silêncio quando um membro some',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-3 text-sm" style={{ color: '#888' }}>
+                  <X size={14} strokeWidth={2.5} style={{ color: '#CCC', flexShrink: 0, marginTop: 2 }}/>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Coluna direita — Ekthos */}
+          <div className="rounded-2xl p-7 border relative overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #07131F 0%, #0C1F30 100%)',
+              borderColor: 'rgba(225,53,0,0.3)',
+              boxShadow: '0 0 40px rgba(225,53,0,0.1)',
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'none' : 'translateX(24px)',
+              transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s',
+            }}>
+            {/* Glow */}
+            <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(225,53,0,0.12) 0%, transparent 70%)' }}/>
+            <div className="flex items-center gap-2.5 mb-6 relative">
+              <Check size={16} style={{ color: '#e13500' }}/>
+              <h3 className="font-semibold text-base text-white">Ekthos Church</h3>
+              <span className="ml-auto px-2.5 py-0.5 rounded-full text-[10px] font-bold" style={{ background: 'rgba(225,53,0,0.2)', color: '#FF6B3D', border: '1px solid rgba(225,53,0,0.3)' }}>Agentes ativos 24h</span>
+            </div>
+            <ul className="space-y-3.5 relative">
+              {[
+                'Agentes operam 24h usando dados do CRM',
+                'Acolhe visitantes automaticamente no WhatsApp',
+                'Reengaja pessoas que esfriaram — sem ação manual',
+                'Alerta liderança sobre casos sensíveis em tempo real',
+                'Organiza rotinas pastorais e escalas automaticamente',
+                'Transforma dados em visão acionável para o pastor',
+                'Follow-up D+3, D+7 disparado sem intervenção',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-3 text-sm text-white">
+                  <Check size={14} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }}/>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// FLUXO OPERACIONAL
+// ══════════════════════════════════════════════════════════
+
+function FluxoOperacionalSection() {
+  const { ref, visible } = useInView()
+  const steps = [
+    { n: '01', icon: <MessageCircle size={20}/>, title: 'Pessoa chega', body: 'Visitante envia mensagem no WhatsApp da igreja' },
+    { n: '02', icon: <Bot size={20}/>, title: 'Agente acolhe', body: 'Agente responde em segundos, coleta dados e registra no CRM' },
+    { n: '03', icon: <Bell size={20}/>, title: 'Follow-up automático', body: 'D+3 e D+7: agente envia mensagens personalizadas baseadas no perfil' },
+    { n: '04', icon: <Shield size={20}/>, title: 'Liderança é acionada', body: 'Apenas casos que exigem cuidado humano chegam ao pastor' },
+    { n: '05', icon: <BarChart2 size={20}/>, title: 'Visão consolidada', body: 'Dashboard com novos contatos, conversões e saúde pastoral' },
+  ]
+  return (
+    <section ref={ref as React.RefObject<HTMLElement>} className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#07131F]">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-14" style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
+          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: '#e13500' }}>Fluxo operacional</p>
+          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-white">
+            Do primeiro contato à visão pastoral
+          </h2>
+          <p className="text-base max-w-2xl mx-auto" style={{ color: 'rgba(245,250,255,0.5)' }}>
+            Tudo acontece automaticamente. O pastor entra apenas onde faz diferença ser humano.
+          </p>
+        </div>
+
+        {/* Steps horizontais — desktop / verticais — mobile */}
+        <div className="relative">
+          {/* Linha conectora desktop */}
+          <div className="hidden lg:block absolute top-10 left-[10%] right-[10%] h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(225,53,0,0.3) 20%, rgba(225,53,0,0.3) 80%, transparent)' }}>
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, #e13500, transparent)', animation: 'travelLine 3s linear infinite', backgroundSize: '30% 100%' }}/>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-4">
+            {steps.map(({ n, icon, title, body }, i) => (
+              <div key={n}
+                className="flex flex-col items-center text-center lg:px-2"
+                style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(24px)', transition: `opacity 0.6s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.1}s, transform 0.6s cubic-bezier(0.16,1,0.3,1) ${0.1 + i * 0.1}s` }}>
+                <div className="relative z-10 w-20 h-20 rounded-2xl flex flex-col items-center justify-center mb-4 shrink-0"
+                  style={{
+                    background: 'rgba(225,53,0,0.1)',
+                    border: '1px solid rgba(225,53,0,0.25)',
+                    boxShadow: '0 0 20px rgba(225,53,0,0.08)',
+                  }}>
+                  <span style={{ color: '#e13500' }}>{icon}</span>
+                  <span className="font-mono text-[10px] font-bold mt-1" style={{ color: 'rgba(225,53,0,0.5)' }}>{n}</span>
+                </div>
+                <h3 className="font-semibold text-sm text-white mb-1.5">{title}</h3>
+                <p className="text-xs leading-relaxed" style={{ color: 'rgba(245,250,255,0.45)' }}>{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════
 
 export default function Landing() {
-  const [menuOpen,  setMenuOpen]  = useState(false)
-  const [showWa,    setShowWa]    = useState(false)
-  const [faqOpen,   setFaqOpen]   = useState<number | null>(null)
-  const [scrolled,  setScrolled]  = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [showWa,   setShowWa]   = useState(false)
+  const [faqOpen,  setFaqOpen]  = useState<number | null>(null)
+  const [scrolled, setScrolled] = useState(false)
   const [leadModal, setLeadModal] = useState<'missao' | 'avivamento' | null>(null)
-  const pricingRef = useRef<HTMLElement>(null)
+  const pricingRef  = useRef<HTMLElement>(null)
+  const agentesRef  = useRef<HTMLElement>(null)
 
-  // SEO / OG meta tags
+  // SEO
   useEffect(() => {
-    document.title = 'Ekthos Church — CRM com Agentes de IA para Igrejas'
+    document.title = 'Ekthos Church — Agentes de IA para sua Igreja'
     const setMeta = (name: string, content: string) => {
       let el = document.querySelector(`meta[name="${name}"]`)
       if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el) }
@@ -261,15 +478,15 @@ export default function Landing() {
       if (!el) { el = document.createElement('meta'); el.setAttribute('property', prop); document.head.appendChild(el) }
       el.setAttribute('content', content)
     }
-    setMeta('description', 'Sua igreja operando com agentes de IA, usando o CRM como base de dados. Gestão de membros, células, voluntários e discipulado. Setup em 30 minutos.')
-    setOg('og:title', 'Ekthos Church — CRM com Agentes de IA para Igrejas')
-    setOg('og:description', 'Sua igreja operando com agentes de IA, usando o CRM como base de dados.')
+    setMeta('description', 'Agentes de IA trabalhando pela sua igreja todos os dias. CRM pastoral com automação de acolhimento, reengajamento e gestão. Setup em 30 minutos.')
+    setOg('og:title', 'Ekthos Church — Agentes de IA para sua Igreja')
+    setOg('og:description', 'Agentes de IA trabalhando pela sua igreja todos os dias. Acolhimento automático, reengajamento e visão pastoral real.')
     setOg('og:url', 'https://ekthosai.net')
     setOg('og:type', 'website')
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => setShowWa(true), 3000)
+    const t = setTimeout(() => setShowWa(true), 3500)
     return () => clearTimeout(t)
   }, [])
 
@@ -284,954 +501,545 @@ export default function Landing() {
     return () => { document.body.style.overflow = '' }
   }, [leadModal])
 
-  function scrollToPricing() {
-    pricingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  function scrollTo(ref: React.RefObject<HTMLElement | null>) {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setMenuOpen(false)
   }
 
   return (
-    <div className="min-h-screen font-body antialiased overflow-x-hidden bg-white text-[#07131F]">
+    <div className="min-h-screen font-body antialiased overflow-x-hidden text-[#07131F]" style={{ background: '#fff' }}>
 
-      {/* ── 1. NAVBAR ─────────────────────────────────────────── */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md border-b ${scrolled ? 'shadow-md' : ''}`}
-        style={{ background: 'rgba(7,19,31,0.92)', borderColor: 'var(--border-default)' }}>
+      {/* ── NAVBAR ─────────────────────────────────────────── */}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 backdrop-blur-md border-b ${scrolled ? 'shadow-lg' : ''}`}
+        style={{ background: 'rgba(7,19,31,0.94)', borderColor: 'rgba(255,255,255,0.07)' }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 h-16 flex items-center justify-between">
           <a href="/" className="flex items-center shrink-0">
-            <LogoEkthos height={28} variant="light" showChurch={true} />
+            <LogoEkthos height={28} variant="light" showChurch={true}/>
           </a>
-
           <nav className="hidden md:flex items-center gap-7">
             {[
+              { label: 'Agentes', href: '#agentes' },
               { label: 'Funcionalidades', href: '#funcionalidades' },
-              { label: 'Agentes IA',      href: '#agentes' },
-              { label: 'Planos',          href: '#pricing' },
-              { label: 'FAQ',             href: '#faq' },
+              { label: 'Planos', href: '#pricing' },
+              { label: 'FAQ', href: '#faq' },
             ].map(l => (
-              <a key={l.href} href={l.href}
-                className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+              <a key={l.href} href={l.href} className="text-sm font-medium transition-colors" style={{ color: 'rgba(245,250,255,0.5)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.9)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>
                 {l.label}
               </a>
             ))}
           </nav>
-
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/login"
-              className="text-sm font-medium px-4 py-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+            <Link to="/login" className="text-sm font-medium px-4 py-2 rounded-xl transition-colors" style={{ color: 'rgba(245,250,255,0.5)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.9)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>
               Entrar
             </Link>
-            <button onClick={scrollToPricing}
-              className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'var(--color-primary)' }}>
-              Ver planos
-            </button>
+            <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
+              className="text-sm font-semibold px-5 py-2.5 rounded-xl text-white transition-all hover:opacity-90"
+              style={{ background: '#e13500' }}>
+              Começar agora
+            </a>
           </div>
-
-          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2 text-[var(--text-secondary)]">
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          <button onClick={() => setMenuOpen(o => !o)} className="md:hidden p-2" style={{ color: 'rgba(245,250,255,0.7)' }}>
+            {menuOpen ? <X size={22}/> : <Menu size={22}/>}
           </button>
         </div>
-
         {menuOpen && (
-          <div className="md:hidden px-5 pb-6 pt-2 flex flex-col gap-4 border-t" style={{ background: 'rgba(7,19,31,0.98)', borderColor: 'var(--border-default)' }}>
-            {['#funcionalidades', '#agentes', '#pricing', '#faq'].map((href, i) => (
-              <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="text-sm font-medium py-1 text-[var(--text-secondary)]">
-                {['Funcionalidades', 'Agentes IA', 'Planos', 'FAQ'][i]}
+          <div className="md:hidden px-5 pb-6 pt-2 flex flex-col gap-4 border-t" style={{ background: 'rgba(7,19,31,0.98)', borderColor: 'rgba(255,255,255,0.07)' }}>
+            {['#agentes', '#funcionalidades', '#pricing', '#faq'].map((href, i) => (
+              <a key={href} href={href} onClick={() => setMenuOpen(false)} className="text-sm font-medium py-1" style={{ color: 'rgba(245,250,255,0.6)' }}>
+                {['Agentes', 'Funcionalidades', 'Planos', 'FAQ'][i]}
               </a>
             ))}
             <div className="flex gap-3 pt-2">
-              <Link to="/login" onClick={() => setMenuOpen(false)}
-                className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border border-[var(--border-default)] text-[var(--text-primary)]">
+              <Link to="/login" onClick={() => setMenuOpen(false)} className="flex-1 text-center text-sm font-medium py-2.5 rounded-xl border" style={{ borderColor: 'rgba(255,255,255,0.15)', color: 'rgba(245,250,255,0.8)' }}>
                 Entrar
               </Link>
-              <button onClick={scrollToPricing}
-                className="flex-1 text-sm font-semibold py-2.5 rounded-xl text-white"
-                style={{ background: 'var(--color-primary)' }}>
-                Ver planos
-              </button>
+              <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm font-semibold py-2.5 rounded-xl text-white text-center" style={{ background: '#e13500' }}>
+                Começar
+              </a>
             </div>
           </div>
         )}
       </header>
 
-      {/* ── 2. HERO ───────────────────────────────────────────── */}
-      <section className="pt-28 pb-16 lg:pt-36 lg:pb-24 px-5 lg:px-8 max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-
-          {/* Copy */}
-          <div className="flex-1 text-center lg:text-left">
-            <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[var(--text-primary)]"
-              style={{ letterSpacing: '-0.02em' }}>
-              Sua igreja operando com{' '}
-              <span style={{ color: 'var(--color-primary)' }}>agentes de IA</span>,
-              usando o CRM como base de dados
-            </h1>
-
-            <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0 text-[var(--text-secondary)]">
-              Não é um CRM genérico com IA colada. É uma plataforma pastoral
-              onde os agentes conhecem sua comunidade e agem por você — do
-              acolhimento ao reengajamento.
-            </p>
-
-            <p className="text-sm italic mb-8" style={{ color: 'var(--color-primary-text)' }}>
-              "Conhece o estado do teu rebanho e põe o coração nos teus gados." — Pv 27:23
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] shadow-lg"
-                style={{ background: 'var(--color-primary)', minHeight: 56 }}>
-                Começar com Plano Chamado — R$&nbsp;689,90/mês
-              </a>
-              <a href={WA.hero} target="_blank" rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: '#25D366', minHeight: 56 }}>
-                {WA_ICON} Falar no WhatsApp
-              </a>
-            </div>
-
-            <p className="mt-8 text-sm text-[var(--text-tertiary)] text-center lg:text-left">
-              Setup completo em menos de 30 minutos · Suporte em português
-            </p>
+      {/* ── HERO ───────────────────────────────────────────── */}
+      <section className="min-h-screen flex flex-col lg:flex-row items-center pt-16 px-5 lg:px-8 max-w-7xl mx-auto gap-8 lg:gap-12" style={{ paddingTop: 'calc(4rem + 40px)', paddingBottom: '4rem' }}>
+        {/* Copy */}
+        <div className="flex-1 text-center lg:text-left" style={{ animation: 'fadeInUp 0.8s cubic-bezier(0.16,1,0.3,1) both' }}>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold mb-6"
+            style={{ background: 'rgba(225,53,0,0.08)', border: '1px solid rgba(225,53,0,0.2)', color: '#e13500' }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#2D7A4F', animation: 'pulse 2s infinite' }}/>
+            2 agentes operacionais em produção
           </div>
 
-          {/* Screenshot stage — hero asset com palco visual */}
-          <div className="flex-1 w-full pt-8 lg:pt-0">
-            {/* Stage container — tem identidade visual própria, não é só fundo branco */}
-            <div className="relative rounded-3xl overflow-hidden"
-              style={{
-                background: 'linear-gradient(150deg, #0C1B2B 0%, #10253A 45%, #0A1827 100%)',
-                padding: '32px 20px 0',
-              }}>
+          <h1 className="font-display text-4xl lg:text-5xl xl:text-[3.5rem] font-bold leading-tight mb-6 text-[#07131F]"
+            style={{ letterSpacing: '-0.02em' }}>
+            Agentes de IA trabalhando pela sua igreja{' '}
+            <span style={{ color: '#e13500' }}>todos os dias.</span>
+          </h1>
 
-              {/* Acento brand — brilho sutil vindo do produto */}
-              <div className="absolute inset-x-0 top-0 h-56 pointer-events-none"
-                style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(41,182,255,0.06), transparent 68%)' }} />
+          <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0" style={{ color: '#5A5A5A' }}>
+            O Ekthos Church une CRM, automação e agentes de IA para acolher visitantes, reengajar pessoas, organizar rotinas e entregar visão real para a liderança.
+          </p>
 
-              {/* Screenshot de apoio — camada de profundidade, atrás do principal (só desktop) */}
-              <div className="absolute hidden lg:block rounded-xl overflow-hidden"
-                style={{
-                  width: '62%', top: 28, right: 18, zIndex: 1,
-                  opacity: 0.42,
-                  transform: 'perspective(900px) rotateY(-10deg) rotateX(4deg) scale(0.85)',
-                  boxShadow: '0 12px 32px rgba(0,0,0,0.16)',
-                  filter: 'brightness(0.78) blur(0.4px)',
-                }}>
-                <img src="/screenshots/pessoas.png" alt="" loading="lazy" className="w-full block" />
-              </div>
+          <p className="text-sm italic mb-8" style={{ color: '#e13500' }}>
+            "Conheces o estado do teu rebanho e põe o coração nos teus gados." — Pv 27:23
+          </p>
 
-              {/* Screenshot principal — o hero asset, dominante */}
-              <div className="relative rounded-2xl overflow-hidden"
-                style={{
-                  zIndex: 2,
-                  transform: 'perspective(1100px) rotateY(-2.5deg) rotateX(1.5deg)',
-                  boxShadow: '0 2px 0 rgba(255,255,255,0.55), 0 20px 48px rgba(0,0,0,0.20), 0 52px 88px rgba(0,0,0,0.13)',
-                }}>
-                <img src="/screenshots/painel.png" alt="Dashboard Ekthos Church"
-                  loading="eager" className="w-full block" />
-              </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+            <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{ background: '#e13500', minHeight: 56, boxShadow: '0 4px 20px rgba(225,53,0,0.3)' }}>
+              Começar com Plano Chamado — R$&nbsp;689,90/mês
+            </a>
+            <button onClick={() => scrollTo(agentesRef)}
+              className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-80 active:scale-[0.98]"
+              style={{ background: 'transparent', color: '#07131F', border: '1.5px solid rgba(7,19,31,0.2)', minHeight: 56 }}>
+              Ver como funciona <ArrowRight size={16}/>
+            </button>
+          </div>
 
-              {/* Plano de base — ancora a composição, cria profundidade embaixo */}
-              <div className="absolute bottom-0 inset-x-0 h-2/5 pointer-events-none rounded-b-3xl"
-                style={{ background: 'linear-gradient(to top, rgba(22,22,22,0.13) 0%, transparent 100%)' }} />
-            </div>
+          <p className="mt-6 text-sm text-center lg:text-left" style={{ color: '#8A8A8A' }}>
+            Setup em 30 minutos · Suporte em português · Sem contrato de fidelidade
+          </p>
+        </div>
+
+        {/* Visual orbital */}
+        <div className="flex-1 w-full max-w-lg lg:max-w-none" style={{ animation: 'fadeInUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both' }}>
+          {/* Wrapper dark para o orb */}
+          <div className="rounded-3xl overflow-hidden relative" style={{ background: '#07131F', padding: '16px 0' }}>
+            <HeroOrbVisual/>
           </div>
         </div>
       </section>
 
-      {/* ── 2.5. VÍDEO PREMIUM ───────────────────────────────────── */}
-      <VideoSection />
-
-      {/* ── 3. FATOS ──────────────────────────────────────────── */}
-      <section className="py-14 border-y w-full" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+      {/* ── FATOS ─────────────────────────────────────────── */}
+      <section className="py-14 border-y w-full" style={{ background: '#F9F9F9', borderColor: '#EBEBEB' }}>
         <div className="max-w-5xl mx-auto px-5 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
-              { label: 'Setup completo',         sub: 'menos de 30 minutos' },
-              { label: 'IA pastoral',             sub: 'treinada para igrejas' },
-              { label: 'Dados 100% seus',         sub: 'exportação a qualquer hora' },
-              { label: 'Suporte em português',    sub: 'time pastoral dedicado' },
+              { label: 'Setup completo',       sub: 'menos de 30 minutos' },
+              { label: '2 Agentes ativos',     sub: 'operacionais em produção' },
+              { label: 'Dados 100% seus',      sub: 'exportação a qualquer hora' },
+              { label: 'Suporte em português', sub: 'time pastoral dedicado' },
             ].map(s => (
               <div key={s.label} className="py-2">
-                <p className="font-display text-base font-bold mb-1 text-[var(--text-primary)]">{s.label}</p>
-                <p className="text-sm text-[var(--text-secondary)]">{s.sub}</p>
+                <p className="font-display text-base font-bold mb-1" style={{ color: '#07131F' }}>{s.label}</p>
+                <p className="text-sm" style={{ color: '#8A8A8A' }}>{s.sub}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 4. PROBLEMA ───────────────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center mb-14">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
-            A realidade de muitas igrejas
-          </p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[var(--text-primary)]">
-            Você não consegue cuidar de todos sozinho
-          </h2>
-          <p className="text-lg max-w-2xl mx-auto text-[var(--text-secondary)]">
-            Crescer sem ferramentas é como pastorear no escuro. Você sente, mas não vê.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {[
-            {
-              icon: <Users size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
-              title: 'Membros se afastando em silêncio',
-              body: 'Você só percebe que alguém saiu quando já foi embora. Sem dados, sem alertas, sem acompanhamento sistemático.',
-            },
-            {
-              icon: <BarChart2 size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
-              title: 'Horas perdidas em tarefas manuais',
-              body: 'Planilhas, WhatsApp, cadernos. O pastor gasta mais tempo organizando do que pastoreando.',
-            },
-            {
-              icon: <TrendingUp size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />,
-              title: 'Decisões sem dados reais',
-              body: 'Sem métricas, você navega por intuição. Quantos visitantes voltaram? Qual ministério está em queda?',
-            },
-          ].map((p, i) => (
-            <div key={i} className="bg-[var(--bg-surface)] rounded-2xl p-7 border border-[var(--border-default)] hover:border-primary/30 transition-all duration-200">
-              <div className="flex items-center gap-2.5 mb-4">
-                {p.icon}
-                <h3 className="font-semibold text-base text-[var(--text-primary)]">{p.title}</h3>
-              </div>
-              <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{p.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── 5. AGENTES IA ─────────────────────────────────────── */}
-      <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
+      {/* ── AGENTES OPERACIONAIS ───────────────────────────── */}
+      <section id="agentes" ref={agentesRef as React.RefObject<HTMLElement>} className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full scroll-mt-16">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-10">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3"
-              style={{ color: 'var(--color-primary)' }}>Inteligência Artificial pastoral</p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
-              Agentes que conhecem a linguagem da igreja
+          <div className="mb-12 text-center">
+            <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: '#e13500' }}>Núcleo operacional</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-white">
+              Agentes pastorais — status real
             </h2>
-            <p className="text-lg max-w-2xl" style={{ color: 'rgba(245,250,255,0.6)' }}>
-              Não são chatbots genéricos. São assistentes treinados com o vocabulário e a sensibilidade pastoral — e agem sobre os dados do CRM da sua igreja.
+            <p className="text-base max-w-2xl mx-auto" style={{ color: 'rgba(245,250,255,0.5)' }}>
+              Não são demos. Dois agentes estão operacionais e em produção hoje.
             </p>
           </div>
 
-          {/* Agentes internos — inclusos em todos os planos */}
-          <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>
-            Inclusos em todos os planos
-          </p>
-          <div className="grid md:grid-cols-2 gap-x-20 gap-y-0 mb-14">
-            {[
-              { icon: <Bot           size={16} />, slug: 'Suporte',     desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta operacional.' },
-              { icon: <Users         size={16} />, slug: 'Onboarding',  desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.' },
-              { icon: <MessageCircle size={16} />, slug: 'Cadastro',    desc: 'Registra visitantes e membros automaticamente via formulário inteligente.' },
-              { icon: <Bell          size={16} />, slug: 'Notificação', desc: 'Alertas pastorais automáticos de afastamento, aniversários e eventos críticos.' },
-            ].map((a, i) => (
-              <div key={i} className="flex items-start gap-5 py-7 border-b"
-                style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-                <span className="font-mono text-4xl font-bold leading-none shrink-0 w-12 text-right"
-                  style={{ color: 'rgba(41,182,255,0.18)' }}>
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <span style={{ color: 'var(--text-primary)' }}>{a.icon}</span>
-                    <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Agente {a.slug}</h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white/70" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>Incluso</span>
-                  </div>
-                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.55)' }}>{a.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Agentes premium — marketplace */}
-          <p className="text-xs font-bold uppercase tracking-widest mb-6" style={{ color: 'rgba(245,250,255,0.3)' }}>
-            Agentes premium — Marketplace
-          </p>
-          <div className="grid md:grid-cols-3 gap-5">
+          {/* Cards premium — 3 agentes */}
+          <div className="grid md:grid-cols-3 gap-5 mb-14">
             {[
               {
                 slug: 'Acolhimento',
                 price: 'R$ 290/mês',
+                status: 'ativo',
+                icon: <MessageCircle size={20}/>,
                 paymentLink: ACOLHIMENTO_PAYMENT_LINK,
                 waLink: WA.acolhimento,
-                desc: 'Aborda visitantes automaticamente via WhatsApp após o culto, coleta feedback e agenda próximos passos. Usa os dados do CRM para personalizar cada contato.',
-                items: ['Mensagem de boas-vindas automática', 'Formulário de interesse inteligente', 'Agendamento de acompanhamento', 'Relatório semanal de novos contatos'],
-                badge: 'Disponível',
-                badgeColor: '#2D7A4F',
+                desc: 'Aborda novos visitantes automaticamente via WhatsApp após o culto, usando dados do CRM para personalizar cada conversa.',
+                items: ['Mensagem de boas-vindas em segundos', 'Coleta de dados e perfil pastoral', 'Follow-up D+3 e D+7 automático', 'Relatório semanal de novos contatos'],
               },
               {
                 slug: 'Reengajamento',
                 price: 'R$ 290/mês',
+                status: 'ativo',
+                icon: <TrendingUp size={20}/>,
                 paymentLink: null,
                 waLink: WA.reengajamento,
-                desc: 'Identifica membros afastados no CRM e os aborda com mensagens personalizadas, devolvendo-os à comunidade antes que se percam definitivamente.',
-                items: ['Detecção automática de afastamento', 'Mensagens contextualizadas por perfil', 'Fluxo de reconexão em etapas', 'Dashboard de recuperação'],
-                badge: 'Em breve',
-                badgeColor: '#C4841D',
+                desc: 'Identifica membros afastados no CRM e os aborda com mensagens personalizadas, devolvendo-os à comunidade.',
+                items: ['Detecção automática por afastamento', 'Mensagens contextualizadas por perfil', 'Fluxo de reconexão em etapas', 'Cron autônomo — zero intervenção manual'],
               },
               {
                 slug: 'Operação',
                 price: 'R$ 390/mês',
+                status: 'breve',
+                icon: <Zap size={20}/>,
                 paymentLink: null,
                 waLink: WA.operacao,
-                desc: 'Coordena a operação pastoral diária: confirma escalas, lembra líderes de células, sincroniza eventos e gera relatórios automáticos para o pastor.',
+                desc: 'Coordena a operação pastoral diária: confirma escalas, lembra líderes, sincroniza eventos e gera relatórios automáticos.',
                 items: ['Confirmação de escalas por WhatsApp', 'Lembretes automáticos de células', 'Sincronização de agenda pastoral', 'Relatório executivo semanal'],
-                badge: 'Em breve',
-                badgeColor: '#C4841D',
               },
             ].map(agent => (
               <div key={agent.slug}
-                className="rounded-2xl p-6 flex flex-col"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="font-semibold text-white">Agente {agent.slug}</p>
-                    <p className="font-mono text-sm mt-0.5" style={{ color: 'var(--color-primary)' }}>{agent.price}</p>
+                className="rounded-2xl p-6 flex flex-col relative overflow-hidden group transition-all duration-300"
+                style={{
+                  background: agent.status === 'ativo' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)',
+                  border: `1px solid ${agent.status === 'ativo' ? 'rgba(225,53,0,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                  backdropFilter: 'blur(12px)',
+                  boxShadow: agent.status === 'ativo' ? '0 0 30px rgba(225,53,0,0.08)' : 'none',
+                }}>
+                {/* Glow interno no hover */}
+                {agent.status === 'ativo' && (
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                    style={{ background: 'radial-gradient(ellipse at 30% 20%, rgba(225,53,0,0.08) 0%, transparent 70%)' }}/>
+                )}
+
+                <div className="flex items-start justify-between mb-4 relative">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: agent.status === 'ativo' ? 'rgba(225,53,0,0.15)' : 'rgba(255,255,255,0.05)', color: agent.status === 'ativo' ? '#e13500' : 'rgba(255,255,255,0.3)' }}>
+                      {agent.icon}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white text-sm">Agente {agent.slug}</p>
+                      <p className="font-mono text-xs mt-0.5" style={{ color: agent.status === 'ativo' ? '#e13500' : 'rgba(255,255,255,0.3)' }}>{agent.price}</p>
+                    </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white shrink-0 ml-3"
-                    style={{ background: agent.badgeColor }}>
-                    {agent.badge}
-                  </span>
+                  {agent.status === 'ativo' ? (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ background: 'rgba(45,122,79,0.15)', border: '1px solid rgba(45,122,79,0.3)', color: '#4ADE80' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400" style={{ animation: 'pulse 2s infinite' }}/>
+                      Operacional
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ background: 'rgba(196,132,29,0.12)', border: '1px solid rgba(196,132,29,0.25)', color: '#F59E0B' }}>
+                      Em breve
+                    </span>
+                  )}
                 </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(245,250,255,0.55)' }}>{agent.desc}</p>
-                <ul className="space-y-2 flex-1 mb-5">
+
+                <p className="text-sm leading-relaxed mb-5 relative" style={{ color: 'rgba(245,250,255,0.55)' }}>{agent.desc}</p>
+
+                <ul className="space-y-2 flex-1 relative mb-5">
                   {agent.items.map(item => (
                     <li key={item} className="flex items-start gap-2 text-xs" style={{ color: 'rgba(245,250,255,0.6)' }}>
-                      <Check size={13} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 1 }} />
+                      <Check size={12} strokeWidth={2.5} style={{ color: agent.status === 'ativo' ? '#e13500' : 'rgba(255,255,255,0.3)', flexShrink: 0, marginTop: 1 }}/>
                       {item}
                     </li>
                   ))}
                 </ul>
-                {agent.paymentLink ? (
-                  <a href={agent.paymentLink} target="_blank" rel="noopener noreferrer"
-                    className="w-full py-2.5 rounded-xl font-semibold text-sm text-white text-center transition-all hover:opacity-90 block"
-                    style={{ background: 'var(--color-primary)' }}>
-                    Contratar →
-                  </a>
-                ) : (
-                  <a href={agent.waLink} target="_blank" rel="noopener noreferrer"
-                    className="w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-all hover:opacity-90 flex items-center justify-center gap-2"
-                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(245,250,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                    {WA_ICON} Entrar na lista de espera
-                  </a>
-                )}
+
+                <div className="relative">
+                  {agent.paymentLink ? (
+                    <a href={agent.paymentLink} target="_blank" rel="noopener noreferrer"
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm text-white text-center transition-all hover:opacity-90 block"
+                      style={{ background: '#e13500', boxShadow: '0 4px 12px rgba(225,53,0,0.3)' }}>
+                      Adicionar ao plano →
+                    </a>
+                  ) : agent.status === 'ativo' ? (
+                    <a href={agent.waLink} target="_blank" rel="noopener noreferrer"
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm text-white text-center transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                      style={{ background: '#25D366' }}>
+                      {WA_ICON} Adicionar via WhatsApp
+                    </a>
+                  ) : (
+                    <a href={agent.waLink} target="_blank" rel="noopener noreferrer"
+                      className="w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                      style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(245,250,255,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                      {WA_ICON} Entrar na lista de espera
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
+          </div>
+
+          {/* Agentes inclusos — lista horizontal */}
+          <div className="rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <p className="text-xs font-bold uppercase tracking-widest mb-5" style={{ color: 'rgba(245,250,255,0.3)' }}>Inclusos em todos os planos</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { icon: <Bot size={16}/>, name: 'Suporte', desc: 'Responde dúvidas 24h' },
+                { icon: <Users size={16}/>, name: 'Onboarding', desc: 'Configura o CRM em 30min' },
+                { icon: <MessageCircle size={16}/>, name: 'Cadastro', desc: 'Registra membros e visitantes' },
+                { icon: <Bell size={16}/>, name: 'Notificação', desc: 'Alertas pastorais automáticos' },
+              ].map(a => (
+                <div key={a.name} className="flex items-start gap-3">
+                  <span style={{ color: 'rgba(245,250,255,0.4)', marginTop: 1 }}>{a.icon}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{a.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(245,250,255,0.35)' }}>{a.desc}</p>
+                  </div>
+                  <span className="ml-auto shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(245,250,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>Incluso</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── 5.5. ECOSSISTEMA ─────────────────────────────────────── */}
-      <EcossistemaSection />
+      {/* ── AVATAR INSTITUCIONAL ───────────────────────────── */}
+      <AvatarIASection/>
 
-      {/* ── 6. FUNCIONALIDADES (ALTERNATING) ──────────────────── */}
-      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
+      {/* ── FLUXO OPERACIONAL ──────────────────────────────── */}
+      <FluxoOperacionalSection/>
+
+      {/* ── COMPARATIVO CRM ────────────────────────────────── */}
+      <CrmComparisonSection/>
+
+      {/* ── ECOSSISTEMA ────────────────────────────────────── */}
+      <EcossistemaSection/>
+
+      {/* ── FUNCIONALIDADES ────────────────────────────────── */}
+      <section id="funcionalidades" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F9F9F9' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-10">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
-              Tudo que sua operação pastoral precisa
-            </p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
-              Um CRM feito para igrejas
-            </h2>
-            <p className="text-lg max-w-xl mx-auto mt-4 text-[var(--text-secondary)]">
-              Cada módulo foi desenhado para a realidade do pastor brasileiro.
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Funcionalidades</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#07131F' }}>O CRM que fala a língua do pastor</h2>
+            <p className="text-lg max-w-xl mx-auto mt-4" style={{ color: '#5A5A5A' }}>Cada módulo foi desenhado para a realidade do pastor brasileiro.</p>
           </div>
-
           {[
-            {
-              reverse: false,
-              screenshot: '/screenshots/painel.png',
-              alt: 'Dashboard Ekthos Church',
-              label: 'Dashboard pastoral',
-              title: 'Visão completa da sua comunidade',
-              body: 'Métricas em tempo real de membros, visitantes, células e convertidos. Alertas de afastamento automáticos antes que você precise perguntar.',
-              items: [
-                'Membros ativos, em risco e afastados — em tempo real',
-                'Alertas automáticos de afastamento',
-                'Redes e células com visão hierárquica',
-                'Relatório de novos convertidos e retenção',
-              ],
-            },
-            {
-              reverse: true,
-              screenshot: '/screenshots/pessoas.png',
-              alt: 'Gestão de pessoas',
-              label: 'Gestão de pessoas',
-              title: 'Cada membro, acompanhado de perto',
-              body: 'Cadastro completo com histórico de visitas, batismo e discipulado. Registre visitantes em segundos com QR Code e acompanhe o caminho de cada pessoa.',
-              items: [
-                'Perfil pastoral completo de cada membro',
-                'Registro de visitante por QR Code',
-                'Filtros por Visitante, Membro ou Líder',
-                'Histórico de presença e interações',
-              ],
-            },
-            {
-              reverse: false,
-              screenshot: '/screenshots/ministerios.png',
-              alt: 'Ministérios e células',
-              label: 'Ministérios e células',
-              title: 'Sua rede pastoral sob controle',
-              body: 'Gerencie todos os ministérios, células e redes em um só lugar. Saúde de cada grupo em tempo real, com alertas quando uma célula para de se reunir.',
-              items: [
-                'Louvor, Diaconal, Missões e muito mais',
-                'Líderes e responsáveis por célula',
-                'Alertas de células sem reunião',
-                'Funil de conversão por rede pastoral',
-              ],
-            },
-            {
-              reverse: true,
-              screenshot: '/screenshots/agenda.png',
-              alt: 'Agenda e relatórios',
-              label: 'Agenda e relatórios',
-              title: 'Nenhum evento, nenhum dado perdido',
-              body: 'Calendário completo de cultos, encontros e eventos. Taxa de retenção mês a mês. Compare períodos e entenda o crescimento da sua comunidade.',
-              items: [
-                'Calendário mensal com eventos categorizados',
-                'Taxa de retenção de convertidos',
-                'Análise comparativa mensal e anual',
-                'Exportação CSV para relatórios externos',
-              ],
-            },
+            { reverse: false, screenshot: '/screenshots/painel.png', alt: 'Dashboard Ekthos', label: 'Dashboard pastoral', title: 'Visão completa da sua comunidade', body: 'Métricas em tempo real de membros, visitantes, células e convertidos. Alertas de afastamento automáticos antes que você precise perguntar.', items: ['Membros ativos, em risco e afastados — em tempo real', 'Alertas automáticos de afastamento', 'Redes e células com visão hierárquica', 'Novos convertidos e taxa de retenção'] },
+            { reverse: true, screenshot: '/screenshots/pessoas.png', alt: 'Gestão de pessoas', label: 'Gestão de pessoas', title: 'Cada membro, acompanhado de perto', body: 'Cadastro completo com histórico de visitas, batismo e discipulado. Registre visitantes em segundos com QR Code.', items: ['Perfil pastoral completo de cada membro', 'Registro de visitante por QR Code', 'Filtros por Visitante, Membro ou Líder', 'Histórico de presença e interações'] },
+            { reverse: false, screenshot: '/screenshots/ministerios.png', alt: 'Ministérios', label: 'Ministérios e células', title: 'Sua rede pastoral sob controle', body: 'Gerencie todos os ministérios, células e redes. Saúde de cada grupo em tempo real, com alertas quando uma célula para de se reunir.', items: ['Louvor, Diaconal, Missões e muito mais', 'Líderes e responsáveis por célula', 'Alertas de células sem reunião', 'Funil de conversão por rede pastoral'] },
           ].map((feat, i) => (
-            <div
-              key={i}
-              className={`flex flex-col ${feat.reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20 py-16 ${i < 3 ? 'border-b border-[var(--border-default)]' : ''}`}
-            >
-              {/* Text */}
+            <div key={i} className={`flex flex-col ${feat.reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 lg:gap-20 py-16 ${i < 2 ? 'border-b' : ''}`}
+              style={{ borderColor: '#EBEBEB' }}>
               <div className="flex-1">
-                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
-                  {feat.label}
-                </p>
-                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4 text-[var(--text-primary)]">
-                  {feat.title}
-                </h3>
-                <p className="text-[var(--text-secondary)] leading-relaxed mb-7">{feat.body}</p>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>{feat.label}</p>
+                <h3 className="font-display text-2xl lg:text-3xl font-bold mb-4" style={{ color: '#07131F' }}>{feat.title}</h3>
+                <p className="leading-relaxed mb-7" style={{ color: '#5A5A5A' }}>{feat.body}</p>
                 <ul className="space-y-3">
                   {feat.items.map(item => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-[var(--text-primary)]">
-                      <Check size={16} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 2 }} />
+                    <li key={item} className="flex items-start gap-3 text-sm" style={{ color: '#07131F' }}>
+                      <Check size={16} strokeWidth={2.5} style={{ color: '#e13500', flexShrink: 0, marginTop: 2 }}/>
                       {item}
                     </li>
                   ))}
                 </ul>
               </div>
-
-              {/* Screenshot */}
-              <div className="flex-1 w-full rounded-2xl p-3 lg:p-4"
-                style={{ background: 'var(--bg-surface)' }}>
-                <img
-                  src={feat.screenshot}
-                  alt={feat.alt}
-                  loading="lazy"
-                  className="w-full rounded-xl border border-black/[0.06]"
-                  style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.18)', display: 'block' }}
-                />
+              <div className="flex-1 w-full rounded-2xl p-3 lg:p-4" style={{ background: '#EBEBEB' }}>
+                <img src={feat.screenshot} alt={feat.alt} loading="lazy" className="w-full rounded-xl" style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.15)', display: 'block', border: '1px solid rgba(0,0,0,0.06)' }}/>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── 7. MÓDULOS PRO ────────────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-surface)' }}>
+      {/* ── MÓDULOS PRO ────────────────────────────────────── */}
+      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#fff' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
-              Módulos Pro
-            </p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
-              Módulos Pro exclusivos do plano Avivamento
-            </h2>
-            <p className="text-lg max-w-xl mx-auto mt-4 text-[var(--text-secondary)]">
-              Módulos especializados para as áreas que mais demandam atenção nas igrejas em crescimento.
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Módulos Pro</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#07131F' }}>Módulos especializados — em breve</h2>
+            <p className="text-lg max-w-xl mx-auto mt-4" style={{ color: '#5A5A5A' }}>Entre na lista de espera e seja avisado na abertura.</p>
           </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Volunteer Pro */}
-            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
-                  <UserPlus size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
-                  Volunteer Pro
-                </h3>
-                <div className="flex flex-col gap-1 items-end shrink-0 ml-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
-                    style={{ background: '#670000' }}>Avivamento</span>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · R$ 890/mês</span>
-                </div>
-              </div>
-              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
-                Escalas, check-in, confirmação WhatsApp e métricas de voluntários.
-              </p>
-              <ul className="space-y-2.5 flex-1">
-                {[
-                  'Equipes e funções organizadas',
-                  'Escalas automáticas com IA',
-                  'Confirmação via WhatsApp',
-                  'Check-in e check-out',
-                  'Trocas entre voluntários',
-                  'Métricas de engajamento',
-                ].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-primary)]">
-                    <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a href={WA.volunteer} target="_blank" rel="noopener noreferrer"
-                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
-                style={{ background: '#25D366' }}>
-                {WA_ICON} Entrar na lista de espera
-              </a>
-            </div>
-
-            {/* Kids Pro */}
-            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
-                  <ShieldCheck size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
-                  Kids Pro
-                </h3>
-                <div className="flex flex-col gap-1 items-end shrink-0 ml-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
-                    style={{ background: '#670000' }}>Avivamento</span>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · R$ 590/mês</span>
-                </div>
-              </div>
-              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
-                Check-in QR Code, validação de responsáveis e alertas aos pais.
-              </p>
-              <ul className="space-y-2.5 flex-1">
-                {[
-                  'Cadastro de crianças e responsáveis',
-                  'Check-in com QR Code',
-                  'Check-out seguro com validação',
-                  'Alertas via WhatsApp aos pais',
-                  'Controle de alergias e restrições',
-                  'Relatórios de frequência',
-                ].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-primary)]">
-                    <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a href={WA.kids} target="_blank" rel="noopener noreferrer"
-                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
-                style={{ background: '#25D366' }}>
-                {WA_ICON} Entrar na lista de espera
-              </a>
-            </div>
-
-            {/* Financeiro Pro */}
-            <div className="bg-[var(--bg-surface)] rounded-2xl p-8 border border-[var(--border-default)] shadow-sm hover:shadow-md transition-all duration-200 flex flex-col">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-display text-xl font-bold text-[var(--text-primary)] flex items-center gap-2.5">
-                  <DollarSign size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
-                  Financeiro Pro
-                </h3>
-                <div className="flex flex-col gap-1 items-end shrink-0 ml-3">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
-                    style={{ background: '#670000' }}>Avivamento</span>
-                  <span className="px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · R$ 1.290/mês</span>
-                </div>
-              </div>
-              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
-                Folha, DRE, NF, conciliação e agente financeiro com IA.
-              </p>
-              <ul className="space-y-2.5 flex-1">
-                {[
-                  'Folha de pagamento',
-                  'Notas fiscais (entrada/saída)',
-                  'DRE',
-                  'Centro de custos',
-                  'Conciliação bancária',
-                  'Chat agent-financeiro com IA',
-                  'WhatsApp Z-API para cobranças',
-                ].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-[var(--text-primary)]">
-                    <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a href={WA.financeiro} target="_blank" rel="noopener noreferrer"
-                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
-                style={{ background: '#25D366' }}>
-                {WA_ICON} Entrar na lista de espera
-              </a>
-            </div>
-          </div>
-
-          <p className="text-center text-sm text-[var(--text-tertiary)] mt-8 italic">
-            Implementação acompanhada pelo time Ekthos. Recebemos sua mensagem e contatamos em até 24h.
-          </p>
-        </div>
-      </section>
-
-      {/* ── 8. APP PRÓPRIO DA IGREJA ──────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24">
-
-            {/* Copy */}
-            <div className="flex-1 text-center lg:text-left">
-              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold mb-6 border"
-                style={{ background: 'rgba(41,182,255,0.15)', color: 'var(--color-primary)', borderColor: 'rgba(41,182,255,0.25)' }}>
-                <Smartphone size={12} /> Exclusivo do plano Avivamento
-              </span>
-              <h2 className="font-display text-3xl lg:text-4xl font-bold mb-5" style={{ color: '#F5FAFF' }}>
-                Sua igreja com{' '}
-                <span style={{ color: 'var(--color-primary)' }}>aplicativo próprio</span>
-              </h2>
-              <p className="text-lg leading-relaxed mb-8 max-w-lg" style={{ color: 'rgba(245,250,255,0.7)' }}>
-                No plano Avivamento, sua igreja ganha um aplicativo exclusivo com a identidade,
-                logo e cores da sua comunidade. Seus membros acessam tudo pelo celular.
-              </p>
-              <ul className="space-y-4 mb-10">
-                {[
-                  ['Identidade visual exclusiva da sua igreja',     'Logo, cores e nome — sem Ekthos na frente'],
-                  ['Notificações para eventos e comunicados',       'Alcance seus membros onde eles estão'],
-                  ['Mural de pedidos de oração',                    'Comunidade conectada em fé'],
-                  ['Agenda de cultos e células acessível',          'Calendário sempre atualizado'],
-                  ['Conteúdo devocional e materiais',               'Devocionais, estudos e avisos'],
-                ].map(([main, sub]) => (
-                  <li key={main} className="flex items-start gap-3">
-                    <Check size={16} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 3 }} />
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'rgba(245,250,255,0.9)' }}>{main}</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'rgba(245,250,255,0.45)' }}>{sub}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <a href={WA.avivamento} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: '#25D366', minHeight: 52 }}>
-                {WA_ICON} Falar sobre o plano Avivamento
-              </a>
-            </div>
-
-            {/* Screenshot do app / visual real */}
-            <div className="flex-1 w-full">
-              <div className="rounded-2xl overflow-hidden border border-white/10"
-                style={{ boxShadow: '0 32px 64px rgba(0,0,0,0.5)' }}>
-                <img
-                  src="/screenshots/painel.png"
-                  alt="Aplicativo Ekthos Church"
-                  loading="lazy"
-                  className="w-full block"
-                />
-              </div>
-              <p className="text-center text-xs mt-4" style={{ color: 'rgba(245,250,255,0.3)' }}>
-                Interface personalizada com a identidade da sua igreja
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 8.5. COMO FUNCIONA ───────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
-              Como funciona
-            </p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[var(--text-primary)]">
-              Do cadastro à ação pastoral — em minutos
-            </h2>
-            <p className="text-lg max-w-2xl mx-auto text-[var(--text-secondary)]">
-              Os agentes acessam o CRM em tempo real e agem sobre os dados da sua comunidade —
-              sem você precisar configurar nada manualmente.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-0 relative">
-            {/* linha conectora (desktop) */}
-            <div className="hidden md:block absolute top-10 left-[12.5%] right-[12.5%] h-px" style={{ background: 'var(--border-default)' }} />
-
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              { num: '01', title: 'Onboarding', body: 'O Agente Onboarding configura seu CRM em 20 perguntas simples — em menos de 30 minutos.', color: 'var(--color-primary)' },
-              { num: '02', title: 'Dados no CRM', body: 'Membros, visitantes, células e eventos entram automaticamente via formulários e QR Code.', color: '#2D7A4F' },
-              { num: '03', title: 'Agentes em ação', body: 'Os agentes leem os dados do CRM e enviam mensagens, alertas e relatórios — automaticamente.', color: '#C4841D' },
-              { num: '04', title: 'Você no controle', body: 'Você vê tudo no painel: quem foi acolhido, quem retornou, quais membros precisam de atenção.', color: '#670000' },
-            ].map((step, i) => (
-              <div key={i} className="flex flex-col items-center text-center px-4 relative">
-                <div
-                  className="relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shrink-0"
-                  style={{ background: `${step.color}18`, border: `1.5px solid ${step.color}40` }}>
-                  <span className="font-mono text-2xl font-bold" style={{ color: step.color }}>{step.num}</span>
+              { icon: <UserPlus size={20} style={{ color: '#e13500' }}/>, title: 'Volunteer Pro', price: 'R$ 890/mês', desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.', items: ['Equipes e funções organizadas', 'Escalas automáticas com IA', 'Confirmação via WhatsApp', 'Check-in/check-out', 'Trocas entre voluntários'], wa: WA.volunteer },
+              { icon: <ShieldCheck size={20} style={{ color: '#2D7A4F' }}/>, title: 'Kids Pro', price: 'R$ 590/mês', desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.', items: ['Cadastro de crianças e responsáveis', 'Check-in com QR Code', 'Check-out seguro com validação', 'Alertas via WhatsApp aos pais', 'Controle de alergias'], wa: WA.kids },
+              { icon: <DollarSign size={20} style={{ color: '#e13500' }}/>, title: 'Financeiro Pro', price: 'R$ 1.290/mês', desc: 'Folha, DRE, NF, conciliação e agente financeiro com IA.', items: ['Folha de pagamento', 'Notas fiscais (entrada/saída)', 'DRE e centro de custos', 'Conciliação bancária', 'Agente financeiro com IA'], wa: WA.financeiro },
+            ].map(mod => (
+              <div key={mod.title} className="rounded-2xl p-7 border flex flex-col" style={{ background: '#F9F9F9', borderColor: '#EBEBEB' }}>
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-display text-xl font-bold flex items-center gap-2.5" style={{ color: '#07131F' }}>
+                    {mod.icon} {mod.title}
+                  </h3>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold shrink-0 ml-3" style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · {mod.price}</span>
                 </div>
-                <h3 className="font-semibold text-base mb-2 text-[var(--text-primary)]">{step.title}</h3>
-                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{step.body}</p>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: '#5A5A5A' }}>{mod.desc}</p>
+                <ul className="space-y-2 flex-1 mb-6">
+                  {mod.items.map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm" style={{ color: '#07131F' }}>
+                      <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }}/>{f}
+                    </li>
+                  ))}
+                </ul>
+                <a href={mod.wa} target="_blank" rel="noopener noreferrer"
+                  className="w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                  style={{ background: '#25D366' }}>
+                  {WA_ICON} Entrar na lista de espera
+                </a>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── 9. PRICING ────────────────────────────────────────── */}
-      <section id="pricing" ref={pricingRef}
-        className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: 'var(--bg-primary)' }}>
+      {/* ── PRICING ────────────────────────────────────────── */}
+      <section id="pricing" ref={pricingRef} className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: '#F9F9F9' }}>
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-14">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Planos</p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[var(--text-primary)]">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Planos</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: '#07131F' }}>
               Investimento que se paga com o primeiro membro retido
             </h2>
-            <p className="text-lg max-w-xl mx-auto text-[var(--text-secondary)]">
-              Do self-service ao consultivo — escolha o que faz sentido para a sua igreja.
-            </p>
+            <p className="text-lg max-w-xl mx-auto" style={{ color: '#5A5A5A' }}>Do self-service ao consultivo — escolha o que faz sentido para a sua igreja.</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
-
-            {/* ── CHAMADO ── */}
-            <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+            {/* CHAMADO */}
+            <div className="relative bg-white rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col" style={{ borderColor: '#EBEBEB' }}>
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
-                  <Star size={18} strokeWidth={1.75} style={{ color: '#5A5A5A' }} />
+                  <Star size={18} strokeWidth={1.75} style={{ color: '#8A8A8A' }}/>
                   <div>
-                    <p className="font-semibold text-base text-[var(--text-primary)]">Chamado</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Igrejas de até 500 membros</p>
+                    <p className="font-semibold text-base" style={{ color: '#07131F' }}>Chamado</p>
+                    <p className="text-xs" style={{ color: '#8A8A8A' }}>Até 500 membros</p>
                   </div>
                 </div>
-
                 <div className="mb-1">
-                  <span className="font-mono font-bold text-4xl text-[var(--text-primary)]">R$689,90</span>
-                  <span className="text-sm ml-1 text-[var(--text-tertiary)]">/mês</span>
+                  <span className="font-mono font-bold text-4xl" style={{ color: '#07131F' }}>R$689,90</span>
+                  <span className="text-sm ml-1" style={{ color: '#8A8A8A' }}>/mês</span>
                 </div>
-                <p className="text-xs text-[var(--text-tertiary)] mb-6">Acesso imediato após contratação</p>
-
+                <p className="text-xs mb-6" style={{ color: '#8A8A8A' }}>Acesso imediato · sem consultoria</p>
                 <ul className="space-y-2.5 mb-4">
-                  {[
-                    '5 usuários administrativos',
-                    'Dashboard pastoral completo',
-                    'Cadastro e acompanhamento de membros',
-                    'Caminho de discipulado (pipeline)',
-                    'Rede de células e ministérios',
-                    'Agente Suporte 24h',
-                    'Agente Onboarding',
-                    'Suporte por email',
-                  ].map(f => (
+                  {['5 usuários administrativos', 'CRM pastoral completo', 'Caminho de discipulado', 'Rede de células e ministérios', 'Agente Suporte 24h', 'Agente Onboarding', 'Agente Cadastro', 'Suporte por email'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-                      <span className="text-[var(--text-primary)]">{f}</span>
+                      <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }}/>
+                      <span style={{ color: '#07131F' }}>{f}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs text-[var(--text-tertiary)] italic px-1">
-                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro vendidos como módulo Pro.
-                </p>
               </div>
               <div className="px-7 pb-7">
                 <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
-                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center"
-                  style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)', minHeight: 52 }}>
+                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 flex items-center justify-center"
+                  style={{ background: 'transparent', color: '#e13500', border: '2px solid #e13500', minHeight: 52 }}>
                   Contratar agora →
                 </a>
-                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Acesso imediato · sem consultoria</p>
+                <p className="text-center text-xs mt-2" style={{ color: '#8A8A8A' }}>Acesso imediato</p>
               </div>
             </div>
 
-            {/* ── MISSÃO (popular) ── */}
-            <div className="relative bg-[#07131F] rounded-2xl border-2 border-[var(--color-primary)] shadow-xl scale-[1.02] flex flex-col">
+            {/* MISSÃO */}
+            <div className="relative rounded-2xl border-2 shadow-xl flex flex-col" style={{ background: '#07131F', borderColor: '#e13500' }}>
               <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: 'var(--color-primary)' }}>Mais popular</span>
+                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white" style={{ background: '#e13500' }}>Mais popular</span>
               </div>
-
-              <div className="p-7 flex-1">
+              <div className="p-7 flex-1 pt-9">
                 <div className="flex items-center gap-3 mb-5">
-                  <Zap size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+                  <Zap size={18} strokeWidth={1.75} style={{ color: '#e13500' }}/>
                   <div>
-                    <p className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>Missão</p>
-                    <p className="text-xs" style={{ color: 'rgba(245,250,255,0.5)' }}>Igrejas de até 1.000 membros</p>
+                    <p className="font-semibold text-base text-white">Missão</p>
+                    <p className="text-xs" style={{ color: 'rgba(245,250,255,0.5)' }}>Até 1.000 membros</p>
                   </div>
                 </div>
-
-                <div className="mb-1">
-                  <span className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>Plano personalizado</span>
-                </div>
-                <p className="text-xs mb-6" style={{ color: 'rgba(245,250,255,0.4)' }}>Proposta sob medida para a sua realidade</p>
-
+                <div className="mb-1"><span className="font-display font-bold text-2xl text-white">Plano personalizado</span></div>
+                <p className="text-xs mb-6" style={{ color: 'rgba(245,250,255,0.4)' }}>Proposta sob medida para sua realidade</p>
                 <ul className="space-y-2.5 mb-4">
-                  {[
-                    '8 usuários administrativos',
-                    'Tudo do plano Chamado',
-                    'Agente Cadastro incluso',
-                    'Relatórios automáticos',
-                    'Automações pastorais',
-                    'Escalas básicas de voluntários',
-                    'Suporte prioritário',
-                  ].map(f => (
+                  {['8 usuários administrativos', 'Tudo do plano Chamado', 'Agente Cadastro incluso', 'Relatórios automáticos', 'Automações pastorais', 'Suporte prioritário'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+                      <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }}/>
                       <span style={{ color: 'rgba(245,250,255,0.85)' }}>{f}</span>
                     </li>
                   ))}
                 </ul>
-                <p className="text-xs italic px-1" style={{ color: 'rgba(245,250,255,0.35)' }}>
-                  Módulos Volunteer Pro, Kids Pro e Financeiro Pro vendidos como módulo Pro.
-                </p>
               </div>
               <div className="px-7 pb-7">
                 <a href={WA.missao} target="_blank" rel="noopener noreferrer"
-                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 flex items-center justify-center gap-2"
                   style={{ background: '#25D366', minHeight: 52 }}>
                   {WA_ICON} Falar no WhatsApp
                 </a>
-                <p className="text-center text-xs mt-2" style={{ color: 'rgba(245,250,255,0.35)' }}>
-                  Proposta personalizada
-                </p>
+                <p className="text-center text-xs mt-2" style={{ color: 'rgba(245,250,255,0.35)' }}>Proposta em 24h</p>
               </div>
             </div>
 
-            {/* ── AVIVAMENTO ── */}
-            <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#670000' }}>Enterprise</span>
+            {/* AVIVAMENTO */}
+            <div className="relative bg-white rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col" style={{ borderColor: '#EBEBEB' }}>
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white" style={{ background: '#670000' }}>Enterprise</span>
               </div>
-
               <div className="p-7 flex-1 pt-10">
                 <div className="flex items-center gap-3 mb-5">
-                  <Crown size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+                  <Crown size={18} strokeWidth={1.75} style={{ color: '#e13500' }}/>
                   <div>
-                    <p className="font-semibold text-base text-[var(--text-primary)]">Avivamento</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Igrejas acima de 1.000 membros</p>
+                    <p className="font-semibold text-base" style={{ color: '#07131F' }}>Avivamento</p>
+                    <p className="text-xs" style={{ color: '#8A8A8A' }}>Acima de 1.000 membros</p>
                   </div>
                 </div>
-
-                <div className="mb-1">
-                  <span className="font-display font-bold text-2xl text-[var(--text-primary)]">Plano sob medida</span>
+                <div className="mb-1"><span className="font-display font-bold text-2xl" style={{ color: '#07131F' }}>Sob medida</span></div>
+                <p className="text-xs mb-4" style={{ color: '#8A8A8A' }}>Proposta dedicada para operações complexas</p>
+                <div className="rounded-xl p-4 mb-5 border" style={{ background: 'rgba(225,53,0,0.04)', borderColor: 'rgba(225,53,0,0.12)' }}>
+                  <p className="text-xs font-bold mb-2" style={{ color: '#e13500' }}>Módulos exclusivos:</p>
+                  {['Volunteer Pro', 'Kids Pro', 'Financeiro Pro', 'App próprio da igreja'].map(d => (
+                    <div key={d} className="flex items-center gap-2 text-xs font-medium mt-1.5" style={{ color: '#07131F' }}>
+                      <Check size={12} strokeWidth={2.5} style={{ color: '#e13500' }}/>{d}
+                    </div>
+                  ))}
                 </div>
-                <p className="text-xs text-[var(--text-tertiary)] mb-4">Proposta dedicada para operações complexas</p>
-
-                <div className="rounded-xl p-4 mb-5 border" style={{ background: 'rgba(41,182,255,0.05)', borderColor: 'rgba(41,182,255,0.12)' }}>
-                  <p className="text-xs font-bold text-[var(--color-primary)] mb-2">Inclui exclusivamente:</p>
-                  <div className="space-y-1.5">
-                    {[
-                      'Volunteer Pro — escalas e equipes',
-                      'Kids Pro — ministério infantil',
-                      'Financeiro Pro — financeiro e folha',
-                      'Aplicativo próprio da igreja',
-                    ].map(d => (
-                      <div key={d} className="flex items-center gap-2 text-xs font-medium text-[var(--text-primary)]">
-                        <Check size={13} strokeWidth={2.5} style={{ color: 'var(--color-primary)' }} />
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <ul className="space-y-2.5 mb-6">
-                  {[
-                    '10 usuários administrativos',
-                    'Tudo do plano Missão',
-                    '6 agentes IA completos',
-                    'Multi-site (múltiplas sedes)',
-                    'Suporte dedicado',
-                  ].map(f => (
+                <ul className="space-y-2.5 mb-4">
+                  {['10 usuários administrativos', 'Tudo do plano Missão', '6 agentes IA completos', 'Multi-site'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-                      <span className="text-[var(--text-primary)]">{f}</span>
+                      <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }}/>
+                      <span style={{ color: '#07131F' }}>{f}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="px-7 pb-7">
                 <a href={WA.avivamento} target="_blank" rel="noopener noreferrer"
-                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 flex items-center justify-center gap-2"
                   style={{ background: '#25D366', minHeight: 52 }}>
                   {WA_ICON} Falar no WhatsApp
                 </a>
-                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Consultoria dedicada</p>
+                <p className="text-center text-xs mt-2" style={{ color: '#8A8A8A' }}>Consultoria dedicada</p>
               </div>
             </div>
 
-            {/* ── ENTERPRISE ── */}
-            <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+            {/* ENTERPRISE */}
+            <div className="relative bg-white rounded-2xl border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col" style={{ borderColor: '#EBEBEB' }}>
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
-                  style={{ background: '#161616' }}>Rede de igrejas</span>
+                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white" style={{ background: '#161616' }}>Rede de igrejas</span>
               </div>
-
               <div className="p-7 flex-1 pt-10">
                 <div className="flex items-center gap-3 mb-5">
-                  <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.75" style={{ color: 'var(--color-primary)' }}>
-                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <Smartphone size={18} strokeWidth={1.75} style={{ color: '#e13500' }}/>
                   <div>
-                    <p className="font-semibold text-base text-[var(--text-primary)]">Enterprise</p>
-                    <p className="text-xs text-[var(--text-tertiary)]">Múltiplas sedes e redes de igrejas</p>
+                    <p className="font-semibold text-base" style={{ color: '#07131F' }}>Enterprise</p>
+                    <p className="text-xs" style={{ color: '#8A8A8A' }}>Múltiplas sedes</p>
                   </div>
                 </div>
-
-                <div className="mb-1">
-                  <span className="font-display font-bold text-2xl text-[var(--text-primary)]">Proposta sob medida</span>
-                </div>
-                <p className="text-xs text-[var(--text-tertiary)] mb-5">Preço baseado em número de sedes e membros</p>
-
+                <div className="mb-1"><span className="font-display font-bold text-2xl" style={{ color: '#07131F' }}>Sob medida</span></div>
+                <p className="text-xs mb-6" style={{ color: '#8A8A8A' }}>Preço por sedes e volume de membros</p>
                 <ul className="space-y-2.5 mb-6">
-                  {[
-                    'Múltiplas sedes em um só painel',
-                    'Gestão centralizada de líderes',
-                    'Relatórios consolidados por rede',
-                    'Agentes IA configurados por sede',
-                    'SLA e suporte enterprise',
-                    'Onboarding presencial',
-                  ].map(f => (
+                  {['Múltiplas sedes em um painel', 'Gestão centralizada de líderes', 'Relatórios por rede e sede', 'Agentes configurados por sede', 'SLA e suporte enterprise', 'Onboarding presencial'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
-                      <span className="text-[var(--text-primary)]">{f}</span>
+                      <Check size={14} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }}/>
+                      <span style={{ color: '#07131F' }}>{f}</span>
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="px-7 pb-7">
                 <a href={WA.enterprise} target="_blank" rel="noopener noreferrer"
-                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 flex items-center justify-center gap-2"
                   style={{ background: '#25D366', minHeight: 52 }}>
                   {WA_ICON} Falar no WhatsApp
                 </a>
-                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Proposta em até 24h</p>
+                <p className="text-center text-xs mt-2" style={{ color: '#8A8A8A' }}>Proposta em até 24h</p>
               </div>
             </div>
           </div>
 
           {/* Addons */}
-          <div className="mt-10 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] p-6 lg:p-8">
-            <p className="font-semibold text-center mb-6 text-[var(--text-primary)]">
-              Módulos Pro — disponíveis nos planos Chamado e Missão
-            </p>
+          <div className="mt-10 bg-white rounded-2xl border p-6 lg:p-8" style={{ borderColor: '#EBEBEB' }}>
+            <p className="font-semibold text-center mb-6" style={{ color: '#07131F' }}>Módulos Pro e Usuários extras — disponíveis em qualquer plano</p>
             <div className="grid md:grid-cols-4 gap-5">
               {[
-                { icon: <UserPlus size={16} strokeWidth={1.75} />,   title: 'Volunteer Pro',     price: 'Em breve · R$ 890/mês',    desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
-                { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Kids Pro',          price: 'Em breve · R$ 590/mês',    desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
-                { icon: <DollarSign size={16} strokeWidth={1.75} />,  title: 'Financeiro Pro',    price: 'Em breve · R$ 1.290/mês',  desc: 'Folha, DRE, NF, conciliação e agente financeiro com IA.' },
-                { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional', price: 'R$ 59,90/mês',             desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
-              ].map((a, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: 'var(--bg-active)' }}>
-                  <span style={{ color: 'var(--color-primary)', marginTop: 2 }}>{a.icon}</span>
+                { icon: <UserPlus size={16} style={{ color: '#e13500' }}/>, title: 'Volunteer Pro', price: 'Em breve · R$ 890/mês', desc: 'Escalas, check-in, confirmação WhatsApp.' },
+                { icon: <ShieldCheck size={16} style={{ color: '#2D7A4F' }}/>, title: 'Kids Pro', price: 'Em breve · R$ 590/mês', desc: 'Check-in QR Code, alertas aos pais.' },
+                { icon: <DollarSign size={16} style={{ color: '#e13500' }}/>, title: 'Financeiro Pro', price: 'Em breve · R$ 1.290/mês', desc: 'Folha, DRE, NF, conciliação e IA.' },
+                { icon: <Users size={16} style={{ color: '#e13500' }}/>, title: 'Usuário adicional', price: 'R$ 59,90/mês', desc: 'Mais líderes com acesso administrativo.' },
+              ].map(a => (
+                <div key={a.title} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: '#F5F5F5' }}>
+                  <span style={{ marginTop: 2 }}>{a.icon}</span>
                   <div>
-                    <p className="font-semibold text-sm text-[var(--text-primary)]">{a.title}</p>
-                    <p className="text-xs font-medium mt-0.5" style={{ color: 'var(--color-primary)' }}>{a.price}</p>
-                    <p className="text-xs mt-0.5 text-[var(--text-tertiary)]">{a.desc}</p>
+                    <p className="font-semibold text-sm" style={{ color: '#07131F' }}>{a.title}</p>
+                    <p className="text-xs font-medium mt-0.5" style={{ color: '#e13500' }}>{a.price}</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#8A8A8A' }}>{a.desc}</p>
                   </div>
                 </div>
               ))}
@@ -1240,74 +1048,29 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 10. COMPARATIVO ───────────────────────────────────── */}
-      <section className="py-16 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
-        <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="font-display text-2xl lg:text-3xl font-bold mb-3 text-[var(--text-primary)]">
-            Por que igrejas migram para o Ekthos Church?
-          </h2>
-        </div>
-        <div className="bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ background: 'var(--bg-active)' }}>
-                <th className="text-left p-4 font-semibold text-[var(--text-primary)]">Recurso</th>
-                <th className="p-4 text-center font-semibold text-[var(--text-tertiary)]">Planilhas</th>
-                <th className="p-4 text-center font-semibold text-[var(--text-tertiary)]">CRM Genérico</th>
-                <th className="p-4 text-center font-semibold" style={{ color: 'var(--color-primary)', background: 'rgba(41,182,255,0.05)' }}>Ekthos Church</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                ['Fala a linguagem da igreja',          false, false, true],
-                ['Caminho de discipulado',               false, false, true],
-                ['Agentes IA pastorais',                 false, false, true],
-                ['Setup em 30 minutos',                  false, false, true],
-                ['Alertas de membros afastados',         false, false, true],
-                ['Controle de células e ministérios',    false, false, true],
-                ['Relatórios automáticos',               false, true,  true],
-                ['Aplicativo próprio da igreja',         false, false, true],
-                ['Suporte em português',                 false, false, true],
-              ].map(([label, col1, col2, col3]) => (
-                <tr key={String(label)} style={{ borderTop: '1px solid var(--border-default)' }}>
-                  <td className="p-4 text-[var(--text-primary)]">{label}</td>
-                  <td className="p-4 text-center">{col1 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
-                  <td className="p-4 text-center">{col2 ? <Check size={16} style={{ color: '#2D7A4F', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
-                  <td className="p-4 text-center" style={{ background: 'rgba(41,182,255,0.03)' }}>{col3 ? <Check size={16} style={{ color: 'var(--color-primary)', margin: '0 auto' }} /> : <X size={16} style={{ color: '#CCC', margin: '0 auto' }} />}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        </div>
-      </section>
-
-      {/* ── 11. DEPOIMENTOS ───────────────────────────────────── */}
+      {/* ── DEPOIMENTOS ────────────────────────────────────── */}
       <section className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>O que os pastores dizem</p>
-            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              Pastores que transformaram sua gestão
-            </h2>
+            <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: '#e13500' }}>O que os pastores dizem</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold text-white">Pastores que transformaram sua gestão</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-5">
             {[
-              { name: 'Pr. Carlos Mendes',    church: 'Igreja Vida Nova — SP',         text: 'Em 3 meses, reduzi em 60% o tempo que gastava com planilhas. Agora consigo focar no que realmente importa: as pessoas.' },
-              { name: 'Pr. Roberto Alves',    church: 'Comunidade Ágape — RJ',         text: 'O sistema identificou membros afastados que eu nem sabia. Recuperamos dezenas deles em 60 dias.' },
-              { name: 'Pastora Lúcia Santos', church: 'Assembleia do Rei — BH',        text: 'O onboarding com IA foi surpreendente. Em 25 minutos o sistema estava configurado do jeito que nossa igreja funciona.' },
-              { name: 'Pr. André Costa',      church: 'Igreja Renascer — Curitiba',    text: 'As escalas de voluntários pararam de gerar conflitos. A equipe recebe confirmação automática.' },
-              { name: 'Pr. José Ferreira',    church: 'Comunidade Shalom — Fortaleza', text: 'Finalmente tenho números reais. Sei quantos visitantes voltaram e qual ministério precisa de atenção.' },
-              { name: 'Pastora Ana Lima',     church: 'IBatista Central — Recife',     text: 'O módulo infantil trouxe mais segurança pro nosso ministério kids. Os pais ficaram muito mais tranquilos.' },
+              { name: 'Pr. Carlos Mendes', church: 'Igreja Vida Nova — SP', text: 'Em 3 meses, reduzi em 60% o tempo que gastava com planilhas. Agora consigo focar no que realmente importa: as pessoas.' },
+              { name: 'Pr. Roberto Alves', church: 'Comunidade Ágape — RJ', text: 'O sistema identificou membros afastados que eu nem sabia. Recuperamos dezenas deles em 60 dias.' },
+              { name: 'Pastora Lúcia Santos', church: 'Assembleia do Rei — BH', text: 'O onboarding com IA foi surpreendente. Em 25 minutos o sistema estava configurado do jeito que nossa igreja funciona.' },
+              { name: 'Pr. André Costa', church: 'Igreja Renascer — Curitiba', text: 'As escalas de voluntários pararam de gerar conflitos. A equipe recebe confirmação automática pelo WhatsApp.' },
+              { name: 'Pr. José Ferreira', church: 'Comunidade Shalom — Fortaleza', text: 'Finalmente tenho números reais. Sei quantos visitantes voltaram e qual ministério precisa de atenção.' },
+              { name: 'Pastora Ana Lima', church: 'IBatista Central — Recife', text: 'O módulo infantil trouxe mais segurança pro nosso ministério kids. Os pais ficaram muito mais tranquilos.' },
             ].map((t, i) => (
-              <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(41,182,255,0.04)', borderColor: 'rgba(41,182,255,0.08)' }}>
+              <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)' }}>
                 <div className="flex gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} size={14} fill="var(--color-primary)" style={{ color: 'var(--color-primary)' }} />)}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} size={13} fill="#e13500" style={{ color: '#e13500' }}/>)}
                 </div>
-                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(245,250,255,0.75)' }}>"{t.text}"</p>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(245,250,255,0.7)' }}>"{t.text}"</p>
                 <div>
-                  <p className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{t.name}</p>
+                  <p className="font-semibold text-sm text-white">{t.name}</p>
                   <p className="text-xs mt-0.5" style={{ color: 'rgba(245,250,255,0.4)' }}>{t.church}</p>
                 </div>
               </div>
@@ -1316,130 +1079,106 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 12. FAQ ───────────────────────────────────────────── */}
-      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-surface)' }}>
+      {/* ── FAQ ────────────────────────────────────────────── */}
+      <section id="faq" className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: '#F9F9F9' }}>
         <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>Dúvidas frequentes</p>
-          <h2 className="font-display text-3xl lg:text-4xl font-bold text-[var(--text-primary)]">
-            Respondemos antes de você perguntar
-          </h2>
-        </div>
-        <div className="space-y-3">
-          {FAQ_ITEMS.map((item, i) => (
-            <div key={i} className="rounded-2xl border shadow-sm overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
-              <button
-                onClick={() => setFaqOpen(faqOpen === i ? null : i)}
-                className="w-full flex items-center justify-between px-6 py-5 text-left">
-                <span className="font-semibold text-base pr-4 text-[var(--text-primary)]">{item.q}</span>
-                <ChevronDown size={18} strokeWidth={2}
-                  style={{ color: 'var(--color-primary)', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }} />
-              </button>
-              {faqOpen === i && (
-                <div className="px-6 pb-5">
-                  <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{item.a}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: '#e13500' }}>Dúvidas frequentes</p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold" style={{ color: '#07131F' }}>Respondemos antes de você perguntar</h2>
+          </div>
+          <div className="space-y-3">
+            {FAQ_ITEMS.map((item, i) => (
+              <div key={i} className="rounded-2xl border shadow-sm overflow-hidden" style={{ background: '#fff', borderColor: '#EBEBEB' }}>
+                <button onClick={() => setFaqOpen(faqOpen === i ? null : i)}
+                  className="w-full flex items-center justify-between px-6 py-5 text-left">
+                  <span className="font-semibold text-base pr-4" style={{ color: '#07131F' }}>{item.q}</span>
+                  <ChevronDown size={18} strokeWidth={2} style={{ color: '#e13500', flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }}/>
+                </button>
+                {faqOpen === i && (
+                  <div className="px-6 pb-5">
+                    <p className="text-sm leading-relaxed" style={{ color: '#5A5A5A' }}>{item.a}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── 13. CTA FINAL ─────────────────────────────────────── */}
-      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full"
-        style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #0C1B2B 100%)' }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest mb-4 text-white/60">Comece hoje mesmo</p>
+      {/* ── CTA FINAL ──────────────────────────────────────── */}
+      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full bg-[#07131F] relative overflow-hidden">
+        {/* Glow decorativo */}
+        <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 100%, rgba(225,53,0,0.12) 0%, transparent 60%)' }}/>
+        <div className="max-w-3xl mx-auto text-center relative">
+          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-4" style={{ color: 'rgba(245,250,255,0.4)' }}>Comece hoje</p>
           <h2 className="font-display text-3xl lg:text-4xl font-bold text-white mb-5">
-            Sua congregação está esperando por um pastor mais presente
+            Comece com agentes trabalhando pela sua igreja.
           </h2>
-          <p className="text-lg mb-3 max-w-xl mx-auto text-white/80">
-            Setup em 30 minutos. Suporte em português. Sem complicação.
+          <p className="text-lg mb-3 max-w-xl mx-auto" style={{ color: 'rgba(245,250,255,0.7)' }}>
+            Setup em 30 minutos. Suporte em português. Agentes operacionais no mesmo dia.
           </p>
-          <p className="text-sm italic mb-10 text-white/55">
+          <p className="text-sm italic mb-10" style={{ color: 'rgba(245,250,255,0.4)' }}>
             "O bom pastor dá a sua vida pelas ovelhas." — Jo 10:11
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
-              style={{ color: 'var(--color-primary)', minHeight: 56 }}>
-              Começar com Plano Chamado →
+              className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{ background: '#e13500', color: '#fff', minHeight: 56, boxShadow: '0 4px 24px rgba(225,53,0,0.35)' }}>
+              Assinar Plano Chamado
             </a>
             <a href={WA.cta} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
               style={{ background: '#25D366', minHeight: 56 }}>
-              {WA_ICON} Falar no WhatsApp
+              {WA_ICON} Falar com nosso time
             </a>
+            <button onClick={() => scrollTo(pricingRef)}
+              className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-80"
+              style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(245,250,255,0.8)', border: '1px solid rgba(255,255,255,0.12)', minHeight: 56 }}>
+              Conhecer os planos
+            </button>
           </div>
         </div>
       </section>
 
-      {/* ── 14. FOOTER ────────────────────────────────────────── */}
-      <footer className="bg-[#07131F] w-full">
+      {/* ── FOOTER ─────────────────────────────────────────── */}
+      <footer className="bg-[#07131F] w-full border-t" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         <div className="max-w-7xl mx-auto px-5 lg:px-8 py-16">
           <div className="grid md:grid-cols-4 gap-10 mb-10">
             <div>
-              <div className="mb-4">
-                <LogoEkthos variant="light" height={36} showChurch={true} />
-              </div>
-              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.45)' }}>
-                Sua igreja operando com agentes de IA, usando o CRM como base de dados. Setup em 30 minutos.
+              <div className="mb-4"><LogoEkthos variant="light" height={36} showChurch={true}/></div>
+              <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.4)' }}>
+                Agentes de IA trabalhando pela sua igreja todos os dias. CRM pastoral com automação e visão real.
               </p>
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>Produto</p>
-              <ul className="space-y-2.5">
-                {['Funcionalidades', 'Planos', 'Agentes IA', 'Changelog'].map(l => (
-                  <li key={l}>
-                    <a href="#" className="text-sm transition-colors"
-                      style={{ color: 'rgba(245,250,255,0.5)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>{l}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>Empresa</p>
-              <ul className="space-y-2.5">
-                {['Sobre', 'Blog', 'Afiliados', 'Contato'].map(l => (
-                  <li key={l}>
-                    <a href="#" className="text-sm transition-colors"
-                      style={{ color: 'rgba(245,250,255,0.5)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>{l}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>Legal</p>
-              <ul className="space-y-2.5">
-                {['Termos de Uso', 'Política de Privacidade', 'LGPD'].map(l => (
-                  <li key={l}>
-                    <a href="#" className="text-sm transition-colors"
-                      style={{ color: 'rgba(245,250,255,0.5)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.5)')}>{l}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {[
+              { title: 'Produto', links: ['Funcionalidades', 'Agentes IA', 'Planos', 'Changelog'] },
+              { title: 'Empresa', links: ['Sobre', 'Blog', 'Afiliados', 'Contato'] },
+              { title: 'Legal', links: ['Termos de Uso', 'Política de Privacidade', 'LGPD'] },
+            ].map(col => (
+              <div key={col.title}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.25)' }}>{col.title}</p>
+                <ul className="space-y-2.5">
+                  {col.links.map(l => (
+                    <li key={l}>
+                      <a href="#" className="text-sm transition-colors" style={{ color: 'rgba(245,250,255,0.45)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.9)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'rgba(245,250,255,0.45)')}>
+                        {l}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-          <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
-            style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
-            <p className="text-xs" style={{ color: 'rgba(245,250,255,0.3)' }}>
-              © 2026 Ekthos Church. Feito com fé para a Igreja de Cristo.
-            </p>
-            <p className="text-xs" style={{ color: 'rgba(249,238,220,0.2)' }}>
-              F C Abrantes — Conceito Firmado em Tecnologia e Eventos LTDA — 60.940.150/0001-07 — Niterói/RJ
-            </p>
+          <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            <p className="text-xs" style={{ color: 'rgba(245,250,255,0.3)' }}>© 2026 Ekthos Church. Feito com fé para a Igreja de Cristo.</p>
+            <p className="text-xs" style={{ color: 'rgba(245,250,255,0.15)' }}>F C Abrantes — Conceito Firmado em Tecnologia e Eventos LTDA — 60.940.150/0001-07 — Niterói/RJ</p>
           </div>
         </div>
       </footer>
 
-      {/* ── WHATSAPP FLUTUANTE ─────────────────────────────────── */}
+      {/* ── WHATSAPP FLUTUANTE ─────────────────────────────── */}
       {showWa && (
         <a href={WA.hero} target="_blank" rel="noopener noreferrer"
           className="fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
@@ -1451,28 +1190,54 @@ export default function Landing() {
         </a>
       )}
 
+      {/* ── MODAL DE LEAD (mantido como fallback) ──────────── */}
+      {leadModal && (
+        <LeadModal plan={leadModal} supabaseUrl={SUPABASE_URL} utmParams={getUtmParams()} onClose={() => setLeadModal(null)}/>
+      )}
+
+      {/* ── CSS ANIMATIONS ─────────────────────────────────── */}
       <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(28px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes orbPulse {
+          0%, 100% { box-shadow: 0 0 0 12px rgba(225,53,0,0.08), 0 0 0 28px rgba(225,53,0,0.04), 0 0 60px rgba(225,53,0,0.4); }
+          50%       { box-shadow: 0 0 0 20px rgba(225,53,0,0.05), 0 0 0 40px rgba(225,53,0,0.02), 0 0 80px rgba(225,53,0,0.55); }
+        }
+        @keyframes orbitRing {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes floatCard {
+          0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+          50%       { transform: translate(-50%, -50%) translateY(-8px); }
+        }
+        @keyframes waveBar {
+          0%, 100% { transform: scaleY(0.3); opacity: 0.4; }
+          50%       { transform: scaleY(1);   opacity: 0.9; }
+        }
+        @keyframes travelLine {
+          0%   { background-position: -30% 0; }
+          100% { background-position: 130% 0; }
+        }
         @keyframes waPulse {
           0%, 100% { box-shadow: 0 0 0 0 rgba(37,211,102,0.4); }
           50%       { box-shadow: 0 0 0 12px rgba(37,211,102,0); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+          }
+        }
       `}</style>
-
-      {/* ── MODAL DE LEAD ─────────────────────────────────────── */}
-      {leadModal && (
-        <LeadModal
-          plan={leadModal}
-          supabaseUrl={SUPABASE_URL}
-          utmParams={getUtmParams()}
-          onClose={() => setLeadModal(null)}
-        />
-      )}
     </div>
   )
 }
 
 // ══════════════════════════════════════════════════════════
-// MODAL DE CAPTAÇÃO DE LEAD
+// LEAD MODAL (mantido — fallback para campanhas futuras)
 // ══════════════════════════════════════════════════════════
 
 interface LeadModalProps {
@@ -1485,8 +1250,8 @@ interface LeadModalProps {
 function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
   const planLabel = plan === 'missao' ? 'Missão' : 'Avivamento'
   const [form, setForm] = useState({ name: '', email: '', phone: '', church_name: '', estimated_members: '' })
-  const [sending,  setSending]  = useState(false)
-  const [success,  setSuccess]  = useState(false)
+  const [sending, setSending] = useState(false)
+  const [success, setSuccess] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -1499,9 +1264,9 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
     setSending(true)
     try {
       const res = await fetch(`${supabaseUrl}/functions/v1/lead-capture`, {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...form, plan_interest: planLabel, utm_source: utmParams.source, utm_medium: utmParams.medium, utm_campaign: utmParams.campaign, utm_content: utmParams.content }),
+        body: JSON.stringify({ ...form, plan_interest: planLabel, ...utmParams }),
       })
       const data = await res.json() as { success?: boolean; error?: string }
       if (!res.ok || !data.success) throw new Error(data.error ?? 'Erro ao enviar')
@@ -1517,96 +1282,56 @@ function LeadModal({ plan, supabaseUrl, utmParams, onClose }: LeadModalProps) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
-        {/* Header */}
-        <div className="px-8 pt-8 pb-5 border-b border-[var(--border-default)]">
-          <button onClick={onClose}
-            className="absolute top-5 right-5 p-1.5 rounded-full text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-gray-100 transition-colors">
-            <X size={18} />
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg relative overflow-hidden">
+        <div className="px-8 pt-8 pb-5 border-b" style={{ borderColor: '#EBEBEB' }}>
+          <button onClick={onClose} className="absolute top-5 right-5 p-1.5 rounded-full transition-colors" style={{ color: '#8A8A8A' }}>
+            <X size={18}/>
           </button>
-          <div className="flex items-center gap-3 mb-1">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white"
-              style={{ background: 'var(--color-primary)' }}>
-              <UserPlus size={12} /> Plano {planLabel}
-            </span>
-          </div>
-          <h2 className="font-display text-xl font-bold text-[var(--text-primary)]">Solicitar contato</h2>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            Preencha os dados e um consultor entrará em contato em até 24h.
-          </p>
+          <h2 className="font-display text-xl font-bold" style={{ color: '#07131F' }}>Solicitar contato — Plano {planLabel}</h2>
+          <p className="text-sm mt-1" style={{ color: '#5A5A5A' }}>Um consultor entrará em contato em até 24h.</p>
         </div>
-
-        {/* Body */}
         <div className="px-8 py-6">
           {success ? (
             <div className="text-center py-8">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
-                style={{ background: 'rgba(45,122,79,0.1)' }}>
-                <Check size={32} strokeWidth={2.5} style={{ color: '#2D7A4F' }} />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(45,122,79,0.1)' }}>
+                <Check size={32} strokeWidth={2.5} style={{ color: '#2D7A4F' }}/>
               </div>
-              <h3 className="font-display text-xl font-bold text-[var(--text-primary)] mb-2">Solicitação enviada!</h3>
-              <p className="text-sm text-[var(--text-secondary)] max-w-xs mx-auto">
-                Recebemos seu interesse no plano <strong>{planLabel}</strong>! Um consultor entrará em contato em até 24h.
-              </p>
-              <button onClick={onClose}
-                className="mt-6 px-8 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90"
-                style={{ background: 'var(--color-primary)' }}>
-                Fechar
-              </button>
+              <h3 className="font-display text-xl font-bold mb-2" style={{ color: '#07131F' }}>Solicitação enviada!</h3>
+              <p className="text-sm max-w-xs mx-auto" style={{ color: '#5A5A5A' }}>Um consultor entrará em contato em até 24h.</p>
+              <button onClick={onClose} className="mt-6 px-8 py-3 rounded-xl font-semibold text-white text-sm" style={{ background: '#e13500' }}>Fechar</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {[
-                { name: 'name',        label: 'Nome completo',       type: 'text',  placeholder: 'Ex: Pr. João Silva',       required: true },
-                { name: 'email',       label: 'Email',               type: 'email', placeholder: 'pastor@suaigreja.com.br', required: true },
-                { name: 'phone',       label: 'Telefone / WhatsApp', type: 'tel',   placeholder: '(11) 99999-9999',          required: true },
-                { name: 'church_name', label: 'Nome da igreja',      type: 'text',  placeholder: 'Ex: Igreja Vida Nova',     required: true },
+                { name: 'name', label: 'Nome completo', type: 'text', placeholder: 'Pr. João Silva', required: true },
+                { name: 'email', label: 'Email', type: 'email', placeholder: 'pastor@suaigreja.com.br', required: true },
+                { name: 'phone', label: 'Telefone / WhatsApp', type: 'tel', placeholder: '(21) 99999-9999', required: true },
+                { name: 'church_name', label: 'Nome da igreja', type: 'text', placeholder: 'Igreja Vida Nova', required: true },
               ].map(f => (
                 <div key={f.name}>
-                  <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">
-                    {f.label} {f.required && <span style={{ color: 'var(--color-primary)' }}>*</span>}
+                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#07131F' }}>
+                    {f.label} <span style={{ color: '#e13500' }}>*</span>
                   </label>
                   <input name={f.name} type={f.type} value={form[f.name as keyof typeof form]}
                     onChange={handleChange} required={f.required} placeholder={f.placeholder}
-                    className="w-full px-4 py-3 rounded-xl text-sm border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                    style={{ background: '#fafafa' }} />
+                    className="w-full px-4 py-3 rounded-xl text-sm border focus:outline-none transition-colors"
+                    style={{ background: '#fafafa', borderColor: '#E0E0E0' }}/>
                 </div>
               ))}
-
               <div>
-                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">Quantidade de membros</label>
+                <label className="block text-xs font-semibold mb-1.5" style={{ color: '#07131F' }}>Quantidade de membros</label>
                 <select name="estimated_members" value={form.estimated_members} onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-[var(--border-default)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-                  style={{ background: '#fafafa' }}>
+                  className="w-full px-4 py-3 rounded-xl text-sm border focus:outline-none transition-colors"
+                  style={{ background: '#fafafa', borderColor: '#E0E0E0' }}>
                   <option value="">Selecione</option>
-                  <option value="Até 100">Até 100</option>
-                  <option value="100-300">100 – 300</option>
-                  <option value="300-500">300 – 500</option>
-                  <option value="500-1000">500 – 1.000</option>
-                  <option value="1000+">Acima de 1.000</option>
+                  {['Até 100', '100-300', '300-500', '500-1000', '1000+'].map(v => <option key={v} value={v}>{v === '1000+' ? 'Acima de 1.000' : v}</option>)}
                 </select>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--text-primary)] mb-1.5">Plano de interesse</label>
-                <input value={planLabel} readOnly
-                  className="w-full px-4 py-3 rounded-xl text-sm border border-[var(--border-default)] text-[var(--text-tertiary)] cursor-default"
-                  style={{ background: '#f3f3f3' }} />
-              </div>
-
-              {errorMsg && (
-                <p className="text-xs text-red-600 bg-red-50 px-4 py-2 rounded-xl">{errorMsg}</p>
-              )}
-
+              {errorMsg && <p className="text-xs text-red-600 bg-red-50 px-4 py-2 rounded-xl">{errorMsg}</p>}
               <button type="submit" disabled={sending}
-                className="w-full py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 mt-2"
-                style={{ background: 'var(--color-primary)', minHeight: 52 }}>
-                {sending ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Enviando...
-                  </span>
-                ) : 'Enviar solicitação →'}
+                className="w-full py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 disabled:opacity-60 mt-2"
+                style={{ background: '#e13500', minHeight: 52 }}>
+                {sending ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>Enviando...</span> : 'Solicitar contato →'}
               </button>
             </form>
           )}
