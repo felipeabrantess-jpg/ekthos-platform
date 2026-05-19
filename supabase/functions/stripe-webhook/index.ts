@@ -1,5 +1,20 @@
 // ============================================================
-// Edge Function: stripe-webhook v11 — B1: pending_activation para agentes premium
+// Edge Function: stripe-webhook v12 — Caminho A + Bug Vanessa fix
+//
+// MUDANÇAS v11 → v12:
+//   - handleCaminhoACheckout: source='caminho_a' cria church via RPC atômica
+//     (mesma process_stripe_checkout_completed do landing_page) + INSERT profiles
+//     + internal_notification de onboarding para time Ekthos.
+//   - Bug Vanessa fix: inviteUserByEmail não cria profiles; adicionado upsert
+//     em profiles após invite em Caminho A (e em admin-church-create v4).
+//
+// INALTERADO v11 → v12:
+//   - handleAgentPurchase (B1)
+//   - handleLandingPageCheckout (F6)
+//   - handleCockpitCheckout
+//   - handleInvoicePaid / handleInvoicePaymentFailed
+//   - handleSubscriptionUpdated / handleSubscriptionDeleted
+//   - handleChargeRefunded + affiliate helpers
 //
 // MUDANÇAS v10 → v11:
 //   - handleAgentPurchase: checkout.session.completed com
@@ -461,6 +476,138 @@ async function handleAgentPurchase(
   console.log(`[stripe-webhook] ✅ agent_purchase pending: church=${churchId} agent=${agentSlug} sub=${newAgentSub.id} email=${customerEmail ?? 'none'}`)
 }
 
+// ── Caminho A: pagamento Stripe direto (Fase 6.2) ────────────
+
+/**
+ * Caminho A — checkout.session.completed com metadata.source='caminho_a'.
+ * Cria church + subscription via RPC atômica + profile + notificação onboarding.
+ * Idempotente via stripe_checkout_session_id (mesma RPC que landing_page).
+ */
+async function handleCaminhoACheckout(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
+  // Idempotência
+  const { data: existingCheck } = await supabase
+    .from('subscriptions')
+    .select('id, church_id')
+    .eq('stripe_checkout_session_id', session.id)
+    .maybeSingle()
+  if (existingCheck?.id) {
+    console.log(`[caminho-a] já processado: session=${session.id}`)
+    return
+  }
+
+  const customerId = typeof session.customer === 'string'
+    ? session.customer : (session.customer as Stripe.Customer | null)?.id ?? null
+  const subId = typeof session.subscription === 'string'
+    ? session.subscription : (session.subscription as Stripe.Subscription | null)?.id ?? null
+  const email = session.customer_email ?? session.customer_details?.email ?? session.metadata?.email ?? null
+  if (!email) { console.error('[caminho-a] sem email:', session.id); return }
+
+  const planSlug   = session.metadata?.plan_slug ?? 'chamado'
+  const pastorName = (session.metadata?.name ?? session.customer_details?.name ?? '').trim()
+  const churchName = (session.metadata?.church_name ?? (pastorName ? `Igreja de ${pastorName}` : `Igreja ${email.split('@')[0]}`)).trim()
+  const churchSlug = `${slugify(churchName)}-${Date.now().toString(36)}`
+
+  const { data: planData } = await supabase.from('plans').select('price_cents').eq('slug', planSlug).single()
+  const originalPriceCents = planData?.price_cents ?? 0
+
+  const couponInfo    = await resolveCouponFromSession(session, email, planSlug)
+  const billingOrigin = couponInfo?.billingOrigin ?? 'stripe'
+  const discountCents = couponInfo?.discountCents ?? 0
+  const couponId      = couponInfo?.couponId      ?? null
+  const redemptionId  = couponInfo?.redemptionId  ?? null
+  const finalOriginal = couponInfo?.originalCents ?? originalPriceCents
+
+  // Cria usuário e envia invite para definir senha
+  let userId: string | null = null
+  try {
+    const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${ALLOWED_ORIGIN}/auth/set-password`,
+      data: { full_name: pastorName },
+    })
+    if (inviteErr) console.warn('[caminho-a] inviteUserByEmail (non-fatal):', inviteErr.message)
+    else userId = invited?.user?.id ?? null
+  } catch (e) { console.warn('[caminho-a] invite failed (non-fatal):', (e as Error).message) }
+
+  // Cria church + subscription + access_grant via RPC atômica (mesma do landing_page)
+  const { data: rpcResult, error: rpcErr } = await supabase.rpc('process_stripe_checkout_completed', {
+    p_payload: {
+      session_id:           session.id,
+      stripe_event_id:      eventId,
+      stripe_subscription_id: subId,
+      stripe_customer_id:   customerId,
+      church_name:          churchName,
+      church_slug:          churchSlug,
+      plan_slug:            planSlug,
+      user_id:              userId,
+      billing_origin:       billingOrigin,
+      original_price_cents: finalOriginal,
+      discount_cents:       discountCents,
+      coupon_id:            couponId,
+      redemption_id:        redemptionId,
+    },
+  })
+
+  if (rpcErr || !rpcResult?.success) {
+    throw new Error(`[caminho-a] checkout RPC failed: ${rpcErr?.message ?? rpcResult?.error ?? 'RPC failure'}`)
+  }
+  if (rpcResult.already_processed) {
+    console.log('[caminho-a] idempotente via RPC')
+    return
+  }
+
+  const churchId = rpcResult.church_id as string
+  console.log(`[caminho-a] church criada: ${churchId} plan=${planSlug}`)
+
+  // Atualiza app_metadata (auth_church_id() lê apenas app_metadata — CLAUDE.md)
+  if (userId && churchId) {
+    try {
+      await supabase.auth.admin.updateUserById(userId, {
+        app_metadata: { church_id: churchId, role: 'admin' },
+      })
+    } catch (e) { console.warn('[caminho-a] updateUserById (non-fatal):', (e as Error).message) }
+  }
+
+  // INSERT profile — inviteUserByEmail NÃO cria profiles (Bug Vanessa fix)
+  if (userId && churchId) {
+    const displayName = pastorName || email.split('@')[0]
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .upsert({
+        id:           crypto.randomUUID(),
+        user_id:      userId,
+        church_id:    churchId,
+        name:         displayName,
+        display_name: displayName,
+      } as any, { onConflict: 'user_id,church_id', ignoreDuplicates: true })
+    if (profileErr) console.warn('[caminho-a] profile insert (non-fatal):', profileErr.message)
+    else console.log(`[caminho-a] profile criado: userId=${userId} churchId=${churchId}`)
+  }
+
+  // Atualiza customer Stripe com church_id para resolveChurchId funcionar em invoices futuras
+  if (customerId && churchId) {
+    try { await stripe.customers.update(customerId, { metadata: { church_id: churchId } }) }
+    catch (e) { console.warn('[caminho-a] stripe customer update (non-fatal):', (e as Error).message) }
+  }
+
+  // Notificação interna — time Ekthos inicia onboarding
+  await supabase.from('internal_notifications').insert({
+    notification_type: 'caminho_a_new_church',
+    church_id:         churchId,
+    title:   `Nova igreja via Caminho A: ${churchName}`,
+    message: `Cliente ${email} assinou plano ${planSlug} via Caminho A (Stripe direto). Igreja: ${churchId}. Iniciar onboarding.`,
+    metadata: {
+      email, church_name: churchName, plan_slug: planSlug,
+      session_id: session.id, event_id: eventId,
+    },
+  }).then(({ error }) => {
+    if (error) console.warn('[caminho-a] internal_notification (non-fatal):', error.message)
+    else console.log(`[caminho-a] internal_notification criada: church=${churchId}`)
+  })
+
+  await recordAffiliateConversion(session, churchId)
+  console.log(`[caminho-a] ✅ church=${churchId} plan=${planSlug} user=${userId ?? 'none'}`)
+}
+
 // ── Handlers existentes (inalterados de v10) ─────────────────
 
 async function handleLandingPageCheckout(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
@@ -582,6 +729,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
   if (session.metadata?.source === 'agent_purchase') {
     console.log(`[stripe-webhook] agent_purchase: session=${session.id} agent=${session.metadata.agent_slug ?? 'n/a'}`)
     await handleAgentPurchase(session, eventId)
+    return
+  }
+  // Caminho A: pagamento Stripe direto — cria church do zero (Fase 6.2)
+  if (session.metadata?.source === 'caminho_a') {
+    console.log(`[stripe-webhook] caminho_a: session=${session.id} plan=${session.metadata.plan_slug ?? 'chamado'}`)
+    await handleCaminhoACheckout(session, eventId)
     return
   }
   // F6: Landing page cria church do zero

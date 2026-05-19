@@ -270,7 +270,26 @@ Deno.serve(async (req: Request) => {
     console.warn('[admin-church-create] Falha ao atualizar app_metadata (não fatal):', metaErr.message)
   }
 
-  // ── 9. Registra evento via record_audit_event ──────────────
+  // ── 9. Cria perfil do pastor (Fase 6.2 — Bug Vanessa fix) ───
+  // inviteUserByEmail NÃO cria profiles — precisamos inserir manualmente.
+  // name/display_name: extraído do email até '@' como fallback até onboarding completar.
+  const displayNameFallback = pastorEmail.split('@')[0]
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .upsert({
+      id:           crypto.randomUUID(),
+      user_id:      pastorId,
+      church_id:    church.id,
+      name:         displayNameFallback,
+      display_name: displayNameFallback,
+    } as any, { onConflict: 'user_id,church_id', ignoreDuplicates: true })
+
+  if (profileErr) {
+    // Não fatal — usuario ainda pode logar; onboarding vai complementar
+    console.warn('[admin-church-create] profile insert falhou (não fatal):', profileErr.message)
+  }
+
+  // ── 10. Registra evento via record_audit_event ─────────────
   const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
   const requestId = req.headers.get('x-request-id') ?? null
   const { error: auditErr } = await supabase.rpc('record_audit_event', {
