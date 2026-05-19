@@ -18,7 +18,7 @@ export interface Agent {
   features: string[]
   pain_solved: string | null
   without_me: string | null
-  pricing_tier: 'free' | 'always_paid' | 'eligible'
+  pricing_tier: 'free' | 'always_paid' | 'eligible' | 'coming_soon' | 'premium' | 'internal'
   price_cents: number
 }
 
@@ -94,6 +94,8 @@ export function usePlan() {
   const alwaysPaidAgents = allAgents.filter(a => a.pricing_tier === 'always_paid')
   // Eligible agents that the church has chosen
   const eligibleAgents = allAgents.filter(a => a.pricing_tier === 'eligible')
+  // Coming soon agents — not yet available, shown as preview
+  const comingSoonAgents = allAgents.filter(a => a.pricing_tier === 'coming_soon')
 
   const hasAgent = (slug: string): boolean => {
     if (!isActive) return false
@@ -116,6 +118,7 @@ export function usePlan() {
     freeAgents,
     alwaysPaidAgents,
     eligibleAgents,
+    comingSoonAgents,
     activeAgentSlugs,
     hasAgent,
     canAddMoreAgents,

@@ -737,8 +737,12 @@ export default function Landing() {
                   <UserPlus size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   Volunteer Pro
                 </h3>
-                <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
-                  style={{ background: '#670000' }}>Avivamento</span>
+                <div className="flex flex-col gap-1 items-end shrink-0 ml-3">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
+                    style={{ background: '#670000' }}>Avivamento</span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold"
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve</span>
+                </div>
               </div>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Escalas, check-in, confirmação WhatsApp e métricas de voluntários.
@@ -772,8 +776,12 @@ export default function Landing() {
                   <ShieldCheck size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
                   Kids Pro
                 </h3>
-                <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
-                  style={{ background: '#670000' }}>Avivamento</span>
+                <div className="flex flex-col gap-1 items-end shrink-0 ml-3">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
+                    style={{ background: '#670000' }}>Avivamento</span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold"
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve</span>
+                </div>
               </div>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Check-in QR Code, validação de responsáveis e alertas aos pais.
@@ -807,8 +815,12 @@ export default function Landing() {
                   <DollarSign size={20} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
                   Financeiro Pro
                 </h3>
-                <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold text-white ml-3"
-                  style={{ background: '#670000' }}>Avivamento</span>
+                <div className="flex flex-col gap-1 items-end shrink-0 ml-3">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
+                    style={{ background: '#670000' }}>Avivamento</span>
+                  <span className="px-3 py-1 rounded-full text-xs font-bold"
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve</span>
+                </div>
               </div>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
                 Folha, DRE, NF, conciliação e agente financeiro com IA.
