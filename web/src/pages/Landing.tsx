@@ -18,8 +18,27 @@ import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
 import LogoEkthos from '@/components/LogoEkthos'
 
 // ── Env ────────────────────────────────────────────────────
-const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
-const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string || '5511999999999'
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+
+// ── Pagamentos & contato ───────────────────────────────────
+const CHAMADO_PAYMENT_LINK    = 'https://buy.stripe.com/7sY9AT69n4Gw7EZ4AT5os00'
+const ACOLHIMENTO_PAYMENT_LINK = 'https://buy.stripe.com/cNibJ1fJX5KA1gB6J15os01'
+const WA_NUMBER = '5521966487878'
+const WA_BASE   = `https://wa.me/${WA_NUMBER}`
+function waLink(text: string) { return `${WA_BASE}?text=${encodeURIComponent(text)}` }
+const WA = {
+  hero:          waLink('Olá! Quero conhecer o Ekthos Church'),
+  missao:        waLink('Olá! Tenho interesse no plano Missão do Ekthos Church'),
+  avivamento:    waLink('Olá! Tenho interesse no plano Avivamento do Ekthos Church'),
+  enterprise:    waLink('Olá! Tenho interesse numa proposta Enterprise para rede de igrejas'),
+  volunteer:     waLink('Olá! Tenho interesse no módulo Volunteer Pro — escalas e equipes'),
+  kids:          waLink('Olá! Tenho interesse no módulo Kids Pro — ministério infantil'),
+  financeiro:    waLink('Olá! Tenho interesse no módulo Financeiro Pro — folha e DRE'),
+  acolhimento:   waLink('Olá! Tenho interesse no Agente de Acolhimento para minha igreja'),
+  reengajamento: waLink('Olá! Tenho interesse no Agente de Reengajamento para minha igreja'),
+  operacao:      waLink('Olá! Tenho interesse no Agente de Operação para minha igreja'),
+  cta:           waLink('Olá! Quero começar com o Ekthos Church. Podem me ajudar?'),
+}
 
 // ── Ekthos Cross — canal duplo, funciona em fundo claro ────
 const EKTHOS_CROSS = (
@@ -91,107 +110,45 @@ const FAQ_ITEMS = [
 // ══════════════════════════════════════════════════════════
 
 function VideoSection() {
-  const [open, setOpen] = useState(false)
-  const VIDEO_URL = 'https://www.youtube.com/embed/PLACEHOLDER_ID?autoplay=1'
-
   return (
     <section className="pb-16 lg:pb-24 px-5 lg:px-8 max-w-5xl mx-auto text-center">
       {/* Tag editorial */}
       <div className="flex items-center justify-center gap-2 mb-5">
         <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
         <span className="text-[11px] font-bold tracking-[0.18em] uppercase" style={{ color: 'var(--color-primary)' }}>
-          VEJA EM 90 SEGUNDOS
+          PAINEL PASTORAL
         </span>
         <div className="h-px w-10 bg-current opacity-20" style={{ color: 'var(--color-primary)' }} />
       </div>
 
-      {/* Container premium */}
+      {/* Container premium — preview estático do painel */}
       <div
-        className="relative rounded-3xl overflow-hidden cursor-pointer group"
+        className="relative rounded-3xl overflow-hidden"
         style={{
           background: 'linear-gradient(135deg, rgba(41,182,255,0.08) 0%, rgba(76,234,216,0.06) 50%, rgba(41,182,255,0.04) 100%)',
           border: '1px solid rgba(41,182,255,0.15)',
           boxShadow: '0 8px 40px rgba(41,182,255,0.12), 0 0 0 1px rgba(41,182,255,0.08)',
         }}
-        onClick={() => setOpen(true)}
-        role="button"
-        aria-label="Assistir apresentação do Ekthos Church"
       >
-        {/* Thumbnail placeholder */}
         <div className="aspect-video relative">
           <img
             src="/screenshots/painel.png"
-            alt="Preview Ekthos Church"
-            className="w-full h-full object-cover opacity-60 group-hover:opacity-75 transition-opacity duration-300"
+            alt="Dashboard Ekthos Church"
+            loading="lazy"
+            className="w-full h-full object-cover"
           />
-          {/* Aurora overlay */}
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ background: 'linear-gradient(160deg, rgba(41,182,255,0.15) 0%, rgba(76,234,216,0.08) 60%, transparent 100%)' }}
+            style={{ background: 'linear-gradient(160deg, rgba(41,182,255,0.08) 0%, transparent 60%)' }}
           />
-
-          {/* Play button */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className="relative flex items-center justify-center rounded-full transition-transform duration-200 group-hover:scale-110"
-              style={{
-                width: 72, height: 72,
-                background: 'var(--color-primary)',
-                boxShadow: '0 0 0 12px rgba(41,182,255,0.18), 0 0 0 24px rgba(41,182,255,0.08)',
-              }}
-            >
-              {/* Pulse ring */}
-              <span
-                className="absolute inset-0 rounded-full animate-ping"
-                style={{ background: 'var(--color-primary)', opacity: 0.25 }}
-              />
-              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-white ml-1" aria-hidden>
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Caption editorial */}
       <p className="mt-4 text-sm text-[var(--text-tertiary)] max-w-md mx-auto leading-relaxed">
-        Veja como o Ekthos Church transforma a gestão pastoral —
-        da presença ao discipulado, em menos de dois minutos.
+        Visão 360° da saúde pastoral da sua comunidade — membros, células,
+        visitantes e alertas de afastamento em tempo real.
       </p>
-
-      {/* Modal de vídeo */}
-      {open && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 lg:p-8"
-          style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(8px)' }}
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="relative w-full max-w-4xl rounded-2xl overflow-hidden"
-            style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-3 right-3 z-10 rounded-full p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-              onClick={() => setOpen(false)}
-              aria-label="Fechar"
-            >
-              <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <div className="aspect-video">
-              <iframe
-                src={VIDEO_URL}
-                className="w-full h-full"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                title="Ekthos Church — apresentação"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   )
 }
@@ -284,13 +241,32 @@ function EcossistemaSection() {
 // ══════════════════════════════════════════════════════════
 
 export default function Landing() {
-  const [menuOpen,     setMenuOpen]     = useState(false)
-  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null)
-  const [showWa,       setShowWa]       = useState(false)
-  const [faqOpen,      setFaqOpen]      = useState<number | null>(null)
-  const [scrolled,     setScrolled]     = useState(false)
-  const [leadModal,    setLeadModal]    = useState<'missao' | 'avivamento' | null>(null)
+  const [menuOpen,  setMenuOpen]  = useState(false)
+  const [showWa,    setShowWa]    = useState(false)
+  const [faqOpen,   setFaqOpen]   = useState<number | null>(null)
+  const [scrolled,  setScrolled]  = useState(false)
+  const [leadModal, setLeadModal] = useState<'missao' | 'avivamento' | null>(null)
   const pricingRef = useRef<HTMLElement>(null)
+
+  // SEO / OG meta tags
+  useEffect(() => {
+    document.title = 'Ekthos Church — CRM com Agentes de IA para Igrejas'
+    const setMeta = (name: string, content: string) => {
+      let el = document.querySelector(`meta[name="${name}"]`)
+      if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el) }
+      el.setAttribute('content', content)
+    }
+    const setOg = (prop: string, content: string) => {
+      let el = document.querySelector(`meta[property="${prop}"]`)
+      if (!el) { el = document.createElement('meta'); el.setAttribute('property', prop); document.head.appendChild(el) }
+      el.setAttribute('content', content)
+    }
+    setMeta('description', 'Sua igreja operando com agentes de IA, usando o CRM como base de dados. Gestão de membros, células, voluntários e discipulado. Setup em 30 minutos.')
+    setOg('og:title', 'Ekthos Church — CRM com Agentes de IA para Igrejas')
+    setOg('og:description', 'Sua igreja operando com agentes de IA, usando o CRM como base de dados.')
+    setOg('og:url', 'https://ekthosai.net')
+    setOg('og:type', 'website')
+  }, [])
 
   useEffect(() => {
     const t = setTimeout(() => setShowWa(true), 3000)
@@ -308,40 +284,10 @@ export default function Landing() {
     return () => { document.body.style.overflow = '' }
   }, [leadModal])
 
-  async function handleCheckout(planSlug: string) {
-    if (checkoutPlan) return
-    setCheckoutPlan(planSlug)
-    const utm    = getUtmParams()
-    const origin = window.location.origin
-    try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout-public`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          plan_slug:    planSlug,
-          success_url:  `${origin}/checkout/sucesso`,
-          cancel_url:   `${origin}/#pricing`,
-          utm_source:   utm.source,
-          utm_medium:   utm.medium,
-          utm_campaign: utm.campaign,
-          utm_content:  utm.content,
-        }),
-      })
-      if (!res.ok) throw new Error('Erro ao criar sessão')
-      const { url } = await res.json() as { url: string }
-      window.location.href = url
-    } catch {
-      setCheckoutPlan(null)
-      alert('Erro ao iniciar pagamento. Por favor, tente novamente.')
-    }
-  }
-
   function scrollToPricing() {
     pricingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setMenuOpen(false)
   }
-
-  const waHref = `https://wa.me/${WHATSAPP_NUMBER}?text=Ol%C3%A1%21+Quero+conhecer+o+Ekthos+Church`
 
   return (
     <div className="min-h-screen font-body antialiased overflow-x-hidden bg-white text-[#07131F]">
@@ -416,14 +362,15 @@ export default function Landing() {
           <div className="flex-1 text-center lg:text-left">
             <h1 className="font-display text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight mb-6 text-[var(--text-primary)]"
               style={{ letterSpacing: '-0.02em' }}>
-              Sua igreja merece uma gestão{' '}
-              <span style={{ color: 'var(--color-primary)' }}>à altura do chamado</span>
+              Sua igreja operando com{' '}
+              <span style={{ color: 'var(--color-primary)' }}>agentes de IA</span>,
+              usando o CRM como base de dados
             </h1>
 
             <p className="text-lg lg:text-xl leading-relaxed mb-6 max-w-xl mx-auto lg:mx-0 text-[var(--text-secondary)]">
-              CRM pastoral com inteligência artificial. Acompanhe cada membro,
-              automatize tarefas repetitivas e foque no que realmente importa:
-              cuidar da sua comunidade.
+              Não é um CRM genérico com IA colada. É uma plataforma pastoral
+              onde os agentes conhecem sua comunidade e agem por você — do
+              acolhimento ao reengajamento.
             </p>
 
             <p className="text-sm italic mb-8" style={{ color: 'var(--color-primary-text)' }}>
@@ -431,12 +378,12 @@ export default function Landing() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <button onClick={scrollToPricing}
-                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:bg-[var(--color-primary-dark)] active:scale-[0.98] shadow-lg shadow-primary/20"
+              <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] shadow-lg"
                 style={{ background: 'var(--color-primary)', minHeight: 56 }}>
-                Começar agora →
-              </button>
-              <a href={waHref} target="_blank" rel="noopener noreferrer"
+                Começar com Plano Chamado — R$&nbsp;689,90/mês
+              </a>
+              <a href={WA.hero} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
                 style={{ background: '#25D366', minHeight: 56 }}>
                 {WA_ICON} Falar no WhatsApp
@@ -560,27 +507,29 @@ export default function Landing() {
       {/* ── 5. AGENTES IA ─────────────────────────────────────── */}
       <section id="agentes" className="py-20 lg:py-28 px-5 lg:px-8 bg-[#07131F] w-full">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-10">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3"
               style={{ color: 'var(--color-primary)' }}>Inteligência Artificial pastoral</p>
             <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
               Agentes que conhecem a linguagem da igreja
             </h2>
             <p className="text-lg max-w-2xl" style={{ color: 'rgba(245,250,255,0.6)' }}>
-              Não são chatbots genéricos. São assistentes treinados com o vocabulário e a sensibilidade pastoral.
+              Não são chatbots genéricos. São assistentes treinados com o vocabulário e a sensibilidade pastoral — e agem sobre os dados do CRM da sua igreja.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-x-20 gap-y-0">
+          {/* Agentes internos — inclusos em todos os planos */}
+          <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'rgba(245,250,255,0.3)' }}>
+            Inclusos em todos os planos
+          </p>
+          <div className="grid md:grid-cols-2 gap-x-20 gap-y-0 mb-14">
             {[
-              { icon: <Bot           size={16} />, slug: 'Suporte',    desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta.' },
-              { icon: <Users         size={16} />, slug: 'Onboarding', desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.' },
-              { icon: <MessageCircle size={16} />, slug: 'Cadastro',   desc: 'Registra visitantes e membros automaticamente via formulário inteligente.' },
-              { icon: <Bell          size={16} />, slug: 'Conteúdo',   desc: 'Gera comunicados pastorais, roteiros de culto e materiais de célula com IA.' },
-              { icon: <TrendingUp    size={16} />, slug: 'Métricas',   desc: 'Gera relatórios de crescimento, frequência e saúde da comunidade.' },
-              { icon: <Shield        size={16} />, slug: 'WhatsApp',   desc: 'Envia comunicados pelo WhatsApp de forma automatizada e segmentada.' },
+              { icon: <Bot           size={16} />, slug: 'Suporte',     desc: 'Responde dúvidas da equipe 24h por dia, nunca te deixa sem resposta operacional.' },
+              { icon: <Users         size={16} />, slug: 'Onboarding',  desc: 'Configura todo o CRM em 30 minutos guiando o pastor por perguntas simples.' },
+              { icon: <MessageCircle size={16} />, slug: 'Cadastro',    desc: 'Registra visitantes e membros automaticamente via formulário inteligente.' },
+              { icon: <Bell          size={16} />, slug: 'Notificação', desc: 'Alertas pastorais automáticos de afastamento, aniversários e eventos críticos.' },
             ].map((a, i) => (
-              <div key={i} className="flex items-start gap-5 py-8 border-b"
+              <div key={i} className="flex items-start gap-5 py-7 border-b"
                 style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
                 <span className="font-mono text-4xl font-bold leading-none shrink-0 w-12 text-right"
                   style={{ color: 'rgba(41,182,255,0.18)' }}>
@@ -590,9 +539,86 @@ export default function Landing() {
                   <div className="flex items-center gap-2.5 mb-1.5">
                     <span style={{ color: 'var(--text-primary)' }}>{a.icon}</span>
                     <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Agente {a.slug}</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold text-white/70" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>Incluso</span>
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.55)' }}>{a.desc}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Agentes premium — marketplace */}
+          <p className="text-xs font-bold uppercase tracking-widest mb-6" style={{ color: 'rgba(245,250,255,0.3)' }}>
+            Agentes premium — Marketplace
+          </p>
+          <div className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                slug: 'Acolhimento',
+                price: 'R$ 290/mês',
+                paymentLink: ACOLHIMENTO_PAYMENT_LINK,
+                waLink: WA.acolhimento,
+                desc: 'Aborda visitantes automaticamente via WhatsApp após o culto, coleta feedback e agenda próximos passos. Usa os dados do CRM para personalizar cada contato.',
+                items: ['Mensagem de boas-vindas automática', 'Formulário de interesse inteligente', 'Agendamento de acompanhamento', 'Relatório semanal de novos contatos'],
+                badge: 'Disponível',
+                badgeColor: '#2D7A4F',
+              },
+              {
+                slug: 'Reengajamento',
+                price: 'R$ 290/mês',
+                paymentLink: null,
+                waLink: WA.reengajamento,
+                desc: 'Identifica membros afastados no CRM e os aborda com mensagens personalizadas, devolvendo-os à comunidade antes que se percam definitivamente.',
+                items: ['Detecção automática de afastamento', 'Mensagens contextualizadas por perfil', 'Fluxo de reconexão em etapas', 'Dashboard de recuperação'],
+                badge: 'Em breve',
+                badgeColor: '#C4841D',
+              },
+              {
+                slug: 'Operação',
+                price: 'R$ 390/mês',
+                paymentLink: null,
+                waLink: WA.operacao,
+                desc: 'Coordena a operação pastoral diária: confirma escalas, lembra líderes de células, sincroniza eventos e gera relatórios automáticos para o pastor.',
+                items: ['Confirmação de escalas por WhatsApp', 'Lembretes automáticos de células', 'Sincronização de agenda pastoral', 'Relatório executivo semanal'],
+                badge: 'Em breve',
+                badgeColor: '#C4841D',
+              },
+            ].map(agent => (
+              <div key={agent.slug}
+                className="rounded-2xl p-6 flex flex-col"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="font-semibold text-white">Agente {agent.slug}</p>
+                    <p className="font-mono text-sm mt-0.5" style={{ color: 'var(--color-primary)' }}>{agent.price}</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold text-white shrink-0 ml-3"
+                    style={{ background: agent.badgeColor }}>
+                    {agent.badge}
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(245,250,255,0.55)' }}>{agent.desc}</p>
+                <ul className="space-y-2 flex-1 mb-5">
+                  {agent.items.map(item => (
+                    <li key={item} className="flex items-start gap-2 text-xs" style={{ color: 'rgba(245,250,255,0.6)' }}>
+                      <Check size={13} strokeWidth={2.5} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 1 }} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                {agent.paymentLink ? (
+                  <a href={agent.paymentLink} target="_blank" rel="noopener noreferrer"
+                    className="w-full py-2.5 rounded-xl font-semibold text-sm text-white text-center transition-all hover:opacity-90 block"
+                    style={{ background: 'var(--color-primary)' }}>
+                    Contratar →
+                  </a>
+                ) : (
+                  <a href={agent.waLink} target="_blank" rel="noopener noreferrer"
+                    className="w-full py-2.5 rounded-xl font-semibold text-sm text-center transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                    style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(245,250,255,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    {WA_ICON} Entrar na lista de espera
+                  </a>
+                )}
               </div>
             ))}
           </div>
@@ -741,7 +767,7 @@ export default function Landing() {
                   <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
                     style={{ background: '#670000' }}>Avivamento</span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve</span>
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · R$ 890/mês</span>
                 </div>
               </div>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
@@ -762,11 +788,11 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => setLeadModal('avivamento')}
-                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'var(--color-primary)' }}>
-                Falar com nosso time
-              </button>
+              <a href={WA.volunteer} target="_blank" rel="noopener noreferrer"
+                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{ background: '#25D366' }}>
+                {WA_ICON} Entrar na lista de espera
+              </a>
             </div>
 
             {/* Kids Pro */}
@@ -780,7 +806,7 @@ export default function Landing() {
                   <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
                     style={{ background: '#670000' }}>Avivamento</span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve</span>
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · R$ 590/mês</span>
                 </div>
               </div>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
@@ -801,11 +827,11 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => setLeadModal('avivamento')}
-                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'var(--color-primary)' }}>
-                Falar com nosso time
-              </button>
+              <a href={WA.kids} target="_blank" rel="noopener noreferrer"
+                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{ background: '#25D366' }}>
+                {WA_ICON} Entrar na lista de espera
+              </a>
             </div>
 
             {/* Financeiro Pro */}
@@ -819,7 +845,7 @@ export default function Landing() {
                   <span className="px-3 py-1 rounded-full text-xs font-bold text-white"
                     style={{ background: '#670000' }}>Avivamento</span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold"
-                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve</span>
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>Em breve · R$ 1.290/mês</span>
                 </div>
               </div>
               <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-6">
@@ -841,11 +867,11 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => setLeadModal('avivamento')}
-                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'var(--color-primary)' }}>
-                Falar com nosso time
-              </button>
+              <a href={WA.financeiro} target="_blank" rel="noopener noreferrer"
+                className="mt-6 w-full py-3 rounded-xl font-semibold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{ background: '#25D366' }}>
+                {WA_ICON} Entrar na lista de espera
+              </a>
             </div>
           </div>
 
@@ -891,11 +917,11 @@ export default function Landing() {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => setLeadModal('avivamento')}
+              <a href={WA.avivamento} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-white text-base transition-all hover:opacity-90 active:scale-[0.98]"
-                style={{ background: 'var(--color-primary)', minHeight: 52 }}>
-                Solicitar contato sobre o Avivamento →
-              </button>
+                style={{ background: '#25D366', minHeight: 52 }}>
+                {WA_ICON} Falar sobre o plano Avivamento
+              </a>
             </div>
 
             {/* Screenshot do app / visual real */}
@@ -917,6 +943,46 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── 8.5. COMO FUNCIONA ───────────────────────────────── */}
+      <section className="py-20 lg:py-28 px-5 lg:px-8 w-full" style={{ background: 'var(--bg-primary)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--color-primary)' }}>
+              Como funciona
+            </p>
+            <h2 className="font-display text-3xl lg:text-4xl font-bold mb-4 text-[var(--text-primary)]">
+              Do cadastro à ação pastoral — em minutos
+            </h2>
+            <p className="text-lg max-w-2xl mx-auto text-[var(--text-secondary)]">
+              Os agentes acessam o CRM em tempo real e agem sobre os dados da sua comunidade —
+              sem você precisar configurar nada manualmente.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-0 relative">
+            {/* linha conectora (desktop) */}
+            <div className="hidden md:block absolute top-10 left-[12.5%] right-[12.5%] h-px" style={{ background: 'var(--border-default)' }} />
+
+            {[
+              { num: '01', title: 'Onboarding', body: 'O Agente Onboarding configura seu CRM em 20 perguntas simples — em menos de 30 minutos.', color: 'var(--color-primary)' },
+              { num: '02', title: 'Dados no CRM', body: 'Membros, visitantes, células e eventos entram automaticamente via formulários e QR Code.', color: '#2D7A4F' },
+              { num: '03', title: 'Agentes em ação', body: 'Os agentes leem os dados do CRM e enviam mensagens, alertas e relatórios — automaticamente.', color: '#C4841D' },
+              { num: '04', title: 'Você no controle', body: 'Você vê tudo no painel: quem foi acolhido, quem retornou, quais membros precisam de atenção.', color: '#670000' },
+            ].map((step, i) => (
+              <div key={i} className="flex flex-col items-center text-center px-4 relative">
+                <div
+                  className="relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shrink-0"
+                  style={{ background: `${step.color}18`, border: `1.5px solid ${step.color}40` }}>
+                  <span className="font-mono text-2xl font-bold" style={{ color: step.color }}>{step.num}</span>
+                </div>
+                <h3 className="font-semibold text-base mb-2 text-[var(--text-primary)]">{step.title}</h3>
+                <p className="text-sm leading-relaxed text-[var(--text-secondary)]">{step.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── 9. PRICING ────────────────────────────────────────── */}
       <section id="pricing" ref={pricingRef}
         className="py-20 lg:py-32 px-5 lg:px-8 scroll-mt-20 w-full" style={{ background: 'var(--bg-primary)' }}>
@@ -931,7 +997,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 items-start">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
 
             {/* ── CHAMADO ── */}
             <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
@@ -972,19 +1038,12 @@ export default function Landing() {
                 </p>
               </div>
               <div className="px-7 pb-7">
-                <button
-                  onClick={() => handleCheckout('chamado')}
-                  disabled={checkoutPlan === 'chamado'}
-                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
+                  className="w-full py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center"
                   style={{ background: 'transparent', color: 'var(--color-primary)', border: '2px solid var(--color-primary)', minHeight: 52 }}>
-                  {checkoutPlan === 'chamado' ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      Aguarde...
-                    </span>
-                  ) : 'Contratar agora →'}
-                </button>
-                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Acesso imediato</p>
+                  Contratar agora →
+                </a>
+                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Acesso imediato · sem consultoria</p>
               </div>
             </div>
 
@@ -1030,14 +1089,13 @@ export default function Landing() {
                 </p>
               </div>
               <div className="px-7 pb-7">
-                <button
-                  onClick={() => setLeadModal('missao')}
-                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: 'var(--color-primary)', minHeight: 52 }}>
-                  Solicitar contato →
-                </button>
+                <a href={WA.missao} target="_blank" rel="noopener noreferrer"
+                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                  style={{ background: '#25D366', minHeight: 52 }}>
+                  {WA_ICON} Falar no WhatsApp
+                </a>
                 <p className="text-center text-xs mt-2" style={{ color: 'rgba(245,250,255,0.35)' }}>
-                  Consultoria personalizada
+                  Proposta personalizada
                 </p>
               </div>
             </div>
@@ -1096,13 +1154,62 @@ export default function Landing() {
                 </ul>
               </div>
               <div className="px-7 pb-7">
-                <button
-                  onClick={() => setLeadModal('avivamento')}
-                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: 'var(--color-primary)', minHeight: 52 }}>
-                  Solicitar contato →
-                </button>
-                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Acompanhamento dedicado</p>
+                <a href={WA.avivamento} target="_blank" rel="noopener noreferrer"
+                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                  style={{ background: '#25D366', minHeight: 52 }}>
+                  {WA_ICON} Falar no WhatsApp
+                </a>
+                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Consultoria dedicada</p>
+              </div>
+            </div>
+
+            {/* ── ENTERPRISE ── */}
+            <div className="relative bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="px-4 py-1.5 rounded-full text-xs font-bold text-white"
+                  style={{ background: '#161616' }}>Rede de igrejas</span>
+              </div>
+
+              <div className="p-7 flex-1 pt-10">
+                <div className="flex items-center gap-3 mb-5">
+                  <svg viewBox="0 0 24 24" className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.75" style={{ color: 'var(--color-primary)' }}>
+                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <div>
+                    <p className="font-semibold text-base text-[var(--text-primary)]">Enterprise</p>
+                    <p className="text-xs text-[var(--text-tertiary)]">Múltiplas sedes e redes de igrejas</p>
+                  </div>
+                </div>
+
+                <div className="mb-1">
+                  <span className="font-display font-bold text-2xl text-[var(--text-primary)]">Proposta sob medida</span>
+                </div>
+                <p className="text-xs text-[var(--text-tertiary)] mb-5">Preço baseado em número de sedes e membros</p>
+
+                <ul className="space-y-2.5 mb-6">
+                  {[
+                    'Múltiplas sedes em um só painel',
+                    'Gestão centralizada de líderes',
+                    'Relatórios consolidados por rede',
+                    'Agentes IA configurados por sede',
+                    'SLA e suporte enterprise',
+                    'Onboarding presencial',
+                  ].map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm">
+                      <Check size={15} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0, marginTop: 1 }} />
+                      <span className="text-[var(--text-primary)]">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="px-7 pb-7">
+                <a href={WA.enterprise} target="_blank" rel="noopener noreferrer"
+                  className="w-full py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98] flex items-center justify-center gap-2"
+                  style={{ background: '#25D366', minHeight: 52 }}>
+                  {WA_ICON} Falar no WhatsApp
+                </a>
+                <p className="text-center text-xs mt-2 text-[var(--text-tertiary)]">Proposta em até 24h</p>
               </div>
             </div>
           </div>
@@ -1114,10 +1221,10 @@ export default function Landing() {
             </p>
             <div className="grid md:grid-cols-4 gap-5">
               {[
-                { icon: <UserPlus size={16} strokeWidth={1.75} />,   title: 'Volunteer Pro',     price: 'Sob consulta',  desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
-                { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Kids Pro',          price: 'Sob consulta',  desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
-                { icon: <DollarSign size={16} strokeWidth={1.75} />,  title: 'Financeiro Pro',    price: 'Sob consulta',  desc: 'Folha, DRE, NF, conciliação e agente financeiro com IA.' },
-                { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional', price: 'R$ 59,90/mês',  desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
+                { icon: <UserPlus size={16} strokeWidth={1.75} />,   title: 'Volunteer Pro',     price: 'Em breve · R$ 890/mês',    desc: 'Escalas, check-in, confirmação WhatsApp e métricas de voluntários.' },
+                { icon: <ShieldCheck size={16} strokeWidth={1.75} />, title: 'Kids Pro',          price: 'Em breve · R$ 590/mês',    desc: 'Check-in QR Code, validação de responsáveis e alertas aos pais.' },
+                { icon: <DollarSign size={16} strokeWidth={1.75} />,  title: 'Financeiro Pro',    price: 'Em breve · R$ 1.290/mês',  desc: 'Folha, DRE, NF, conciliação e agente financeiro com IA.' },
+                { icon: <Users size={16} strokeWidth={1.75} />,       title: 'Usuário adicional', price: 'R$ 59,90/mês',             desc: 'Adicione mais líderes com acesso administrativo ao sistema.' },
               ].map((a, i) => (
                 <div key={i} className="flex items-start gap-3 p-4 rounded-xl" style={{ background: 'var(--bg-active)' }}>
                   <span style={{ color: 'var(--color-primary)', marginTop: 2 }}>{a.icon}</span>
@@ -1254,12 +1361,12 @@ export default function Landing() {
             "O bom pastor dá a sua vida pelas ovelhas." — Jo 10:11
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={scrollToPricing}
+            <a href={CHAMADO_PAYMENT_LINK} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base transition-all hover:opacity-90 active:scale-[0.98] bg-white"
               style={{ color: 'var(--color-primary)', minHeight: 56 }}>
-              Ver planos
-            </button>
-            <a href={waHref} target="_blank" rel="noopener noreferrer"
+              Começar com Plano Chamado →
+            </a>
+            <a href={WA.cta} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 px-10 py-4 rounded-xl font-semibold text-base text-white transition-all hover:opacity-90 active:scale-[0.98]"
               style={{ background: '#25D366', minHeight: 56 }}>
               {WA_ICON} Falar no WhatsApp
@@ -1277,7 +1384,7 @@ export default function Landing() {
                 <LogoEkthos variant="light" height={36} showChurch={true} />
               </div>
               <p className="text-sm leading-relaxed" style={{ color: 'rgba(245,250,255,0.45)' }}>
-                CRM pastoral com inteligência artificial para igrejas que querem cuidar melhor da sua comunidade.
+                Sua igreja operando com agentes de IA, usando o CRM como base de dados. Setup em 30 minutos.
               </p>
             </div>
             <div>
@@ -1334,7 +1441,7 @@ export default function Landing() {
 
       {/* ── WHATSAPP FLUTUANTE ─────────────────────────────────── */}
       {showWa && (
-        <a href={waHref} target="_blank" rel="noopener noreferrer"
+        <a href={WA.hero} target="_blank" rel="noopener noreferrer"
           className="fixed bottom-6 right-6 z-50 flex items-center justify-center rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95"
           style={{ width: 56, height: 56, background: '#25D366', animation: 'waPulse 2s ease-in-out infinite' }}
           aria-label="Falar no WhatsApp">
