@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v3 — Passo 6 mínimo viável
+// Edge Function: agent-acolhimento  v19 — Fase 6.3
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -11,6 +11,15 @@
 //   trigger_type: 'internal'         → alias de 'journey'
 //   trigger_type: 'inbound_message'  → resposta reativa a mensagem recebida
 //     body: { conversation_id, message_id, church_id, person_id?, inbound_text }
+//
+// MUDANÇAS v19 (Fase 6.3 — Observabilidade):
+//   - Importa logAgentExecution de _shared/log-agent-execution.ts
+//   - runToolLoop acumula token usage (UsageTotals) e retorna { result, usage }
+//   - processJourney: t0 + try/finally → logAgentExecution em 3 saídas
+//     (rate_limited, success, error)
+//   - processInbound: t0 + try/finally → logAgentExecution em 3 saídas
+//     (rate_limited, success, error)
+//   - Handler passa triggerType ('cron'|'journey') para processJourney
 //
 // MUDANÇAS v3 (Passo 6 mínimo viável):
 //   - fetchChurchConfig passa a chamar get_agent_prompt_resolved (RPC)
@@ -30,6 +39,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 import { AGENT_TOOLS, executeTool, checkAntiSpam } from '../_shared/agent-tools.ts'
+import { logAgentExecution } from '../_shared/log-agent-execution.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -203,6 +213,14 @@ interface LegacyConfig {
   custom_overrides: Record<string, unknown> | null
 }
 
+// v19: token usage acumulado por execução
+interface UsageTotals {
+  input_tokens:          number
+  output_tokens:         number
+  cache_read_tokens:     number
+  cache_creation_tokens: number
+}
+
 // ─────────────────────────────────────────────────────────────
 // BUSCAR CONFIG DA IGREJA (v3 — via RPC get_agent_prompt_resolved)
 // ─────────────────────────────────────────────────────────────
@@ -294,7 +312,7 @@ function buildSystemBlocks(
 }
 
 // ─────────────────────────────────────────────────────────────
-// TOOL LOOP GENÉRICO
+// TOOL LOOP GENÉRICO  (v19 — retorna { result, usage })
 // ─────────────────────────────────────────────────────────────
 
 async function runToolLoop(
@@ -302,7 +320,7 @@ async function runToolLoop(
   userMessage:  string,
   tools:        typeof AGENT_TOOLS,
   churchId:     string,
-): Promise<string> {
+): Promise<{ result: string; usage: UsageTotals }> {
   const messages: Anthropic.MessageParam[] = [
     { role: 'user', content: userMessage },
   ]
@@ -317,6 +335,14 @@ async function runToolLoop(
   let iterations  = 0
   const MAX_IT    = 10
 
+  // v19: acumulador de tokens
+  const totalUsage: UsageTotals = {
+    input_tokens:          0,
+    output_tokens:         0,
+    cache_read_tokens:     0,
+    cache_creation_tokens: 0,
+  }
+
   while (iterations < MAX_IT) {
     iterations++
 
@@ -327,6 +353,13 @@ async function runToolLoop(
       tools:      tools as Anthropic.Tool[],
       messages,
     })
+
+    // v19: acumular tokens de cada iteração
+    const u = response.usage as Record<string, number>
+    totalUsage.input_tokens          += u.input_tokens                    ?? 0
+    totalUsage.output_tokens         += u.output_tokens                   ?? 0
+    totalUsage.cache_read_tokens     += u.cache_read_input_tokens         ?? 0
+    totalUsage.cache_creation_tokens += u.cache_creation_input_tokens     ?? 0
 
     messages.push({ role: 'assistant', content: response.content })
 
@@ -363,17 +396,20 @@ async function runToolLoop(
     break // stop_reason inesperado
   }
 
-  return finalResult
+  return { result: finalResult, usage: totalUsage }
 }
 
 // ─────────────────────────────────────────────────────────────
-// PROCESSAR UMA JOURNEY (modo proativo)
+// PROCESSAR UMA JOURNEY (modo proativo)  (v19 — logAgentExecution)
 // ─────────────────────────────────────────────────────────────
 
 async function processJourney(
-  journeyId: string,
-  churchId:  string,
+  journeyId:   string,
+  churchId:    string,
+  triggerType: string = 'cron',
 ): Promise<{ ok: boolean; result?: string; error?: string }> {
+
+  const t0 = Date.now()
 
   // Lock atômico — evita race condition entre instâncias do cron
   const { data: locked } = await supabaseAdmin
@@ -406,6 +442,18 @@ async function processJourney(
         .update(reschedule)
         .eq('id', journeyId)
         .eq('church_id', churchId)
+
+      // v19: log anti-spam como 'skipped'
+      await logAgentExecution(supabaseAdmin, {
+        church_id:    churchId,
+        agent_slug:   AGENT_SLUG,
+        model:        MODEL,
+        trigger_type: triggerType,
+        status:       'skipped',
+        duration_ms:  Date.now() - t0,
+        error:        `anti_spam:${spamCheck.reason}`,
+      })
+
       return { ok: true, result: `skipped_anti_spam:${spamCheck.reason}` }
     }
 
@@ -431,7 +479,7 @@ Passos:
 Seja conciso, pastoral e humano.
 `.trim()
 
-    const finalResult = await runToolLoop(
+    const { result: finalResult, usage } = await runToolLoop(
       systemBlocks,
       userMessage,
       TOOLS_PROATIVO,
@@ -467,6 +515,20 @@ Seja conciso, pastoral e humano.
       console.warn('[agent-acolhimento] debit_agent_credits falhou (não crítico):', creditErr)
     }
 
+    // v19: log sucesso
+    await logAgentExecution(supabaseAdmin, {
+      church_id:             churchId,
+      agent_slug:            AGENT_SLUG,
+      model:                 MODEL,
+      trigger_type:          triggerType,
+      status:                'success',
+      duration_ms:           Date.now() - t0,
+      input_tokens:          usage.input_tokens,
+      output_tokens:         usage.output_tokens,
+      cache_read_tokens:     usage.cache_read_tokens,
+      cache_creation_tokens: usage.cache_creation_tokens,
+    })
+
     return { ok: true, result: finalResult }
 
   } catch (err) {
@@ -480,12 +542,23 @@ Seja conciso, pastoral e humano.
       .eq('church_id', churchId)
       .eq('status', 'processing')
 
+    // v19: log erro
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: triggerType,
+      status:       'error',
+      duration_ms:  Date.now() - t0,
+      error:        String(err),
+    })
+
     return { ok: false, error: String(err) }
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// PROCESSAR MENSAGEM INBOUND (modo reativo)
+// PROCESSAR MENSAGEM INBOUND (modo reativo)  (v19 — logAgentExecution)
 // Chamado pelo conversation-router quando ownership=agent
 // ─────────────────────────────────────────────────────────────
 
@@ -495,6 +568,8 @@ async function processInbound(
   churchId:       string,
   inboundText:    string,
 ): Promise<{ ok: boolean; result?: string; error?: string }> {
+
+  const t0 = Date.now()
 
   // 1. Buscar dados da conversa — valida ownership e pega person_id
   const { data: conv } = await supabaseAdmin
@@ -551,6 +626,18 @@ async function processInbound(
         })
       }
     } catch { /* não crítico */ }
+
+    // v19: log rate_limited
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: 'inbound_message',
+      status:       'rate_limited',
+      duration_ms:  Date.now() - t0,
+      error:        'max 5 respostas automáticas por conversa em 5 minutos',
+    })
+
     return { ok: false, error: 'rate_limit_exceeded', result: 'max 5 respostas automáticas por conversa em 5 minutos' }
   }
 
@@ -610,17 +697,43 @@ Responda como a equipe pastoral da igreja — com calor, sem pressão, sem revel
 `.trim()
 
   try {
-    const finalResult = await runToolLoop(
+    const { result: finalResult, usage } = await runToolLoop(
       systemBlocks,
       userMessage,
       TOOLS_INBOUND,
       churchId,
     )
 
+    // v19: log sucesso inbound
+    await logAgentExecution(supabaseAdmin, {
+      church_id:             churchId,
+      agent_slug:            AGENT_SLUG,
+      model:                 MODEL,
+      trigger_type:          'inbound_message',
+      status:                'success',
+      duration_ms:           Date.now() - t0,
+      input_tokens:          usage.input_tokens,
+      output_tokens:         usage.output_tokens,
+      cache_read_tokens:     usage.cache_read_tokens,
+      cache_creation_tokens: usage.cache_creation_tokens,
+    })
+
     return { ok: true, result: finalResult }
 
   } catch (err) {
     console.error('[agent-acolhimento] processInbound error:', err)
+
+    // v19: log erro inbound
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: 'inbound_message',
+      status:       'error',
+      duration_ms:  Date.now() - t0,
+      error:        String(err),
+    })
+
     return { ok: false, error: String(err) }
   }
 }
@@ -656,7 +769,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const results = await Promise.allSettled(
-      journeys.map(j => processJourney(j.id, j.church_id))
+      journeys.map(j => processJourney(j.id, j.church_id, 'cron'))
     )
 
     const summary = results.map((r, i) => ({
@@ -677,7 +790,7 @@ Deno.serve(async (req: Request) => {
       return json({ ok: false, error: 'journey_id e church_id obrigatórios para trigger journey/internal' }, 400)
     }
 
-    const result = await processJourney(journeyId, churchId)
+    const result = await processJourney(journeyId, churchId, 'journey')
     return json(result)
   }
 

@@ -1,5 +1,8 @@
 ﻿// ============================================================
-// Edge Function: agent-reengajamento  v1
+// Edge Function: agent-reengajamento  v15 — Fase 6.3
+//
+// MUDANÇAS v15: adiciona trigger_type='chat_sse' e status text
+// nos INSERTs de agent_executions. success bool mantido para compat.
 // Agente de Reengajamento Pastoral — detecta membros afastados
 // e gera mensagens personalizadas via IA.
 //
@@ -379,12 +382,14 @@ Deno.serve(async (req: Request) => {
           tokens_used: outputTokens,
         })
 
-        // Loga execução
+        // Loga execução (v15: + trigger_type + status)
         await supabase.from('agent_executions').insert({
           church_id:     churchId,
           agent_slug:    AGENT_SLUG,
           user_id:       user.id,
           model:         MODEL,
+          trigger_type:  'chat_sse',
+          status:        'success',
           input_tokens:  inputTokens,
           output_tokens: outputTokens,
           duration_ms:   Date.now() - startedAt,
@@ -408,6 +413,8 @@ Deno.serve(async (req: Request) => {
           agent_slug:    AGENT_SLUG,
           user_id:       user.id,
           model:         MODEL,
+          trigger_type:  'chat_sse',
+          status:        'error',
           input_tokens:  inputTokens,
           output_tokens: outputTokens,
           duration_ms:   Date.now() - startedAt,
