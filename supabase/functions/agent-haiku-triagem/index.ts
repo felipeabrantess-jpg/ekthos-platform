@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-haiku-triagem  v1 — Sprint 1
+// Edge Function: agent-haiku-triagem  v4 — Fase 6.3
 //
 // POST /functions/v1/agent-haiku-triagem
 // verify_jwt = false — chamada interna via webhook-receiver
@@ -18,12 +18,19 @@
 //   3. Salvar classificação em conversation_messages.metadata
 //   4. Notificar via internal_notifications quando necessário
 //
+// MUDANÇAS v4 (Fase 6.3 — Observabilidade):
+//   - Importa logAgentExecution de _shared/log-agent-execution.ts
+//   - classifyMessage retorna { classification, usage }
+//   - Handler envolto em try/finally → logAgentExecution
+//     com trigger_type='inbound_message' e tokens acumulados
+//
 // Modelo: claude-haiku-4-5-20251001 (via ANTHROPIC_HAIKU_MODEL env)
 // Cache: 3 system blocks com cache_control:ephemeral
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
+import { logAgentExecution } from '../_shared/log-agent-execution.ts'
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -51,6 +58,14 @@ interface HaikuClassification {
   escalate_to_sonnet: boolean
   haiku_response:     string | null
   reasoning:          string
+}
+
+// v4: token usage da classificação
+interface UsageTotals {
+  input_tokens:          number
+  output_tokens:         number
+  cache_read_tokens:     number
+  cache_creation_tokens: number
 }
 
 // ─── System blocks (cached) ───────────────────────────────────────────────────
@@ -111,12 +126,12 @@ Não inclua nada além do JSON. Não use aspas simples. Não use comentários.`.
   cache_control: { type: 'ephemeral' as const },
 }
 
-// ─── Classificação Haiku ──────────────────────────────────────────────────────
+// ─── Classificação Haiku  (v4 — retorna { classification, usage }) ─────────────
 
 async function classifyMessage(
   anthropic: Anthropic,
   inboundText: string,
-): Promise<HaikuClassification> {
+): Promise<{ classification: HaikuClassification; usage: UsageTotals }> {
   const response = await anthropic.messages.create({
     model:     HAIKU_MODEL,
     max_tokens: 512,
@@ -129,30 +144,37 @@ async function classifyMessage(
     ],
   })
 
-  // T6: Log cache tokens para validação
-  const usage = response.usage as Record<string, number>
-  console.log(`[${AGENT_SLUG}] usage: input=${usage.input_tokens} output=${usage.output_tokens} cache_write=${usage.cache_creation_input_tokens ?? 0} cache_read=${usage.cache_read_input_tokens ?? 0}`)
+  const u = response.usage as Record<string, number>
+  const usage: UsageTotals = {
+    input_tokens:          u.input_tokens                ?? 0,
+    output_tokens:         u.output_tokens               ?? 0,
+    cache_read_tokens:     u.cache_read_input_tokens     ?? 0,
+    cache_creation_tokens: u.cache_creation_input_tokens ?? 0,
+  }
+
+  console.log(`[${AGENT_SLUG}] usage: input=${usage.input_tokens} output=${usage.output_tokens} cache_write=${usage.cache_creation_tokens} cache_read=${usage.cache_read_tokens}`)
 
   const rawText = response.content[0].type === 'text' ? response.content[0].text.trim() : ''
-  // Strip markdown code fences que o Haiku às vezes inclui apesar da instrução
   const raw = rawText
     .replace(/^```(?:json)?\s*/m, '')
     .replace(/\s*```\s*$/m, '')
     .trim()
 
   try {
-    return JSON.parse(raw) as HaikuClassification
+    return { classification: JSON.parse(raw) as HaikuClassification, usage }
   } catch {
-    // Escalate to Sonnet on parse error (safe fallback)
     console.error(`[${AGENT_SLUG}] JSON parse error — raw: ${raw.slice(0, 300)}`)
     return {
-      category:           'pastoral',
-      sentiment:          'neutral',
-      intent:             'outro',
-      confidence:         0.0,
-      escalate_to_sonnet: true,
-      haiku_response:     null,
-      reasoning:          `Parse error — escalando para Sonnet. Raw: ${raw.slice(0, 100)}`,
+      classification: {
+        category:           'pastoral',
+        sentiment:          'neutral',
+        intent:             'outro',
+        confidence:         0.0,
+        escalate_to_sonnet: true,
+        haiku_response:     null,
+        reasoning:          `Parse error — escalando para Sonnet. Raw: ${raw.slice(0, 100)}`,
+      },
+      usage,
     }
   }
 }
@@ -165,7 +187,6 @@ async function enqueueOutboundMessage(
   churchId: string,
   text: string,
 ): Promise<void> {
-  // Busca channel_id e contact_phone da conversa
   const { data: conv, error: convErr } = await supabase
     .from('conversations')
     .select('channel_id, contact_phone')
@@ -177,7 +198,6 @@ async function enqueueOutboundMessage(
     return
   }
 
-  // INSERT em conversation_messages
   const { data: msg, error: msgErr } = await supabase
     .from('conversation_messages')
     .insert({
@@ -198,7 +218,6 @@ async function enqueueOutboundMessage(
     return
   }
 
-  // INSERT em channel_dispatch_queue
   const { error: qErr } = await supabase
     .from('channel_dispatch_queue')
     .insert({
@@ -214,7 +233,6 @@ async function enqueueOutboundMessage(
 
   if (qErr) {
     console.error(`[${AGENT_SLUG}] enqueueOutbound: insert channel_dispatch_queue falhou`, qErr.message)
-    // Reverter status da mensagem
     await supabase
       .from('conversation_messages')
       .update({ status: 'failed', error_detail: qErr.message })
@@ -222,7 +240,6 @@ async function enqueueOutboundMessage(
     return
   }
 
-  // Atualiza preview da conversa
   await supabase
     .from('conversations')
     .update({
@@ -298,7 +315,7 @@ function json(data: unknown, status = 200): Response {
   })
 }
 
-// ─── Handler principal ────────────────────────────────────────────────────────
+// ─── Handler principal  (v4 — try/finally com logAgentExecution) ──────────────
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -329,9 +346,10 @@ Deno.serve(async (req: Request) => {
 
   console.log(`[${AGENT_SLUG}] inbound conv=${conversation_id} ownership=${ownership} len=${inbound_text.length}`)
 
+  const t0 = Date.now()
+
   // ── 1. Roteamento por ownership ──────────────────────────────────────────────
   if (ownership === 'human') {
-    // Conversa já pertence a humano — notificar sem classificar
     await notifyInternal(
       supabase,
       church_id,
@@ -340,85 +358,121 @@ Deno.serve(async (req: Request) => {
       `Nova mensagem em conversa atribuída a humano: "${inbound_text.slice(0, 100)}"`,
     )
     console.log(`[${AGENT_SLUG}] routed=human (skip classification)`)
+    // Ownership human: skipped sem custo de tokens — não logar (sem chamada Anthropic)
     return json({ ok: true, routed: 'human' })
   }
 
-  // ── 2. Classificação com Haiku ───────────────────────────────────────────────
-  let classification: HaikuClassification
+  // v4: acumulador de tokens (pode haver chamadas adicionais no roteamento)
+  let totalUsage: UsageTotals = {
+    input_tokens: 0, output_tokens: 0,
+    cache_read_tokens: 0, cache_creation_tokens: 0,
+  }
+  let logStatus = 'success'
+  let logError:  string | undefined
+
   try {
-    classification = await classifyMessage(anthropic, inbound_text)
-  } catch (err) {
-    console.error(`[${AGENT_SLUG}] classifyMessage threw:`, err)
-    // Fallback seguro: escalate ao Sonnet
-    escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
-    return json({ ok: true, routed: 'sonnet_fallback', error: 'classification_failed' })
-  }
 
-  console.log(`[${AGENT_SLUG}] classification:`, JSON.stringify({
-    category:    classification.category,
-    sentiment:   classification.sentiment,
-    confidence:  classification.confidence,
-    escalate:    classification.escalate_to_sonnet,
-  }))
+    // ── 2. Classificação com Haiku ─────────────────────────────────────────────
+    let classification: HaikuClassification
+    try {
+      const result = await classifyMessage(anthropic, inbound_text)
+      classification = result.classification
+      totalUsage     = result.usage
+    } catch (err) {
+      console.error(`[${AGENT_SLUG}] classifyMessage threw:`, err)
+      escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+      logStatus = 'error'
+      logError  = String(err)
+      return json({ ok: true, routed: 'sonnet_fallback', error: 'classification_failed' })
+    }
 
-  // ── 3. Persistir classificação em conversation_messages.metadata ─────────────
-  await supabase
-    .from('conversation_messages')
-    .update({ metadata: { haiku_classification: classification } })
-    .eq('id', message_id)
-    .then(({ error }) => {
-      if (error) console.error(`[${AGENT_SLUG}] metadata update error:`, error.message)
-    })
+    console.log(`[${AGENT_SLUG}] classification:`, JSON.stringify({
+      category:    classification.category,
+      sentiment:   classification.sentiment,
+      confidence:  classification.confidence,
+      escalate:    classification.escalate_to_sonnet,
+    }))
 
-  // ── 4. Roteamento por categoria/sentiment ────────────────────────────────────
-
-  const { category, sentiment, escalate_to_sonnet, haiku_response } = classification
-
-  // ── 4a. Handoff para humano ─────────────────────────────────────────────────
-  if (category === 'handoff_humano') {
-    // Transfere ownership para humano
+    // ── 3. Persistir classificação em conversation_messages.metadata ──────────
     await supabase
-      .from('conversations')
-      .update({ ownership: 'human' })
-      .eq('id', conversation_id)
+      .from('conversation_messages')
+      .update({ metadata: { haiku_classification: classification } })
+      .eq('id', message_id)
+      .then(({ error }) => {
+        if (error) console.error(`[${AGENT_SLUG}] metadata update error:`, error.message)
+      })
 
-    // Notifica liderança
-    await notifyInternal(
-      supabase,
-      church_id,
-      conversation_id,
-      '🤝 Membro pediu falar com humano',
-      `Um membro solicitou atendimento humano. Motivo: ${classification.reasoning}`,
-    )
+    // ── 4. Roteamento ─────────────────────────────────────────────────────────
 
-    // Confirma ao membro que alguém vai atender
-    await enqueueOutboundMessage(
-      supabase,
-      conversation_id,
-      church_id,
-      'Entendido! Vou chamar alguém da nossa equipe para continuar essa conversa com você. Um momento! 🙏',
-    )
+    const { category, sentiment, escalate_to_sonnet, haiku_response } = classification
 
-    console.log(`[${AGENT_SLUG}] routed=handoff_humano`)
-    return json({ ok: true, routed: 'handoff_humano', classification })
-  }
+    // 4a. Handoff para humano
+    if (category === 'handoff_humano') {
+      await supabase
+        .from('conversations')
+        .update({ ownership: 'human' })
+        .eq('id', conversation_id)
 
-  // ── 4b. Escalate para Sonnet ─────────────────────────────────────────────────
-  if (escalate_to_sonnet || sentiment === 'distressed') {
+      await notifyInternal(
+        supabase,
+        church_id,
+        conversation_id,
+        '🤝 Membro pediu falar com humano',
+        `Um membro solicitou atendimento humano. Motivo: ${classification.reasoning}`,
+      )
+
+      await enqueueOutboundMessage(
+        supabase,
+        conversation_id,
+        church_id,
+        'Entendido! Vou chamar alguém da nossa equipe para continuar essa conversa com você. Um momento! 🙏',
+      )
+
+      console.log(`[${AGENT_SLUG}] routed=handoff_humano`)
+      return json({ ok: true, routed: 'handoff_humano', classification })
+    }
+
+    // 4b. Escalate para Sonnet
+    if (escalate_to_sonnet || sentiment === 'distressed') {
+      escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+      console.log(`[${AGENT_SLUG}] routed=sonnet (escalate=${escalate_to_sonnet} distressed=${sentiment === 'distressed'})`)
+      return json({ ok: true, routed: 'sonnet', classification })
+    }
+
+    // 4c. Haiku responde diretamente
+    if (haiku_response) {
+      await enqueueOutboundMessage(supabase, conversation_id, church_id, haiku_response)
+      console.log(`[${AGENT_SLUG}] routed=haiku (direct response, confidence=${classification.confidence})`)
+      return json({ ok: true, routed: 'haiku', classification })
+    }
+
+    // Fallback
     escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
-    console.log(`[${AGENT_SLUG}] routed=sonnet (escalate=${escalate_to_sonnet} distressed=${sentiment === 'distressed'})`)
-    return json({ ok: true, routed: 'sonnet', classification })
-  }
+    console.log(`[${AGENT_SLUG}] routed=sonnet_fallback (haiku_response null without escalate flag)`)
+    return json({ ok: true, routed: 'sonnet_fallback', classification })
 
-  // ── 4c. Haiku responde diretamente (trivial/informativa, alta confiança) ──────
-  if (haiku_response) {
-    await enqueueOutboundMessage(supabase, conversation_id, church_id, haiku_response)
-    console.log(`[${AGENT_SLUG}] routed=haiku (direct response, confidence=${classification.confidence})`)
-    return json({ ok: true, routed: 'haiku', classification })
-  }
+  } catch (err) {
+    console.error(`[${AGENT_SLUG}] handler error:`, err)
+    logStatus = 'error'
+    logError  = String(err)
+    return json({ ok: false, error: String(err) }, 500)
 
-  // Fallback: escalate se haiku_response for null mas não escalado acima
-  escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
-  console.log(`[${AGENT_SLUG}] routed=sonnet_fallback (haiku_response null without escalate flag)`)
-  return json({ ok: true, routed: 'sonnet_fallback', classification })
+  } finally {
+    // v4: logar apenas se houve chamada Anthropic (tokens > 0)
+    if (totalUsage.input_tokens > 0) {
+      await logAgentExecution(supabase, {
+        church_id:             church_id,
+        agent_slug:            AGENT_SLUG,
+        model:                 HAIKU_MODEL,
+        trigger_type:          'inbound_message',
+        status:                logStatus,
+        duration_ms:           Date.now() - t0,
+        input_tokens:          totalUsage.input_tokens,
+        output_tokens:         totalUsage.output_tokens,
+        cache_read_tokens:     totalUsage.cache_read_tokens,
+        cache_creation_tokens: totalUsage.cache_creation_tokens,
+        error:                 logError,
+      })
+    }
+  }
 })
