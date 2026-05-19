@@ -1,17 +1,16 @@
-﻿// ============================================================
-// Edge Function: agent-reengajamento  v15 — Fase 6.3
+// ============================================================
+// Edge Function: agent-reengajamento  v16 — Frente 5
 //
-// MUDANÇAS v15: adiciona trigger_type='chat_sse' e status text
-// nos INSERTs de agent_executions. success bool mantido para compat.
-// Agente de Reengajamento Pastoral — detecta membros afastados
-// e gera mensagens personalizadas via IA.
+// MUDANÇAS v16: adiciona trigger_type='reengagement_scan'
+//   - Modo interno chamado pelo cron reengajamento_scan_disparar()
+//   - Sem JWT — body: { trigger_type, church_id, person_id, touchpoint }
+//   - Gera mensagem Haiku → enfileira channel_dispatch_queue
+//   - Registra reengagement_journey + reengagement_last_sent_at
+//   - Loga agent_executions trigger_type='reengagement_scan'
 //
-// POST /agent-reengajamento
-// Headers: Authorization: Bearer <supabase-jwt>
-// Body: { message: string, clear_history?: boolean }
-// Returns: SSE stream
-//
-// verify_jwt: false — valida manualmente (padrão ES256)
+// MODO CHAT SSE (v15 intocado):
+//   - Requer JWT usuário
+//   - SSE stream com histórico de conversa
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -27,16 +26,15 @@ const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekt
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
-// Auth client - JWT validation only (prevents RLS contamination of DB client)
 const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 
-const AGENT_SLUG  = 'agent-reengajamento'
-const MODEL       = 'claude-haiku-4-5-20251001'
-const MAX_TOKENS  = 2048
+const AGENT_SLUG    = 'agent-reengajamento'
+const MODEL         = 'claude-haiku-4-5-20251001'
+const MAX_TOKENS    = 2048
 const HISTORY_LIMIT = 16
 
 const SENSITIVE_KEYWORDS = [
@@ -64,6 +62,12 @@ function sseData(payload: unknown): Uint8Array {
 
 function jsonErr(msg: string, status: number): Response {
   return new Response(JSON.stringify({ error: msg }), {
+    status, headers: { ...CORS, 'Content-Type': 'application/json' },
+  })
+}
+
+function jsonOk(data: unknown, status = 200): Response {
+  return new Response(JSON.stringify(data), {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   })
 }
@@ -99,7 +103,7 @@ function personDisplayName(p: Record<string, unknown>): string {
   return (p.name as string) || 'Sem nome'
 }
 
-// ── Detecta afastados ────────────────────────────────────
+// ── Detecta afastados (modo SSE) ────────────────────────────
 
 type AbsentMember = {
   id:              string
@@ -146,18 +150,15 @@ async function detectAbsent(churchId: string): Promise<AbsentMember[]> {
   }
 
   return (people ?? []).map((p: Record<string, unknown>) => {
-    // Usa o mais recente entre last_contact_at e last_attendance_at
     const lastContact    = p.last_contact_at as string | null
     const lastAttendance = p.last_attendance_at as string | null
     const mostRecent     = (!lastAttendance || (lastContact && lastContact > lastAttendance))
-      ? lastContact
-      : lastAttendance
+      ? lastContact : lastAttendance
 
     const days      = daysSince(mostRecent) ?? 0
     const sensitive = isSensitive(p)
     const sentDays  = daysSince(p.reengagement_last_sent_at as string | null)
     const canSend   = sentDays === null || sentDays >= 7
-
     const groupData = p.groups as { name?: string } | null
 
     return {
@@ -178,8 +179,6 @@ async function detectAbsent(churchId: string): Promise<AbsentMember[]> {
   })
 }
 
-// ── Marca mensagem enviada ─────────────────────────────────
-
 async function markMessagesSent(memberIds: string[]): Promise<void> {
   if (!memberIds.length) return
   await supabase
@@ -188,12 +187,7 @@ async function markMessagesSent(memberIds: string[]): Promise<void> {
     .in('id', memberIds)
 }
 
-// ── System prompt ──────────────────────────────────────────
-
-function buildSystemPrompt(
-  churchName: string,
-  absentMembers: AbsentMember[],
-): string {
+function buildSystemPrompt(churchName: string, absentMembers: AbsentMember[]): string {
   const total      = absentMembers.length
   const sensitive  = absentMembers.filter(m => m.sensitive)
   const canSend    = absentMembers.filter(m => m.can_send && !m.sensitive)
@@ -242,13 +236,243 @@ Quando o pastor pedir para gerar mensagens (ex: "gere mensagens para os afastado
 - Máx. 3 parágrafos por mensagem
 - Ao final de cada mensagem, informe o telefone cadastrado
 
-## CADÊNCIA
-
-Se uma mensagem foi gerada para um membro recentemente, informe ao pastor e sugira aguardar o prazo.
-
 ## TOM
 
 Pastoral, acolhedor, direto. Evite jargões religiosos excessivos. Fale como um líder que se importa genuinamente.`
+}
+
+// ── MODO SCAN (v16) ────────────────────────────────────────
+// Chamado internamente pelo cron reengajamento_scan_disparar()
+// Não requer JWT do usuário — autenticação via origin interna
+
+async function handleReengajamentoScan(body: Record<string, unknown>): Promise<Response> {
+  const churchId   = body.church_id  as string | undefined
+  const personId   = body.person_id  as string | undefined
+  const touchpoint = (body.touchpoint as string | undefined) ?? 'semana_2'
+
+  if (!churchId || !personId) {
+    return jsonOk({ ok: false, error: 'church_id e person_id obrigatórios' }, 400)
+  }
+
+  const t0 = Date.now()
+
+  try {
+    // 1. Dados da pessoa
+    const { data: person } = await supabase
+      .from('people')
+      .select('id, name, first_name, last_name, phone, optout, deleted_at, observacoes_pastorais, tags')
+      .eq('id', personId)
+      .eq('church_id', churchId)
+      .maybeSingle()
+
+    if (!person)               return jsonOk({ ok: false, error: 'person_not_found' })
+    if (person.optout)         return jsonOk({ ok: true, result: 'skipped_optout' })
+    if (person.deleted_at)     return jsonOk({ ok: true, result: 'skipped_deleted' })
+    if (!person.phone)         return jsonOk({ ok: false, error: 'person_phone_not_found' })
+    if (isSensitive(person as Record<string, unknown>)) {
+      return jsonOk({ ok: true, result: 'skipped_sensitive_case' })
+    }
+
+    const personName = person.first_name
+      ? `${person.first_name}${person.last_name ? ' ' + person.last_name : ''}`
+      : (person.name ?? 'Membro')
+
+    // 2. Nome da church
+    const { data: church } = await supabase
+      .from('churches')
+      .select('name')
+      .eq('id', churchId)
+      .maybeSingle()
+    const churchName = church?.name ?? 'sua Igreja'
+
+    // 3. Gera mensagem com Haiku
+    const aiResponse = await anthropic.messages.create({
+      model:      MODEL,
+      max_tokens: 400,
+      system: `Você é o Agente de Reengajamento Pastoral da ${churchName}. Escreva UMA mensagem curta e calorosa de WhatsApp para reconectar com ${personName}, que está afastado da comunidade. Não mencione "afastamento" nem "ausência" nem que você é um agente de IA. Seja genuíno, pastoral e acolhedor. Máximo 3 parágrafos. Responda apenas com o texto da mensagem.`,
+      messages: [{
+        role:    'user',
+        content: `Escreva a mensagem pastoral de reengajamento para ${personName} (touchpoint: ${touchpoint}).`,
+      }],
+    })
+
+    const textBlock  = aiResponse.content.find(b => b.type === 'text')
+    const msgText    = textBlock && 'text' in textBlock ? (textBlock as { text: string }).text.trim() : ''
+    if (!msgText)    return jsonOk({ ok: false, error: 'haiku_empty_response' })
+
+    // 4. Enfileira mensagem no canal WhatsApp
+    const phone = person.phone.replace(/\D/g, '')
+
+    // Descobre context_type do agente
+    const { data: routing } = await supabase
+      .from('church_agent_channel_routing')
+      .select('context_type')
+      .eq('church_id', churchId)
+      .eq('agent_slug', AGENT_SLUG)
+      .maybeSingle()
+
+    let contextType = routing?.context_type
+    if (!contextType) {
+      const { data: globalRouting } = await supabase
+        .from('agent_channel_routing')
+        .select('context_type')
+        .eq('agent_slug', AGENT_SLUG)
+        .maybeSingle()
+      contextType = globalRouting?.context_type ?? 'pastoral'
+    }
+
+    // Canal ativo
+    const { data: channel } = await supabase
+      .from('church_whatsapp_channels')
+      .select('id')
+      .eq('church_id', churchId)
+      .eq('context_type', contextType)
+      .in('session_status', ['testing', 'active'])
+      .eq('active', true)
+      .limit(1)
+      .maybeSingle()
+
+    if (!channel) {
+      console.warn(`[agent-reengajamento] scan: no active channel church=${churchId} context=${contextType}`)
+      return jsonOk({ ok: false, error: `no_active_channel:${contextType}` })
+    }
+
+    // Upsert conversa
+    const { data: conv, error: convErr } = await supabase
+      .from('conversations')
+      .upsert({
+        church_id:            churchId,
+        channel_id:           channel.id,
+        contact_phone:        phone,
+        person_id:            personId,
+        status:               'open',
+        ownership:            'agent',
+        agent_slug:           AGENT_SLUG,
+        channel_type:         'whatsapp',
+        last_message_at:      new Date().toISOString(),
+        last_message_preview: msgText.slice(0, 120),
+      }, { onConflict: 'church_id,channel_id,contact_phone', ignoreDuplicates: false })
+      .select('id')
+      .single()
+
+    if (convErr || !conv) {
+      return jsonOk({ ok: false, error: convErr?.message ?? 'upsert_conversation_failed' })
+    }
+
+    // Insert conversation_messages
+    const { data: msg, error: msgErr } = await supabase
+      .from('conversation_messages')
+      .insert({
+        conversation_id: conv.id,
+        church_id:       churchId,
+        direction:       'outbound',
+        sender_type:     'agent',
+        sender_id:       AGENT_SLUG,
+        content:         msgText,
+        content_type:    'text',
+        status:          'pending',
+      })
+      .select('id')
+      .single()
+
+    if (msgErr || !msg) {
+      return jsonOk({ ok: false, error: msgErr?.message ?? 'insert_message_failed' })
+    }
+
+    // Insert channel_dispatch_queue
+    const { error: qErr } = await supabase
+      .from('channel_dispatch_queue')
+      .insert({
+        message_id:      msg.id,
+        conversation_id: conv.id,
+        church_id:       churchId,
+        channel_id:      channel.id,
+        to_phone:        phone,
+        content:         msgText,
+        status:          'pending',
+        scheduled_at:    new Date().toISOString(),
+      })
+
+    if (qErr) {
+      await supabase.from('conversation_messages')
+        .update({ status: 'failed' })
+        .eq('id', msg.id)
+      return jsonOk({ ok: false, error: `queue_failed: ${qErr.message}` })
+    }
+
+    // 5. Upsert reengagement_journey
+    const { data: existingJourney } = await supabase
+      .from('reengagement_journey')
+      .select('id, touchpoints_sent')
+      .eq('church_id', churchId)
+      .eq('person_id', personId)
+      .in('status', ['pending', 'processing'])
+      .maybeSingle()
+
+    const nextAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+
+    if (existingJourney) {
+      // touchpoints_sent é JSONB array — appenda o touchpoint atual
+      const prev = Array.isArray(existingJourney.touchpoints_sent)
+        ? (existingJourney.touchpoints_sent as string[])
+        : []
+      await supabase.from('reengagement_journey').update({
+        current_touchpoint: touchpoint,
+        touchpoints_sent:   [...prev, touchpoint],
+        next_touchpoint_at: nextAt,
+      }).eq('id', existingJourney.id)
+    } else {
+      // touchpoints_sent é JSONB array (default '[]') — não integer
+      await supabase.from('reengagement_journey').insert({
+        church_id:          churchId,
+        person_id:          personId,
+        current_touchpoint: touchpoint,
+        touchpoints_sent:   [touchpoint],
+        status:             'processing',
+        started_at:         new Date().toISOString(),
+        next_touchpoint_at: nextAt,
+      } as any)
+    }
+
+    // 6. Atualiza reengagement_last_sent_at na pessoa
+    await supabase.from('people').update({
+      reengagement_last_sent_at: new Date().toISOString(),
+      reengagement_status:       'active',
+    }).eq('id', personId).eq('church_id', churchId)
+
+    // 7. Log agent_executions
+    await supabase.from('agent_executions').insert({
+      church_id:     churchId,
+      agent_slug:    AGENT_SLUG,
+      model:         MODEL,
+      trigger_type:  'reengagement_scan',
+      status:        'success',
+      success:       true,
+      duration_ms:   Date.now() - t0,
+      input_tokens:  aiResponse.usage.input_tokens,
+      output_tokens: aiResponse.usage.output_tokens,
+    })
+
+    console.log(`[agent-reengajamento] scan ok church=${churchId} person=${personId} touchpoint=${touchpoint} ms=${Date.now()-t0}`)
+    return jsonOk({ ok: true, message_sent: true, touchpoint, conv_id: conv.id })
+
+  } catch (err: unknown) {
+    const errMsg = (err as { message?: string }).message ?? String(err)
+    console.error('[agent-reengajamento] scan error:', errMsg)
+
+    await supabase.from('agent_executions').insert({
+      church_id:    churchId!,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: 'reengagement_scan',
+      status:       'error',
+      success:      false,
+      duration_ms:  Date.now() - t0,
+      error:        errMsg,
+    }).catch(() => {})
+
+    return jsonOk({ ok: false, error: errMsg }, 500)
+  }
 }
 
 // ── Handler principal ──────────────────────────────────────
@@ -257,7 +481,19 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
   if (req.method !== 'POST')    return jsonErr('Method Not Allowed', 405)
 
-  // ── Auth ────────────────────────────────────────────────
+  // Parse body antes de qualquer auth check (v16)
+  let body: Record<string, unknown>
+  try   { body = await req.json() }
+  catch { return jsonErr('Body inválido', 400) }
+
+  const triggerType = (body.trigger_type as string | undefined) ?? 'chat_sse'
+
+  // ── MODO SCAN (v16 — sem JWT, chamado pelo cron) ──────────
+  if (triggerType === 'reengagement_scan') {
+    return handleReengajamentoScan(body)
+  }
+
+  // ── MODO CHAT SSE (requer JWT usuário) ────────────────────
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
   if (!token) return jsonErr('Unauthorized', 401)
 
@@ -270,15 +506,9 @@ Deno.serve(async (req: Request) => {
 
   if (!churchId) return jsonErr('church_id não encontrado no token', 400)
 
-  // ── Body ────────────────────────────────────────────────
-  let body: { message?: string; clear_history?: boolean }
-  try   { body = await req.json() }
-  catch { return jsonErr('Body inválido', 400) }
-
-  const message = body.message?.trim() ?? ''
+  const message = (body.message as string | undefined)?.trim() ?? ''
   if (!message) return jsonErr('message é obrigatório', 400)
 
-  // ── Contexto da church ──────────────────────────────────
   const { data: churchRow } = await supabase
     .from('churches')
     .select('name')
@@ -286,11 +516,8 @@ Deno.serve(async (req: Request) => {
     .maybeSingle()
 
   const churchName = churchRow?.name ?? 'sua igreja'
-
-  // ── Detecta afastados (sempre atualizado) ───────────────
   const absentMembers = await detectAbsent(churchId)
 
-  // ── Limpa histórico se solicitado ───────────────────────
   if (body.clear_history) {
     await supabase
       .from('agent_conversations')
@@ -300,7 +527,6 @@ Deno.serve(async (req: Request) => {
       .eq('agent_slug', AGENT_SLUG)
   }
 
-  // ── Histórico de conversa ───────────────────────────────
   const { data: historyRows } = await supabase
     .from('agent_conversations')
     .select('role, content')
@@ -316,7 +542,6 @@ Deno.serve(async (req: Request) => {
       content: m.content,
     }))
 
-  // Salva mensagem do usuário
   await supabase.from('agent_conversations').insert({
     church_id:  churchId,
     user_id:    user.id,
@@ -325,7 +550,6 @@ Deno.serve(async (req: Request) => {
     content:    message,
   })
 
-  // ── Streaming SSE ────────────────────────────────────────
   const startedAt = Date.now()
 
   const readableStream = new ReadableStream({
@@ -357,7 +581,6 @@ Deno.serve(async (req: Request) => {
         inputTokens  = finalMsg.usage.input_tokens
         outputTokens = finalMsg.usage.output_tokens
 
-        // Se o agente gerou mensagens, marca cadência nos membros
         const msgLower = message.toLowerCase()
         const askedToSend = [
           'gere', 'gera', 'escreva', 'escreve', 'crie', 'cria',
@@ -372,7 +595,6 @@ Deno.serve(async (req: Request) => {
           await markMessagesSent(idsToMark)
         }
 
-        // Salva resposta no histórico
         await supabase.from('agent_conversations').insert({
           church_id:   churchId,
           user_id:     user.id,
@@ -382,7 +604,6 @@ Deno.serve(async (req: Request) => {
           tokens_used: outputTokens,
         })
 
-        // Loga execução (v15: + trigger_type + status)
         await supabase.from('agent_executions').insert({
           church_id:     churchId,
           agent_slug:    AGENT_SLUG,

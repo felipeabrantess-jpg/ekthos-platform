@@ -122,6 +122,7 @@ export function Agents() {
     freeAgents,
     alwaysPaidAgents,
     eligibleAgents,
+    comingSoonAgents,
     activeAgentSlugs,
     hasAgent,
     canAddMoreAgents,
@@ -249,6 +250,45 @@ export function Agents() {
                 onActivate={slug => activateMutation.mutate(slug)}
                 onDeactivate={slug => deactivateMutation.mutate(slug)}
               />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Coming soon */}
+      {comingSoonAgents.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="font-medium text-sm text-gray-700">Em breve</h2>
+            <span className="text-xs text-gray-400">novos agentes chegando</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {comingSoonAgents.map(agent => (
+              <div
+                key={agent.slug}
+                className="relative bg-white border border-gray-200 rounded-xl p-5 space-y-3 opacity-75"
+              >
+                {/* Em breve badge */}
+                <div className="absolute top-3 right-3">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold"
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>
+                    Em breve
+                  </span>
+                </div>
+                <div className="pr-20">
+                  <p className="font-semibold text-sm text-gray-900">{agent.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">{agent.short_description}</p>
+                </div>
+                <a
+                  href="https://wa.me/5521993092146?text=Quero%20saber%20mais%20sobre%20os%20agentes%20em%20breve%20do%20Ekthos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-full py-2 px-4 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                  style={{ background: 'var(--color-primary, #e13500)', color: '#fff' }}
+                >
+                  Falar com nosso time
+                </a>
+              </div>
             ))}
           </div>
         </section>
