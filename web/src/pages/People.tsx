@@ -9,7 +9,7 @@
  *  - Em Risco       → stage: inativo
  */
 
-import { useState } from 'react'
+import { useState, Component, type ReactNode } from 'react'
 import { Pencil, Trash2, Gift, QrCode } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
@@ -23,6 +23,20 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
 import type { Person, PersonWithStage } from '@/lib/types/joins'
+
+// ── Error Boundary para PersonDetailPanel ────────────────────────────────────
+class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() { return { hasError: true } }
+  componentDidCatch() { this.setState({ hasError: false }) }
+  render() {
+    if (this.state.hasError) return null
+    return this.props.children
+  }
+}
 
 type BadgeVariant = 'blue' | 'green' | 'yellow' | 'gray' | 'red' | 'purple'
 
@@ -405,11 +419,13 @@ export default function People() {
       />
 
       {/* Detail Panel */}
-      <PersonDetailPanel
-        person={selectedPerson}
-        onClose={() => setSelectedPerson(null)}
-        onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
-      />
+      <PanelErrorBoundary>
+        <PersonDetailPanel
+          person={selectedPerson}
+          onClose={() => setSelectedPerson(null)}
+          onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
+        />
+      </PanelErrorBoundary>
 
       {/* QR Code Modal */}
       <QrCodeModal
