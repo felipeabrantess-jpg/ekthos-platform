@@ -1077,26 +1077,11 @@ export default function Landing() {
             ))}
           </div>
 
-          {/* Agentes inclusos */}
-          <div className="rounded-2xl p-5" style={{ background: 'rgba(59,130,246,0.04)', border: `1px solid ${C.border}` }}>
-            <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: 'rgba(226,232,240,0.3)' }}>Inclusos em todos os planos</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { icon: <Bot size={15}/>, name: 'Suporte', desc: 'Responde dúvidas 24h' },
-                { icon: <Users size={15}/>, name: 'Onboarding', desc: 'Configura CRM em 30min' },
-                { icon: <MessageCircle size={15}/>, name: 'Cadastro', desc: 'Registra membros e visitantes' },
-                { icon: <Bell size={15}/>, name: 'Notificação', desc: 'Alertas pastorais automáticos' },
-              ].map(a => (
-                <div key={a.name} className="flex items-start gap-2.5">
-                  <span style={{ color: 'rgba(226,232,240,0.35)', marginTop: 1 }}>{a.icon}</span>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{a.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'rgba(226,232,240,0.3)' }}>{a.desc}</p>
-                  </div>
-                  <span className="ml-auto shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(59,130,246,0.08)', color: '#60a5fa', border: `1px solid ${C.border}` }}>Incluso</span>
-                </div>
-              ))}
-            </div>
+          {/* Automações internas — menção sutil, sem cards vendáveis */}
+          <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(59,130,246,0.03)', border: `1px solid rgba(59,130,246,0.1)` }}>
+            <p className="text-xs leading-relaxed" style={{ color: 'rgba(226,232,240,0.35)' }}>
+              A plataforma também conta com automações internas de suporte, onboarding e cadastro para acelerar a implantação — inclusas em qualquer plano.
+            </p>
           </div>
         </div>
       </section>
