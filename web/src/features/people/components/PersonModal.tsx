@@ -145,12 +145,24 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
 
   const isPending = createPerson.isPending || updatePerson.isPending
 
+  // Normaliza telefone para +55XXXXXXXXXXX
+  function normalizePhone(raw: string): string | null {
+    if (!raw.trim()) return null
+    const digits = raw.replace(/\D/g, '')
+    if (!digits) return null
+    // Já tem código 55 + DDD + número (12-13 dígitos)
+    if (digits.startsWith('55') && digits.length >= 12) return `+${digits}`
+    // Número local (10-11 dígitos)
+    if (digits.length >= 10) return `+55${digits}`
+    return raw.trim() // retorna original se não conseguir normalizar
+  }
+
   // Constrói o payload final para salvar
   function buildPayload() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: Record<string, any> = {
       name:               form.name.trim() || null,
-      phone:              form.phone.trim() || null,
+      phone:              normalizePhone(form.phone),
       email:              form.email.trim() || null,
       birth_date:         form.birth_date || null,
       marital_status:     form.marital_status || null,

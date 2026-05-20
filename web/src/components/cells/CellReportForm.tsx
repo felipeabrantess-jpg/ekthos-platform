@@ -197,6 +197,14 @@ export default function CellReportForm({ groupId, onClose, editReport }: CellRep
         <div className="flex gap-2 p-4 border-t border-black/10 sticky bottom-0 bg-white">
           <Button
             variant="secondary"
+            type="button"
+            onClick={onClose}
+            disabled={save.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => save.mutate('draft')}
             loading={save.isPending}
             disabled={save.isPending}

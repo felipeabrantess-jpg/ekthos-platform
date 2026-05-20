@@ -11,7 +11,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { HandHeart, Search, X, Plus, Trash2 } from 'lucide-react'
+import { HandHeart, Search, X, Plus, Trash2, Pencil } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
@@ -20,6 +20,7 @@ import Spinner from '@/components/ui/Spinner'
 import {
   useVoluntarios,
   useCreateVolunteer,
+  useUpdateVolunteer,
   useDeactivateVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
 import type { VolunteerWithPerson } from '@/lib/types/joins'
@@ -194,9 +195,99 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
   )
 }
 
+// ── EditVolunteerModal ────────────────────────────────────────────────────────
+
+interface EditVolunteerModalProps {
+  volunteer: VolunteerRow
+  onClose: () => void
+  churchId: string
+  ministries: Ministry[]
+}
+
+function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVolunteerModalProps) {
+  const updateVolunteer = useUpdateVolunteer()
+  const [ministryId, setMinistryId] = useState(volunteer.ministries?.id ?? '')
+  const [role, setRole] = useState(volunteer.role ?? 'volunteer')
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSave() {
+    setError(null)
+    try {
+      await updateVolunteer.mutateAsync({
+        id: volunteer.id,
+        church_id: churchId,
+        ministry_id: ministryId || undefined,
+        role,
+      })
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar voluntário')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-ekthos-black">Editar Voluntário</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <p className="text-sm font-medium text-brand-700 bg-brand-50 rounded-xl px-3 py-2.5">
+          {volunteer.people?.name ?? 'Voluntário'}
+        </p>
+
+        <div>
+          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Ministério</label>
+          <select
+            value={ministryId}
+            onChange={e => setMinistryId(e.target.value)}
+            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option value="">Sem ministério</option>
+            {ministries.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Função</label>
+          <select
+            value={role}
+            onChange={e => setRole(e.target.value)}
+            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option value="volunteer">Voluntário</option>
+            <option value="leader">Líder</option>
+            <option value="co-leader">Co-líder</option>
+          </select>
+        </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <div className="flex gap-2 pt-1">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Cancelar</Button>
+          <Button
+            onClick={() => { void handleSave() }}
+            loading={updateVolunteer.isPending}
+            disabled={updateVolunteer.isPending}
+            className="flex-1"
+          >
+            Salvar
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── VolunteerCard ─────────────────────────────────────────────────────────────
 
-function VolunteerCard({ volunteer, onRemove }: { volunteer: VolunteerRow; onRemove: (v: VolunteerRow) => void }) {
+function VolunteerCard({ volunteer, onRemove, onEdit }: { volunteer: VolunteerRow; onRemove: (v: VolunteerRow) => void; onEdit: (v: VolunteerRow) => void }) {
   const person = volunteer.people
   const ministry = volunteer.ministries
   return (
@@ -209,12 +300,21 @@ function VolunteerCard({ volunteer, onRemove }: { volunteer: VolunteerRow; onRem
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <p className="font-semibold text-ekthos-black text-sm truncate">{person?.name ?? '—'}</p>
-          <button
-            onClick={() => onRemove(volunteer)}
-            className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={() => onEdit(volunteer)}
+              className="p-1.5 rounded-lg text-gray-300 hover:text-brand-500 hover:bg-brand-50 transition-colors"
+              title="Editar"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onRemove(volunteer)}
+              className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         {person?.email && <p className="text-xs text-gray-400 truncate">{person.email}</p>}
@@ -244,6 +344,7 @@ export default function Volunteers() {
   const [search, setSearch] = useState('')
   const [ministryFilter, setMinistryFilter] = useState('')
   const [addOpen, setAddOpen] = useState(false)
+  const [editingVolunteer, setEditingVolunteer] = useState<VolunteerRow | null>(null)
   const [removingVolunteer, setRemovingVolunteer] = useState<VolunteerRow | null>(null)
   const deactivate = useDeactivateVolunteer()
 
@@ -377,9 +478,19 @@ export default function Volunteers() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {filteredVolunteers.map(v => (
-            <VolunteerCard key={v.id} volunteer={v} onRemove={setRemovingVolunteer} />
+            <VolunteerCard key={v.id} volunteer={v} onRemove={setRemovingVolunteer} onEdit={setEditingVolunteer} />
           ))}
         </div>
+      )}
+
+      {/* Edit modal */}
+      {editingVolunteer && churchId && (
+        <EditVolunteerModal
+          volunteer={editingVolunteer}
+          onClose={() => setEditingVolunteer(null)}
+          churchId={churchId}
+          ministries={ministries}
+        />
       )}
 
       {/* Add modal */}

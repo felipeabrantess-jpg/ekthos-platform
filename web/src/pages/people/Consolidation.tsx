@@ -92,13 +92,14 @@ export default function Consolidation() {
       const ninetyDaysAgo = new Date()
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
 
+      const dateFilter = ninetyDaysAgo.toISOString().split('T')[0]
       const query = supabase
         .from('people')
         .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage')
         .eq('church_id', churchId!)
-        .gte('conversion_date', ninetyDaysAgo.toISOString().split('T')[0])
+        .or(`conversion_date.gte.${dateFilter},first_visit_date.gte.${dateFilter}`)
 
-      const { data } = await query.order('conversion_date', { ascending: false })
+      const { data } = await query.order('conversion_date', { ascending: false, nullsFirst: false })
 
       return (data ?? []).map(p => {
         // Days since conversion (or first visit as fallback)

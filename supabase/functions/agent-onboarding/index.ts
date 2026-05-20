@@ -64,16 +64,16 @@ const ROLE_FOCUS: Record<string, string> = {
 - Dashboard: como ler as métricas pastorais
 - Pipeline: como acompanhar o caminho de discipulado dos membros
 - Pessoas: como usar filtros avançados para encontrar membros
-- Relatórios: como gerar relatórios para o conselho
-- Configurações: como adicionar usuários e configurar módulos
+- Gabinete: como criar e gerenciar o gabinete pastoral (pastores, diáconos, presbíteros) — acesse pelo menu lateral em "Gabinete"
+- Configurações (Config.): como adicionar usuários, configurar módulos e canais de comunicação
 - Agentes IA: como ativar agentes para automatizar tarefas`,
 
   pastor: `Para você como pastor/admin, foque em:
 - Dashboard: como ler as métricas pastorais
 - Pipeline: como acompanhar o caminho de discipulado dos membros
 - Pessoas: como usar filtros avançados para encontrar membros
-- Relatórios: como gerar relatórios para o conselho
-- Configurações: como adicionar usuários e configurar módulos
+- Gabinete: como criar e gerenciar o gabinete pastoral (pastores, diáconos, presbíteros) — acesse pelo menu lateral em "Gabinete"
+- Configurações (Config.): como adicionar usuários, configurar módulos e canais de comunicação
 - Agentes IA: como ativar agentes para automatizar tarefas`,
 
   lider: `Para você como líder de célula, foque em:

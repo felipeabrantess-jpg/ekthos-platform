@@ -424,6 +424,11 @@ interface DynamicWidgetProps {
 function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: DynamicWidgetProps) {
   const [selected, setSelected] = useState<string[]>([])
 
+  // Reset seleção quando widget muda (ex: navegar para próxima pergunta)
+  useEffect(() => {
+    setSelected([])
+  }, [widget.type, widget.label])
+
   if (widget.type === 'upload') {
     return (
       <div className="px-5 py-3 bg-white border-t border-black/[0.06] space-y-2">
