@@ -604,6 +604,96 @@ async function handleCaminhoACheckout(session: Stripe.Checkout.Session, eventId:
     else console.log(`[caminho-a] internal_notification criada: church=${churchId}`)
   })
 
+  // ── G1: user_roles (OPS-DEBT-031) ───────────────────────────
+  // Sem user_roles o pastor não tem acesso role-based ao CRM.
+  // Idempotente via onConflict user_id+church_id.
+  if (userId && churchId) {
+    const { error: roleErr } = await supabase
+      .from('user_roles')
+      .upsert(
+        { user_id: userId, church_id: churchId, role: 'admin' } as any,
+        { onConflict: 'user_id,church_id', ignoreDuplicates: true },
+      )
+    if (roleErr) console.warn('[caminho-a] user_roles upsert (non-fatal):', roleErr.message)
+    else console.log(`[caminho-a] user_roles criado: userId=${userId} churchId=${churchId}`)
+  }
+
+  // ── G2: subscription_agents (OPS-DEBT-031) ───────────────────
+  // agent-guard verifica subscription_agents.active=true antes de processar.
+  // Agentes internos: ativados imediatamente (sem setup manual).
+  // Agente premium comprado junto (agent_slug no metadata): pending_activation.
+  const { data: subRow } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('church_id', churchId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (subRow?.id) {
+    const subRowId = subRow.id
+
+    // Seed agentes internos — ativos imediatamente
+    const { error: internalErr } = await supabase
+      .from('subscription_agents')
+      .upsert([
+        { subscription_id: subRowId, agent_slug: 'agent-suporte',    active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+        { subscription_id: subRowId, agent_slug: 'agent-onboarding', active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+        { subscription_id: subRowId, agent_slug: 'agent-cadastro',   active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+      ] as any[], { onConflict: 'subscription_id,agent_slug', ignoreDuplicates: true })
+    if (internalErr) console.warn('[caminho-a] subscription_agents internos (non-fatal):', internalErr.message)
+    else console.log(`[caminho-a] subscription_agents internos criados: sub=${subRowId}`)
+
+    // Agente premium comprado junto (ex: agent-acolhimento via Payment Link)
+    const purchasedAgentSlug = session.metadata?.agent_slug ?? null
+    if (purchasedAgentSlug) {
+      const { data: existingAgent } = await supabase
+        .from('subscription_agents')
+        .select('id')
+        .eq('subscription_id', subRowId)
+        .eq('agent_slug', purchasedAgentSlug)
+        .maybeSingle()
+
+      if (!existingAgent?.id) {
+        const { data: newSa, error: saErr } = await supabase
+          .from('subscription_agents')
+          .insert({
+            subscription_id:   subRowId,
+            agent_slug:        purchasedAgentSlug,
+            active:            false,
+            activation_status: 'pending_activation',
+            package_type:      'avulso',
+            credits_total:     0,
+            credits_balance:   0,
+          } as any)
+          .select()
+          .single()
+
+        if (saErr) {
+          console.warn('[caminho-a] subscription_agents agente premium (non-fatal):', saErr.message)
+        } else {
+          const { data: agentCatalog } = await supabase
+            .from('agents_catalog').select('name').eq('slug', purchasedAgentSlug).maybeSingle()
+          const agentDisplayName = agentCatalog?.name ?? purchasedAgentSlug
+          await supabase.from('internal_notifications').insert({
+            notification_type: 'agent_purchase_pending',
+            church_id:         churchId,
+            agent_slug:        purchasedAgentSlug,
+            subscription_id:   newSa.id,
+            title:   `Nova compra via Caminho A: ${agentDisplayName}`,
+            message: `Igreja "${churchName}" comprou ${agentDisplayName} junto com plano ${planSlug} via Caminho A. Aguardando setup assistido.`,
+            metadata: { agent_name: agentDisplayName, session_id: session.id, event_id: eventId },
+          }).then(({ error }) => {
+            if (error) console.warn('[caminho-a] notif agente premium (non-fatal):', error.message)
+          })
+          console.log(`[caminho-a] agente premium pendente: ${purchasedAgentSlug} sa=${newSa.id}`)
+        }
+      } else {
+        console.log(`[caminho-a] agente premium já existe: ${purchasedAgentSlug} sa=${existingAgent.id}`)
+      }
+    }
+  }
+
   await recordAffiliateConversion(session, churchId)
   console.log(`[caminho-a] ✅ church=${churchId} plan=${planSlug} user=${userId ?? 'none'}`)
 }
