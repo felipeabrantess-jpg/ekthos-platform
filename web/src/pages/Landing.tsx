@@ -232,6 +232,92 @@ function AvatarIASection() {
 // ═══════════════════════════════════════════════════════════
 // COMPARATIVO CRM
 // ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD VISUAL — imagem real licenciada
+// Posição: entre Stats Bar e FluxoOperacional
+// Arquivo esperado: web/public/hero-analytics.jpg
+// ═══════════════════════════════════════════════════════════
+function DashboardVisualSection() {
+  const { ref, visible } = useInView()
+  return (
+    <section
+      ref={ref as React.RefObject<HTMLElement>}
+      className="py-16 lg:py-24 px-5 lg:px-8 w-full"
+      style={{ background: '#071525' }}
+    >
+      <div className="max-w-5xl mx-auto">
+        {/* Eyebrow */}
+        <div
+          className="text-center mb-10"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'none' : 'translateY(20px)',
+            transition: 'all 0.7s cubic-bezier(0.16,1,0.3,1)',
+          }}
+        >
+          <p className="text-xs font-bold tracking-[0.18em] uppercase mb-3" style={{ color: '#60a5fa' }}>
+            Visão pastoral em tempo real
+          </p>
+          <h2 className="font-display text-2xl lg:text-3xl font-bold text-white mb-3">
+            Dados que orientam — não que acumulam
+          </h2>
+          <p className="text-base max-w-xl mx-auto" style={{ color: 'rgba(226,232,240,0.5)' }}>
+            O Ekthos transforma cada informação do CRM em decisão pastoral acionável.
+          </p>
+        </div>
+
+        {/* Imagem licenciada */}
+        <div
+          className="relative rounded-2xl overflow-hidden"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'none' : 'translateY(32px)',
+            transition: 'all 0.8s cubic-bezier(0.16,1,0.3,1) 0.15s',
+            boxShadow: '0 0 0 1px rgba(59,130,246,0.2), 0 24px 80px rgba(59,130,246,0.15)',
+          }}
+        >
+          <img
+            src="/hero-analytics.jpg"
+            alt="Visão pastoral inteligente — dashboard com analytics operacional"
+            className="w-full h-auto block"
+            loading="lazy"
+            onError={(e) => {
+              // Fallback gracioso se a imagem ainda não foi commitada
+              const el = e.currentTarget as HTMLImageElement
+              el.style.display = 'none'
+              const parent = el.parentElement
+              if (parent && !parent.querySelector('.img-fallback')) {
+                const fb = document.createElement('div')
+                fb.className = 'img-fallback'
+                fb.style.cssText = [
+                  'height:320px',
+                  'display:flex',
+                  'align-items:center',
+                  'justify-content:center',
+                  'background:linear-gradient(135deg,#071525 0%,#0c2340 100%)',
+                  'color:rgba(96,165,250,0.4)',
+                  'font-size:0.875rem',
+                  'font-family:monospace',
+                  'letter-spacing:0.05em',
+                ].join(';')
+                fb.textContent = '[ hero-analytics.jpg — aguardando upload em web/public/ ]'
+                parent.appendChild(fb)
+              }
+            }}
+          />
+          {/* Overlay azul sutil — integra com identidade */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(to top right, rgba(7,21,37,0.35) 0%, transparent 50%, rgba(59,130,246,0.08) 100%)',
+            }}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function CrmComparisonSection() {
   const { ref, visible } = useInView()
   return (
@@ -635,6 +721,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ── VISUAL PROOF — analytics real ─────────────────── */}
+      <DashboardVisualSection/>
 
       {/* ── FLUXO OPERACIONAL ──────────────────────────────── */}
       <span id="fluxo"/>
