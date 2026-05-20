@@ -48,9 +48,9 @@ function StatusIcon({ status }: { status: ConversationMessage['status'] }) {
 
 function actorLabel(m: ConversationMessage): string {
   if (m.direction === 'inbound') return ''
-  if (m.actor_type === 'agent')  return 'IA'
-  if (m.actor_type === 'human')  return 'Staff'
-  if (m.actor_type === 'system') return 'Sistema'
+  if (m.sender_type === 'agent')  return 'IA'
+  if (m.sender_type === 'human')  return 'Staff'
+  if (m.sender_type === 'system') return 'Sistema'
   return ''
 }
 
@@ -58,14 +58,14 @@ function actorLabel(m: ConversationMessage): string {
 
 function Bubble({ msg }: { msg: ConversationMessage }) {
   const isOutbound = msg.direction === 'outbound'
-  const isAgent    = msg.actor_type === 'agent'
-  const isSystem   = msg.actor_type === 'system'
+  const isAgent    = msg.sender_type === 'agent'
+  const isSystem   = msg.sender_type === 'system'
 
   if (isSystem) {
     return (
       <div className="flex justify-center my-2">
         <span className="text-xs text-[#8A8A8A] bg-[#f9eedc] px-3 py-1 rounded-full">
-          {msg.body}
+          {msg.content}
         </span>
       </div>
     )
@@ -102,7 +102,7 @@ function Bubble({ msg }: { msg: ConversationMessage }) {
             {actorLabel(msg)}
           </p>
         )}
-        <p className="whitespace-pre-wrap break-words">{msg.body}</p>
+        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
         <div className={`flex items-center gap-1 mt-1 justify-end
           ${isOutbound ? 'opacity-70' : 'opacity-50'}`}>
           <span className="text-[10px]">{formatTime(msg.created_at)}</span>

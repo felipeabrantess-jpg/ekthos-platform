@@ -1,5 +1,12 @@
 // ============================================================
-// Edge Function: agent-reengajamento  v16 — Frente 5
+// Edge Function: agent-reengajamento  v17
+//
+// MUDANÇAS v17 (PASSO 6 — conecta config real da igreja):
+//   - Modo reengagement_scan: chama get_agent_prompt_resolved antes de gerar mensagem
+//     Fallback hardcoded se RPC indisponível (zero breaking change)
+//   - Modo chat_sse: prefixo resolved_prompt antes de buildSystemPrompt
+//     Fallback hardcoded se RPC indisponível
+//   - Template agent-reengajamento inserido em agent_prompt_templates (pré-requisito)
 //
 // MUDANÇAS v16: adiciona trigger_type='reengagement_scan'
 //   - Modo interno chamado pelo cron reengajamento_scan_disparar()
@@ -285,11 +292,24 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
       .maybeSingle()
     const churchName = church?.name ?? 'sua Igreja'
 
-    // 3. Gera mensagem com Haiku
+    // 3. Resolve prompt via configuração real da igreja (v17 / PASSO 6)
+    const { data: rpcData, error: rpcErr } = await supabase
+      .rpc('get_agent_prompt_resolved', {
+        p_church_id:  churchId,
+        p_agent_slug: AGENT_SLUG,
+      })
+      .maybeSingle()
+    if (rpcErr) console.warn('[agent-reengajamento] scan: prompt fallback:', rpcErr.message)
+
+    const systemPrompt = rpcData && !rpcErr
+      ? `${rpcData.resolved_prompt}\n\nPessoa alvo: ${personName}. Touchpoint: ${touchpoint}. Escreva UMA mensagem curta e calorosa de WhatsApp. Não mencione "afastamento", "ausência" nem que você é IA. Máximo 3 parágrafos. Responda APENAS com o texto da mensagem, sem explicação adicional.`
+      : `Você é o Agente de Reengajamento Pastoral da ${churchName}. Escreva UMA mensagem curta e calorosa de WhatsApp para reconectar com ${personName}, que está afastado da comunidade. Não mencione "afastamento" nem "ausência" nem que você é um agente de IA. Seja genuíno, pastoral e acolhedor. Máximo 3 parágrafos. Responda apenas com o texto da mensagem.`
+
+    // 4. Gera mensagem com Haiku
     const aiResponse = await anthropic.messages.create({
       model:      MODEL,
       max_tokens: 400,
-      system: `Você é o Agente de Reengajamento Pastoral da ${churchName}. Escreva UMA mensagem curta e calorosa de WhatsApp para reconectar com ${personName}, que está afastado da comunidade. Não mencione "afastamento" nem "ausência" nem que você é um agente de IA. Seja genuíno, pastoral e acolhedor. Máximo 3 parágrafos. Responda apenas com o texto da mensagem.`,
+      system: systemPrompt,
       messages: [{
         role:    'user',
         content: `Escreva a mensagem pastoral de reengajamento para ${personName} (touchpoint: ${touchpoint}).`,
@@ -300,7 +320,7 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
     const msgText    = textBlock && 'text' in textBlock ? (textBlock as { text: string }).text.trim() : ''
     if (!msgText)    return jsonOk({ ok: false, error: 'haiku_empty_response' })
 
-    // 4. Enfileira mensagem no canal WhatsApp
+    // 5. Enfileira mensagem no canal WhatsApp
     const phone = person.phone.replace(/\D/g, '')
 
     // Descobre context_type do agente
@@ -400,7 +420,7 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
       return jsonOk({ ok: false, error: `queue_failed: ${qErr.message}` })
     }
 
-    // 5. Upsert reengagement_journey
+    // 6. Upsert reengagement_journey
     const { data: existingJourney } = await supabase
       .from('reengagement_journey')
       .select('id, touchpoints_sent')
@@ -412,7 +432,6 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
     const nextAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
 
     if (existingJourney) {
-      // touchpoints_sent é JSONB array — appenda o touchpoint atual
       const prev = Array.isArray(existingJourney.touchpoints_sent)
         ? (existingJourney.touchpoints_sent as string[])
         : []
@@ -422,7 +441,6 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
         next_touchpoint_at: nextAt,
       }).eq('id', existingJourney.id)
     } else {
-      // touchpoints_sent é JSONB array (default '[]') — não integer
       await supabase.from('reengagement_journey').insert({
         church_id:          churchId,
         person_id:          personId,
@@ -434,13 +452,13 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
       } as any)
     }
 
-    // 6. Atualiza reengagement_last_sent_at na pessoa
+    // 7. Atualiza reengagement_last_sent_at na pessoa
     await supabase.from('people').update({
       reengagement_last_sent_at: new Date().toISOString(),
       reengagement_status:       'active',
     }).eq('id', personId).eq('church_id', churchId)
 
-    // 7. Log agent_executions
+    // 8. Log agent_executions
     await supabase.from('agent_executions').insert({
       church_id:     churchId,
       agent_slug:    AGENT_SLUG,
@@ -516,6 +534,16 @@ Deno.serve(async (req: Request) => {
     .maybeSingle()
 
   const churchName = churchRow?.name ?? 'sua igreja'
+
+  // PASSO 6 (v17) — Resolve prompt via configuração real da igreja
+  const { data: rpcPrompt, error: rpcPromptErr } = await supabase
+    .rpc('get_agent_prompt_resolved', {
+      p_church_id:  churchId,
+      p_agent_slug: AGENT_SLUG,
+    })
+    .maybeSingle()
+  if (rpcPromptErr) console.warn('[agent-reengajamento] chat: prompt fallback:', rpcPromptErr.message)
+
   const absentMembers = await detectAbsent(churchId)
 
   if (body.clear_history) {
@@ -562,7 +590,9 @@ Deno.serve(async (req: Request) => {
         const stream = anthropic.messages.stream({
           model:      MODEL,
           max_tokens: MAX_TOKENS,
-          system:     buildSystemPrompt(churchName, absentMembers),
+          system:     rpcPrompt && !rpcPromptErr
+            ? `${rpcPrompt.resolved_prompt}\n\n${buildSystemPrompt(churchName, absentMembers)}`
+            : buildSystemPrompt(churchName, absentMembers),
           messages:   [...history, { role: 'user', content: message }],
         })
 

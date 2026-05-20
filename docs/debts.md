@@ -539,3 +539,29 @@ fazem referência a colunas que não existem na tabela `affiliate_payment_batche
 
 **Estimativa:** ~1h
 **Critério de pronto:** `affiliate-commissions-mark-paid` retorna 200. `export-csv` gera CSV sem erro.
+
+---
+
+## OPS-DEBT-045 — stripe-webhook retornando HTTP 400 em produção
+
+**Registrado em:** 20/05/2026 (sessão fix/agentes-config-real-inbox-operacional)
+**Origem:** Logs de produção mostram 3 ocorrências nas últimas 24h de `stripe-webhook`
+respondendo HTTP 400.
+
+**Sintoma observado:**
+- Edge Function `stripe-webhook` (v13) retorna 400 em ~3 chamadas/dia
+- Não bloqueia o fluxo principal (Stripe retenta automaticamente)
+- Causa raiz ainda não investigada (pode ser payload malformado, assinatura
+  inválida de evento desconhecido, ou webhook de conta test vs live misturado)
+
+**Impacto potencial:** Baixo no curto prazo (Stripe retenta). Médio prazo se
+frequência aumentar: risco de eventos perdidos (pagamentos, cancelamentos,
+upgrades) não processados.
+
+**Investigação necessária:**
+1. Ler logs detalhados de stripe-webhook nas 3 ocorrências via `get_logs`
+2. Identificar qual tipo de evento Stripe está causando o 400
+3. Verificar se é `webhook_secret` inválido, evento desconhecido ou parsing error
+4. Corrigir o handler ou adicionar guard `if (!event) return 200` para eventos não tratados
+
+**Resolução planejada:** Próxima sessão de manutenção (não bloqueia nenhuma frente ativa).

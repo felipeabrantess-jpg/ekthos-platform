@@ -13,8 +13,8 @@ export interface ConversationMessage {
   id:                 string
   conversation_id:    string
   direction:          'inbound' | 'outbound'
-  actor_type:         'agent' | 'human' | 'contact' | 'system'
-  body:               string
+  sender_type:        'agent' | 'human' | 'contact' | 'system'
+  content:            string
   status:             'pending' | 'sent' | 'delivered' | 'read' | 'failed'
   created_at:         string
   provider_message_id: string | null
@@ -45,7 +45,7 @@ export function useConversationMessages(
     try {
       const { data, error: qErr } = await supabase
         .from('conversation_messages')
-        .select('id, conversation_id, direction, actor_type, body, status, created_at, provider_message_id')
+        .select('id, conversation_id, direction, sender_type, sender_id, content, status, created_at, provider_message_id')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true })
         .limit(100)
