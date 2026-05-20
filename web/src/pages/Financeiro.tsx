@@ -6,6 +6,7 @@ import {
   useCreateDonation,
   useConfirmDonation,
 } from '@/features/financeiro/hooks/useFinanceiro'
+import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
@@ -134,6 +135,7 @@ interface CreateDonationModalProps {
 
 function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalProps) {
   const createDonation = useCreateDonation()
+  const { data: peopleList } = usePeople(churchId, {})
   const [form, setForm] = useState({
     personId: '',
     type: 'dizimo' as DonationType,
@@ -176,12 +178,19 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
     <Modal open={open} onClose={onClose} title="Registrar Doação">
       <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ID da Pessoa (opcional)</label>
-          <Input
+          <label className="block text-sm font-medium text-gray-700 mb-1">Pessoa (opcional)</label>
+          <select
             value={form.personId}
             onChange={(e) => setForm((p) => ({ ...p, personId: e.target.value }))}
-            placeholder="UUID da pessoa (deixe vazio para anônimo)"
-          />
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Anônimo / Não identificado</option>
+            {(peopleList ?? []).map(person => (
+              <option key={person.id} value={person.id}>
+                {person.name ?? person.email ?? 'Sem nome'}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
