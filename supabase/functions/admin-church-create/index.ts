@@ -1,6 +1,11 @@
 // ============================================================
-// Edge Function: admin-church-create v3
+// Edge Function: admin-church-create v5
 // Caminho B — Cria nova igreja sem Stripe (trial manual 7 dias)
+//
+// MUDANÇAS v3 → v5 (OPS-DEBT-031 + OPS-DEBT-039):
+//   - Aceita pastor_name opcional no body → profile.name em vez de email truncado
+//   - Seed automático de subscription_agents para agentes internos pós-criação
+//     (agent-suporte, agent-onboarding, agent-cadastro — ativação imediata)
 //
 // Fluxo:
 //   1. Valida JWT do admin Ekthos
@@ -92,6 +97,7 @@ Deno.serve(async (req: Request) => {
   let body: {
     name?:                    string
     admin_email?:             string
+    pastor_name?:             string   // OPS-DEBT-039 — nome real do pastor (opcional)
     city?:                    string
     state?:                   string
     timezone?:                string
@@ -107,6 +113,7 @@ Deno.serve(async (req: Request) => {
   const {
     name,
     admin_email,
+    pastor_name              = null,
     city,
     state,
     timezone,
@@ -272,8 +279,8 @@ Deno.serve(async (req: Request) => {
 
   // ── 9. Cria perfil do pastor (Fase 6.2 — Bug Vanessa fix) ───
   // inviteUserByEmail NÃO cria profiles — precisamos inserir manualmente.
-  // name/display_name: extraído do email até '@' como fallback até onboarding completar.
-  const displayNameFallback = pastorEmail.split('@')[0]
+  // OPS-DEBT-039: usa pastor_name se fornecido; fallback = email truncado.
+  const displayNameFallback = pastor_name?.trim() || pastorEmail.split('@')[0]
   const { error: profileErr } = await supabase
     .from('profiles')
     .upsert({
@@ -289,7 +296,32 @@ Deno.serve(async (req: Request) => {
     console.warn('[admin-church-create] profile insert falhou (não fatal):', profileErr.message)
   }
 
-  // ── 10. Registra evento via record_audit_event ─────────────
+  // ── 10. Seed subscription_agents para agentes internos (OPS-DEBT-031) ──
+  // Busca subscription_id recém-criada e semeia agentes internos ativos.
+  // Idempotente: ON CONFLICT (subscription_id, agent_slug) DO NOTHING.
+  {
+    const { data: subRow } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('church_id', church.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (subRow?.id) {
+      const { error: saErr } = await supabase
+        .from('subscription_agents')
+        .upsert([
+          { subscription_id: subRow.id, agent_slug: 'agent-suporte',    active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+          { subscription_id: subRow.id, agent_slug: 'agent-onboarding', active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+          { subscription_id: subRow.id, agent_slug: 'agent-cadastro',   active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+        ] as any[], { onConflict: 'subscription_id,agent_slug', ignoreDuplicates: true })
+      if (saErr) console.warn('[admin-church-create] subscription_agents seed (não fatal):', saErr.message)
+      else console.log(`[admin-church-create] subscription_agents internos criados: sub=${subRow.id}`)
+    }
+  }
+
+  // ── 11. Registra evento via record_audit_event ─────────────
   const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
   const requestId = req.headers.get('x-request-id') ?? null
   const { error: auditErr } = await supabase.rpc('record_audit_event', {
