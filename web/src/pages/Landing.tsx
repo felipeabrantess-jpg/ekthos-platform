@@ -277,7 +277,7 @@ function DashboardVisualSection() {
           }}
         >
           <img
-            src="/hero-analytics.jpg"
+            src="/hero-analytics.webp"
             alt="Visão pastoral inteligente — dashboard com analytics operacional"
             className="w-full h-auto block"
             loading="lazy"
@@ -300,7 +300,7 @@ function DashboardVisualSection() {
                   'font-family:monospace',
                   'letter-spacing:0.05em',
                 ].join(';')
-                fb.textContent = '[ hero-analytics.jpg — aguardando upload em web/public/ ]'
+                fb.textContent = '[ hero-analytics.webp — aguardando upload em web/public/ ]'
                 parent.appendChild(fb)
               }
             }}
