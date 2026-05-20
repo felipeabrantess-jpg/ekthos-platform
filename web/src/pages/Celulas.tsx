@@ -215,7 +215,7 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
                 {(members ?? []).map((m: any) => (
                   <li key={m.id} className="flex items-center justify-between py-1.5 px-3 rounded-lg bg-bg-hover">
                     <div>
-                      <p className="text-sm font-medium text-text-primary">{m.people?.name ?? m.person_id}</p>
+                      <p className="text-sm font-medium text-text-primary">{m.people?.name ?? 'Membro'}</p>
                       <p className="text-xs text-text-tertiary capitalize">{m.role}</p>
                     </div>
                     <button onClick={() => void removeMember.mutateAsync({ id: m.id, group_id: group.id })} className="text-xs text-red-400 hover:text-red-600">

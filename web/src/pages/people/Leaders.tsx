@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Users2, Building2, Network } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Users2, Building2, Network, Plus, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
+import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 
 interface Leader {
@@ -65,9 +66,154 @@ function LeaderCard({ leader }: { leader: Leader }) {
   )
 }
 
+// ── AssignLeaderModal ─────────────────────────────────────────────────────────
+
+interface PersonResult { id: string; name: string; email: string | null }
+interface GroupOption  { id: string; name: string }
+
+function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchId: string }) {
+  const queryClient = useQueryClient()
+  const [personSearch, setPersonSearch]   = useState('')
+  const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null)
+  const [groupId, setGroupId]             = useState('')
+  const [role, setRole]                   = useState<'leader' | 'co_leader'>('leader')
+  const [error, setError]                 = useState<string | null>(null)
+
+  const { data: searchResults = [], isFetching } = useQuery({
+    queryKey: ['people_search_leaders', churchId, personSearch],
+    queryFn: async () => {
+      if (personSearch.trim().length < 2) return []
+      const { data } = await supabase
+        .from('people')
+        .select('id, name, email')
+        .eq('church_id', churchId)
+        .ilike('name', `%${personSearch}%`)
+        .is('deleted_at', null)
+        .limit(8)
+      return (data ?? []) as PersonResult[]
+    },
+    enabled: personSearch.trim().length >= 2,
+  })
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups_for_leaders', churchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('groups')
+        .select('id, name')
+        .eq('church_id', churchId)
+        .eq('status', 'active')
+        .order('name')
+      return (data ?? []) as GroupOption[]
+    },
+    enabled: Boolean(churchId),
+  })
+
+  const assign = useMutation({
+    mutationFn: async () => {
+      if (!selectedPerson || !groupId) throw new Error('Selecione pessoa e célula')
+      const field = role === 'leader' ? 'leader_id' : 'co_leader_id'
+      const { error: err } = await supabase
+        .from('groups')
+        .update({ [field]: selectedPerson.id })
+        .eq('id', groupId)
+      if (err) throw new Error(err.message)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['leaders', churchId] })
+      onClose()
+    },
+    onError: (err: Error) => setError(err.message),
+  })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-ekthos-black">Atribuir Líder à Célula</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Person search */}
+        <div>
+          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Pessoa *</label>
+          {selectedPerson ? (
+            <div className="flex items-center justify-between bg-brand-50 rounded-xl px-3 py-2.5">
+              <span className="text-sm font-medium text-brand-700">{selectedPerson.name}</span>
+              <button onClick={() => { setSelectedPerson(null); setPersonSearch('') }}
+                className="p-1 rounded text-brand-400 hover:text-brand-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <Input placeholder="Buscar por nome..." value={personSearch}
+                onChange={e => setPersonSearch(e.target.value)} />
+              {personSearch.length >= 2 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-black/10 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+                  {isFetching ? (
+                    <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+                  ) : searchResults.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-3">Nenhuma pessoa encontrada</p>
+                  ) : searchResults.map(p => (
+                    <button key={p.id}
+                      onClick={() => { setSelectedPerson(p); setPersonSearch('') }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-cream transition-colors">
+                      <p className="text-sm font-medium text-ekthos-black">{p.name}</p>
+                      {p.email && <p className="text-xs text-gray-400">{p.email}</p>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Cell select */}
+        <div>
+          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Célula *</label>
+          <select value={groupId} onChange={e => setGroupId(e.target.value)}
+            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600">
+            <option value="">Selecionar célula...</option>
+            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+        </div>
+
+        {/* Role */}
+        <div>
+          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Papel</label>
+          <select value={role} onChange={e => setRole(e.target.value as 'leader' | 'co_leader')}
+            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600">
+            <option value="leader">Líder</option>
+            <option value="co_leader">Co-líder</option>
+          </select>
+        </div>
+
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <div className="flex gap-2 pt-1">
+          <Button variant="secondary" onClick={onClose} className="flex-1">Cancelar</Button>
+          <Button
+            onClick={() => { assign.mutate() }}
+            loading={assign.isPending}
+            disabled={!selectedPerson || !groupId || assign.isPending}
+            className="flex-1"
+          >
+            Atribuir
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Leaders() {
   const { churchId } = useAuth()
   const [search, setSearch] = useState('')
+  const [assignOpen, setAssignOpen] = useState(false)
 
   const { data: leaders = [], isLoading } = useQuery({
     queryKey: ['leaders', churchId],
@@ -152,14 +298,20 @@ export default function Leaders() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
-          <Users2 className="w-5 h-5 text-brand-600" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
+            <Users2 className="w-5 h-5 text-brand-600" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-ekthos-black">Líderes</h1>
+            <p className="text-sm text-gray-500">Responsáveis por células e ministérios</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ekthos-black">Líderes</h1>
-          <p className="text-sm text-gray-500">Responsáveis por células e ministérios</p>
-        </div>
+        <Button onClick={() => setAssignOpen(true)}>
+          <Plus className="w-4 h-4 mr-1" />
+          <span className="hidden sm:inline">Atribuir Líder</span>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -184,6 +336,14 @@ export default function Leaders() {
         onChange={e => setSearch(e.target.value)}
         className="max-w-sm"
       />
+
+      {/* Assign leader modal */}
+      {assignOpen && churchId && (
+        <AssignLeaderModal
+          onClose={() => setAssignOpen(false)}
+          churchId={churchId}
+        />
+      )}
 
       {/* List */}
       {isLoading ? (
