@@ -1,10 +1,11 @@
 // ============================================================
 // Edge Function: whatsapp-attendant
 // Gera respostas personalizadas para visitantes e leads
-// Modelo: claude-haiku-3-5 (máximo custo controlado)
+// Modelo: claude-haiku-4-5-20251001 (máximo custo controlado)
 // ============================================================
 
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
+import { MODELS } from '../_shared/anthropic-client.ts'
 import { supabase, writeAuditLog, errorResponse, successResponse } from '../_shared/supabase-client.ts'
 import { sendTextMessage } from '../_shared/whatsapp-api.ts'
 import { TenantContext } from '../_shared/tenant-loader.ts'
@@ -91,7 +92,7 @@ Deno.serve(async (req: Request) => {
     ]
 
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-3-5',
+      model: MODELS.haiku,
       max_tokens: 200, // resposta curta para WhatsApp
       system: systemPrompt,
       messages,

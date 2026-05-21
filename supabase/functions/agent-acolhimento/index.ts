@@ -572,6 +572,7 @@ async function processInbound(
   const t0 = Date.now()
 
   // 1. Buscar dados da conversa — valida ownership e pega person_id
+  // F2 v27: adicionado filtro church_id para defesa em profundidade (cross-tenant protection)
   const { data: conv } = await supabaseAdmin
     .from('conversations')
     .select('church_id, ownership, agent_slug, person_id, contact_phone')
