@@ -6,6 +6,21 @@
 
 ---
 
+## ⚠️ AÇÃO MANUAL URGENTE — OPS-DEBT-049
+
+**Responsável: Felipe (manual, pós-merge)**
+
+Redefinir a senha do usuário de teste cujo UUID é `830e12d4-d8ea-4cd4-9f9d-f50d125f09b6`.
+
+A senha antiga (`fX6tTpwnnft_slHoqDDTiiLD`) estava **exposta em texto plano** no código da Edge Function `set-test-pastor-password`, que foi removida neste branch (`fix/docs-canon-seguranca-rls-debug-efs`). A EF foi deletada do Supabase, mas a senha antiga permanece ativa até rotação manual.
+
+**Passos:**
+1. Supabase Dashboard → Authentication → Users
+2. Localizar UUID `830e12d4-d8ea-4cd4-9f9d-f50d125f09b6`
+3. Ações → Update user → Nova senha forte → Confirmar
+
+---
+
 ## OPS-DEBT-039 — admin-church-create: pastor_name como parâmetro explícito
 
 **Identificada em:** Sprint Vanessa Onda 1 — Bug 1 (nome "Felipe" na sidebar)  
@@ -193,6 +208,85 @@ indicar que foram tratadas.
 
 ---
 
+---
+
+## OPS-DEBT-047 — RLS ausente em stripe_payment_links ✅ RESOLVIDA
+
+**Identificada em:** Auditoria de segurança — 2026-05-21
+**Resolvida em:** 2026-05-21 — branch `fix/docs-canon-seguranca-rls-debug-efs`
+**Status:** RESOLVIDA
+
+**Causa-raiz:** Tabela `stripe_payment_links` estava sem RLS habilitada, expondo URLs de pagamento Stripe sem autenticação.
+
+**Fix aplicado:** Migration `20260521150000_rls_stripe_payment_links.sql`
+- `ENABLE ROW LEVEL SECURITY` na tabela
+- Policy `stripe_payment_links_admin_all`: `FOR ALL TO authenticated USING (is_ekthos_admin()) WITH CHECK (is_ekthos_admin())`
+
+---
+
+## OPS-DEBT-048 — 6 Edge Functions de debug/teste em produção ✅ RESOLVIDA
+
+**Identificada em:** Auditoria de segurança — 2026-05-21
+**Resolvida em:** 2026-05-21 — branch `fix/docs-canon-seguranca-rls-debug-efs`
+**Status:** RESOLVIDA
+
+**Causa-raiz:** 6 EFs de debug/teste estavam deployadas em produção com vulnerabilidades de segurança graves (3 críticas sem autenticação).
+
+**EFs tombstonadas (HTTP 410) em 2026-05-21 — risco neutralizado:**
+1. `test-r23` — sem auth, escrevia em Stripe live
+2. `debug-stripe-coupon-check` — sem auth, expunha configuração de cupons Stripe
+3. `debug-backfill-promo-codes` — sem auth, operação de backfill em produção
+4. `setup-playwright-user` — sem auth, criava usuários de teste em produção
+5. `set-test-pastor-password` — CRÍTICA: expunha senha em texto plano no código, escrevia no banco de produção
+6. `n8n-diagnostic` — expunha configuração de secrets de integração
+
+**Status:** Código substituído por tombstone (retornam HTTP 410 "Function decommissioned").
+O risco de segurança está neutralizado. Remoção definitiva da lista de EFs requer ação manual.
+
+**⚠️ Ação pendente Felipe:** Deletar as 6 EFs via Supabase Dashboard → Edge Functions → (selecionar cada uma) → Delete. A CLI não estava autenticada no momento do fix, então só o tombstone foi aplicado.
+
+**Nota:** Nenhuma dessas EFs existia no repositório (nunca foram comitadas).
+
+---
+
+## OPS-DEBT-049 — Rotação de senha exposta em set-test-pastor-password
+
+**Identificada em:** Auditoria de segurança — 2026-05-21
+**Status:** ABERTA — aguardando ação manual de Felipe
+**Prioridade:** CRÍTICA — senha em texto plano estava exposta em código de EF pública
+
+**Causa-raiz:** A EF `set-test-pastor-password` (deletada em OPS-DEBT-048) continha a senha
+`fX6tTpwnnft_slHoqDDTiiLD` em texto plano. Qualquer pessoa com acesso aos logs do Supabase
+ou ao código poderia autenticar como o usuário de teste `830e12d4-d8ea-4cd4-9f9d-f50d125f09b6`.
+
+**Fix necessário:** Rotação manual de senha via Supabase Dashboard (ver aviso no topo deste arquivo).
+
+**Workaround atual:** EF deletada, mas senha antiga permanece ativa até rotação.
+
+---
+
+## OPS-DEBT-050 — docs/commercial/ desatualizado
+
+**Identificada em:** Auditoria de documentação — 2026-05-21
+**Status:** ABERTA
+**Prioridade:** Baixa — risco de confusão interna, não afeta produção
+
+**Causa-raiz:** Os arquivos em `docs/commercial/` (planos-pricing.md, catalogo-agentes-ia.md, etc.)
+contêm pricing e catálogo de agentes completamente divergentes da realidade atual do produto.
+Exemplos de divergência:
+- Pricing: commercial/ tem Professional/Business/Enterprise (R$1.500/R$2.500/R$4.500) vs real Chamado/Missão/Avivamento (R$689,90/R$1.639,90/R$2.469,90)
+- Agentes: commercial/ lista 8 agentes pagos fictícios vs real (agent-acolhimento, agent-reengajamento, agentes operacionais)
+
+**Fix necessário:**
+- Opção A: Deletar `docs/commercial/` inteiro e redirecionar para `docs/00-formacoes.md`
+- Opção B: Atualizar cada arquivo de `docs/commercial/` para refletir realidade atual
+
+**Fonte autoritativa:** `docs/00-formacoes.md` (criado em 2026-05-21)
+
+**Workaround atual:** Ignorar `docs/commercial/` — usar `docs/00-formacoes.md` como referência.
+
+---
+
 ## Histórico
 
 | ID | Sprint | Data | Status |
@@ -200,8 +294,12 @@ indicar que foram tratadas.
 | OPS-DEBT-039 | Vanessa Onda 1 | 2026-05-19 | Aberta |
 | OPS-DEBT-040 | Vanessa Onda 1 | 2026-05-19 | Aberta |
 | OPS-DEBT-041 | PR-D formality caloroso | 2026-05-21 | Aberta |
-| OPS-DEBT-042 | PR-D formality caloroso | 2026-05-21 | Aberta |
-| OPS-DEBT-043 | PR billing stripe-webhook | 2026-05-21 | Aberta |
+| OPS-DEBT-042 | PR-D formality caloroso | 2026-05-21 | **Resolvida** |
+| OPS-DEBT-043 | PR billing stripe-webhook | 2026-05-21 | Falso positivo (já ok) |
 | OPS-DEBT-044 | Sprint F1 canais | 2026-05-21 | Aberta |
 | OPS-DEBT-045 | Sprint PR-D demand-router | 2026-05-21 | Aberta |
 | OPS-DEBT-046 | Sprint F1-F5 canais/enums | 2026-05-21 | Aberta |
+| OPS-DEBT-047 | Auditoria segurança | 2026-05-21 | **Resolvida** |
+| OPS-DEBT-048 | Auditoria segurança | 2026-05-21 | **Resolvida** |
+| OPS-DEBT-049 | Auditoria segurança | 2026-05-21 | Aberta — ação manual Felipe |
+| OPS-DEBT-050 | Auditoria documentação | 2026-05-21 | Aberta |
