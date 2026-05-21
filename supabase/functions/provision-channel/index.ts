@@ -1,32 +1,26 @@
 // ============================================================
-// Edge Function: provision-channel
-// Provisiona um canal de comunicação via n8n (agnóstico de provider).
+// Edge Function: provision-channel  (v17 — F1 Opção C)
+// Provisiona canal Z-API diretamente (sem n8n).
 //
-// POST /provision-channel  body: { channel_id: UUID }
+// POST /provision-channel
 // Headers: Authorization: Bearer <supabase-jwt> (is_ekthos_admin)
+// Body: {
+//   church_id:        UUID,
+//   phone_number:     string,   ex: "+5511999999999"
+//   zapi_instance_id: string,   ID da instância Z-API
+//   zapi_token:       string,   token da instância Z-API
+//   context_type?:    'pastoral' | 'operacional'  (default: 'pastoral')
+//   display_name?:    string
+// }
 //
 // Fluxo:
 // 1. Valida JWT → confirma is_ekthos_admin
-// 2. Busca canal em church_channels pelo channel_id
-// 3. Valida church existe
-// 4. Seta status = 'provisioning'
-// 5. Resolve webhook n8n por provider (env var por provider):
-//    - zapi       → N8N_PROVISIONING_ZAPI_URL
-//    - meta_cloud → N8N_PROVISIONING_META_CLOUD_URL
-//    - instagram  → N8N_PROVISIONING_INSTAGRAM_URL
-//    - telegram   → N8N_PROVISIONING_TELEGRAM_URL
-//    - whatsapp_cloud → N8N_PROVISIONING_WHATSAPP_CLOUD_URL
+// 2. Valida parâmetros obrigatórios
+// 3. Registra webhook na Z-API: PUT /instances/{id}/token/{t}/update-webhook-received
+// 4. Upsert em church_whatsapp_channels ON CONFLICT (church_id, channel_type)
+// 5. Registra audit event
 //
-// Se env do provider não existe (fallback seguro):
-//    status='pending', error_message='n8n_webhook_not_configured: <provider>'
-//    Retornar 200 (não é erro fatal — estrutura ok, webhook pendente)
-//
-// Se webhook existe:
-//    POST com timeout 10s + Authorization: Bearer N8N_PROVISIONING_SECRET
-//    2xx → status 'provisioning' (n8n callback atualiza depois)
-//    erro/timeout → status='error', error_message='n8n_provisioning_failed: ...'
-//
-// NUNCA logar token. NUNCA logar webhook URL completa.
+// NUNCA logar zapi_token. NUNCA logar ZAPI_CLIENT_TOKEN.
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -34,15 +28,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
-
-// Mapeamento provider → env var do webhook n8n
-const PROVISIONING_WEBHOOK_ENVS: Record<string, string> = {
-  zapi:           'N8N_PROVISIONING_ZAPI_URL',
-  meta_cloud:     'N8N_PROVISIONING_META_CLOUD_URL',
-  instagram:      'N8N_PROVISIONING_INSTAGRAM_URL',
-  telegram:       'N8N_PROVISIONING_TELEGRAM_URL',
-  whatsapp_cloud: 'N8N_PROVISIONING_WHATSAPP_CLOUD_URL',
-}
+const ZAPI_CLIENT_TOKEN         = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -67,8 +53,7 @@ function json(data: unknown, status = 200) {
 async function getAdmin(token: string) {
   const { data: { user }, error } = await supabaseAuth.auth.getUser(token)
   if (error || !user) return null
-  const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true
+  const isAdmin = user.app_metadata?.is_ekthos_admin === true
   return isAdmin ? user : null
 }
 
@@ -89,19 +74,20 @@ Deno.serve(async (req: Request) => {
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Body inválido' }, 400) }
 
-  const channelId = body?.channel_id as string | undefined
-  if (!channelId) return json({ error: 'channel_id é obrigatório' }, 400)
+  const churchId       = body?.church_id       as string | undefined
+  const phoneNumber    = body?.phone_number    as string | undefined
+  const zapiInstanceId = body?.zapi_instance_id as string | undefined
+  const zapiToken      = body?.zapi_token      as string | undefined
+  const contextType    = (body?.context_type as string | undefined) ?? 'pastoral'
+  const displayName    = body?.display_name    as string | undefined
 
-  // ── Buscar canal em church_channels ───────────────────────────────────────
+  if (!churchId)       return json({ error: 'church_id é obrigatório' }, 400)
+  if (!phoneNumber)    return json({ error: 'phone_number é obrigatório' }, 400)
+  if (!zapiInstanceId) return json({ error: 'zapi_instance_id é obrigatório' }, 400)
+  if (!zapiToken)      return json({ error: 'zapi_token é obrigatório' }, 400)
 
-  const { data: channel, error: channelError } = await supabase
-    .from('church_channels')
-    .select('id, church_id, provider, provider_instance_id, phone_number, display_name, agent_slugs, metadata, status')
-    .eq('id', channelId)
-    .single()
-
-  if (channelError || !channel) {
-    return json({ error: 'Canal não encontrado em church_channels' }, 404)
+  if (!['pastoral', 'operacional'].includes(contextType)) {
+    return json({ error: 'context_type deve ser pastoral ou operacional' }, 400)
   }
 
   // ── Validar church existe ─────────────────────────────────────────────────
@@ -109,126 +95,122 @@ Deno.serve(async (req: Request) => {
   const { data: church } = await supabase
     .from('churches')
     .select('id, name')
-    .eq('id', channel.church_id)
+    .eq('id', churchId)
     .single()
 
   if (!church) return json({ error: 'Igreja não encontrada' }, 404)
 
-  // ── Setar provisioning ────────────────────────────────────────────────────
+  // ── Registrar webhook na Z-API ────────────────────────────────────────────
 
-  await supabase
-    .from('church_channels')
-    .update({ status: 'provisioning', error_message: null, updated_at: new Date().toISOString() })
-    .eq('id', channelId)
+  const webhookUrl = `${SUPABASE_URL}/functions/v1/webhook-receiver?provider=zapi&instance_id=${zapiInstanceId}`
+  const zapiWebhookEndpoint = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/update-webhook-received`
 
-  // ── Resolver webhook n8n por provider ────────────────────────────────────
+  let zapiOk = false
+  let zapiError: string | null = null
 
-  const webhookEnvName = PROVISIONING_WEBHOOK_ENVS[channel.provider]
-  const webhookUrl     = webhookEnvName ? Deno.env.get(webhookEnvName) : undefined
-  const n8nSecret      = Deno.env.get('N8N_PROVISIONING_SECRET') ?? ''
-  const hasWebhook     = !!webhookUrl
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15_000)
 
-  let finalStatus       = 'provisioning'
-  let finalErrorMessage: string | null = null
+    const zapiRes = await fetch(zapiWebhookEndpoint, {
+      method:  'PUT',
+      headers: {
+        'Content-Type':  'application/json',
+        'Client-Token':  ZAPI_CLIENT_TOKEN,
+        // NÃO logar token — apenas header enviado
+      },
+      body:   JSON.stringify({ value: webhookUrl }),
+      signal: controller.signal,
+    })
 
-  if (!hasWebhook) {
-    // CASO B — webhook do provider não configurado: fallback seguro (não é erro fatal)
-    finalStatus       = 'pending'
-    finalErrorMessage = `n8n_webhook_not_configured: ${channel.provider}`
-  } else {
-    // CASO A — POST pro webhook n8n do provider
-    const callbackUrl = `${SUPABASE_URL}/functions/v1/channel-provisioning-callback`
+    clearTimeout(timeout)
 
-    const payload = {
-      church_id:            channel.church_id,
-      channel_id:           channelId,
-      provider:             channel.provider,
-      provider_instance_id: channel.provider_instance_id,
-      phone_number:         channel.phone_number,
-      display_name:         channel.display_name,
-      agent_slugs:          channel.agent_slugs,
-      metadata:             channel.metadata,
-      callback_url:         callbackUrl,
-      // NÃO incluir token/secret no payload
+    if (zapiRes.ok) {
+      zapiOk = true
+    } else {
+      const errText = await zapiRes.text().catch(() => `HTTP ${zapiRes.status}`)
+      zapiError = `zapi_webhook_failed: ${zapiRes.status} ${errText.slice(0, 200)}`
+      console.error('[provision-channel] Z-API webhook error:', zapiRes.status)
     }
-
-    try {
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 10_000)
-
-      const n8nResponse = await fetch(webhookUrl, {
-        method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${n8nSecret}`,
-        },
-        body:   JSON.stringify(payload),
-        signal: controller.signal,
-      })
-
-      clearTimeout(timeout)
-
-      if (!n8nResponse.ok) {
-        const errText = await n8nResponse.text().catch(() => `HTTP ${n8nResponse.status}`)
-        finalStatus       = 'error'
-        finalErrorMessage = `n8n_provisioning_failed: ${n8nResponse.status} ${errText.slice(0, 200)}`
-      }
-      // 2xx: finalStatus permanece 'provisioning' — n8n callback vai atualizar
-    } catch (fetchErr: unknown) {
-      const msg = fetchErr instanceof Error ? fetchErr.message : 'fetch_error'
-      finalStatus       = 'error'
-      finalErrorMessage = `n8n_provisioning_failed: ${msg}`
-    }
+  } catch (fetchErr: unknown) {
+    const msg = fetchErr instanceof Error ? fetchErr.message : 'fetch_error'
+    zapiError = `zapi_webhook_failed: ${msg}`
+    console.error('[provision-channel] Z-API fetch error:', msg)
   }
 
-  // ── Atualizar status final (somente se diferente de 'provisioning') ────────
+  // ── Upsert em church_whatsapp_channels ────────────────────────────────────
+  // Gravar mesmo se Z-API falhou — permite retry manual
 
-  if (finalStatus !== 'provisioning') {
-    await supabase
-      .from('church_channels')
-      .update({ status: finalStatus, error_message: finalErrorMessage, updated_at: new Date().toISOString() })
-      .eq('id', channelId)
+  const { data: channelData, error: upsertError } = await supabase
+    .from('church_whatsapp_channels')
+    .upsert(
+      {
+        church_id:        churchId,
+        channel_type:     'zapi',
+        provider:         'zapi',
+        phone_number:     phoneNumber.trim(),
+        display_name:     displayName?.trim() || `Z-API — ${church.name}`,
+        instance_id:      zapiInstanceId,
+        context_type:     contextType,
+        status:           zapiOk ? 'connected' : 'error',
+        session_status:   zapiOk ? 'active' : 'closed',
+        error_message:    zapiError,
+        updated_at:       new Date().toISOString(),
+      },
+      { onConflict: 'church_id,channel_type' }
+    )
+    .select('id')
+    .single()
+
+  if (upsertError) {
+    console.error('[provision-channel] upsert error:', upsertError.message)
+    return json({ ok: false, error: `db_error: ${upsertError.message}` }, 500)
   }
 
-  // ── Log estruturado — NUNCA logar token ou webhook URL ───────────────────
+  const channelId = channelData?.id ?? null
 
-  const webhookEnvExists = hasWebhook ? `${webhookEnvName} configurado` : `${webhookEnvName ?? 'env'} ausente`
+  // ── Log estruturado — NUNCA logar tokens ─────────────────────────────────
+
   console.log('[provision-channel]', {
-    channel_id:      channelId,
-    church_id:       channel.church_id,
-    provider:        channel.provider,
-    webhook_env:     webhookEnvExists,
-    result:          finalStatus,
-    error_message:   finalErrorMessage,
+    church_id:    churchId,
+    instance_id:  zapiInstanceId,
+    phone_number: phoneNumber,
+    webhook_ok:   zapiOk,
+    zapi_error:   zapiError,
+    channel_id:   channelId,
   })
 
-  // ── Record audit event ────────────────────────────────────────────────────
+  // ── Audit event ───────────────────────────────────────────────────────────
 
   const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
   const requestId = req.headers.get('x-request-id') ?? null
+
   const { error: auditErr } = await supabase.rpc('record_audit_event', {
-    p_church_id: channel.church_id,
-    p_admin_user_id: adminUser.id,
-    p_action: 'channel.provision',
-    p_before: { status: 'pending' },
-    p_after: { status: finalStatus, error_message: finalErrorMessage },
-    p_reason: `Provisioning via n8n — provider: ${channel.provider}`,
-    p_actor_email: adminUser.email ?? null,
-    p_actor_roles: (adminUser.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
-    p_resource: 'church_channels',
-    p_resource_id: channelId,
-    p_status: finalErrorMessage ? 'failed' : 'success',
-    p_error_msg: finalErrorMessage,
+    p_church_id:                churchId,
+    p_admin_user_id:            adminUser.id,
+    p_action:                   'channel.provision.zapi',
+    p_before:                   { status: 'pending' },
+    p_after:                    { status: zapiOk ? 'connected' : 'error', webhook_configured: zapiOk, zapi_error: zapiError },
+    p_reason:                   `Provisioning Z-API direto — instance: ${zapiInstanceId.slice(0, 8)}…`,
+    p_actor_email:              adminUser.email ?? null,
+    p_actor_roles:              (adminUser.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'church_whatsapp_channels',
+    p_resource_id:              channelId,
+    p_status:                   zapiOk ? 'success' : 'failed',
+    p_error_msg:                zapiError,
     p_impersonation_session_id: impersonationSessionId,
-    p_impersonated_church_id: channel.church_id,
-    p_source: 'cockpit',
-    p_request_id: requestId,
+    p_impersonated_church_id:   churchId,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
   if (auditErr) console.error('[provision-channel] audit failed:', auditErr.message)
 
+  // ── Response ──────────────────────────────────────────────────────────────
+
   return json({
-    channel_id:    channelId,
-    status:        finalStatus,
-    ...(finalErrorMessage ? { error_message: finalErrorMessage } : {}),
-  })
+    ok:                 zapiOk,
+    channel_id:         channelId,
+    webhook_configured: zapiOk,
+    ...(zapiError ? { error: zapiError } : {}),
+  }, zapiOk ? 200 : 207)
 })

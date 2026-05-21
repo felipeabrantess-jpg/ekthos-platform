@@ -136,6 +136,8 @@ interface FormState {
   display_name:         string
   agent_slugs:          string[]
   initial_status:       'pending' | 'connected'
+  zapi_token:           string  // token da instância Z-API (F1 Opção C)
+  context_type:         'pastoral' | 'operacional'
 }
 
 const EMPTY_FORM: FormState = {
@@ -145,6 +147,8 @@ const EMPTY_FORM: FormState = {
   display_name:         '',
   agent_slugs:          PROVIDER_DEFAULT_AGENTS['zapi'],
   initial_status:       'pending',
+  zapi_token:           '',
+  context_type:         'pastoral',
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -179,6 +183,8 @@ export default function CanaisIgrejaSection({
       display_name:         ch.display_name ?? '',
       agent_slugs:          ch.agent_slugs ?? [],
       initial_status:       ch.status === 'connected' ? 'connected' : 'pending',
+      zapi_token:           '',  // nunca pré-preencher token por segurança
+      context_type:         'pastoral',
     })
     setErrMsg(null); setSavedOk(false)
     setShowModal(true)
@@ -216,6 +222,10 @@ export default function CanaisIgrejaSection({
       return
     }
     try {
+      if (form.provider === 'zapi' && !form.zapi_token.trim()) {
+        setErrMsg('Token da instância Z-API é obrigatório')
+        return
+      }
       await upsert.mutateAsync({
         church_id:            churchId,
         provider:             form.provider,
@@ -225,6 +235,8 @@ export default function CanaisIgrejaSection({
         agent_slugs:          form.agent_slugs,
         initial_status:       form.initial_status,
         channel_id:           editingId ?? undefined,
+        zapi_token:           form.provider === 'zapi' ? form.zapi_token.trim() : undefined,
+        context_type:         form.context_type,
       } satisfies UpsertChannelParams)
       setSavedOk(true)
       onChanged?.()
@@ -496,6 +508,27 @@ export default function CanaisIgrejaSection({
                   className="w-full text-sm text-ekthos-black placeholder:text-ekthos-black/25 bg-cream-light border border-black/8 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-200 font-mono text-xs"
                 />
               </div>
+
+              {/* Z-API Token (apenas Z-API) */}
+              {form.provider === 'zapi' && (
+                <div>
+                  <label className="text-[11px] font-semibold text-ekthos-black/50 uppercase tracking-wider block mb-1.5">
+                    Token da instância Z-API
+                    <span className="ml-1.5 text-[9px] font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider">Sensível</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={form.zapi_token}
+                    onChange={e => setForm(f => ({ ...f, zapi_token: e.target.value }))}
+                    placeholder="Token da instância Z-API"
+                    autoComplete="new-password"
+                    className="w-full text-sm text-ekthos-black placeholder:text-ekthos-black/25 bg-cream-light border border-black/8 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-200 font-mono text-xs"
+                  />
+                  <p className="text-[10px] text-ekthos-black/30 mt-1 leading-relaxed">
+                    Disponível no painel Z-API → instância → Token. Nunca compartilhe este token.
+                  </p>
+                </div>
+              )}
 
               {/* Display name */}
               <div>
