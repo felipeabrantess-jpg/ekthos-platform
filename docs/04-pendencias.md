@@ -54,9 +54,74 @@ não é populada automaticamente no fluxo de criação de igreja.
 
 ---
 
+## OPS-DEBT-041 — Gaps silenciosos em CASEs de get_agent_prompt_resolved + aliases curtos de modelo
+
+**Identificada em:** PR-D (fix formality caloroso) — 2026-05-21  
+**Status:** ABERTA  
+**Prioridade:** Média — personalização das igrejas degradada silenciosamente, sem erro visível
+
+**Causa-raiz:** Três valores salvos em `church_agent_config` não têm branch `WHEN` explícita
+na RPC `get_agent_prompt_resolved`, fazendo-os cair silenciosamente no `ELSE` com
+comportamento de enum diferente do configurado. Adicionalmente, duas EFs usam alias
+curto de modelo Anthropic em vez do model ID canônico.
+
+**Gaps de CASE identificados em produção:**
+
+1. `formality = 'caloroso'` — **parcialmente resolvido pela migration 20260521000001** (este PR)
+2. `emoji_usage = 'discrete'` (inglês) — não tem branch; cai no ELSE `moderate` (2-3 emojis).
+   Igreja tem `discrete` salvo mas recebe instrução de moderação genérica.
+3. `pastoral_depth = 'pastoral'` — não tem branch; cai no ELSE `moderate`.
+   Igreja provavelmente quer `deep` mas recebe profundidade moderada.
+
+**Gaps de alias de modelo:**
+- `demand-router/index.ts` linha 245: usa `claude-haiku-3-5` (alias curto não canônico)
+- `whatsapp-attendant/index.ts` linha 94: usa `claude-haiku-3-5` (idem)
+- Correto: `claude-haiku-4-5-20251001` via `MODELS.haiku` do `_shared/anthropic-client.ts`
+
+**Impacto:** 1 church em produção (Igreja Mock) recebe prompt com emoji e profundidade
+incorretos. demand-router e whatsapp-attendant podem ter comportamento inesperado se
+o alias `haiku-3-5` for resolvido de forma diferente pela API Anthropic.
+
+**Fix necessário:**
+- Opção A: adicionar `WHEN 'discrete'`, `WHEN 'pastoral'` na RPC com texto adequado
+- Opção B: normalizar os valores em `church_agent_config` + adicionar CHECK constraint
+- Para aliases: substituir `'claude-haiku-3-5'` por `MODELS.haiku` do shared client
+
+**Workaround atual:** nenhum — igrejas recebem configuração silenciosamente degradada.
+
+---
+
+## OPS-DEBT-042 — Documentar exceção pastoral premium em CLAUDE.md do repo
+
+**Identificada em:** PR-D (fix formality caloroso) — 2026-05-21  
+**Status:** ABERTA  
+**Prioridade:** Baixa — documentação; não bloqueia operação
+
+**Causa-raiz:** O `CLAUDE.md` do repositório não documenta a distinção entre modelos
+Anthropic para diferentes categorias de agentes. O `_shared/anthropic-client.ts` tem
+a decisão técnica do Sprint 2 (01/05/2026), mas CLAUDE.md não reflete isso.
+
+**O que falta documentar:**
+- Agentes operacionais/internos: `claude-haiku-4-5-20251001`
+- Agentes pastorais premium (ex: `agent-acolhimento`): `claude-sonnet-4-6` — decisão
+  intencional do Sprint 2 por exigirem qualidade pastoral superior em conversas sensíveis
+- Critério de classificação: agente é "pastoral premium" se resposta é direta ao membro,
+  tem valência espiritual/emocional alta, e erro de geração tem impacto pastoral real
+- Nunca usar: `claude-3-5-haiku-20241022` (descontinuado, retorna 404)
+
+**Fix necessário:** Adicionar seção `[MODELOS DE IA — AGENTES PASTORAIS]` no CLAUDE.md
+do repo documentando a bifurcação Haiku (operacional) vs Sonnet (pastoral premium).
+
+**Workaround atual:** decisão está implícita em `_shared/anthropic-client.ts` e
+no conhecimento da equipe, não em documentação formal.
+
+---
+
 ## Histórico
 
 | ID | Sprint | Data | Status |
 |----|--------|------|--------|
 | OPS-DEBT-039 | Vanessa Onda 1 | 2026-05-19 | Aberta |
 | OPS-DEBT-040 | Vanessa Onda 1 | 2026-05-19 | Aberta |
+| OPS-DEBT-041 | PR-D formality caloroso | 2026-05-21 | Aberta |
+| OPS-DEBT-042 | PR-D formality caloroso | 2026-05-21 | Aberta |
