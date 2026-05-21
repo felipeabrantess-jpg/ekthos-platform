@@ -32,6 +32,8 @@ export interface UpsertChannelParams {
   agent_slugs:           string[]
   initial_status?:       'pending' | 'connected'
   channel_id?:           string  // para UPDATE explícito
+  zapi_token?:           string  // token da instância Z-API (F1 Opção C)
+  context_type?:         'pastoral' | 'operacional'  // roteamento de contexto
 }
 
 // ── Query ─────────────────────────────────────────────────────────────────────
@@ -80,18 +82,34 @@ export function useUpsertChannel() {
       if (!channelId) throw new Error('upsert não retornou channel_id')
 
       // 2. Chamar Edge Function provision-channel
+      // Z-API (F1 Opção C): passa parâmetros diretos — sem n8n, sem channel_id
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token
       if (!token) throw new Error('Sem sessão ativa')
 
       const efBaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+
+      // Para Z-API: body direto com instance_id e token
+      // Para outros providers: body legado com channel_id
+      const isZapi = params.provider === 'zapi'
+      const provisionBody = isZapi
+        ? {
+            church_id:        params.church_id,
+            phone_number:     params.phone_number,
+            zapi_instance_id: params.provider_instance_id,
+            zapi_token:       params.zapi_token ?? '',
+            context_type:     params.context_type ?? 'pastoral',
+            display_name:     params.display_name || undefined,
+          }
+        : { channel_id: channelId }
+
       const provRes = await fetch(`${efBaseUrl}/functions/v1/provision-channel`, {
         method:  'POST',
         headers: {
           'Content-Type':  'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ channel_id: channelId }),
+        body: JSON.stringify(provisionBody),
       })
 
       // Falha de provisionamento não é erro fatal — canal salvo, provisioning pendente

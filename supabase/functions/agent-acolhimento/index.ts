@@ -574,12 +574,19 @@ async function processInbound(
   // 1. Buscar dados da conversa — valida ownership e pega person_id
   const { data: conv } = await supabaseAdmin
     .from('conversations')
-    .select('ownership, agent_slug, person_id, contact_phone')
+    .select('church_id, ownership, agent_slug, person_id, contact_phone')
     .eq('id', conversationId)
+    .eq('church_id', churchId)
     .maybeSingle()
 
   if (!conv) {
     return { ok: false, error: 'conversation_not_found' }
+  }
+
+  // Isolamento cross-tenant: rejeitar conversas de outra church
+  if (conv.church_id !== churchId) {
+    console.warn(`[agent-acolhimento] FORBIDDEN conv=${conversationId} conv.church_id=${conv.church_id} req.church_id=${churchId}`)
+    return { ok: false, error: 'forbidden: conversa de outra church' }
   }
 
   // Não responder se humano assumiu — conversation-router já filtra, mas dupla checagem

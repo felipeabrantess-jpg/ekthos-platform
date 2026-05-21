@@ -117,6 +117,82 @@ no conhecimento da equipe, não em documentação formal.
 
 ---
 
+## OPS-DEBT-043 — stripe-webhook: HTTP 400 silenciosos
+
+**Identificada em:** Sprint PR billing — 2026-05-21  
+**Status:** ABERTA  
+**Prioridade:** Alta — eventos Stripe perdidos silenciosamente
+
+**Causa-raiz:** A Edge Function `stripe-webhook` retorna HTTP 400 para eventos não
+mapeados em vez de HTTP 200. O Stripe interpreta qualquer resposta não-2xx como falha e
+tenta reenviar até esgotar retries — causando backlog de eventos e potencial
+desabilitar do endpoint no dashboard Stripe.
+
+**Fix necessário:**
+- Ao receber `event.type` não mapeado: retornar `{ ok: true, skipped: true }` com HTTP 200
+- Apenas erros reais (validação de assinatura, crash) devem retornar 4xx/5xx
+
+**Workaround atual:** nenhum — eventos Stripe inesperados acumulam retries.
+
+---
+
+## OPS-DEBT-044 — church_channels (UI) ≠ church_whatsapp_channels (agentes)
+
+**Identificada em:** Sprint F1 canais — 2026-05-21  
+**Status:** ABERTA (parcialmente resolvida por F1 Opção C)  
+**Prioridade:** Média — arquitetura dividida, UI não reflete estado real dos agentes
+
+**Causa-raiz:** O frontend admin escreve em `church_channels` (tabela genérica de canal),
+mas os agentes (`agent-acolhimento`, `demand-router`, etc.) leem de
+`church_whatsapp_channels`. São tabelas distintas com schemas distintos. Após F1 Opção C,
+`provision-channel` escreve diretamente em `church_whatsapp_channels`, mas a lista de canais
+na UI continua lendo `church_channels` — portanto canais provisionados não aparecem na UI.
+
+**Fix necessário (opções):**
+- **Opção A:** Migrar a UI para ler de `church_whatsapp_channels` (renomear/adaptar campos)
+- **Opção B:** Criar view `church_channels_unified` unindo as duas tabelas
+- **Opção C:** Criar RPC `list_church_channels_v2` que lê `church_whatsapp_channels`
+
+**Workaround atual:** Admin verifica canais diretamente via SQL/Supabase Dashboard.
+
+---
+
+## OPS-DEBT-045 — demand-router: alias de modelo não-canônico
+
+**Identificada em:** Sprint PR-D — 2026-05-21  
+**Status:** ABERTA  
+**Prioridade:** Média — comportamento potencialmente inesperado se alias não resolvido
+
+**Causa-raiz:** `demand-router/index.ts` usa `'claude-haiku-3-5'` (alias curto, não-canônico)
+em vez de `MODELS.haiku` do `_shared/anthropic-client.ts` (`claude-haiku-4-5-20251001`).
+
+**Fix necessário:** Substituir `'claude-haiku-3-5'` por `MODELS.haiku` importado do shared client.
+
+**Workaround atual:** a API Anthropic pode resolver o alias, mas sem garantia de estabilidade.
+
+---
+
+## OPS-DEBT-046 — internal_notifications: ausência de mecanismo resolved_at
+
+**Identificada em:** Sprint F1-F5 canais/enums — 2026-05-21  
+**Status:** ABERTA  
+**Prioridade:** Baixa — notificações internas sem mecanismo de resolução
+
+**Causa-raiz:** A tabela `internal_notifications` não possui coluna `resolved_at` nem
+mecanismo de marcar notificação como resolvida. Notificações geradas por alertas automáticos
+(ex: canal com erro, SLA de pipeline estourado) ficam permanentemente visíveis sem como
+indicar que foram tratadas.
+
+**Fix necessário:**
+1. `ALTER TABLE internal_notifications ADD COLUMN resolved_at timestamptz`
+2. `ALTER TABLE internal_notifications ADD COLUMN resolved_by uuid REFERENCES auth.users(id)`
+3. Adicionar botão "Marcar como resolvido" na UI de notificações
+4. RPC `resolve_notification(p_notification_id uuid)` — SECURITY DEFINER, valida church_id
+
+**Workaround atual:** nenhum — notificações ficam abertas indefinidamente.
+
+---
+
 ## Histórico
 
 | ID | Sprint | Data | Status |
@@ -125,3 +201,7 @@ no conhecimento da equipe, não em documentação formal.
 | OPS-DEBT-040 | Vanessa Onda 1 | 2026-05-19 | Aberta |
 | OPS-DEBT-041 | PR-D formality caloroso | 2026-05-21 | Aberta |
 | OPS-DEBT-042 | PR-D formality caloroso | 2026-05-21 | Aberta |
+| OPS-DEBT-043 | PR billing stripe-webhook | 2026-05-21 | Aberta |
+| OPS-DEBT-044 | Sprint F1 canais | 2026-05-21 | Aberta |
+| OPS-DEBT-045 | Sprint PR-D demand-router | 2026-05-21 | Aberta |
+| OPS-DEBT-046 | Sprint F1-F5 canais/enums | 2026-05-21 | Aberta |
