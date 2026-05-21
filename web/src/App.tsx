@@ -118,6 +118,7 @@ const AgentConfigCockpit  = lazy(() => import('@/pages/admin/AgentConfigCockpit'
 const AdminAtivacoes      = lazy(() => import('@/pages/admin/Ativacoes'))
 const AdminAtivacaoDetail = lazy(() => import('@/pages/admin/AtivacaoDetail'))
 const AdminCupons         = lazy(() => import('@/pages/admin/Cupons'))
+const AdminNotifications  = lazy(() => import('@/pages/admin/Notifications'))
 
 // ── Loaders ────────────────────────────────────────────────
 
@@ -356,6 +357,7 @@ export default function App() {
             <Route path="cockpit/ativacoes"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAtivacoes /></Suspense></ErrorBoundary>} />
             <Route path="cockpit/ativacoes/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAtivacaoDetail /></Suspense></ErrorBoundary>} />
             <Route path="cockpit/cupons"        element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminCupons /></Suspense></ErrorBoundary>} />
+            <Route path="notifications"         element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense></ErrorBoundary>} />
           </Route>
         </Routes>
       </Suspense>

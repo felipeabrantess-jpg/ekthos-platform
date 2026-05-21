@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: zapi-send  v3
+// Edge Function: zapi-send  v4
 // Envio direto de mensagem WhatsApp via Z-API
 //
 // POST /functions/v1/zapi-send
@@ -10,8 +10,11 @@
 // Variáveis de ambiente necessárias:
 //   ZAPI_INSTANCE_ID   — ex: 3F28840B3A853234BB5A463A5A856F80
 //   ZAPI_TOKEN         — token do painel Z-API
-//   ZAPI_CLIENT_TOKEN  — Client-Token de segurança (painel Z-API → Security) OBRIGATÓRIO
 //   ZAPI_BASE_URL      — ex: https://api.z-api.io (default se não setado)
+//
+// ZAPI_CLIENT_TOKEN lido do Supabase Vault (vault.decrypted_secrets)
+//   Configurado via: SELECT vault.create_secret('<valor>', 'ZAPI_CLIENT_TOKEN', '...')
+//   Fallback: Deno.env.get('ZAPI_CLIENT_TOKEN') para desenvolvimento local
 //
 // Z-API API ref: https://developer.z-api.io/en/message/send-message-text
 // Endpoint: POST {BASE_URL}/instances/{INSTANCE}/token/{TOKEN}/send-text
@@ -20,7 +23,10 @@
 // Resposta:  { zaapId, messageId, id }
 // ============================================================
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const SUPABASE_URL     = Deno.env.get('SUPABASE_URL') ?? 'https://mlqjywqnchilvgkbvicd.supabase.co'
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -44,10 +50,27 @@ Deno.serve(async (req) => {
   }
 
   // ── Credenciais ─────────────────────────────────────────────
-  const ZAPI_INSTANCE_ID  = Deno.env.get('ZAPI_INSTANCE_ID')  ?? ''
-  const ZAPI_TOKEN        = Deno.env.get('ZAPI_TOKEN')         ?? ''
-  const ZAPI_BASE_URL     = Deno.env.get('ZAPI_BASE_URL')      ?? 'https://api.z-api.io'
-  const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN')  ?? ''
+  const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID') ?? ''
+  const ZAPI_TOKEN       = Deno.env.get('ZAPI_TOKEN')        ?? ''
+  const ZAPI_BASE_URL    = Deno.env.get('ZAPI_BASE_URL')     ?? 'https://api.z-api.io'
+
+  // ZAPI_CLIENT_TOKEN: lido do Vault (primário) com fallback em env (local dev)
+  let ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
+  if (!ZAPI_CLIENT_TOKEN) {
+    try {
+      const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+      const { data: vaultRow } = await supabaseAdmin
+        .from('vault.decrypted_secrets')
+        .select('decrypted_secret')
+        .eq('name', 'ZAPI_CLIENT_TOKEN')
+        .maybeSingle()
+      ZAPI_CLIENT_TOKEN = vaultRow?.decrypted_secret ?? ''
+    } catch (e) {
+      console.error('[zapi-send] Falha ao ler ZAPI_CLIENT_TOKEN do vault:', e)
+    }
+  }
 
   if (!ZAPI_TOKEN || !ZAPI_INSTANCE_ID) {
     console.error('[zapi-send] ZAPI_TOKEN ou ZAPI_INSTANCE_ID não configurados')
@@ -55,7 +78,7 @@ Deno.serve(async (req) => {
   }
 
   if (!ZAPI_CLIENT_TOKEN) {
-    console.error('[zapi-send] ZAPI_CLIENT_TOKEN não configurado')
+    console.error('[zapi-send] ZAPI_CLIENT_TOKEN não configurado (vault + env)')
     return json({ ok: false, error: 'ZAPI_CLIENT_TOKEN not configured' }, 500)
   }
 

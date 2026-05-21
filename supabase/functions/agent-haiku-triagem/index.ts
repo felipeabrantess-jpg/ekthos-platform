@@ -31,6 +31,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 import { logAgentExecution } from '../_shared/log-agent-execution.ts'
+import { guardAgent }        from '../_shared/agent-guard.ts'
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -343,6 +344,24 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   })
   const anthropic = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
+
+  // ── Guard: validação de ownership (cross-tenant protection) ──────────────────
+  // F2 correto: SELECT com filtro church_id explícito no banco
+  const { data: convOwner } = await supabase
+    .from('conversations')
+    .select('id')
+    .eq('id', conversation_id)
+    .eq('church_id', church_id)
+    .maybeSingle()
+  if (!convOwner) {
+    return json({ error: 'Conversation not found or church mismatch' }, 403)
+  }
+
+  // ── Guard: verificação de grant (agente ativado para a church) ────────────────
+  const grant = await guardAgent(church_id, AGENT_SLUG)
+  if (!grant.allowed) {
+    return json({ error: grant.reason ?? 'Agente não autorizado para esta conta' }, 403)
+  }
 
   console.log(`[${AGENT_SLUG}] inbound conv=${conversation_id} ownership=${ownership} len=${inbound_text.length}`)
 

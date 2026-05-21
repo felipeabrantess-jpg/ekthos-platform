@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare, Zap, Ticket } from 'lucide-react'
+import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare, Zap, Ticket, Bell } from 'lucide-react'
 import { useLogout } from '@/hooks/useAuth'
 import { usePendingActivations } from '@/hooks/usePendingActivations'
 
@@ -32,7 +32,8 @@ const BASE_NAV = [
   { to: '/admin/leads',        label: 'Leads',        icon: <Inbox           size={16} strokeWidth={1.75} /> },
   { to: '/admin/churches',     label: 'Igrejas',      icon: <Building2       size={16} strokeWidth={1.75} /> },
   { to: '/admin/onboardings',  label: 'Onboardings',  icon: <UserPlus        size={16} strokeWidth={1.75} /> },
-  { to: '/admin/tasks',        label: 'Tarefas',      icon: <CheckSquare     size={16} strokeWidth={1.75} /> },
+  { to: '/admin/tasks',         label: 'Tarefas',      icon: <CheckSquare     size={16} strokeWidth={1.75} /> },
+  { to: '/admin/notifications', label: 'Alertas',      icon: <Bell            size={16} strokeWidth={1.75} /> },
   { to: '/admin/revenue',      label: 'Receita',      icon: <TrendingUp      size={16} strokeWidth={1.75} /> },
   { to: '/admin/pricing',      label: 'Pricing',      icon: <Tag             size={16} strokeWidth={1.75} /> },
   { to: '/admin/afiliados',    label: 'Afiliados',    icon: <Users           size={16} strokeWidth={1.75} /> },
