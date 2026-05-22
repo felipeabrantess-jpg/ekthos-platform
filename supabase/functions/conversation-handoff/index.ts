@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
         conversation_id,
         from_ownership: logFromOwnership,
         to_ownership:   logToOwnership,
-        actor_type:     'human',
+        actor_type:     'human_staff',
         actor_id:       user.id,
         reason:         handoffAction,
       })

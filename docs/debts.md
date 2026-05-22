@@ -466,6 +466,43 @@ via SELECT.
 
 ---
 
+## ✅ BUG #18 — Conversas "permission denied for table users" (RESOLVIDO 2026-05-22)
+
+**Branch:** `fix/conversas-permission-denied`
+
+**Root cause:** 4 RLS policies usavam `SELECT FROM auth.users WHERE id = auth.uid()` diretamente (SECURITY INVOKER). O role `authenticated` não tem permissão de SELECT em `auth.users`. A tela de Conversas faz JOIN com `church_whatsapp_channels` — ao avaliar todas as policies PERMISSIVE dessa tabela (incluindo `ekthos_admin_full_access`), o Postgres executava o subquery e lançava "permission denied for table users".
+
+**Tabelas corrigidas:**
+- `church_whatsapp_channels.ekthos_admin_full_access` → `is_ekthos_admin() = true`
+- `church_channels.ekthos_admin_full_access` → `is_ekthos_admin() = true`
+- `agent_prompt_templates.admin_ekthos_full_access_templates` → `is_ekthos_admin() = true`
+- `pending_addons.church_members_read_own` → `auth_church_id()`
+- `pending_addons.church_members_insert_own` → `auth_church_id() + auth.uid()`
+
+**Fix adicional — conversation-handoff EF:**
+`conversation_ownership_log` CHECK aceitava `('system','human_staff','agent')` mas a EF gravava `actor_type='human'` → violação de CHECK em produção. Corrigido para `'human_staff'` nessa tabela. (`conversation_events` mantém `'human'` que é válido no seu próprio CHECK.)
+
+**Migration:** `supabase/migrations/20260522000001_fix_rls_policies_auth_users_subquery.sql`
+
+---
+
+## OPS-DEBT — `agents` vs `agents_catalog` nos logs
+
+**Registrado em:** 2026-05-22 (diagnóstico #18 — SB9)
+**Categoria:** Tech debt / naming consistency
+
+**Contexto:** Nos logs do Supabase aparece erro `relation "agents" does not exist`. O catálogo de agentes está na tabela `agents_catalog` (confirmado). Algum código (provavelmente uma migration, EF ou query de diagnóstico) ainda referencia `agents` sem o sufixo `_catalog`.
+
+**Ação necessária:**
+1. Grep completo por `.from('agents')` / `FROM agents` no codebase
+2. Identificar origem do erro nos logs (get_logs da EF que gera o erro)
+3. Corrigir para `agents_catalog`
+
+**Risco:** Baixo (query falha silenciosamente nos logs, não bloqueia feature). Médio se for uma EF de billing ou admissão.
+**Critério de pronto:** Zero ocorrências de `relation "agents" does not exist` nos logs.
+
+---
+
 ## TEST-DEBT-001 a TEST-DEBT-003
 
 Conforme registrado no log de sessão 26/04/2026 — não duplicar aqui.
