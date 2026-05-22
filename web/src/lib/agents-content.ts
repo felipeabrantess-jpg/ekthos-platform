@@ -17,7 +17,6 @@ import {
   MessageCircle,
   Rocket,
   UserPlus,
-  Settings2,
   Heart,
   Zap,
   UserCheck,
@@ -89,23 +88,6 @@ export const AGENTS_CONTENT: AgentContent[] = [
       'Classifica automaticamente no stage correto do pipeline',
     ],
     forWhom: 'Igrejas com fluxo ativo de visitantes e conversões semanais. Ideal para recepcionistas e pastores de evangelismo.',
-  },
-
-  {
-    slug:       'agent-config',
-    name:       'Agente Config',
-    Icon:       Settings2,
-    category:   'interno',
-    shortDesc:  'Configura pipeline, áreas e ministérios via conversa natural.',
-    longDesc:   'O Configurador Inteligente guia o pastor ou administrador pela personalização do sistema sem precisar navegar por menus técnicos. Configura etapas do pipeline, cria áreas ministeriais, ajusta escalas e adapta o Ekthos à realidade única da sua Igreja — tudo por conversa.',
-    howItWorks: [
-      'Cria e reorganiza etapas do pipeline de discipulado',
-      'Configura áreas, ministérios e células da Igreja',
-      'Ajusta nomenclaturas e campos personalizados',
-      'Orienta sobre melhores práticas de configuração',
-      'Aplica mudanças com confirmação antes de salvar',
-    ],
-    forWhom: 'Administradores e pastores responsáveis pela configuração inicial e ajustes do sistema.',
   },
 
   // ── Premium Pastorais — vendidos sempre à parte ──────────────────
