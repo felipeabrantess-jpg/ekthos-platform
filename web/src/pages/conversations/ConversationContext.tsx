@@ -122,13 +122,34 @@ export function ConversationContext({ conversationId, conversation, refetch }: C
     }
   }
 
-  // ── Empty state ────────────────────────────────────────────
-  if (!conversationId || !conversation) {
+  // ── Empty state (nenhuma conversa selecionada) ─────────────
+  if (!conversationId) {
     return (
       <div className="w-[280px] bg-white border-l border-[#EDE0CC] flex flex-col items-center
                       justify-center gap-2 text-center px-6 shrink-0">
         <User size={32} className="text-[#EDE0CC]" />
         <p className="text-xs text-[#8A8A8A]">Selecione uma conversa para ver os detalhes</p>
+      </div>
+    )
+  }
+
+  // ── Loading state (conversa selecionada, dados carregando) ─
+  if (!conversation) {
+    return (
+      <div className="w-[280px] bg-white border-l border-[#EDE0CC] flex flex-col shrink-0 overflow-y-auto">
+        <div className="px-5 pt-5 pb-4 border-b border-[#EDE0CC] text-center">
+          <div className="w-14 h-14 rounded-full bg-[#EDE0CC] animate-pulse mx-auto mb-2" />
+          <div className="h-3 bg-[#EDE0CC] animate-pulse rounded w-24 mx-auto mb-1.5" />
+          <div className="h-2.5 bg-[#f9eedc] animate-pulse rounded w-16 mx-auto" />
+        </div>
+        <div className="flex-1 px-4 py-4 space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="space-y-1.5">
+              <div className="h-2 bg-[#EDE0CC] animate-pulse rounded w-12" />
+              <div className="h-3 bg-[#f9eedc] animate-pulse rounded w-full" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
