@@ -2,9 +2,16 @@
 
 ---
 
-## CLUSTER B — RESOLVIDO 2026-05-21
+## CLUSTER B — RESOLVIDO 2026-05-21 (hotfix 2026-05-21)
 
 ### Bugs #6, #10, #13, #14, #17 — Seletor de Pessoa (PersonSelect)
+
+**Hotfix pós-merge:** PersonSelect não listava pessoas — 3 bugs no componente:
+(1) guard `query.length < 2` fechava dropdown antes de qualquer resultado;
+(2) sem `onFocus` handler — clicar no input não disparava busca;
+(3) `showDropdown` exigia `inputText.length >= 2` — dropdown nunca abria ao focar.
+Fix: `search()` sem guard + query vazia retorna 8 pessoas + `onFocus` dispara busca imediata.
+Branch: `fix/cluster-b-personselect-hotfix`
 
 **Raiz:** Toda tela que precisava selecionar uma pessoa usava input de UUID bruto ou padrão ad-hoc. Solução: componente `PersonSelect` reusável + unificação de `ministries.leader_id → people.id` (eliminando indireção via tabela `leaders`).
 
