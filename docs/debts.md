@@ -829,3 +829,28 @@ UPDATE agents_catalog SET model = 'haiku' WHERE slug = 'agent-reengajamento';
 ou redeploy da EF com `MODEL = 'claude-sonnet-4-6'`.
 
 **Critério de pronto:** `agents_catalog.model` e `MODEL` na EF apontam para o mesmo modelo.
+
+---
+
+## ✅ CLUSTER F — Bug #27 Histórico de Faturas Vazio (Fix C1 RESOLVIDO 2026-05-22)
+
+**Sintoma:** Tela `/settings/billing` mostrava "Nenhuma fatura ainda." para todas as igrejas — incluindo igrejas com assinatura paga ativa.
+
+**Root cause:** `handleInvoicePaid` em `stripe-webhook/index.ts` (v12) tinha INSERT com 7 colunas erradas:
+- Colunas inexistentes inseridas: `stripe_subscription_id`, `stripe_customer_id`, `currency`, `period_start`, `period_end`
+- Mapeamentos errados: `amount_paid` (campo Stripe) → deveria ser `amount_cents` (coluna DB); `invoice_pdf` → deveria ser `pdf_url`
+- Campo `paid_at` ausente; campo `description` ausente
+- Erro silenciado com `.then(({ error }) => console.error(...))` → INSERT falhava silenciosamente, Stripe recebia HTTP 200, nunca retentava → tabela `invoices` vazia globalmente desde o início
+
+**Fix C1 aplicado (stripe-webhook v13, deployed v37 ACTIVE):**
+- INSERT reescrito com apenas colunas reais: `church_id`, `stripe_invoice_id`, `amount_cents`, `status`, `paid_at`, `hosted_invoice_url`, `pdf_url`, `description`
+- Error handling: `throw` em erro genuíno (Stripe recebe 500 e retenta), log neutro em `23505` (UNIQUE = idempotente)
+- Todos os outros handlers inalterados
+
+**Branch/PR:** `fix/cluster-f-invoices` → https://github.com/felipeabrantess-jpg/ekthos-platform/compare/main...fix/cluster-f-invoices?expand=1
+
+**Pendente (Fix B):** Confirmar registro do endpoint de webhook no Stripe LIVE Dashboard (verificação manual Felipe). Sem Fix B, novos `invoice.paid` podem não chegar ao endpoint.
+
+**Pendente (backfill):** Inserir retroativamente faturas de igrejas com trial expirado (6743b72b, 89c7d9de) buscando do Stripe via API. Aguardando aprovação de Felipe.
+
+**Nota:** `current_period_end = NULL` em todas as 6 subscriptions confirma que `customer.subscription.updated` também nunca processou com sucesso (mesma causa raiz — erro silenciado). Fix C1 corrige somente `invoice.paid`; `handleSubscriptionUpdated` já usa colunas corretas (inalterado).
