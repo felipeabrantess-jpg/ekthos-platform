@@ -1,5 +1,21 @@
 // ============================================================
-// Edge Function: stripe-webhook v12 — Caminho A + Bug Vanessa fix
+// Edge Function: stripe-webhook v13 — Fix C1: handleInvoicePaid colunas corretas
+//
+// MUDANÇAS v12 → v13:
+//   - handleInvoicePaid: INSERT corrigido para colunas reais da tabela invoices.
+//     Colunas removidas (não existem): stripe_subscription_id, stripe_customer_id,
+//       currency, period_start, period_end.
+//     Mapeamentos corrigidos: amount_paid→amount_cents, invoice_pdf→pdf_url.
+//     Campo adicionado: paid_at (unixToIso de status_transitions.paid_at).
+//     Error handling: throw em erro genuíno (Stripe retenta via 500);
+//       ignorar 23505 (UNIQUE stripe_invoice_id — idempotente em retries).
+//
+// INALTERADO v12 → v13:
+//   - handleInvoicePaymentFailed
+//   - handleSubscriptionUpdated / handleSubscriptionDeleted
+//   - handleCheckoutSessionCompleted / handleCaminhoACheckout
+//   - handleLandingPageCheckout / handleCockpitCheckout / handleAgentPurchase
+//   - handleChargeRefunded + affiliate helpers
 //
 // MUDANÇAS v11 → v12:
 //   - handleCaminhoACheckout: source='caminho_a' cria church via RPC atômica
@@ -851,15 +867,33 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     current_period_end:   subLine?.period ? unixToIso(subLine.period.end)   : null,
     updated_at: new Date().toISOString(),
   })
-  const subId = typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as Stripe.Subscription | null)?.id ?? null
-  await supabase.from('invoices').insert({
-    church_id: churchId, stripe_invoice_id: invoice.id, stripe_subscription_id: subId,
-    stripe_customer_id: customerId, amount_paid: invoice.amount_paid, currency: invoice.currency,
-    period_start: subLine?.period ? unixToIso(subLine.period.start) : null,
-    period_end:   subLine?.period ? unixToIso(subLine.period.end)   : null,
-    hosted_invoice_url: invoice.hosted_invoice_url ?? null, invoice_pdf: invoice.invoice_pdf ?? null,
-    status: invoice.status ?? 'paid', created_at: new Date().toISOString(),
-  }).then(({ error }) => { if (error) console.error('[stripe-webhook] invoice insert:', error.message) })
+  // ── Fix C1: colunas reais da tabela invoices ──────────────────
+  // Schema: church_id, stripe_invoice_id, amount_cents, status,
+  //         paid_at, hosted_invoice_url, pdf_url, description, created_at
+  // REMOVIDOS (colunas não existem): stripe_subscription_id, stripe_customer_id,
+  //   currency, period_start, period_end
+  const { error: invoiceErr } = await supabase.from('invoices').insert({
+    church_id:          churchId,
+    stripe_invoice_id:  invoice.id,
+    amount_cents:       invoice.amount_paid,                                      // amount_paid = valor Stripe; coluna = amount_cents
+    status:             invoice.status ?? 'paid',
+    paid_at:            unixToIso(invoice.status_transitions?.paid_at ?? null),  // estava faltando
+    hosted_invoice_url: invoice.hosted_invoice_url ?? null,
+    pdf_url:            invoice.invoice_pdf ?? null,                              // era invoice_pdf (nome campo Stripe ≠ coluna)
+    description:        invoice.description ?? null,                              // estava faltando
+  })
+  if (invoiceErr) {
+    if (invoiceErr.code === '23505') {
+      // Conflito em stripe_invoice_id (UNIQUE) — retry do Stripe, comportamento idempotente esperado
+      console.log('[stripe-webhook] invoice insert: duplicata ignorada (idempotente)', invoice.id)
+    } else {
+      // Erro genuíno: lançar para que o handler global retorne 500 e o Stripe retente
+      console.error('[stripe-webhook] invoice insert falhou:', invoiceErr.message, invoiceErr.code)
+      throw new Error(`invoice insert failed: ${invoiceErr.message}`)
+    }
+  } else {
+    console.log(`[stripe-webhook] ✅ invoice gravada: ${invoice.id} church=${churchId} amount_cents=${invoice.amount_paid}`)
+  }
   await recordAffiliateCommission(invoice, churchId)
 }
 
