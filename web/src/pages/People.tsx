@@ -31,7 +31,7 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     this.state = { hasError: false }
   }
   static getDerivedStateFromError() { return { hasError: true } }
-  componentDidCatch() { this.setState({ hasError: false }) }
+  componentDidCatch(error: Error) { console.error('[PanelErrorBoundary]', error) }
   render() {
     if (this.state.hasError) return null
     return this.props.children
@@ -199,13 +199,13 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
-          {person.tags.slice(0, 3).map((tag) => (
+          {(person.tags ?? []).slice(0, 3).map((tag) => (
             <span key={tag} className="text-xs bg-bg-hover text-primary-text rounded-full px-2 py-0.5 font-medium">
               {tag}
             </span>
           ))}
-          {person.tags.length > 3 && (
-            <span className="text-xs text-text-tertiary">+{person.tags.length - 3}</span>
+          {(person.tags ?? []).length > 3 && (
+            <span className="text-xs text-text-tertiary">+{(person.tags ?? []).length - 3}</span>
           )}
         </div>
       </td>

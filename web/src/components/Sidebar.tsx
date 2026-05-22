@@ -219,15 +219,30 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
             Desabilitados
           </p>
           {disabledItems.map(({ path, label, Icon }) => (
-            <div
-              key={path}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
-              style={{ color: 'var(--text-tertiary)', opacity: 0.4 }}
-              title="Ative nas Configurações"
-            >
-              <Icon size={15} strokeWidth={1.75} className="shrink-0" />
-              <span className="text-[13px]">{label}</span>
-              <Lock size={10} strokeWidth={2} className="ml-auto shrink-0" />
+            <div key={path} className="relative group">
+              <NavLink
+                to="/configuracoes/modulos"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent select-none"
+                style={{ color: 'var(--text-tertiary)', opacity: 0.4, textDecoration: 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.65' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.4' }}
+              >
+                <Icon size={15} strokeWidth={1.75} className="shrink-0" />
+                <span className="text-[13px]">{label}</span>
+                <Lock size={10} strokeWidth={2} className="ml-auto shrink-0" />
+              </NavLink>
+              {/* CSS tooltip — sem Radix */}
+              <div
+                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-secondary)',
+                  boxShadow: 'var(--shadow-md)',
+                }}
+              >
+                Ative em Configurações → Módulos
+              </div>
             </div>
           ))}
         </>

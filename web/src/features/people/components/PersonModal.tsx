@@ -139,7 +139,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     setForm(person ? personToForm(person) : EMPTY_FORM)
     setActiveTab('pessoal')
     setError(null)
-  }, [person, open])
+  }, [person?.id, open])
 
   // Célula selecionada → auto-fill líder (exibição)
   const selectedGroup = groups.find((g) => g.id === form.celula_id)

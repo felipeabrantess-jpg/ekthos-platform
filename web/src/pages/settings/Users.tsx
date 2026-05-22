@@ -1,17 +1,29 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { usePlan } from '@/hooks/usePlan'
+import { useInviteUser } from '@/hooks/useInviteUser'
 import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
+import Input from '@/components/ui/Input'
 
 const ROLE_LABELS: Record<string, string> = {
-  admin:      'Administrador',
-  pastor:     'Pastor',
-  supervisor: 'Supervisor',
-  leader:     'Líder',
-  secretary:  'Secretário',
-  treasurer:  'Tesoureiro',
-  member:     'Membro',
+  admin:       'Administrador',
+  pastor:      'Pastor',
+  supervisor:  'Supervisor',
+  cell_leader: 'Líder de Célula',
+  secretary:   'Secretário',
+  treasurer:   'Tesoureiro',
+  volunteer:   'Voluntário',
+  member:      'Membro',
 }
+
+const INVITE_ROLE_OPTIONS = [
+  { value: 'admin',       label: 'Administrador' },
+  { value: 'cell_leader', label: 'Líder de Célula' },
+  { value: 'volunteer',   label: 'Voluntário' },
+]
 
 function ProgressBar({ value }: { value: number }) {
   const pct = Math.min(100, Math.max(0, value))
@@ -40,6 +52,14 @@ interface ProfileRow {
 
 export function Users() {
   const { maxUsers } = usePlan()
+  const queryClient = useQueryClient()
+  const { inviteUser, isLoading: inviting } = useInviteUser()
+
+  const [modalOpen, setModalOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('admin')
+  const [inviteName, setInviteName] = useState('')
+  const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['church_users'],
@@ -70,13 +90,46 @@ export function Users() {
   const profileMap = Object.fromEntries(profiles.map(p => [p.user_id, p]))
   const usedSeats = users.length
 
+  function handleCloseModal() {
+    setModalOpen(false)
+    setInviteEmail('')
+    setInviteRole('admin')
+    setInviteName('')
+    setFeedback(null)
+  }
+
+  async function handleInvite() {
+    if (!inviteEmail.trim()) return
+    setFeedback(null)
+    const result = await inviteUser({
+      email: inviteEmail.trim(),
+      role: inviteRole,
+      name: inviteName.trim() || undefined,
+    })
+    setFeedback(result)
+    if (result.ok) {
+      void queryClient.invalidateQueries({ queryKey: ['church_users'] })
+      setTimeout(handleCloseModal, 1800)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Usuários</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Membros da equipe com acesso ao sistema
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Usuários</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Membros da equipe com acesso ao sistema
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setModalOpen(true)}
+          disabled={usedSeats >= maxUsers}
+        >
+          + Convidar usuário
+        </Button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -88,6 +141,11 @@ export function Users() {
           <span className="text-lg font-normal text-gray-400">/{maxUsers}</span>
         </p>
         <ProgressBar value={(usedSeats / maxUsers) * 100} />
+        {usedSeats >= maxUsers && (
+          <p className="text-xs text-amber-600 mt-2">
+            Limite atingido. Faça upgrade do plano para adicionar mais usuários.
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -123,6 +181,67 @@ export function Users() {
           )
         })}
       </div>
+
+      {/* Modal de convite */}
+      <Modal open={modalOpen} onClose={handleCloseModal} title="Convidar usuário" size="sm">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">E-mail *</label>
+            <Input
+              type="email"
+              placeholder="pastor@minhigreja.com"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Nome (opcional)</label>
+            <Input
+              type="text"
+              placeholder="Nome completo"
+              value={inviteName}
+              onChange={e => setInviteName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Perfil de acesso *</label>
+            <select
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              value={inviteRole}
+              onChange={e => setInviteRole(e.target.value)}
+            >
+              {INVITE_ROLE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {feedback && (
+            <p className={`text-sm rounded-lg px-3 py-2 ${
+              feedback.ok
+                ? 'text-green-700 bg-green-50 border border-green-200'
+                : 'text-red-600 bg-red-50 border border-red-200'
+            }`}>
+              {feedback.message}
+            </p>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button variant="secondary" className="flex-1" onClick={handleCloseModal}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              disabled={!inviteEmail.trim() || inviting || feedback?.ok}
+              loading={inviting}
+              onClick={() => void handleInvite()}
+            >
+              Enviar convite
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

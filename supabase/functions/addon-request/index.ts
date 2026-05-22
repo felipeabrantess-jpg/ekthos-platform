@@ -32,7 +32,9 @@ const ADDON_PRICES: Record<string, number> = {
   'agent-metricas':      14990,
   'agent-whatsapp':      14990,
   'agent-financeiro':    14990,
-  'agent-reengajamento': 14990,
+  'agent-reengajamento': 29000,
+  'agent-acolhimento':   29000,
+  'agent-operacao':      39000,
   'agent-agenda':        14990,
   'agent-voluntarios':   14990,
   'agent-kids-pastoral': 14990,
@@ -101,6 +103,28 @@ Deno.serve(async (req: Request) => {
   // ── Preço ─────────────────────────────────────────────────
   const price_cents = ADDON_PRICES[addon_slug]
   if (!price_cents) return jsonErr(`Unknown addon_slug: ${addon_slug}`, 400)
+
+  // ── H4: Checar se agente já está incluído no plano ────────
+  if (addon_type === 'agent') {
+    const { data: subPlan } = await supabase
+      .from('subscriptions')
+      .select('plan_slug')
+      .eq('church_id', churchId)
+      .maybeSingle()
+
+    if (subPlan?.plan_slug) {
+      const { data: planData } = await supabase
+        .from('plans')
+        .select('included_agent_slugs')
+        .eq('slug', subPlan.plan_slug)
+        .maybeSingle()
+
+      const includedSlugs = (planData?.included_agent_slugs as string[] | null) ?? []
+      if (includedSlugs.includes(addon_slug)) {
+        return jsonErr('Agente já incluído no seu plano atual', 409)
+      }
+    }
+  }
 
   // ── Checar duplicata — pedido já pending ou já ativo ──────
   const { data: existing } = await supabase

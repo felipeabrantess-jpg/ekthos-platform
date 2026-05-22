@@ -20,6 +20,7 @@ import { usePlan } from '@/hooks/usePlan'
 import { getAgentContent } from '@/lib/agents-content'
 import { useAddonActions } from '@/hooks/useAddonActions'
 import Button from '@/components/ui/Button'
+import Modal from '@/components/ui/Modal'
 import { AgentStatusBlock } from '@/components/agents/AgentStatusBlock'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -67,11 +68,15 @@ interface CTAProps {
   slug: string
   moduleId?: string
   planSlug: string
+  agentName: string
+  agentPrice?: number
+  chargeAt?: string | null
 }
 
-function AgentCTA({ state, slug, moduleId }: CTAProps) {
+function AgentCTA({ state, slug, moduleId, agentName, agentPrice, chargeAt }: CTAProps) {
   const { adicionarAoPlano, falarComConsultor, loadingAddon, loadingConsultor } = useAddonActions()
   const [toast, setToast] = useState<{ ok: boolean; message: string } | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   async function handleAdicionar() {
     setToast(null)
@@ -172,11 +177,9 @@ function AgentCTA({ state, slug, moduleId }: CTAProps) {
         variant="primary"
         className="w-full"
         disabled={loadingAddon || !!toast?.ok}
-        onClick={() => void handleAdicionar()}
+        onClick={() => setConfirmOpen(true)}
       >
-        {loadingAddon ? (
-          <><Loader2 size={14} className="animate-spin mr-2" />Registrando pedido...</>
-        ) : toast?.ok ? (
+        {toast?.ok ? (
           <><Check size={14} className="mr-2" />Pedido registrado!</>
         ) : (
           'Adicionar ao meu plano'
@@ -205,6 +208,47 @@ function AgentCTA({ state, slug, moduleId }: CTAProps) {
           Testar 7 dias grátis — disponível em breve
         </button>
       </div>
+
+      {/* Modal de confirmação de contratação */}
+      <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Confirmar contratação" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            Você está solicitando a contratação de{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>{agentName}</strong>.
+            {agentPrice && (
+              <> O valor de{' '}
+                <strong style={{ color: 'var(--color-primary)' }}>{formatPrice(agentPrice)}/mês</strong>{' '}
+                será cobrado no próximo ciclo de faturamento.
+              </>
+            )}
+          </p>
+          {chargeAt && (
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+              Próxima cobrança estimada:{' '}
+              {new Date(chargeAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+            </p>
+          )}
+          <div className="flex gap-3 pt-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              disabled={loadingAddon}
+              onClick={() => {
+                setConfirmOpen(false)
+                void handleAdicionar()
+              }}
+            >
+              {loadingAddon
+                ? <><Loader2 size={14} className="animate-spin mr-2" />Registrando...</>
+                : 'Confirmar'
+              }
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -214,7 +258,7 @@ function AgentCTA({ state, slug, moduleId }: CTAProps) {
 export default function AgentDetail() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const { hasAgent, planSlug, isLoading, allAgents } = usePlan()
+  const { hasAgent, planSlug, isLoading, allAgents, subscription } = usePlan()
 
   const content = slug ? getAgentContent(slug) : undefined
   const catalogAgent = allAgents.find(a => a.slug === slug)
@@ -281,6 +325,9 @@ export default function AgentDetail() {
           slug={slug!}
           moduleId={content.moduleId}
           planSlug={planSlug}
+          agentName={content.name}
+          agentPrice={content.price}
+          chargeAt={subscription?.current_period_end}
         />
       )}
 

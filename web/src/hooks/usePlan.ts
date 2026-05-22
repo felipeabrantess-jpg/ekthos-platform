@@ -8,6 +8,7 @@ export interface Plan {
   price_cents: number
   max_users: number
   included_agents: number
+  included_agent_slugs: string[]
 }
 
 export interface Agent {
@@ -101,6 +102,7 @@ export function usePlan() {
     if (!isActive) return false
     const agent = allAgents.find(a => a.slug === slug)
     if (agent?.pricing_tier === 'free' || agent?.pricing_tier === 'internal') return true
+    if (subscription?.plan?.included_agent_slugs?.includes(slug)) return true
     return activeAgentSlugs.includes(slug)
   }
 
