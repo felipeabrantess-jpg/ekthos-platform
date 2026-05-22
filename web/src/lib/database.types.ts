@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -5220,6 +5220,7 @@ export type Database = {
           invited_by: string | null
           is_bulk_import: boolean
           is_dizimista: boolean | null
+          is_leader: boolean
           is_volunteer: boolean
           last_attendance_at: string | null
           last_contact_at: string | null
@@ -5298,6 +5299,7 @@ export type Database = {
           invited_by?: string | null
           is_bulk_import?: boolean
           is_dizimista?: boolean | null
+          is_leader?: boolean
           is_volunteer?: boolean
           last_attendance_at?: string | null
           last_contact_at?: string | null
@@ -5376,6 +5378,7 @@ export type Database = {
           invited_by?: string | null
           is_bulk_import?: boolean
           is_dizimista?: boolean | null
+          is_leader?: boolean
           is_volunteer?: boolean
           last_attendance_at?: string | null
           last_contact_at?: string | null
@@ -7453,3 +7456,4 @@ export const Constants = {
     },
   },
 } as const
+
