@@ -1,5 +1,40 @@
 # Débitos técnicos registrados
 
+---
+
+## ✅ CLUSTER A — Pipeline / Discipulado / visitor-capture (RESOLVIDO 2026-05-21)
+
+**Branch:** `fix/cluster-a-pipeline-discipulado-visitor-capture`
+
+### Bug #1 / #12 — Pipeline board vazio (is_entry_point=false)
+**Causa:** 2 igrejas (Minha Fé `5156cc30` + Meu Avivamento `89c7d9de`) tinham
+`is_entry_point=false` em todas as etapas. `capture_visitor_to_pipeline` retornava
+NULL silenciosamente → `person_pipeline` vazia → Pipeline board zerado.
+**Fix:** Migration `20260521000001` — A1 corrige as 2 igrejas; A2 preventiva global.
+Migration `20260521000002` — backfill `person_pipeline` para 4 pessoas de Vanessa.
+
+### Bug #2 — visitor-capture descarta `name` em pessoa existente
+**Causa:** Bloco UPDATE (pessoa existente por phone) não incluía `name` nos updates.
+**Fix:** `supabase/functions/visitor-capture/index.ts` — D1: `if (name) updates.name = name`.
+
+### Bug #3 — CORS bloqueia preview deployments Vercel
+**Causa:** `ALLOWED_ORIGINS.includes(origin)` era lista exata — URLs preview
+(`ekthos-platform-abc123.vercel.app`) eram rejeitadas silenciosamente.
+**Fix:** visitor-capture E1: `ALLOWED_ORIGIN_PREVIEW_RE` regex.
+
+### Bug #11 — Consolidação vazia (filtro só por conversion_date)
+**Causa:** `Consolidation.tsx` filtrava apenas por `conversion_date` — visitantes
+QR Code (sem `conversion_date`) nunca apareciam.
+**Fix:** C2 — query usa `.or(conversion_date, first_visit_date, created_at)`.
+
+### Bug #29 — "Erro ao aplicar template" no DiscipleshipSettings
+**Causa:** RPC `apply_discipleship_template` fazia INSERT em `pipeline_stages` sem
+incluir `slug` (NOT NULL, sem DEFAULT) → violação de constraint.
+**Fix:** Migration `20260521000003` — RPC patcheada com geração de slug via regexp
++ `ON CONFLICT (church_id, slug) DO UPDATE`.
+
+---
+
 ## TEST-DEBT-004 — Worker para coupon_sync_jobs
 
 **Registrado em:** 27/04/2026 (sessão F4)
