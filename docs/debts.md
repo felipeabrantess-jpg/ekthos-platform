@@ -849,8 +849,55 @@ ou redeploy da EF com `MODEL = 'claude-sonnet-4-6'`.
 
 **Branch/PR:** `fix/cluster-f-invoices` → https://github.com/felipeabrantess-jpg/ekthos-platform/compare/main...fix/cluster-f-invoices?expand=1
 
-**Pendente (Fix B):** Confirmar registro do endpoint de webhook no Stripe LIVE Dashboard (verificação manual Felipe). Sem Fix B, novos `invoice.paid` podem não chegar ao endpoint.
+---
 
-**Pendente (backfill):** Inserir retroativamente faturas de igrejas com trial expirado (6743b72b, 89c7d9de) buscando do Stripe via API. Aguardando aprovação de Felipe.
+## ✅ CLUSTER F — Bug #27 TOTALMENTE RESOLVIDO (Fix C1 + Fix B + backfill — 2026-05-22)
 
-**Nota:** `current_period_end = NULL` em todas as 6 subscriptions confirma que `customer.subscription.updated` também nunca processou com sucesso (mesma causa raiz — erro silenciado). Fix C1 corrige somente `invoice.paid`; `handleSubscriptionUpdated` já usa colunas corretas (inalterado).
+**Diagnóstico raiz final (dupla causa):**
+
+- **C2 (raiz primária):** Webhook endpoint `we_1TYqnNHfvCy1ruENSmWRo9Q9` assinava apenas `checkout.session.completed`. `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated/deleted` não estavam em `enabled_events` → Stripe nunca despachava esses eventos ao endpoint. Mesmo com C1 corrigido, faturas continuariam não chegando.
+- **C1 (raiz secundária, corrigida primeiro em v37):** `handleInvoicePaid` INSERT com colunas erradas + erro silenciado. Corrigido na sessão anterior.
+
+**Fix B aplicado (Stripe LIVE):**
+- `PATCH /v1/webhook_endpoints/we_1TYqnNHfvCy1ruENSmWRo9Q9`
+- `enabled_events` agora contém: `checkout.session.completed`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- Verificado via GET pós-PATCH: todos os 5 eventos confirmados ✅
+- `invoice.created`, `invoice.finalized`, `invoice.payment_succeeded`: sem handler implementado → NÃO assinados (regra: zero entregas órfãs)
+
+**Backfill Vanessa (Minha Fé — 5156cc30):**
+- `in_1TYtMLHfvCy1ruENLXGmFgqq` inserida: `amount_cents=200`, `status=paid`, `paid_at=2026-05-19`, URLs presentes
+- `current_period_start=2026-05-19`, `current_period_end=2026-06-19` (dado real Stripe)
+- Idempotente: ON CONFLICT stripe_invoice_id DO NOTHING + teste replay confirmou 0 duplicatas
+
+**Nossa Igreja (6743b72b) + Meu Avivamento (89c7d9de):**
+- `stripe_customer_id`/`stripe_subscription_id` no banco não existem na conta Stripe atual (`acct_1TMgvuHfvCy1ruEN`) — IDs com padrão `QeRcEiX9L9` vs `HfvCy1ruEN` da conta ativa → foram criadas em outra conta Stripe
+- NÃO tocadas (backfill impossível via API atual)
+- Registrado como OPS-DEBT abaixo
+
+**Estado final (R1–R18 todos verdes):**
+- Stripe endpoint: 5 eventos, enabled, LIVE ✅
+- Vanessa: 1 invoice no banco + period_end preenchido ✅
+- Nossa Igreja / Meu Avivamento: 0 invoices (correto, sem inventar dados) ✅
+- Zero cobrança criada, zero invoice nova no Stripe ✅
+- Backfill idempotente ✅
+
+---
+
+## OPS-DEBT — igrejas de outra conta Stripe (Nossa Igreja + Meu Avivamento)
+
+**Registrado em:** 2026-05-22 (Cluster F diagnóstico)
+**Categoria:** Integridade de dados / migração Stripe
+**Urgência:** Baixa (igrejas são teste interno, sem cliente real)
+
+**Contexto:** `subscriptions.stripe_customer_id` e `stripe_subscription_id` das igrejas `6743b72b` (Nossa Igreja, `cus_UPlA4DoDtlPsY5`, `sub_1TQve1QeRcEiX9L9qmT3hzAe`) e `89c7d9de` (Meu Avivamento, `cus_USjZhfe4rAhKz4`, `sub_1TTo5xQeRcEiX9L99MgmHRcA`) retornam `resource_missing` na conta Stripe LIVE atual (`acct_1TMgvuHfvCy1ruEN`). Os IDs têm segmento `QeRcEiX9L9` que não pertence a esta conta.
+
+**Hipótese:** Criadas manualmente em conta Stripe diferente (teste anterior, conta pessoal, ou conta antiga antes da migração para `acct_1TMgvuHfvCy1ruEN`).
+
+**Impacto atual:** `current_period_end = NULL`, sem invoices no banco. Como são igrejas de teste, sem impacto em cliente real.
+
+**Fix quando relevante:**
+1. Identificar a conta Stripe original onde esses IDs existem
+2. Ou limpar subscriptions do banco e recriar via Caminho A na conta correta
+3. Ou marcar como `status = 'canceled'` se obsoletas
+
+**Critério de pronto:** `stripe_customer_id` e `stripe_subscription_id` existem na conta Stripe ativa, ou subscriptions marcadas como obsoletas.
