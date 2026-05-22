@@ -872,39 +872,60 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   //         paid_at, hosted_invoice_url, pdf_url, description, created_at
   // REMOVIDOS (colunas não existem): stripe_subscription_id, stripe_customer_id,
   //   currency, period_start, period_end
-  const { error: invoiceErr } = await supabase.from('invoices').insert({
+  // ── Fix C2: upsert (não insert) — cobre retry após payment_failed ─
+  // Se payment_failed gravou status='open', aqui atualizamos para 'paid'
+  // ON CONFLICT (stripe_invoice_id) DO UPDATE → sempre vence com status final
+  const { error: invoiceErr } = await supabase.from('invoices').upsert({
     church_id:          churchId,
     stripe_invoice_id:  invoice.id,
     amount_cents:       invoice.amount_paid,                                      // amount_paid = valor Stripe; coluna = amount_cents
     status:             invoice.status ?? 'paid',
-    paid_at:            unixToIso(invoice.status_transitions?.paid_at ?? null),  // estava faltando
+    paid_at:            unixToIso(invoice.status_transitions?.paid_at ?? null),
     hosted_invoice_url: invoice.hosted_invoice_url ?? null,
-    pdf_url:            invoice.invoice_pdf ?? null,                              // era invoice_pdf (nome campo Stripe ≠ coluna)
-    description:        invoice.description ?? null,                              // estava faltando
-  })
+    pdf_url:            invoice.invoice_pdf ?? null,                              // invoice_pdf = campo Stripe; pdf_url = coluna DB
+    description:        invoice.description ?? null,
+  }, { onConflict: 'stripe_invoice_id' })
   if (invoiceErr) {
-    if (invoiceErr.code === '23505') {
-      // Conflito em stripe_invoice_id (UNIQUE) — retry do Stripe, comportamento idempotente esperado
-      console.log('[stripe-webhook] invoice insert: duplicata ignorada (idempotente)', invoice.id)
-    } else {
-      // Erro genuíno: lançar para que o handler global retorne 500 e o Stripe retente
-      console.error('[stripe-webhook] invoice insert falhou:', invoiceErr.message, invoiceErr.code)
-      throw new Error(`invoice insert failed: ${invoiceErr.message}`)
-    }
-  } else {
-    console.log(`[stripe-webhook] ✅ invoice gravada: ${invoice.id} church=${churchId} amount_cents=${invoice.amount_paid}`)
+    console.error('[stripe-webhook] invoice upsert falhou:', invoiceErr.message, invoiceErr.code)
+    throw new Error(`invoice upsert failed: ${invoiceErr.message}`)
   }
+  console.log(`[stripe-webhook] ✅ invoice gravada/atualizada: ${invoice.id} church=${churchId} amount_cents=${invoice.amount_paid}`)
   await recordAffiliateCommission(invoice, churchId)
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const subId = typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as Stripe.Subscription | null)?.id ?? null
   if (!subId) { console.warn('[stripe-webhook] invoice.payment_failed: sem sub_id', invoice.id); return }
+
+  // ── Atualiza subscription para past_due via RPC ──────────────
   const { data: result, error } = await supabase.rpc('process_invoice_payment_failed', {
     p_payload: { stripe_subscription_id: subId, stripe_event_id: invoice.id },
   })
   if (error) { console.error('[stripe-webhook] process_invoice_payment_failed RPC:', error.message); return }
   if (!result?.success) { console.warn('[stripe-webhook] subscription not found', subId); return }
+
+  // ── Fix C2: grava invoice no histórico ───────────────────────
+  // ignoreDuplicates: true → ON CONFLICT DO NOTHING
+  // Preserva status 'paid' caso invoice.paid já tenha sido processado antes (raro mas possível)
+  const customerId = typeof invoice.customer === 'string' ? invoice.customer : (invoice.customer as Stripe.Customer | null)?.id ?? null
+  const churchId   = await resolveChurchId(invoice.metadata as Record<string, string> | null, customerId)
+  if (churchId) {
+    const { error: invErr } = await supabase.from('invoices').upsert({
+      church_id:          churchId,
+      stripe_invoice_id:  invoice.id,
+      amount_cents:       invoice.amount_due,
+      status:             (invoice.status as string) ?? 'open',
+      paid_at:            null,
+      hosted_invoice_url: invoice.hosted_invoice_url ?? null,
+      pdf_url:            invoice.invoice_pdf ?? null,
+      description:        invoice.description ?? null,
+    }, { onConflict: 'stripe_invoice_id', ignoreDuplicates: true })
+    if (invErr) console.warn('[stripe-webhook] invoice.payment_failed: upsert ignorado:', invErr.message)
+    else console.log(`[stripe-webhook] invoice.payment_failed gravada: ${invoice.id} church=${churchId}`)
+  } else {
+    console.warn('[stripe-webhook] invoice.payment_failed: church não encontrada para invoice:', invoice.id)
+  }
+
   console.log(`[stripe-webhook] invoice.payment_failed → past_due: church=${result.church_id}`)
 }
 
