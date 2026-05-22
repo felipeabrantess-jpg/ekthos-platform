@@ -641,6 +641,83 @@ fazem referência a colunas que não existem na tabela `affiliate_payment_batche
 
 ---
 
+## ✅ CLUSTER FRONTEND — #4 + #5 (RESOLVIDO 2026-05-22)
+
+**Branch:** `fix/cluster-frontend-modal-perfil`
+
+### Bug #4 — PersonModal reseta campos ao trocar de aba
+
+**Causa:** `useEffect` em `PersonModal.tsx` tinha dep `[person, open]`. O objeto `person`
+vinha de `people.find(...)` inline no JSX — novo reference a cada render → efeito
+disparava espuriamente → `setForm(personToForm(person))` e `setActiveTab('pessoal')`
+apagavam o que o usuário estava preenchendo.
+
+**Fix:** `web/src/features/people/components/PersonModal.tsx` linha 142:
+```tsx
+// ANTES:
+}, [person, open])
+// DEPOIS:
+}, [person?.id, open])
+```
+`person?.id` é primitivo (`string | undefined`) — referência estável.
+
+---
+
+### Bug #5 — Crash "Maximum update depth exceeded" ao abrir perfil
+
+**Causa raiz 1 (ErrorBoundary):** `PanelErrorBoundary.componentDidCatch` chamava
+`this.setState({ hasError: false })` dentro do próprio handler de erro. Isso criava
+loop infinito: erro → setState → re-render → erro → setState…
+
+**Causa raiz 2 (tags null):** `person.tags.slice(0, 3)` em `People.tsx` lançava
+`TypeError: Cannot read properties of null` quando `people.tags = null` no DB.
+O crash caía no ErrorBoundary, amplificando o loop.
+
+**Fixes:**
+1. `web/src/pages/People.tsx` — `componentDidCatch`:
+```tsx
+// ANTES:
+componentDidCatch() { this.setState({ hasError: false }) }
+// DEPOIS:
+componentDidCatch(error: Error) { console.error('[PanelErrorBoundary]', error) }
+```
+2. `web/src/pages/People.tsx` — tags guard:
+```tsx
+// ANTES:
+{person.tags.slice(0, 3).map(...)}
+{person.tags.length > 3 && ...}
+// DEPOIS:
+{(person.tags ?? []).slice(0, 3).map(...)}
+{(person.tags ?? []).length > 3 && ...}
+```
+
+---
+
+### OPS-DEBT — `people.tags` sem `DEFAULT '{}'` no schema
+
+**Registrado em:** 2026-05-22 (fix/cluster-frontend-modal-perfil)
+**Categoria:** Schema / integridade de dados
+**Trigger:** Guard frontend aplicado; schema ainda sem default explícito.
+
+**Contexto:** `people.tags` é `text[]`. Em produção todos os 25 registros têm
+`tags = '{}'` (array vazio) — nenhum null atual. Porém a coluna provavelmente
+não tem `DEFAULT '{}'` explícito no schema. Outras telas que leem `tags` diretamente
+(sem o guard `?? []`) têm risco latente se uma person for inserida sem `tags`.
+
+**Ação necessária:**
+```sql
+ALTER TABLE people ALTER COLUMN tags SET DEFAULT '{}';
+UPDATE people SET tags = '{}' WHERE tags IS NULL;
+```
+
+**Impacto imediato:** Nenhum (zero nulls hoje). **Risco latente:** Médio (inserts
+sem `tags` explícito em EFs futuras podem gerar nulls que crasham telas sem guard).
+
+**Critério de pronto:** `DEFAULT '{}'` confirmado em `\d people`. Zero nulls garantidos
+pelo schema, não só pelo guard frontend.
+
+---
+
 ## OPS-DEBT-045 — stripe-webhook retornando HTTP 400 em produção
 
 **Registrado em:** 20/05/2026 (sessão fix/agentes-config-real-inbox-operacional)
