@@ -134,7 +134,7 @@ Deno.serve(async (req: Request) => {
     .from('plans')
     .select('id, slug, name')
     .eq('slug', plan_slug)
-    .eq('is_active', true)
+    .eq('active', true)
     .maybeSingle()
 
   if (!plan) return err(`Plano '${plan_slug}' não encontrado ou inativo`, 404)

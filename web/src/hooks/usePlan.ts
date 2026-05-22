@@ -99,6 +99,8 @@ export function usePlan() {
 
   const hasAgent = (slug: string): boolean => {
     if (!isActive) return false
+    const agent = allAgents.find(a => a.slug === slug)
+    if (agent?.pricing_tier === 'free' || agent?.pricing_tier === 'internal') return true
     return activeAgentSlugs.includes(slug)
   }
 

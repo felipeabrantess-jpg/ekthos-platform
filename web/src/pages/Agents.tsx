@@ -8,15 +8,47 @@ function AgentCard({
   agent,
   isActive,
   canActivate,
-  onActivate,
-  onDeactivate,
+  subscriptionId,
 }: {
   agent: Agent
   isActive: boolean
   canActivate: boolean
-  onActivate: (slug: string) => void
-  onDeactivate: (slug: string) => void
+  subscriptionId: string
 }) {
+  const queryClient = useQueryClient()
+
+  const activateMutation = useMutation({
+    mutationFn: async () => {
+      if (!subscriptionId) throw new Error('No subscription')
+      const { error } = await supabase.from('subscription_agents').insert({
+        subscription_id: subscriptionId,
+        agent_slug: agent.slug,
+        active: true,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
+    },
+    onError: (err: Error) => console.error('Erro ao ativar:', err.message),
+  })
+
+  const deactivateMutation = useMutation({
+    mutationFn: async () => {
+      if (!subscriptionId) throw new Error('No subscription')
+      const { error } = await supabase
+        .from('subscription_agents')
+        .update({ active: false })
+        .eq('subscription_id', subscriptionId)
+        .eq('agent_slug', agent.slug)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
+    },
+    onError: (err: Error) => console.error('Erro ao desativar:', err.message),
+  })
+
   const tierLabel =
     agent.pricing_tier === 'free'
       ? 'Grátis'
@@ -92,7 +124,9 @@ function AgentCard({
               size="sm"
               variant="ghost"
               className="w-full text-xs text-red-600 hover:text-red-700 border border-red-200 hover:bg-red-50"
-              onClick={() => onDeactivate(agent.slug)}
+              onClick={() => deactivateMutation.mutate()}
+              disabled={deactivateMutation.isPending}
+              loading={deactivateMutation.isPending}
             >
               Desativar agente
             </Button>
@@ -101,7 +135,9 @@ function AgentCard({
               size="sm"
               variant="primary"
               className="w-full text-xs"
-              onClick={() => onActivate(agent.slug)}
+              onClick={() => activateMutation.mutate()}
+              disabled={activateMutation.isPending}
+              loading={activateMutation.isPending}
             >
               Ativar agente
             </Button>
@@ -128,39 +164,8 @@ export function Agents() {
     canAddMoreAgents,
     maxAgentSlots,
   } = usePlan()
-  const queryClient = useQueryClient()
 
-  const activateMutation = useMutation({
-    mutationFn: async (agentSlug: string) => {
-      if (!subscription?.id) throw new Error('No subscription')
-      const { error } = await supabase.from('subscription_agents').insert({
-        subscription_id: subscription.id,
-        agent_slug: agentSlug,
-        active: true,
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
-    },
-    onError: (err: Error) => console.error('Erro ao ativar:', err.message),
-  })
-
-  const deactivateMutation = useMutation({
-    mutationFn: async (agentSlug: string) => {
-      if (!subscription?.id) throw new Error('No subscription')
-      const { error } = await supabase
-        .from('subscription_agents')
-        .update({ active: false })
-        .eq('subscription_id', subscription.id)
-        .eq('agent_slug', agentSlug)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
-    },
-    onError: (err: Error) => console.error('Erro ao desativar:', err.message),
-  })
+  const subscriptionId = subscription?.id ?? ''
 
   const eligibleActive = activeAgentSlugs.filter(slug =>
     eligibleAgents.some(a => a.slug === slug)
@@ -198,8 +203,7 @@ export function Agents() {
                 agent={agent}
                 isActive={true}
                 canActivate={false}
-                onActivate={() => {}}
-                onDeactivate={() => {}}
+                subscriptionId={subscriptionId}
               />
             ))}
           </div>
@@ -219,8 +223,7 @@ export function Agents() {
                 agent={agent}
                 isActive={hasAgent(agent.slug)}
                 canActivate={false}
-                onActivate={() => {}}
-                onDeactivate={() => {}}
+                subscriptionId={subscriptionId}
               />
             ))}
           </div>
@@ -247,8 +250,7 @@ export function Agents() {
                 canActivate={
                   canAddMoreAgents || activeAgentSlugs.includes(agent.slug)
                 }
-                onActivate={slug => activateMutation.mutate(slug)}
-                onDeactivate={slug => deactivateMutation.mutate(slug)}
+                subscriptionId={subscriptionId}
               />
             ))}
           </div>
