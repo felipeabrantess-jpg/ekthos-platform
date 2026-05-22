@@ -2,6 +2,38 @@
 
 ---
 
+## CLUSTER B — RESOLVIDO 2026-05-21
+
+### Bugs #6, #10, #13, #14, #17 — Seletor de Pessoa (PersonSelect)
+
+**Raiz:** Toda tela que precisava selecionar uma pessoa usava input de UUID bruto ou padrão ad-hoc. Solução: componente `PersonSelect` reusável + unificação de `ministries.leader_id → people.id` (eliminando indireção via tabela `leaders`).
+
+**Implementado:**
+- `web/src/components/ui/PersonSelect.tsx` — autocomplete reusável (Input + dropdown, debounce 600ms, RLS-safe)
+- `supabase/migrations/20260521000004_unify_ministries_leader_to_people.sql` — DROP FK leaders, ADD FK people (ON DELETE SET NULL). Todos leader_id eram NULL → zero migração de dados.
+- `web/src/features/ministerios/hooks/useMinisterios.ts` — select encadeado `leaders:leader_id(...)` → `people:leader_id(...)`, mutations sem INSERT em `leaders`
+- `web/src/pages/people/Leaders.tsx` — remove lookup intermediário via tabela `leaders` (ministries.leader_id já é people.id direto)
+- `web/src/pages/Ministerios.tsx` — `ministry.leaders?.people?.name` → `ministry.people?.name` + PersonSelect no modal
+- `web/src/lib/types/joins.ts` — `MinistryWithLeader.leaders: { people: ... }` → `MinistryWithLeader.people: Pick<Person,...>`
+- `web/src/pages/Celulas.tsx` — #14: membro por PersonSelect; #13: campo Líder no GroupModal via PersonSelect
+- `web/src/pages/Voluntarios.tsx` — #10: PersonSelect em AddVolunteerModal (substituiu input UUID)
+
+**Backward-compat:** Grupo Mulheres (Vanessa, leader_id=242d07b5) preservado. Tânia Maria (volunteer) preservada. co_leader_id não tocado.
+
+**Branch:** fix/cluster-b-person-select-unificado
+
+---
+
+### OPS-DEBT-052 — Tabela `leaders` órfã pós-unificação (não-bloqueante)
+
+**Data:** 2026-05-21  
+**Severidade:** BAIXA — não-bloqueante  
+**Contexto:** A tabela `leaders` foi mantida (não dropada) mas está vazia e sua única FK de produção (`ministries.leader_id`) agora aponta para `people`. As tabelas `cells` e `cell_reports` ainda têm FK para `leaders` (definidas na migration original), mas podem estar sem uso real em produção.
+
+**Ação futura:** Verificar uso real de `cells.leader_id` e `cell_reports.leader_id`. Se zero uso, DROP TABLE leaders (após remover FKs órfãs). Alternativa: migrar essas 2 FKs para `people` também (coerência total). Janela sugerida: próximo sprint de limpeza de schema.
+
+---
+
 ## ✅ CLUSTER A — Pipeline / Discipulado / visitor-capture (RESOLVIDO 2026-05-21)
 
 **Branch:** `fix/cluster-a-pipeline-discipulado-visitor-capture`

@@ -10,17 +10,7 @@ export function useMinisterios(churchId: string) {
         .from('ministries')
         .select(`
           *,
-          leaders:leader_id (
-            id,
-            church_id,
-            person_id,
-            role,
-            ministry_id,
-            is_active,
-            created_at,
-            updated_at,
-            people ( id, name, phone, email )
-          )
+          people:leader_id ( id, name, phone, email )
         `)
         .eq('church_id', churchId)
         .eq('is_active', true)
@@ -64,44 +54,14 @@ export function useCreateMinistry() {
 
   return useMutation({
     mutationFn: async ({ leaderPersonId, ...input }: CreateMinistryInput) => {
-      let leaderId: string | null = null
-
-      // If a leader person is provided, create a leader record first
-      if (leaderPersonId) {
-        const { data: leaderData, error: leaderError } = await supabase
-          .from('leaders')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .insert({
-            church_id: input.church_id,
-            person_id: leaderPersonId,
-            role: 'lider',
-            ministry_id: null,
-            is_active: true,
-          } as any)
-          .select('id')
-          .single()
-        if (leaderError) throw new Error(leaderError.message)
-        leaderId = leaderData.id
-      }
-
       const { data: ministry, error } = await supabase
         .from('ministries')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert({ ...input, leader_id: leaderId, is_active: true } as any)
+        .insert({ ...input, leader_id: leaderPersonId ?? null, is_active: true } as any)
         .select()
         .single()
 
       if (error) throw new Error(error.message)
-
-      // Update leader's ministry_id back-reference if created
-      if (leaderId && ministry) {
-        await supabase
-          .from('leaders')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .update({ ministry_id: ministry.id } as any)
-          .eq('id', leaderId)
-      }
-
       return ministry
     },
     onSuccess: (_data, { church_id }) => {
@@ -124,34 +84,12 @@ export function useUpdateMinistry() {
 
   return useMutation({
     mutationFn: async ({ id, church_id, leaderPersonId, ...updates }: UpdateMinistryInput) => {
-      let extraUpdates: { leader_id?: string | null } = {}
-
-      if (leaderPersonId !== undefined) {
-        if (leaderPersonId) {
-          // Create new leader record or find existing
-          const { data: leaderData, error: leaderError } = await supabase
-            .from('leaders')
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .insert({
-              church_id,
-              person_id: leaderPersonId,
-              role: 'lider',
-              ministry_id: id,
-              is_active: true,
-            } as any)
-            .select('id')
-            .single()
-          if (leaderError) throw new Error(leaderError.message)
-          extraUpdates = { leader_id: leaderData.id }
-        } else {
-          extraUpdates = { leader_id: null }
-        }
-      }
+      const leaderUpdate = leaderPersonId !== undefined ? { leader_id: leaderPersonId ?? null } : {}
 
       const { data, error } = await supabase
         .from('ministries')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ ...updates, ...extraUpdates } as any)
+        .update({ ...updates, ...leaderUpdate } as any)
         .eq('id', id)
         .eq('church_id', church_id)
         .select()

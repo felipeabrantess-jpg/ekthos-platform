@@ -29,6 +29,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import PersonSelect from '@/components/ui/PersonSelect'
 import type { Group, CellMeeting } from '@/lib/types/joins'
 
 type CelulasTab = 'geral' | 'lista' | 'relatorios'
@@ -44,6 +45,7 @@ const TABS: { id: CelulasTab; label: string }[] = [
 // ──────────────────────────────────────────────────────────────────────
 interface GroupFormData {
   name: string
+  leader_id: string
   description: string
   meeting_day: string
   meeting_time: string
@@ -52,7 +54,7 @@ interface GroupFormData {
 }
 
 const emptyGroupForm: GroupFormData = {
-  name: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '',
+  name: '', leader_id: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '',
 }
 
 interface GroupModalProps {
@@ -67,7 +69,7 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
   const updateGroup = useUpdateGroup()
   const [form, setForm] = useState<GroupFormData>(
     editing
-      ? { name: editing.name, description: editing.description ?? '', meeting_day: editing.meeting_day ?? '', meeting_time: editing.meeting_time ?? '', location: editing.location ?? '', notes: editing.notes ?? '' }
+      ? { name: editing.name, leader_id: (editing as any).leader_id ?? '', description: editing.description ?? '', meeting_day: editing.meeting_day ?? '', meeting_time: editing.meeting_time ?? '', location: editing.location ?? '', notes: editing.notes ?? '' }
       : emptyGroupForm
   )
   const [submitting, setSubmitting] = useState(false)
@@ -84,9 +86,9 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
     setError(null)
     try {
       if (editing) {
-        await updateGroup.mutateAsync({ id: editing.id, church_id: churchId, name: form.name.trim(), description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
+        await updateGroup.mutateAsync({ id: editing.id, church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || null, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
       } else {
-        await createGroup.mutateAsync({ church_id: churchId, name: form.name.trim(), description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
+        await createGroup.mutateAsync({ church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || undefined, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
       }
       onClose()
     } catch (err) {
@@ -106,6 +108,14 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">Descrição</label>
           <Input value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Breve descrição" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Líder</label>
+          <PersonSelect
+            value={form.leader_id || null}
+            onChange={(id) => handleChange('leader_id', id ?? '')}
+            placeholder="Buscar líder pelo nome..."
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -226,7 +236,13 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
               </ul>
             )}
             <div className="mt-3 flex gap-2">
-              <Input value={newPersonId} onChange={(e) => setNewPersonId(e.target.value)} placeholder="UUID da pessoa" className="flex-1 text-sm" />
+              <div className="flex-1">
+                <PersonSelect
+                  value={newPersonId || null}
+                  onChange={(id) => setNewPersonId(id ?? '')}
+                  placeholder="Buscar pessoa pelo nome..."
+                />
+              </div>
               <Button onClick={() => void handleAddMember()} disabled={addingMember || !newPersonId.trim()}>{addingMember ? '...' : 'Adicionar'}</Button>
             </div>
             {memberError && <p className="text-xs text-red-500 mt-1">{memberError}</p>}

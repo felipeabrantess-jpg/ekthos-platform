@@ -253,33 +253,69 @@ export type Database = {
       admin_events: {
         Row: {
           action: string
+          actor_email: string | null
+          actor_roles: string[] | null
           admin_user_id: string
           after: Json | null
           before: Json | null
-          church_id: string
+          church_id: string | null
           created_at: string
+          error_msg: string | null
           id: string
+          impersonated_church_id: string | null
+          impersonation_session_id: string | null
+          ip_address: unknown
           reason: string | null
+          request_id: string | null
+          resource: string | null
+          resource_id: string | null
+          source: string | null
+          status: string | null
+          user_agent: string | null
         }
         Insert: {
           action: string
+          actor_email?: string | null
+          actor_roles?: string[] | null
           admin_user_id: string
           after?: Json | null
           before?: Json | null
-          church_id: string
+          church_id?: string | null
           created_at?: string
+          error_msg?: string | null
           id?: string
+          impersonated_church_id?: string | null
+          impersonation_session_id?: string | null
+          ip_address?: unknown
           reason?: string | null
+          request_id?: string | null
+          resource?: string | null
+          resource_id?: string | null
+          source?: string | null
+          status?: string | null
+          user_agent?: string | null
         }
         Update: {
           action?: string
+          actor_email?: string | null
+          actor_roles?: string[] | null
           admin_user_id?: string
           after?: Json | null
           before?: Json | null
-          church_id?: string
+          church_id?: string | null
           created_at?: string
+          error_msg?: string | null
           id?: string
+          impersonated_church_id?: string | null
+          impersonation_session_id?: string | null
+          ip_address?: unknown
           reason?: string | null
+          request_id?: string | null
+          resource?: string | null
+          resource_id?: string | null
+          source?: string | null
+          status?: string | null
+          user_agent?: string | null
         }
         Relationships: [
           {
@@ -294,6 +330,27 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonated_church_id_fkey"
+            columns: ["impersonated_church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonated_church_id_fkey"
+            columns: ["impersonated_church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonation_session_id_fkey"
+            columns: ["impersonation_session_id"]
+            isOneToOne: false
+            referencedRelation: "impersonate_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -879,7 +936,9 @@ export type Database = {
           input_tokens: number
           model: string
           output_tokens: number
+          status: string | null
           success: boolean | null
+          trigger_type: string | null
           user_id: string | null
         }
         Insert: {
@@ -896,7 +955,9 @@ export type Database = {
           input_tokens?: number
           model: string
           output_tokens?: number
+          status?: string | null
           success?: boolean | null
+          trigger_type?: string | null
           user_id?: string | null
         }
         Update: {
@@ -913,7 +974,9 @@ export type Database = {
           input_tokens?: number
           model?: string
           output_tokens?: number
+          status?: string | null
           success?: boolean | null
+          trigger_type?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -1083,6 +1146,7 @@ export type Database = {
           active: boolean
           category: string | null
           created_at: string
+          cta_type: string | null
           features: Json
           full_description: string | null
           id: string
@@ -1094,13 +1158,16 @@ export type Database = {
           short_description: string
           slug: string
           sort_order: number | null
+          status: string | null
           updated_at: string | null
+          visible_in_vitrine: boolean | null
           without_me: string | null
         }
         Insert: {
           active?: boolean
           category?: string | null
           created_at?: string
+          cta_type?: string | null
           features?: Json
           full_description?: string | null
           id?: string
@@ -1112,13 +1179,16 @@ export type Database = {
           short_description: string
           slug: string
           sort_order?: number | null
+          status?: string | null
           updated_at?: string | null
+          visible_in_vitrine?: boolean | null
           without_me?: string | null
         }
         Update: {
           active?: boolean
           category?: string | null
           created_at?: string
+          cta_type?: string | null
           features?: Json
           full_description?: string | null
           id?: string
@@ -1130,7 +1200,9 @@ export type Database = {
           short_description?: string
           slug?: string
           sort_order?: number | null
+          status?: string | null
           updated_at?: string | null
+          visible_in_vitrine?: boolean | null
           without_me?: string | null
         }
         Relationships: []
@@ -3894,7 +3966,9 @@ export type Database = {
           admin_user_id: string
           church_id: string
           ended_at: string | null
+          ended_reason: string | null
           id: string
+          last_action_at: string | null
           notes: string | null
           started_at: string
         }
@@ -3902,7 +3976,9 @@ export type Database = {
           admin_user_id: string
           church_id: string
           ended_at?: string | null
+          ended_reason?: string | null
           id?: string
+          last_action_at?: string | null
           notes?: string | null
           started_at?: string
         }
@@ -3910,7 +3986,9 @@ export type Database = {
           admin_user_id?: string
           church_id?: string
           ended_at?: string | null
+          ended_reason?: string | null
           id?: string
+          last_action_at?: string | null
           notes?: string | null
           started_at?: string
         }
@@ -4626,10 +4704,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ministries_leader_id_fkey"
+            foreignKeyName: "ministries_leader_id_people_fkey"
             columns: ["leader_id"]
             isOneToOne: false
-            referencedRelation: "leaders"
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -6203,6 +6281,123 @@ export type Database = {
           },
         ]
       }
+      stripe_coupons: {
+        Row: {
+          active: boolean | null
+          amount_off: number | null
+          applies_to_products: string[] | null
+          archived_at: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          discount_target: string | null
+          discount_type: string
+          duration: string
+          id: string
+          last_synced_at: string | null
+          livemode: boolean | null
+          max_redemptions: number | null
+          metadata: Json | null
+          name: string
+          percent_off: number | null
+          promo_code: string | null
+          purpose: string | null
+          redeem_by: string | null
+          stripe_promo_code_id: string | null
+          times_redeemed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          amount_off?: number | null
+          applies_to_products?: string[] | null
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          discount_target?: string | null
+          discount_type: string
+          duration: string
+          id: string
+          last_synced_at?: string | null
+          livemode?: boolean | null
+          max_redemptions?: number | null
+          metadata?: Json | null
+          name: string
+          percent_off?: number | null
+          promo_code?: string | null
+          purpose?: string | null
+          redeem_by?: string | null
+          stripe_promo_code_id?: string | null
+          times_redeemed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          amount_off?: number | null
+          applies_to_products?: string[] | null
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          discount_target?: string | null
+          discount_type?: string
+          duration?: string
+          id?: string
+          last_synced_at?: string | null
+          livemode?: boolean | null
+          max_redemptions?: number | null
+          metadata?: Json | null
+          name?: string
+          percent_off?: number | null
+          promo_code?: string | null
+          purpose?: string | null
+          redeem_by?: string | null
+          stripe_promo_code_id?: string | null
+          times_redeemed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      stripe_payment_links: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          key: string
+          livemode: boolean | null
+          metadata: Json | null
+          nickname: string | null
+          price_id: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id: string
+          key: string
+          livemode?: boolean | null
+          metadata?: Json | null
+          nickname?: string | null
+          price_id: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          key?: string
+          livemode?: boolean | null
+          metadata?: Json | null
+          nickname?: string | null
+          price_id?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       stripe_prices: {
         Row: {
           active: boolean
@@ -6746,6 +6941,40 @@ export type Database = {
           },
         ]
       }
+      church_agent_activity_last_30d: {
+        Row: {
+          agent_slug: string | null
+          avg_duration_ms: number | null
+          church_id: string | null
+          error_count: number | null
+          last_execution_at: string | null
+          model: string | null
+          rate_limited_count: number | null
+          skipped_count: number | null
+          success_count: number | null
+          total_cache_creation_tokens: number | null
+          total_cache_read_tokens: number | null
+          total_executions: number | null
+          total_input_tokens: number | null
+          total_output_tokens: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       _is_ekthos_admin: { Args: never; Returns: boolean }
@@ -6795,6 +7024,10 @@ export type Database = {
       }
       check_credit_thresholds: { Args: never; Returns: Json }
       church_has_access: { Args: { p_church_id: string }; Returns: boolean }
+      count_remaining_admins: {
+        Args: { p_exclude_id: string }
+        Returns: number
+      }
       create_default_pipeline_stages: {
         Args: { p_church_id: string }
         Returns: undefined
@@ -6865,6 +7098,7 @@ export type Database = {
         }
         Returns: string
       }
+      has_ekthos_role: { Args: { p_role: string }; Returns: boolean }
       increment_qr_scanned_count: {
         Args: { p_church_id: string }
         Returns: undefined
@@ -6930,10 +7164,36 @@ export type Database = {
       }
       process_subscription_deleted: { Args: { p_payload: Json }; Returns: Json }
       process_subscription_updated: { Args: { p_payload: Json }; Returns: Json }
+      record_audit_event: {
+        Args: {
+          p_action: string
+          p_actor_email?: string
+          p_actor_roles?: string[]
+          p_admin_user_id: string
+          p_after?: Json
+          p_before?: Json
+          p_church_id: string
+          p_error_msg?: string
+          p_impersonated_church_id?: string
+          p_impersonation_session_id?: string
+          p_reason?: string
+          p_request_id?: string
+          p_resource?: string
+          p_resource_id?: string
+          p_source?: string
+          p_status?: string
+        }
+        Returns: string
+      }
+      reengajamento_scan_disparar: { Args: never; Returns: undefined }
       renew_agent_credit_cycles: { Args: never; Returns: Json }
       reset_church_agent_config: {
         Args: { p_agent_slug: string; p_church_id: string }
         Returns: undefined
+      }
+      resolve_notification: {
+        Args: { p_notification_id: string }
+        Returns: boolean
       }
       start_agent_setup: {
         Args: { p_notes?: string; p_sa_id: string }
@@ -7001,7 +7261,13 @@ export type Database = {
       validate_session_token: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {
-      agent_pricing_tier: "free" | "always_paid" | "eligible"
+      agent_pricing_tier:
+        | "free"
+        | "always_paid"
+        | "eligible"
+        | "coming_soon"
+        | "premium"
+        | "internal"
       app_role:
         | "admin"
         | "admin_departments"
@@ -7151,7 +7417,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      agent_pricing_tier: ["free", "always_paid", "eligible"],
+      agent_pricing_tier: [
+        "free",
+        "always_paid",
+        "eligible",
+        "coming_soon",
+        "premium",
+        "internal",
+      ],
       app_role: [
         "admin",
         "admin_departments",
@@ -7180,4 +7453,3 @@ export const Constants = {
     },
   },
 } as const
-

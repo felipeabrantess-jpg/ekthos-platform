@@ -240,26 +240,10 @@ export default function Leaders() {
         if (g.co_leader_id) personIds.add(g.co_leader_id)
       })
 
-      // ministries.leader_id → leaders.id (intermediary table) → leaders.person_id → people.id
-      const ministryLeaderIds = (ministries ?? []).map(m => m.leader_id).filter(Boolean) as string[]
-      const ministryLeaderPersonMap: Record<string, string[]> = {} // ministryId → [personId]
-
-      if (ministryLeaderIds.length > 0) {
-        const { data: leadersData } = await supabase
-          .from('leaders')
-          .select('id, person_id, ministry_id')
-          .in('id', ministryLeaderIds)
-
-        leadersData?.forEach(l => {
-          if (l.person_id) {
-            personIds.add(l.person_id)
-            if (l.ministry_id) {
-              if (!ministryLeaderPersonMap[l.ministry_id]) ministryLeaderPersonMap[l.ministry_id] = []
-              ministryLeaderPersonMap[l.ministry_id].push(l.person_id)
-            }
-          }
-        })
-      }
+      // ministries.leader_id → people.id (direto, sem tabela intermediária)
+      ministries?.forEach(m => {
+        if (m.leader_id) personIds.add(m.leader_id)
+      })
 
       if (personIds.size === 0) return []
 
@@ -278,9 +262,7 @@ export default function Leaders() {
           if (g.co_leader_id === p.id) roles.push({ type: 'coleider', name: g.name })
         })
         ministries?.forEach(m => {
-          // Check via the resolved person map (ministryLeaderPersonMap)
-          const personIds = ministryLeaderPersonMap[m.id] ?? []
-          if (personIds.includes(p.id)) roles.push({ type: 'ministerio', name: m.name })
+          if (m.leader_id === p.id) roles.push({ type: 'ministerio', name: m.name })
         })
         return { ...p, roles } as Leader
       }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
