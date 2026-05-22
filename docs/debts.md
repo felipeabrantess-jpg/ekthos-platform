@@ -2,6 +2,31 @@
 
 ---
 
+## CLUSTER B — is_leader explícito + filtro PersonSelect (RESOLVIDO 2026-05-21)
+
+### Feature — is_leader + onlyLeaders no PersonSelect
+
+**Problema:** Campo de seleção de líder (célula #13, ministério #17) listava TODAS as pessoas, sem distinção de papel. Não havia como promover uma pessoa nova a líder (critério circular: "líder = quem já aparece como leader_id").
+
+**Solução:** Marcação explícita via `people.is_leader boolean NOT NULL DEFAULT false`.
+
+**Implementado:**
+- `supabase/migrations/20260521000005_people_is_leader.sql` — ADD COLUMN is_leader + índice parcial `WHERE is_leader=true` + backfill idempotente (marca quem já é leader_id/co_leader_id em groups/ministries)
+- `web/src/features/people/components/PersonModal.tsx` — checkbox "É líder?" na aba Eclesiástico → seção Serviço. Permite promover pessoa a líder antes de ela assumir qualquer função.
+- `web/src/features/people/hooks/usePeople.ts` — `PersonFields.is_leader?: boolean`
+- `web/src/components/ui/PersonSelect.tsx` — prop `onlyLeaders?: boolean`: filtra `.eq('is_leader', true)`; backward-compat (fetch por ID se value atual não é líder — form nunca quebra); estado vazio orientativo: "Nenhum líder cadastrado. Marque uma pessoa como líder no cadastro dela para aparecer aqui." (não lista todos)
+- `web/src/pages/Celulas.tsx` — #13 GroupModal líder: `onlyLeaders={true}`
+- `web/src/pages/Ministerios.tsx` — #17 MinistryModal líder: `onlyLeaders={true}`
+- `web/src/lib/database.types.ts` — regenerado (is_leader em Row/Insert/Update)
+
+**Backfill empírico:** church 5156cc30 → 1 líder marcado (Vanessa Baltazar Abrantes). 3 igrejas reais com 0 líderes em groups → 0 marcados (correto).
+
+**Campos não filtrados (conforme spec):** #14 Celulas membro, #10 Voluntários — onlyLeaders ausente/false.
+
+**Branch:** fix/cluster-b-is-leader-filter
+
+---
+
 ## CLUSTER B — RESOLVIDO 2026-05-21 (hotfix 2026-05-21)
 
 ### Bugs #6, #10, #13, #14, #17 — Seletor de Pessoa (PersonSelect)

@@ -100,6 +100,8 @@ interface PersonFields {
   is_dizimista?: boolean | null
   // Acompanhamento — apenas admin (visibilidade no frontend)
   observacoes_pastorais?: string | null
+  // Liderança
+  is_leader?: boolean
 }
 
 interface CreatePersonInput extends PersonFields {

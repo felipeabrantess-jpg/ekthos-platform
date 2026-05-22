@@ -52,6 +52,8 @@ interface FormState {
   is_dizimista: string           // 'true' | 'false' | ''
   // Acompanhamento
   observacoes_pastorais: string
+  // Liderança
+  is_leader: boolean
 }
 
 const EMPTY_FORM: FormState = {
@@ -62,6 +64,7 @@ const EMPTY_FORM: FormState = {
   consolidation_school: '', experiencia_lideranca: '',
   is_dizimista: '',
   observacoes_pastorais: '',
+  is_leader: false,
 }
 
 // Converte Person → FormState para edição
@@ -86,6 +89,7 @@ function personToForm(p: Person): FormState {
     experiencia_lideranca: any.experiencia_lideranca ?? '',
     is_dizimista:         any.is_dizimista == null ? '' : String(any.is_dizimista),
     observacoes_pastorais: any.observacoes_pastorais ?? '',
+    is_leader:            any.is_leader ?? false,
   }
 }
 
@@ -174,6 +178,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       baptism_date:       form.batismo_status === 'sim' ? (form.baptism_date || null) : null,
       calling:            form.calling.trim() || null,
       ministry_interest:  form.ministry_interest.length > 0 ? form.ministry_interest : null,
+      is_leader:          form.is_leader,
       consolidation_school: form.consolidation_school === '' ? null
         : form.consolidation_school === 'true',
       experiencia_lideranca: form.experiencia_lideranca || null,
@@ -370,6 +375,23 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
               placeholder="Ex: Música (voz), Ensino, Liderança, Mídia"
               hint="Separe por vírgulas"
             />
+
+            {/* Checkbox É líder? */}
+            <label className="flex items-start gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.is_leader}
+                onChange={(e) => setForm((f) => ({ ...f, is_leader: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer"
+              />
+              <div>
+                <span className="text-sm font-medium text-gray-700">É líder?</span>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Permite que esta pessoa apareça nos campos de seleção de líder.
+                </p>
+              </div>
+            </label>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Departamentos
