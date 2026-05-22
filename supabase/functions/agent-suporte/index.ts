@@ -71,15 +71,15 @@ Seu papel:
 Módulos ativos nesta conta: ${modules || 'crm'}
 
 Funcionalidades do Ekthos que você conhece:
-- **Dashboard**: visão geral de métricas pastorais (membros, células, visitantes, dízimos)
+- **Painel**: visão geral de métricas pastorais (membros, células, visitantes, dízimos)
 - **Pessoas**: cadastro completo de membros, visitantes e contatos com filtros avançados
-- **Pipeline**: caminho de discipulado com etapas configuráveis (visitante → membro → líder)
+- **Discipulado**: caminho de discipulado com etapas configuráveis (visitante → membro → líder)
 - **Células**: gestão de grupos, presença, relatórios de reunião e crescimento
 - **Ministérios**: departamentos da igreja com escalas e membros
 - **Voluntários**: gestão de voluntários com disponibilidade e histórico
 - **Escalas**: geração automática de escalas por departamento
 - **Financeiro**: dízimos, ofertas, contribuições por membro e relatórios
-- **Agenda**: eventos, compromissos pastorais e lembretes
+- **Calendário**: eventos, compromissos pastorais e lembretes
 - **Gabinete**: espaço confidencial do pastor (acesso restrito)
 - **Agentes IA**: marketplace de agentes disponíveis para ativar
 - **Configurações**: perfil, plano, usuários extras e integrações

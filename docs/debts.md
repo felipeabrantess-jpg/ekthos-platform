@@ -778,3 +778,54 @@ upgrades) não processados.
 4. Corrigir o handler ou adicionar guard `if (!event) return 200` para eventos não tratados
 
 **Resolução planejada:** Próxima sessão de manutenção (não bloqueia nenhuma frente ativa).
+
+---
+
+## ✅ CLUSTER D — #21 + #22 — Labels de navegação nos prompts (RESOLVIDO 2026-05-22)
+
+**Branch:** `fix/cluster-d-prompts-navegacao`
+
+**Root cause:** Os prompts hardcoded de `agent-suporte` e `agent-onboarding` usavam nomes técnicos/antigos dos módulos do CRM em vez dos labels reais da sidebar (definidos em `navigation.ts`).
+
+**Correções aplicadas (11 substituições de texto):**
+
+`agent-suporte/index.ts` (3 fixes):
+- Linha 74: `**Dashboard**` → `**Painel**`
+- Linha 76: `**Pipeline**` → `**Discipulado**`
+- Linha 82: `**Agenda**` → `**Calendário**`
+
+`agent-onboarding/index.ts` (8 fixes):
+- Linha 64 (admin): `Dashboard:` → `Painel:`
+- Linha 65 (admin): `Pipeline:` → `Discipulado:`
+- Linha 72 (pastor): `Dashboard:` → `Painel:`
+- Linha 73 (pastor): `Pipeline:` → `Discipulado:`
+- Linha 83 (lider): `Pipeline:` → `Discipulado:`
+- Linha 84 (lider): `Agenda:` → `Calendário:`
+- Linha 102 (supervisor): `Pipeline:` → `Discipulado:`
+- Linha 103 (supervisor): `Dashboard:` → `Painel:`
+
+**Preservado:** "Gabinete" correto em ambos os agentes. Modelos Haiku inalterados.
+**Deploy:** agent-suporte v24 ACTIVE · agent-onboarding v25 ACTIVE
+
+---
+
+## OPS-DEBT — agent-reengajamento: modelo no catálogo vs runtime
+
+**Registrado em:** 2026-05-22 (Cluster D — validação cruzada SA-9)
+**Categoria:** Consistência de catálogo
+
+**Contexto:** `agents_catalog.model = 'sonnet'` para `agent-reengajamento`, mas a Edge
+Function executa `claude-haiku-4-5-20251001`. O campo do catálogo é informativo/UI —
+não afeta runtime.
+
+**Decisão pendente:**
+(a) Se reengajamento for pastoral/premium → mudar EF para Sonnet
+(b) Se triagem/lembrete → atualizar catálogo para 'haiku'
+
+**Fix quando decidido:**
+```sql
+UPDATE agents_catalog SET model = 'haiku' WHERE slug = 'agent-reengajamento';
+```
+ou redeploy da EF com `MODEL = 'claude-sonnet-4-6'`.
+
+**Critério de pronto:** `agents_catalog.model` e `MODEL` na EF apontam para o mesmo modelo.
