@@ -58,7 +58,13 @@ export function useConversations(
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState<string | null>(null)
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const channelRef  = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  // Unique ID per hook instance — prevents Supabase from returning an already-subscribed
+  // channel when multiple instances share the same channel name (e.g. 'inbox:CHURCH:all').
+  // Calling .on() on an already-subscribed channel throws:
+  // "cannot add postgres_changes callbacks after subscribe()"
+  // crypto.randomUUID() avoids collisions even in React StrictMode double-invocation.
+  const instanceId  = useRef(crypto.randomUUID())
 
   const fetchConversations = useCallback(async () => {
     if (!churchId) return
@@ -142,17 +148,26 @@ export function useConversations(
     }
   }, [churchId, ownershipFilter, search])
 
+  // ── Ref para fetchConversations ───────────────────────────
+  // Mantém o callback mais recente sem ser dependência do Realtime effect.
+  // Sem isso, qualquer digitação no campo de busca recriaria o canal Supabase
+  // (fetchConversations muda com `search` → useEffect do Realtime reexecuta).
+  const fetchRef = useRef(fetchConversations)
+  useEffect(() => { fetchRef.current = fetchConversations }, [fetchConversations])
+
   // ── Fetch inicial ─────────────────────────────────────────
   useEffect(() => {
     void fetchConversations()
   }, [fetchConversations])
 
   // ── Realtime ──────────────────────────────────────────────
+  // Deps: apenas churchId e ownershipFilter — o canal só precisa ser recriado
+  // quando muda a church ou o filtro de ownership, NÃO a cada keystroke de busca.
   useEffect(() => {
     if (!churchId) return
 
     const channel = supabase
-      .channel(`inbox:${churchId}:${ownershipFilter}`)
+      .channel(`inbox:${churchId}:${ownershipFilter}:${instanceId.current}`)
       .on(
         'postgres_changes',
         {
@@ -161,7 +176,7 @@ export function useConversations(
           table:  'conversations',
           filter: `church_id=eq.${churchId}`,
         },
-        () => { void fetchConversations() }
+        () => { void fetchRef.current() }
       )
       .subscribe()
 
@@ -170,7 +185,8 @@ export function useConversations(
     return () => {
       void supabase.removeChannel(channel)
     }
-  }, [churchId, ownershipFilter, fetchConversations])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [churchId, ownershipFilter])
 
   const unreadTotal = conversations.reduce((sum, c) => sum + (c.unread_count ?? 0), 0)
 

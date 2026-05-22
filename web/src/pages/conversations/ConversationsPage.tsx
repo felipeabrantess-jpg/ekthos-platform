@@ -14,6 +14,7 @@ import { ArrowLeft } from 'lucide-react'
 import { ConversationList }    from './ConversationList'
 import { ConversationThread }  from './ConversationThread'
 import { ConversationContext } from './ConversationContext'
+import { useConversations }    from '@/hooks/useConversations'
 
 // ── Componente ─────────────────────────────────────────────
 
@@ -26,6 +27,17 @@ export default function ConversationsPage() {
   useEffect(() => {
     setSelected(id ?? null)
   }, [id])
+
+  // Única instância de useConversations para Thread + Context.
+  // ConversationList mantém a sua própria (com filter/search internos).
+  // Cada instância usa instanceId único no nome do canal — previne o erro
+  // "cannot add postgres_changes callbacks after subscribe()" do Supabase
+  // que ocorre quando múltiplas instâncias criam o mesmo nome de canal
+  // e o Supabase retorna o canal já subscrito.
+  const { conversations, refetch } = useConversations()
+  const selectedConversation = selected
+    ? (conversations.find(c => c.id === selected) ?? null)
+    : null
 
   function handleSelect(conversationId: string) {
     setSelected(conversationId)
@@ -66,12 +78,19 @@ export default function ConversationsPage() {
               </button>
             </div>
 
-            <ConversationThread conversationId={selected} />
+            <ConversationThread
+              conversationId={selected}
+              conversation={selectedConversation}
+            />
           </div>
 
           {/* ── Coluna 3: Contexto — apenas desktop ─────── */}
           <div className="hidden lg:flex lg:flex-col h-full">
-            <ConversationContext conversationId={selected} />
+            <ConversationContext
+              conversationId={selected}
+              conversation={selectedConversation}
+              refetch={refetch}
+            />
           </div>
         </>
       )}

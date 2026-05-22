@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useConversationMessages, type ConversationMessage } from '@/hooks/useConversationMessages'
-import { useConversations, type Conversation } from '@/hooks/useConversations'
+import { type Conversation } from '@/hooks/useConversations'
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -242,16 +242,14 @@ function Composer({ conversationId, disabled }: ComposerProps) {
 
 interface ConversationThreadProps {
   conversationId: string | null
+  conversation:   Conversation | null
 }
 
 // ── Componente ─────────────────────────────────────────────
 
-export function ConversationThread({ conversationId }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, conversation }: ConversationThreadProps) {
   const { messages, loading } = useConversationMessages(conversationId)
-  const { conversations }     = useConversations()
   const bottomRef = useRef<HTMLDivElement>(null)
-
-  const conversation: Conversation | undefined = conversations.find(c => c.id === conversationId)
 
   // Auto-scroll para o fim quando chegam novas mensagens
   useEffect(() => {
