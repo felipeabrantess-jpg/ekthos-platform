@@ -20,7 +20,7 @@ import {
   UserCheck, XCircle, Archive, Loader2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useConversations, type Conversation } from '@/hooks/useConversations'
+import { type Conversation } from '@/hooks/useConversations'
 
 // ── Helpers ────────────────────────────────────────────────
 
@@ -74,14 +74,13 @@ function StatusBadge({ status }: { status: Conversation['status'] }) {
 
 interface ConversationContextProps {
   conversationId: string | null
+  conversation:   Conversation | null
+  refetch:        () => void
 }
 
-// ── Componente ─────────────────────────────��───────────────
+// ── Componente ─────────────────────────────────────────────
 
-export function ConversationContext({ conversationId }: ConversationContextProps) {
-  const { conversations, refetch } = useConversations()
-  const conversation = conversations.find(c => c.id === conversationId)
-
+export function ConversationContext({ conversationId, conversation, refetch }: ConversationContextProps) {
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [errorMsg, setErrorMsg]           = useState<string | null>(null)
 
