@@ -53,6 +53,7 @@ export function Billing() {
     activeAgentSlugs, includedAgents, extraAgents,
   } = usePlan()
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const [upgradeError, setUpgradeError] = useState<string | null>(null)
 
   const { data: userCount = 0 } = useQuery({
     queryKey: ['user_count_billing'],
@@ -82,6 +83,7 @@ export function Billing() {
 
   const handleUpgrade = async (planSlug: string) => {
     setIsUpgrading(true)
+    setUpgradeError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch(
@@ -104,6 +106,7 @@ export function Billing() {
       if (url) window.location.href = url
     } catch (err) {
       console.error('Upgrade failed:', err)
+      setUpgradeError('Não foi possível iniciar o upgrade. Tente novamente ou fale com o suporte.')
     } finally {
       setIsUpgrading(false)
     }
@@ -144,6 +147,12 @@ export function Billing() {
         {subscription?.current_period_end && (
           <p className="text-xs text-gray-400">
             Próxima renovação: {formatDate(subscription.current_period_end)}
+          </p>
+        )}
+
+        {upgradeError && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {upgradeError}
           </p>
         )}
 

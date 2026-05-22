@@ -276,6 +276,7 @@ export default function AgentDetail() {
       {/* CTA */}
       {!isLoading && (
         <AgentCTA
+          key={slug}
           state={state}
           slug={slug!}
           moduleId={content.moduleId}
