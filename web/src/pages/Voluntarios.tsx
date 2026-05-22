@@ -12,6 +12,7 @@ import ErrorState from '@/components/ui/ErrorState'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import PersonSelect from '@/components/ui/PersonSelect'
 import type { VolunteerWithPerson, MinistryWithLeader } from '@/lib/types/joins'
 
 const WEEKDAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
@@ -91,14 +92,12 @@ function AddVolunteerModal({ open, onClose, churchId, ministries, defaultMinistr
     <Modal open={open} onClose={onClose} title="Adicionar Voluntário" size="md">
       <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">ID da Pessoa (person_id) *</label>
-          <Input
-            value={form.personId}
-            onChange={(e) => setForm((p) => ({ ...p, personId: e.target.value }))}
-            placeholder="UUID da pessoa cadastrada"
-            required
+          <label className="block text-sm font-medium text-gray-700 mb-1">Pessoa *</label>
+          <PersonSelect
+            value={form.personId || null}
+            onChange={(id) => setForm((p) => ({ ...p, personId: id ?? '' }))}
+            placeholder="Buscar pelo nome..."
           />
-          <p className="text-xs text-gray-400 mt-1">Cole o ID da pessoa da seção Pessoas</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Ministério *</label>

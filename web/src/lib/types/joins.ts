@@ -122,20 +122,10 @@ export interface GroupWithDetails extends Group {
   leader: Pick<Person, 'id' | 'name' | 'phone' | 'email'> | null
 }
 
-/** ministries with the leader's person data */
+/** ministries with the leader's person data (direct FK: ministries.leader_id → people.id) */
 export interface MinistryWithLeader extends Ministry {
   volunteer_count?: number
-  leaders: {
-    id: string
-    church_id: string
-    person_id: string
-    role: string
-    ministry_id: string
-    is_active: boolean
-    created_at: string
-    updated_at: string
-    people: Pick<Person, 'id' | 'name' | 'phone' | 'email'> | null
-  } | null
+  people: Pick<Person, 'id' | 'name' | 'phone' | 'email'> | null
 }
 
 /** volunteers with person info + ministry name */
