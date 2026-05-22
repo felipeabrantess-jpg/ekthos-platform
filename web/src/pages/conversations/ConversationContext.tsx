@@ -134,8 +134,10 @@ export function ConversationContext({ conversationId }: ConversationContextProps
     )
   }
 
-  const contactName = [conversation.person?.first_name, conversation.person?.last_name]
-    .filter(Boolean).join(' ') || conversation.contact_phone
+  const contactName =
+    ([conversation.person?.first_name, conversation.person?.last_name].filter(Boolean).join(' ')
+      || conversation.contact_phone
+      || '') || 'Contato'
 
   const isHuman      = conversation.ownership === 'human'
   const isAgent      = conversation.ownership === 'agent'

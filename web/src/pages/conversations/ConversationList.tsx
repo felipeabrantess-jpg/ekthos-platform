@@ -13,7 +13,7 @@ function displayName(c: Conversation): string {
   if (c.person?.first_name) {
     return [c.person.first_name, c.person.last_name].filter(Boolean).join(' ')
   }
-  return c.contact_phone
+  return c.contact_phone || 'Contato'
 }
 
 function relativeTime(ts: string | null): string {

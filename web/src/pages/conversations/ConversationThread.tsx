@@ -36,7 +36,8 @@ function formatDateSeparator(ts: string): string {
   }
 }
 
-function sameDay(a: string, b: string): boolean {
+function sameDay(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false
   return a.slice(0, 10) === b.slice(0, 10)
 }
 
@@ -266,10 +267,12 @@ export function ConversationThread({ conversationId }: ConversationThreadProps) 
     )
   }
 
-  const contactName = conversation
-    ? [conversation.person?.first_name, conversation.person?.last_name].filter(Boolean).join(' ')
-      || conversation.contact_phone
-    : '…'
+  const contactName =
+    (conversation
+      ? ([conversation.person?.first_name, conversation.person?.last_name].filter(Boolean).join(' ')
+          || conversation.contact_phone
+          || '')
+      : '') || '…'
 
   const isHuman      = conversation?.ownership === 'human'
   const isClosed     = conversation?.status === 'closed' || conversation?.status === 'archived'
