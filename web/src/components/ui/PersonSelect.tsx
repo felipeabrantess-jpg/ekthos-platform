@@ -73,25 +73,28 @@ export default function PersonSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // FIX: sem guard de 2 chars — query vazia retorna primeiras 8 pessoas (lista ao focar)
   const search = useCallback(async (query: string) => {
-    if (query.length < 2) {
-      setResults([])
-      setIsOpen(false)
-      return
-    }
-
     setIsLoading(true)
     setIsOpen(true)
 
-    const { data } = await supabase
-      .from('people')
-      .select('id, name, email')
-      .ilike('name', `%${query}%`)
-      .limit(8)
+    let q = supabase.from('people').select('id, name, email').limit(8)
+    if (query.length > 0) {
+      q = q.ilike('name', `%${query}%`)
+    }
+
+    const { data, error: queryError } = await q
+    if (queryError) console.error('[PersonSelect] query error:', queryError.message)
 
     setResults((data as Person[]) ?? [])
     setIsLoading(false)
   }, [])
+
+  // FIX: ao focar, buscar imediatamente (sem debounce) para mostrar lista instantânea
+  function handleFocus() {
+    if (selectedPerson) return // já tem seleção, não reabrir
+    search(inputText)
+  }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     const text = e.target.value
@@ -129,7 +132,8 @@ export default function PersonSelect({
     }
   }
 
-  const showDropdown = isOpen && (isLoading || results.length > 0 || inputText.length >= 2)
+  // FIX: não exige mais inputText.length >= 2 para mostrar dropdown
+  const showDropdown = isOpen && (isLoading || results.length > 0)
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -141,6 +145,7 @@ export default function PersonSelect({
           value={inputText}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onFocus={handleFocus}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete="off"
@@ -175,7 +180,7 @@ export default function PersonSelect({
         <div className="absolute z-50 w-full mt-1 bg-white rounded-2xl border border-black/10 shadow-lg overflow-hidden">
           {isLoading ? (
             <div className="px-3 py-3 text-sm text-gray-400 font-medium">Buscando...</div>
-          ) : results.length === 0 && inputText.length >= 2 ? (
+          ) : results.length === 0 ? (
             <div className="px-3 py-3 text-sm text-gray-400">Nenhuma pessoa encontrada.</div>
           ) : (
             <ul>
