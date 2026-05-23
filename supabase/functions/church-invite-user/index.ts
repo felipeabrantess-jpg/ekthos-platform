@@ -91,10 +91,43 @@ Deno.serve(async (req: Request) => {
     return jsonErr(`Limite de ${maxUsers} usuários atingido. Faça upgrade do plano.`, 403)
   }
 
+  // ── Verificar se email já pertence a outra organização (#28) ─
+  // GoTrue admin REST aceita ?filter=<email> para busca pontual.
+  const usersListResp = await fetch(
+    `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
+    {
+      headers: {
+        apikey:        SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    },
+  )
+  if (usersListResp.ok) {
+    const listData = await usersListResp.json() as {
+      users?: Array<{ id: string; email?: string; app_metadata?: { church_id?: string } }>
+    }
+    const found = listData.users?.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    )
+    if (found) {
+      const existingChurchId = found.app_metadata?.church_id
+      if (existingChurchId && existingChurchId !== churchId) {
+        // Cross-church: bloquear — nunca mover usuário entre igrejas automaticamente
+        console.warn(
+          `[church-invite-user] 409 cross-church: ${email} já pertence à church ${existingChurchId}, tentativa da church ${churchId}`,
+        )
+        return jsonErr(
+          'Este email já está vinculado a outra organização. Para transferir acesso, acione um admin Ekthos.',
+          409,
+        )
+      }
+    }
+  }
+
   // ── Convidar via Admin API ─────────────────────────────────
   const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
     email,
-    { data: { name: name ?? '', church_id: churchId } },
+    { data: { name: name ?? '' } },
   )
 
   if (inviteErr) {
@@ -106,9 +139,16 @@ Deno.serve(async (req: Request) => {
 
   const newUserId = inviteData.user.id
 
-  // ── Setar app_metadata (crítico para RLS funcionar) ────────
+  // ── Setar app_metadata — merge seguro (preserva campos existentes) ──
+  // GET atual para não sobrescrever is_ekthos_admin / ekthos_roles
+  const { data: existingUserData } = await supabase.auth.admin.getUserById(newUserId)
+  const mergedAppMetadata = {
+    ...existingUserData?.user?.app_metadata,  // preserva todos os campos (ekthos_roles, is_ekthos_admin, etc.)
+    church_id: churchId,                       // seta/sobrescreve apenas o necessário
+    role,
+  }
   const { error: updateErr } = await supabase.auth.admin.updateUserById(newUserId, {
-    app_metadata: { church_id: churchId, role },
+    app_metadata: mergedAppMetadata,
   })
   if (updateErr) {
     console.error('[church-invite-user] updateUserById error:', updateErr.message)

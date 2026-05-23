@@ -82,6 +82,8 @@ function AgentCTA({ state, slug, moduleId, agentName, agentPrice, chargeAt }: CT
     setToast(null)
     const result = await adicionarAoPlano('agent', slug)
     setToast({ ok: result.ok, message: result.message })
+    // Fecha o modal DEPOIS de receber o resultado — toast fica visível
+    setConfirmOpen(false)
   }
 
   async function handleConsultor(context: 'agent' | 'plan') {
@@ -236,10 +238,7 @@ function AgentCTA({ state, slug, moduleId, agentName, agentPrice, chargeAt }: CT
               variant="primary"
               className="flex-1"
               disabled={loadingAddon}
-              onClick={() => {
-                setConfirmOpen(false)
-                void handleAdicionar()
-              }}
+              onClick={() => void handleAdicionar()}
             >
               {loadingAddon
                 ? <><Loader2 size={14} className="animate-spin mr-2" />Registrando...</>
