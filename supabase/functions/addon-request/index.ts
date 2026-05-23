@@ -24,22 +24,18 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-// ── Preços por slug (cents) ───────────────────────────────────
+// ── Preços por slug (cents) — slugs ativos do catálogo ──────
+// Descontinuados removidos: agent-conteudo, agent-metricas,
+// agent-whatsapp, agent-agenda, agent-voluntarios,
+// agent-kids-pastoral, agent-kids-comunicacao
 const ADDON_PRICES: Record<string, number> = {
-  // Agentes avulsos
+  // Agentes avulsos ativos
   'agent-cadastro':      14990,
-  'agent-conteudo':      14990,
-  'agent-metricas':      14990,
-  'agent-whatsapp':      14990,
   'agent-financeiro':    14990,
   'agent-reengajamento': 29000,
   'agent-acolhimento':   29000,
   'agent-operacao':      39000,
-  'agent-agenda':        14990,
-  'agent-voluntarios':   14990,
-  'agent-kids-pastoral': 14990,
-  'agent-kids-comunicacao': 14990,
-  // Módulos
+  // Módulos (venda consultiva — ativação manual pela equipe Ekthos)
   'volunteer-pro':  28990,
   'kids-pro':       34990,
   'financeiro-pro': 48990,

@@ -2,6 +2,76 @@
 
 ---
 
+## CLUSTER E — Bugs remanescentes (RESOLVIDO 2026-05-22)
+
+### #24 — usePlan.ts: always_paid sem cobertura em hasAgent
+
+**Problema:** `hasAgent(slug)` retornava `false` para agentes com `pricing_tier === 'always_paid'` antes do plano terminar de carregar, porque eles não existem em `subscription_agents` (são sempre incluídos). Causava tela de "Acesso restrito" transitória.
+
+**Fix:** Adicionada linha `if (agent?.pricing_tier === 'always_paid') return true` antes do fallback `activeAgentSlugs.includes(slug)`. Agentes `always_paid` são liberados para qualquer assinatura ativa sem depender de slot.
+
+**Arquivo:** `web/src/hooks/usePlan.ts`
+
+---
+
+### #25 — ADDON_PRICES: 7 slugs descontinuados no mapa
+
+**Problema:** `addon-request/index.ts` tinha `ADDON_PRICES` com slugs descontinuados: `agent-conteudo`, `agent-metricas`, `agent-whatsapp`, `agent-agenda`, `agent-voluntarios`, `agent-kids-pastoral`, `agent-kids-comunicacao`. Qualquer chamada com esses slugs criava `pending_addon` com preço fantasma.
+
+**Fix:** Removidos os 7 slugs. Mapa agora contém apenas ativos: `agent-cadastro`, `agent-financeiro`, `agent-reengajamento`, `agent-acolhimento`, `agent-operacao`, `volunteer-pro`, `kids-pro`, `financeiro-pro`.
+
+**Arquivo:** `supabase/functions/addon-request/index.ts`
+
+---
+
+### #26 — AgentDetail.tsx: modal fechava antes do toast aparecer
+
+**Problema:** Click em "Confirmar" chamava `setConfirmOpen(false)` imediatamente antes de `handleAdicionar()` resolver. Usuário ficava sem feedback durante o loading.
+
+**Fix:** Removido `setConfirmOpen(false)` do onClick. Modal agora fecha dentro de `handleAdicionar()` após receber o resultado — toast fica visível antes do fechamento.
+
+**Arquivo:** `web/src/pages/agents/AgentDetail.tsx`
+
+**OPS-DEBT:** Os outros 12+ modais do sistema têm o mesmo padrão (fecham sem toast). Registrado como débito UX separado — frente própria.
+
+---
+
+### #28 — church-invite-user: sobrescrita de app_metadata + 409 cross-church
+
+**Problema (crítico multi-tenant):** `updateUserById` era chamado com `{ app_metadata: { church_id, role } }` sem GET prévio, sobrescrevendo campos existentes. Sem verificação de cross-church: um admin podia (sem querer) trocar o church_id de um usuário já vinculado a outra organização.
+
+**Fix:**
+1. **Pre-check 409:** Antes do invite, consulta GoTrue admin REST `?filter=<email>` para detectar email já vinculado a church diferente. Retorna 409 com mensagem clara sem tocar o usuário.
+2. **Merge seguro:** Após invite, faz `getUserById` + spread do `app_metadata` existente antes de `updateUserById` — preserva `ekthos_roles`, `is_ekthos_admin` e qualquer campo futuro.
+
+**Arquivo:** `supabase/functions/church-invite-user/index.ts`
+
+**Campos preservados no merge:** `church_id`, `role`, `ekthos_roles`, `is_ekthos_admin` (e quaisquer outros campos futuros via spread).
+
+---
+
+### #32 — volunteer-pro preço divergente (FALSO POSITIVO)
+
+CP1 confirmou: preço de `volunteer-pro` é R$289,90 (28990 cents) em todos os arquivos. Sem divergência real. Vendas já são consultivas (decisão Z1, 27/04/2026) — EF `addon-request` ainda aceita o slug para o fluxo consultivo manual da equipe Ekthos.
+
+**OPS-DEBT (não-fix):** Revisar se módulos consultivos devem ou não ser aceitos via `addon-request` (risco baixo: requer auth + a ativação é manual). Registrado para frente de revisão de catálogo.
+
+---
+
+### OPS-DEBT: 12+ modais fecham sem toast de sucesso
+
+`PersonModal`, `Celulas`, `Escalas`, `Financeiro`, `Gabinete`, `Ministerios`, `Volunteers`, `Leaders`, `CellReportForm`, `EventDetailModal`, `EventForm` e outros — todos chamam `onClose()` sem feedback visual de sucesso. UX silenciosa. Frente UX dedicada — não coberta neste PR.
+
+---
+
+### OPS-DEBT: #19 e #33 deferidos
+
+Investigação CP1 confirmou que #19 e #33 não pertencem ao Cluster E remanescente. Deferidos para frente própria.
+
+**Branch:** fix/cluster-e-remanescente-multitenant
+
+---
+
 ## CLUSTER B — is_leader explícito + filtro PersonSelect (RESOLVIDO 2026-05-21)
 
 ### Feature — is_leader + onlyLeaders no PersonSelect

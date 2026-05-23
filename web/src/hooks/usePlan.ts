@@ -102,6 +102,8 @@ export function usePlan() {
     if (!isActive) return false
     const agent = allAgents.find(a => a.slug === slug)
     if (agent?.pricing_tier === 'free' || agent?.pricing_tier === 'internal') return true
+    // always_paid: disponível para qualquer assinatura ativa (sem slot — nunca vai para subscription_agents)
+    if (agent?.pricing_tier === 'always_paid') return true
     if (subscription?.plan?.included_agent_slugs?.includes(slug)) return true
     return activeAgentSlugs.includes(slug)
   }
