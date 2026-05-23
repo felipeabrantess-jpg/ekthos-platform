@@ -953,6 +953,20 @@ ou redeploy da EF com `MODEL = 'claude-sonnet-4-6'`.
 
 ---
 
+## OPS-DEBT-011 — church-invite-user: PATH 2 retorna 500 sem mensagem amigável
+
+**Registrado em:** 2026-05-22 (prova empírica #28)
+**Categoria:** UX / mensagem de erro
+**Urgência:** Baixa (não crítico, fluxo funciona)
+
+**Contexto:** Quando um admin convida um email que já pertence à mesma church, `inviteUserByEmail` do GoTrue retorna `"A user with this email address has already been registered"` e a EF propaga isso como HTTP 500. O guard cross-church (409) não dispara corretamente — o usuário já é da mesma church, então `existingChurchId === churchId` → passa pelo guard → chega no GoTrue → 500.
+
+**Fix sugerido:** Após o guard cross-church, checar se o email já tem `church_id === churchId` e retornar 409 com `"Este usuário já faz parte desta igreja."` antes de chamar `inviteUserByEmail`.
+
+**Critério de pronto:** PATH 2 retorna HTTP 409 com mensagem em PT-BR.
+
+---
+
 ## OPS-DEBT — igrejas de outra conta Stripe (Nossa Igreja + Meu Avivamento)
 
 **Registrado em:** 2026-05-22 (Cluster F diagnóstico)
