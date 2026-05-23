@@ -518,9 +518,9 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
   if (authErr || !user) return jsonErr('Unauthorized', 401)
 
+  // CLAUDE.md regra #13: church_id APENAS de app_metadata — nunca user_metadata
   const churchId =
-    (user.app_metadata?.church_id as string | undefined) ??
-    (user.user_metadata?.church_id as string | undefined) ?? null
+    (user.app_metadata?.church_id as string | undefined) ?? null
 
   if (!churchId) return jsonErr('church_id não encontrado no token', 400)
 

@@ -277,27 +277,17 @@ async function processInbound(
           const { data } = await query.eq('zapi_instance_id', payloadInstanceId).maybeSingle()
           channel = data
         }
-        if (!channel) {
-          const { data } = await sb
-            .from('church_whatsapp_channels')
-            .select('id, church_id, channel_type')
-            .eq('channel_type', 'zapi')
-            .eq('active', true)
-            .limit(1)
-            .maybeSingle()
-          channel = data
-        }
+        // R10 fix: sem instance_id identificado com church_id seguro, NÃO processar.
+        // Removido fallback .limit(1) que retornava o PRIMEIRO canal Z-API ativo
+        // de QUALQUER IGREJA, violando isolamento multi-tenant.
+        // REGRA: sem canal identificado → abortar. Nunca inferir church_id.
+        // NOTA: se R10 regredir novamente (qualquer .limit(1) sem church_id filter),
+        // reverter imediatamente — canal sem church_id = risco cross-tenant crítico.
       }
     } else if (resolvedProvider === 'chatpro') {
-      // ChatPro: busca canal chatpro ativo (um por projeto nessa sprint)
-      const { data } = await sb
-        .from('church_whatsapp_channels')
-        .select('id, church_id, channel_type')
-        .eq('channel_type', 'chatpro')
-        .eq('active', true)
-        .limit(1)
-        .maybeSingle()
-      channel = data
+      // ChatPro: busca canal pelo channelId do routing (isolamento por church_id).
+      // R10 fix: removido fallback .limit(1) sem church_id — mesmo risco cross-tenant.
+      // Canal ChatPro deve ser resolvido pelo channelId do routing, nunca por LIMIT 1.
     }
 
     if (!channel) {
