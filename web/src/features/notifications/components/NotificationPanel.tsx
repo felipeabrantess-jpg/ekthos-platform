@@ -69,9 +69,13 @@ interface NotificationPanelProps {
   notifications: AppNotification[]
   loading: boolean
   onClose: () => void
+  /** Posição calculada pelo NotificationBell via getBoundingClientRect().
+   *  Necessária porque o painel é renderizado via createPortal em document.body
+   *  (position: fixed) para escapar do stacking context do AppHeader. */
+  position: { top: number; right: number }
 }
 
-export default function NotificationPanel({ notifications, loading, onClose }: NotificationPanelProps) {
+export default function NotificationPanel({ notifications, loading, onClose, position }: NotificationPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const { user } = useAuth()
   const markAll = useMarkAllRead()
@@ -94,13 +98,14 @@ export default function NotificationPanel({ notifications, loading, onClose }: N
   return (
     <div
       ref={panelRef}
-      className="absolute top-full right-0 z-50 w-80 rounded-xl overflow-hidden"
+      className="fixed z-50 w-80 rounded-xl overflow-hidden"
       style={{
+        top:        position.top,
+        right:      position.right,
         background: 'var(--bg-surface)',
-        border: '1px solid var(--border-default)',
-        boxShadow: 'var(--shadow-lg)',
-        maxHeight: '80vh',
-        marginTop: 8,
+        border:     '1px solid var(--border-default)',
+        boxShadow:  'var(--shadow-lg)',
+        maxHeight:  '80vh',
       }}
     >
       {/* Header */}
