@@ -120,6 +120,22 @@ Deno.serve(async (req: Request) => {
     // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
     if (person.person_stage === 'visitante' && person.is_bulk_import !== true) {
       await createAcolhimentoJourney(sb, churchId, personId)
+
+      // ── 1d. Email de boas-vindas (fire-and-forget) ────────
+      // Só dispara se a pessoa tiver email cadastrado
+      if (person.email) {
+        const welcomeEmailUrl = `${SUPABASE_URL}/functions/v1/send-welcome-email`
+        fetch(welcomeEmailUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            Authorization:   `Bearer ${SERVICE_ROLE_KEY}`,
+          },
+          body:   JSON.stringify({ person_id: personId }),
+          signal: AbortSignal.timeout(10_000),
+        }).catch(e => console.warn('[dispatch-person-event] send-welcome-email falhou:', e))
+        console.log(`[dispatch-person-event] Email boas-vindas disparado para ${person.email}`)
+      }
     }
 
     // ── 2. Verificar elegibilidade para webhook n8n ───────
@@ -270,13 +286,16 @@ async function createAcolhimentoJourney(
   personId:  string
 ): Promise<void> {
   try {
+    // D+0: enviar 2h após o cadastro (não imediatamente)
+    const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+
     const { error } = await sb
       .from('acolhimento_journey')
       .insert({
         church_id:          churchId,
         person_id:          personId,
         current_touchpoint: 'D+0',
-        next_touchpoint_at: new Date().toISOString(),
+        next_touchpoint_at: twoHoursFromNow,
         status:             'pending'
       })
 

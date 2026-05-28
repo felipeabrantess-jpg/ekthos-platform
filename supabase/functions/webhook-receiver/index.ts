@@ -337,6 +337,18 @@ async function processInbound(
       } else {
         person = newPerson
         console.log(`[webhook-receiver] nova pessoa criada: ${person.id}`)
+
+        // C2 gap fix: disparar jornada de acolhimento (fire-and-forget)
+        const dispatchUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-person-event`
+        fetch(dispatchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
+          body: JSON.stringify({ person_id: newPerson.id, event: 'person_created' }),
+          signal: AbortSignal.timeout(5_000),
+        }).catch(e => console.warn('[webhook-receiver] dispatch-person-event falhou:', e))
       }
     }
 
