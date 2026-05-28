@@ -155,6 +155,8 @@ const N8nAdapter: ChannelAdapter = {
     const maskedPhone = to_phone.replace(/(\d{4})\d+(\d{4})/, '$1****$2')
     console.log(`[N8nAdapter] → ${maskedPhone} church=${church_id ?? '?'} channel=${channel_id ?? '?'}`)
     try {
+      // Bug 3 fix: normalizar telefone com prefixo 55 (padrão ZApiAdapter)
+      const normalizedPhone = to_phone.startsWith('55') ? to_phone : `55${to_phone}`
       const res = await fetch(N8N_OUTBOUND_WEBHOOK_URL, {
         method:  'POST',
         headers: {
@@ -163,11 +165,12 @@ const N8nAdapter: ChannelAdapter = {
         },
         // Passa instance_id/token/client_token diretamente — n8n não precisa buscar no Supabase
         // client_token necessário para o header Client-Token da Z-API
-        body: JSON.stringify({ to_phone, message: text, instance_id, token, client_token: Deno.env.get('ZAPI_CLIENT_TOKEN') ?? '' }),
+        body: JSON.stringify({ to_phone: normalizedPhone, message: text, instance_id, token, client_token: Deno.env.get('ZAPI_CLIENT_TOKEN') ?? '', church_id: church_id }),  // Bug 2 fix: multi-tenant explícito no payload n8n
         signal: AbortSignal.timeout(20_000),
       })
       const body = await res.json().catch(() => ({})) as Record<string, unknown>
-      if (res.ok && (body.ok === true)) {
+      // Bug 1 fix: n8n retorna {} por padrão — aceitar HTTP 2xx como sucesso
+      if (res.ok) {
         return { ok: true, message_id: (body.message_id as string) ?? undefined }
       }
       return { ok: false, error: `n8n ${res.status}: ${JSON.stringify(body)}` }
