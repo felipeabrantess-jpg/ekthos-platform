@@ -1037,6 +1037,22 @@ ou redeploy da EF com `MODEL = 'claude-sonnet-4-6'`.
 - **`source` ausente em `conversations`:** Pastor não distingue mensagem proativa (acolhimento) de inbound. Coluna `source text` sugerida (`acolhimento`, `inbound`, `manual`).
 - **trigger_n8n_pipeline drift:** Função DB corrigida diretamente em sessão anterior sem migration git. Criar migration de captura do estado atual para sincronia do repositório.
 - **EVE — 6 EFs ainda usam `inviteUserByEmail`:** `stripe-webhook` (2×), `onboarding-engineer` (1×), `admin-church-create` (1×), `church-invite-user` (1×) — migrar para `_shared/email/` + generateLink + SMTP (PR-B pendente).
-- **docs/future-features/onboarding-automatizado.md** desatualizado: diz "feature futura" mas fluxo está ~70% implementado. Atualizar para refletir estado real.
+- **docs/future-features/onboarding-automatizado.md** ~~desatualizado~~ → **RESOLVIDO 2026-05-28**: arquivo atualizado para refletir que o acolhimento automático está IMPLEMENTADO E PROVADO.
+
+### ✅ E2E EMPÍRICO — PROVADO POR FELIPE (2026-05-28)
+
+**Metodologia:** 10 subagentes independentes (SB1–SB10). Felipe confirmou recebimento nos 2 canais.
+
+| Canal | Prova | Detalhe |
+|-------|-------|---------|
+| WhatsApp | `provider_response.message_id: 3EB08341FDF8BA2EA06035` | Z-API entregou para `+55 21 96648-7878` às 17:31 UTC |
+| Email | `execution_time_ms: 5485ms` (SMTP TLS handshake real) | Google SMTP → `felipeabrantess@gmail.com` |
+| CRM | `conversations.last_message_at: 2026-05-28 17:30:06` | Preview da mensagem de Raquel registrado |
+| Jornada | D+0 → D+3 avançado automaticamente | `next_touchpoint_at: 2026-05-31 17:30` |
+| Multi-tenant | 1 journey, 1 mensagem — apenas church Mock `62e473b8` | Zero vazamento cross-tenant |
+
+**Fluxo completo provado:**  
+`cadastro → dispatch-person-event → acolhimento_journey (D+0, 2h delay) → agent-acolhimento (Haiku) → channel_dispatch_queue → channel-dispatcher → Z-API → WhatsApp` ✅  
+`+ send-welcome-email → Google SMTP → email de boas-vindas HTML` ✅
 
 **Critério de pronto:** `stripe_customer_id` e `stripe_subscription_id` existem na conta Stripe ativa, ou subscriptions marcadas como obsoletas.
