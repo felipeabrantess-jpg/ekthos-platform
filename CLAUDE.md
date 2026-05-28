@@ -165,6 +165,20 @@ Regras para manter o contexto limpo e evitar acúmulo de lixo técnico.
 - Qualquer decisão arquitetural permanente → registrar em `docs/00-formacoes.md`
 - Qualquer armadilha nova descoberta → adicionar em `## ARMADILHAS CONHECIDAS` no CLAUDE.md raiz
 
+### Referências de documentação da equipe
+| Arquivo | Conteúdo |
+|---|---|
+| `IDENT.MD` (raiz) | Papel do Claude como engenheiro-chefe |
+| `docs/00-formacoes.md` | Decisões permanentes (papéis, visão, stack, design, pricing) |
+| `docs/01-projeto-stack.md` | Stack completa, padrões, pricing detalhado |
+| `docs/02-arquitetura-tecnica.md` | Arquitetura técnica, comandos práticos |
+| `docs/03-feito-decisoes.md` | Histórico de entregas |
+| `docs/04-pendencias.md` | Pendências e armadilhas atualizadas |
+| `docs/10-log-sessoes.md` | Log cronológico de sessões |
+| `docs/99-futuro-arquitetural.md` | Roadmap arquitetural pós-lançamento (MCP, RAG, Graph) |
+| `docs/briefings/*.md` | Briefings preparatórios para implementações específicas |
+| `docs/EQUIPE-FERRAMENTAL.md` | Manual de operações da equipe — MCPs, hooks, EFs, crons, padrões, protegidos |
+
 ---
 
 ## [SUPERPOWERS SKILLS]
@@ -237,6 +251,8 @@ ccusage session            # custo da sessão atual
 - **Admin Ekthos email:** `felipe@ekthosai.net`
 - **Admin Ekthos senha:** `Ekthos2026!`
 - **Admin Ekthos UUID:** `579d0f7b-9b8b-4c20-94c5-513b4a424642`
+- **Igreja piloto (Minha Fé / Vanessa Abrantes):** `5156cc30-6d76-4487-99ba-fff8013b38d4` — piloto interno/familiar, baseline de validação. NÃO cliente externo.
+- **Igreja Mock (teste E2E):** `62e473b8-cd39-4da2-aa5d-c296b03d6873`
 - **Igreja de teste:** (definida via cockpit pós-validação)
 - **Subscription de teste:** (definida via cockpit pós-validação)
 - **Pastor teste UUID:** (definido via cockpit pós-validação)
