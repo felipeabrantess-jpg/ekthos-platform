@@ -824,6 +824,19 @@ async function handleCockpitCheckout(session: Stripe.Checkout.Session, churchId:
       else if (invited?.user) {
         await supabase.auth.admin.updateUserById(invited.user.id, { app_metadata: { church_id: churchId, role: 'admin' } })
         console.log(`[stripe-webhook] pastor ${pastorEmail} convidado → church ${churchId}`)
+        // INSERT profile — inviteUserByEmail NÃO cria profiles automaticamente
+        const cockpitDisplayName = (session.metadata?.pastor_name ?? '').trim() || pastorEmail.split('@')[0]
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .upsert({
+            id:           crypto.randomUUID(),
+            user_id:      invited.user.id,
+            church_id:    churchId,
+            name:         cockpitDisplayName,
+            display_name: cockpitDisplayName,
+          } as any, { onConflict: 'user_id,church_id', ignoreDuplicates: true })
+        if (profileErr) console.warn('[stripe-webhook] cockpit profile insert (non-fatal):', profileErr.message)
+        else console.log(`[stripe-webhook] cockpit profile criado: userId=${invited.user.id} churchId=${churchId}`)
       }
     } catch (e) { console.warn('[stripe-webhook] invite failed (cockpit, non-fatal):', (e as Error).message) }
   }
