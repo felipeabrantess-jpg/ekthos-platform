@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: dispatch-person-event v32
+// Edge Function: dispatch-person-event v33
 // Sistema genérico de eventos de pessoa — Frente B (extensível).
 //
 // POST /functions/v1/dispatch-person-event
@@ -10,6 +10,10 @@
 // Sprint 2 — duas responsabilidades:
 //   A) Criar acolhimento_journey se person_stage='visitante' (independente de n8n)
 //   B) Disparar webhook de boas-vindas para o n8n (se elegível)
+//
+// v33 (2026-05-28) — N8N_OUTBOUND ativado (Felipe autorizou 2026-05-28)
+//   Rollback: alterar n8nEnabled para false + redeploy v34,
+//   ou UPDATE n8n_webhooks SET is_active=false (rollback <1 min sem redeploy)
 //
 // v32 (2026-05-28) — Cenário F resolvido: locks independentes por canal
 //   email_welcome_dispatched_at → mutex exclusivo do email de boas-vindas
@@ -222,7 +226,9 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── 4. N8N_OUTBOUND_ENABLED guard ────────────────────
-      const n8nEnabled = Deno.env.get('N8N_OUTBOUND_ENABLED') === 'true'
+      // v33: hardcoded true — ativado 2026-05-28 por Felipe Abrantes
+      // Rollback: alterar para false + redeploy v34
+      const n8nEnabled = true
       if (!n8nEnabled) {
         console.log('[dispatch-person-event] N8N_OUTBOUND_ENABLED=false — skip n8n webhook')
         await writeAudit(sb, churchId, personId, 'person_event_skipped', {
