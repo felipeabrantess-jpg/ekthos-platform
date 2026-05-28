@@ -122,6 +122,10 @@ verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
 [functions.admin-end-impersonation]
 verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
 
+# ── Auth — Email recovery (EVE bypass via Google SMTP) ───────────────────────
+[functions.send-recovery-email]
+verify_jwt = false   # público — igual /auth/v1/recover
+
 # ── Auth — configurações de produção ─────────────────────────────────────────
 [auth]
 site_url = "https://ekthos-platform.vercel.app"

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 
@@ -21,13 +20,19 @@ export default function ForgotPassword() {
     e.preventDefault()
     setSubmitting(true)
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: 'https://ekthos-platform.vercel.app/auth/reset-password',
-    })
-
-    // Sempre exibir mensagem de sucesso — não revelar se email existe.
-    if (error) {
-      console.warn('[forgot-password] resetPasswordForEmail:', error.message)
+    // Chama EF customizada que bypassa EVE via admin generateLink + Resend
+    try {
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-recovery-email`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        },
+      )
+    } catch (err) {
+      // Anti-enumeration: nunca revelar erro ao usuário
+      console.warn('[forgot-password] send-recovery-email:', err)
     }
 
     setSubmitting(false)

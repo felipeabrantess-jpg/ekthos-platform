@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
   // ── Convidar via Admin API ─────────────────────────────────
   const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
     email,
-    { data: { name: name ?? '' } },
+    { redirectTo: `${ALLOWED_ORIGIN}/auth/set-password`, data: { name: name ?? '' } },
   )
 
   if (inviteErr) {
