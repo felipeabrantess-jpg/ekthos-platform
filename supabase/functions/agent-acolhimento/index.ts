@@ -33,7 +33,7 @@
 //   - checkAntiSpam lê conversation_messages (não agent_pending_messages)
 //   - Novo modo inbound_message: resposta contextual via histórico da conversa
 //
-// Modelo: claude-sonnet-4-6
+// Modelo: claude-haiku-4-5-20251001
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -51,7 +51,7 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const anthropic  = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 const AGENT_SLUG = 'agent-acolhimento'
-const MODEL      = 'claude-sonnet-4-6'
+const MODEL      = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS = 2048
 const BATCH_SIZE = 10
 

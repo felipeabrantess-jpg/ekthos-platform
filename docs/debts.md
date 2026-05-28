@@ -984,4 +984,59 @@ ou redeploy da EF com `MODEL = 'claude-sonnet-4-6'`.
 2. Ou limpar subscriptions do banco e recriar via Caminho A na conta correta
 3. Ou marcar como `status = 'canceled'` se obsoletas
 
+---
+
+## ✅ ACOLHIMENTO AUTOMÁTICO — PR-2/PR-3/PR-4 + send-welcome-email (ENTREGUE 2026-05-28)
+
+**Branch:** `staging` (commits `be2c7b5` + `bef5e69`)  
+**PR:** https://github.com/felipeabrantess-jpg/ekthos-platform/compare/main...staging?expand=1
+
+### PR-1 — agent-acolhimento: Sonnet → Haiku (commit `be2c7b5`)
+
+**Problema (SMOKE RED):** `agent-acolhimento` usava `claude-sonnet-4-6` (custo 5× desnecessário).  
+**Fix:** `supabase/functions/agent-acolhimento/index.ts` linha 54 → `claude-haiku-4-5-20251001`.
+
+### PR-2 — dispatch-person-event: delay D+0 = 2h (commit `bef5e69`)
+
+**Problema:** `next_touchpoint_at = NOW()` na criação da jornada → cron disparava mensagem imediatamente sem janela de acolhimento humano.  
+**Fix:** `createAcolhimentoJourney()` — `next_touchpoint_at = NOW() + interval '2 hours'`.
+
+### PR-3 — whatsapp-webhook (C1 gap): nova pessoa → jornada de acolhimento
+
+**Problema:** Novos visitantes que chegavam via WhatsApp (whatsapp-webhook) nunca recebiam jornada de acolhimento — `dispatch-person-event` não era chamado.  
+**Fix:** Após upsert, detecta nova pessoa via `created_at < 30s` e dispara `dispatch-person-event` fire-and-forget.  
+**Idempotência:** UNIQUE constraint `acolhimento_journey(church_id, person_id)` garante zero duplicatas.
+
+### PR-4 — webhook-receiver (C2 gap): nova pessoa → jornada de acolhimento
+
+**Problema:** Novos visitantes chegando via ChatPro/Z-API (webhook-receiver) nunca recebiam jornada.  
+**Fix:** Dentro do bloco `if (!person)` de INSERT de nova pessoa — dispara `dispatch-person-event` fire-and-forget com `person_id` da pessoa recém-criada.  
+**Multi-tenant:** `church_id` vem de `channel.church_id` → pessoa → banco. Nunca do request body.
+
+### Email EF — send-welcome-email (nova EF)
+
+**Contexto:** Felipe solicitou "WhatsApp E email funcionando".  
+**Implementação:**
+- Nova EF `supabase/functions/send-welcome-email/index.ts` — clona padrão `send-recovery-email`
+- Google SMTP via denomailer@1.6.0 — sem EVE concern (não usa `inviteUserByEmail`)
+- Chamada fire-and-forget de `dispatch-person-event` quando `person.email` existe
+- HTML pastoral com church name personalizado, branding Ekthos, tom de boas-vindas
+
+**EFs deployadas e ACTIVE em produção:**
+| EF | Versão | Status |
+|---|---|---|
+| `dispatch-person-event` | v29 | ACTIVE |
+| `webhook-receiver` | v26 | ACTIVE |
+| `whatsapp-webhook` | v1 | ACTIVE |
+| `send-welcome-email` | v1 (nova) | ACTIVE |
+
+### OPS-DEBT remanescente (não coberto neste PR)
+
+- **Fluxo 100% completo:** Path A (QR Code `visitor-capture`) e Path B/C (WhatsApp direto) cobertas. Gaps C1/C2 fechados.
+- **BATCH_SIZE=10 sem fairness:** Cron pode starve igrejas pequenas em escala >10 igrejas simultâneas. Resolver com `ORDER BY RANDOM()` ou fila por church_id.
+- **`source` ausente em `conversations`:** Pastor não distingue mensagem proativa (acolhimento) de inbound. Coluna `source text` sugerida (`acolhimento`, `inbound`, `manual`).
+- **trigger_n8n_pipeline drift:** Função DB corrigida diretamente em sessão anterior sem migration git. Criar migration de captura do estado atual para sincronia do repositório.
+- **EVE — 6 EFs ainda usam `inviteUserByEmail`:** `stripe-webhook` (2×), `onboarding-engineer` (1×), `admin-church-create` (1×), `church-invite-user` (1×) — migrar para `_shared/email/` + generateLink + SMTP (PR-B pendente).
+- **docs/future-features/onboarding-automatizado.md** desatualizado: diz "feature futura" mas fluxo está ~70% implementado. Atualizar para refletir estado real.
+
 **Critério de pronto:** `stripe_customer_id` e `stripe_subscription_id` existem na conta Stripe ativa, ou subscriptions marcadas como obsoletas.

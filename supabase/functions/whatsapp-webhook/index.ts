@@ -158,7 +158,7 @@ async function processWebhookPayload(rawBody: string): Promise<void> {
         ignoreDuplicates: false,
       }
     )
-    .select('id, name, optout')
+    .select('id, name, optout, created_at')
     .single()
 
   if (personError || !person) {
@@ -170,6 +170,25 @@ async function processWebhookPayload(rawBody: string): Promise<void> {
   if (person.optout) {
     console.log('[whatsapp-webhook] Pessoa com optout — mensagem ignorada:', person.id)
     return
+  }
+
+  // ── C1 gap fix: disparar jornada de acolhimento para nova pessoa ──
+  // created_at < 30s → pessoa recém-criada (INSERT, não UPDATE do upsert)
+  const personAge = person.created_at
+    ? Date.now() - new Date(person.created_at as string).getTime()
+    : Infinity
+  if (personAge < 30_000) {
+    const dispatchUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-person-event`
+    fetch(dispatchUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      },
+      body: JSON.stringify({ person_id: person.id, event: 'person_created' }),
+      signal: AbortSignal.timeout(5_000),
+    }).catch(e => console.warn('[whatsapp-webhook] dispatch-person-event falhou:', e))
+    console.log('[whatsapp-webhook] Nova pessoa via WhatsApp — jornada de acolhimento disparada:', person.id)
   }
 
   // ──────────────────────────────────────────────────────────
