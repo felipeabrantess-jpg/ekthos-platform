@@ -242,7 +242,7 @@ JSON esperado: {"intent": "CATEGORIA", "confidence": 0.0}`
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-haiku-3-5',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 60, // resposta JSON pequena
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],

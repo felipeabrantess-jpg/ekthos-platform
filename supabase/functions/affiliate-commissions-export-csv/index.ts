@@ -48,8 +48,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Parse body ────────────────────────────────────────────
@@ -162,11 +161,27 @@ Deno.serve(async (req: Request) => {
   })
   const csv = [header, ...lines].join('\n')
 
-  await supabase.from('admin_events').insert({
-    admin_user_id: user.id,
-    action:        'affiliate_csv_exported',
-    after:         { batch_id: batch.id, reference_month: body.reference_month, total_amount_cents: totalAmountCents, rows: rows.length },
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                null,
+    p_admin_user_id:            user.id,
+    p_action:                   'affiliate.commissions.export',
+    p_before:                   null,
+    p_after:                    { batch_id: batch.id, reference_month: body.reference_month, total_amount_cents: totalAmountCents, rows: rows.length },
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'affiliate_commissions',
+    p_resource_id:              null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   null,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
+  if (auditErr) console.error('[affiliate-commissions-export-csv] audit failed:', auditErr.message)
 
   return json({
     csv,

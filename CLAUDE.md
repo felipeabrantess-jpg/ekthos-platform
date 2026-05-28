@@ -211,6 +211,24 @@ ccusage session            # custo da sessão atual
 
 ---
 
+## [MODELOS DE IA — AGENTES PASTORAIS]
+
+> OPS-DEBT-042 resolvido — 2026-05-21
+
+- **Modelo dos agentes operacionais internos: `claude-haiku-4-5-20251001`**
+  - Escopo: suporte, onboarding, cadastro, triagem, config, financeiro, escalas
+- **Modelo dos agentes premium pastorais: `claude-sonnet-4-6`**
+  - Escopo: acolhimento, reengajamento
+  - Decisão Sprint 2 (01/05/2026) — INTENCIONAL, NÃO regredir para Haiku
+  - Justificativa: agentes com resposta direta ao membro, valência espiritual/emocional alta, erro tem impacto pastoral real
+- **NUNCA usar `claude-3-5-haiku-20241022`** — descontinuado, retorna 404
+- **NUNCA usar aliases curtos** (ex: `claude-haiku-3-5`) — usar sempre o model ID canônico completo
+- Padrão centralizado em `supabase/functions/_shared/anthropic-client.ts` → `MODELS.haiku` / `MODELS.sonnet`
+- Critério "pastoral premium": agente é pastoral premium se (a) resposta é direta ao membro, (b) valência espiritual/emocional alta, (c) erro de geração tem impacto pastoral real
+- Cockpit executivo: não implementado (aguarda decisão arquitetural)
+
+---
+
 ## [IDENTIFICADORES DE PROJETO]
 
 - **Supabase project ref:** `mlqjywqnchilvgkbvicd`

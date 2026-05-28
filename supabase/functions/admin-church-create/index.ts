@@ -1,6 +1,11 @@
 // ============================================================
-// Edge Function: admin-church-create v3
+// Edge Function: admin-church-create v5
 // Caminho B — Cria nova igreja sem Stripe (trial manual 7 dias)
+//
+// MUDANÇAS v3 → v5 (OPS-DEBT-031 + OPS-DEBT-039):
+//   - Aceita pastor_name opcional no body → profile.name em vez de email truncado
+//   - Seed automático de subscription_agents para agentes internos pós-criação
+//     (agent-suporte, agent-onboarding, agent-cadastro — ativação imediata)
 //
 // Fluxo:
 //   1. Valida JWT do admin Ekthos
@@ -85,14 +90,14 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── 1. Parse body ─────────────────────────────────────────
   let body: {
     name?:                    string
     admin_email?:             string
+    pastor_name?:             string   // OPS-DEBT-039 — nome real do pastor (opcional)
     city?:                    string
     state?:                   string
     timezone?:                string
@@ -108,6 +113,7 @@ Deno.serve(async (req: Request) => {
   const {
     name,
     admin_email,
+    pastor_name              = null,
     city,
     state,
     timezone,
@@ -144,14 +150,15 @@ Deno.serve(async (req: Request) => {
   const { data: church, error: churchErr } = await supabase
     .from('churches')
     .insert({
-      name:     churchName,
-      slug:     uniqueSlug,
-      city:     city?.trim()  ?? null,
-      state:    state?.trim() ?? null,
-      timezone: tz,
-      status:   'onboarding',
+      name:            churchName,
+      slug:            uniqueSlug,
+      city:            city?.trim()  ?? null,
+      state:           state?.trim() ?? null,
+      timezone:        tz,
+      status:          'onboarding',
+      onboarding_step: 'pending',  // R12 — Frente 3A
     })
-    .select('id, name, status, created_at')
+    .select('id, name, status, onboarding_step, created_at')
     .single()
 
   if (churchErr || !church) {
@@ -270,12 +277,59 @@ Deno.serve(async (req: Request) => {
     console.warn('[admin-church-create] Falha ao atualizar app_metadata (não fatal):', metaErr.message)
   }
 
-  // ── 9. Registra evento ────────────────────────────────────
-  await supabase.from('admin_events').insert({
-    church_id:     church.id,
-    admin_user_id: user.id,
-    action:        'church_created',
-    after: {
+  // ── 9. Cria perfil do pastor (Fase 6.2 — Bug Vanessa fix) ───
+  // inviteUserByEmail NÃO cria profiles — precisamos inserir manualmente.
+  // OPS-DEBT-039: usa pastor_name se fornecido; fallback = email truncado.
+  const displayNameFallback = pastor_name?.trim() || pastorEmail.split('@')[0]
+  const { error: profileErr } = await supabase
+    .from('profiles')
+    .upsert({
+      id:           crypto.randomUUID(),
+      user_id:      pastorId,
+      church_id:    church.id,
+      name:         displayNameFallback,
+      display_name: displayNameFallback,
+    } as any, { onConflict: 'user_id,church_id', ignoreDuplicates: true })
+
+  if (profileErr) {
+    // Não fatal — usuario ainda pode logar; onboarding vai complementar
+    console.warn('[admin-church-create] profile insert falhou (não fatal):', profileErr.message)
+  }
+
+  // ── 10. Seed subscription_agents para agentes internos (OPS-DEBT-031) ──
+  // Busca subscription_id recém-criada e semeia agentes internos ativos.
+  // Idempotente: ON CONFLICT (subscription_id, agent_slug) DO NOTHING.
+  {
+    const { data: subRow } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('church_id', church.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (subRow?.id) {
+      const { error: saErr } = await supabase
+        .from('subscription_agents')
+        .upsert([
+          { subscription_id: subRow.id, agent_slug: 'agent-suporte',    active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+          { subscription_id: subRow.id, agent_slug: 'agent-onboarding', active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+          { subscription_id: subRow.id, agent_slug: 'agent-cadastro',   active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+        ] as any[], { onConflict: 'subscription_id,agent_slug', ignoreDuplicates: true })
+      if (saErr) console.warn('[admin-church-create] subscription_agents seed (não fatal):', saErr.message)
+      else console.log(`[admin-church-create] subscription_agents internos criados: sub=${subRow.id}`)
+    }
+  }
+
+  // ── 11. Registra evento via record_audit_event ─────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                church.id,
+    p_admin_user_id:            user.id,
+    p_action:                   'church.create',
+    p_before:                   null,
+    p_after: {
       name:                    churchName,
       plan_slug:               planSlug,
       admin_email:             pastorEmail,
@@ -285,8 +339,19 @@ Deno.serve(async (req: Request) => {
       trial_days:              7,
       custom_plan_price_cents,
     },
-    reason: 'Criação manual via cockpit admin — trial manual 7 dias',
+    p_reason:                   'Criação manual via cockpit admin — trial manual 7 dias',
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'churches',
+    p_resource_id:              church.id,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   church.id,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
+  if (auditErr) console.error('[admin-church-create] audit failed:', auditErr.message)
 
   return json({
     success:     true,

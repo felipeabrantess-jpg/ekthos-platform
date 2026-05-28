@@ -38,8 +38,7 @@ async function requireAdmin(req: Request) {
   const { data: { user }, error } = await supabaseAuth.auth.getUser(token)
   if (error || !user) return null
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   return isAdmin ? user : null
 }
 
@@ -85,11 +84,27 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Erro ao criar afiliado' }, 500)
     }
 
-    await supabase.from('admin_events').insert({
-      admin_user_id: user.id,
-      action:        'affiliate_created',
-      after:         { id: data.id, name: data.name, email: data.email },
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                null,
+      p_admin_user_id:            user.id,
+      p_action:                   'affiliate.create',
+      p_before:                   null,
+      p_after:                    { id: data.id, name: data.name, email: data.email },
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'affiliates',
+      p_resource_id:              data.id,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
     })
+    if (auditErr) console.error('[affiliate-crud] audit failed:', auditErr.message)
 
     return json({ affiliate: data }, 201)
   }
@@ -131,11 +146,27 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Erro ao atualizar afiliado' }, 500)
     }
 
-    await supabase.from('admin_events').insert({
-      admin_user_id: user.id,
-      action:        'affiliate_updated',
-      after:         { id: body.id, ...patch },
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                null,
+      p_admin_user_id:            user.id,
+      p_action:                   'affiliate.update',
+      p_before:                   null,
+      p_after:                    { id: body.id, ...patch },
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'affiliates',
+      p_resource_id:              body.id,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
     })
+    if (auditErr) console.error('[affiliate-crud] audit failed:', auditErr.message)
 
     return json({ affiliate: data })
   }
@@ -158,11 +189,27 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Erro ao banir afiliado' }, 500)
     }
 
-    await supabase.from('admin_events').insert({
-      admin_user_id: user.id,
-      action:        'affiliate_banned',
-      after:         { id: body.id },
+    const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+    const requestId = req.headers.get('x-request-id') ?? null
+    const { error: auditErr } = await supabase.rpc('record_audit_event', {
+      p_church_id:                null,
+      p_admin_user_id:            user.id,
+      p_action:                   'affiliate.ban',
+      p_before:                   null,
+      p_after:                    { id: body.id },
+      p_reason:                   null,
+      p_actor_email:              user.email ?? null,
+      p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+      p_resource:                 'affiliates',
+      p_resource_id:              body.id,
+      p_status:                   'success',
+      p_error_msg:                null,
+      p_impersonation_session_id: impersonationSessionId,
+      p_impersonated_church_id:   null,
+      p_source:                   'cockpit',
+      p_request_id:               requestId,
     })
+    if (auditErr) console.error('[affiliate-crud] audit failed:', auditErr.message)
 
     return json({ ok: true })
   }

@@ -61,27 +61,27 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 
 const ROLE_FOCUS: Record<string, string> = {
   admin: `Para você como pastor/admin, foque em:
-- Dashboard: como ler as métricas pastorais
-- Pipeline: como acompanhar o caminho de discipulado dos membros
+- Painel: como ler as métricas pastorais
+- Discipulado: como acompanhar o caminho de discipulado dos membros
 - Pessoas: como usar filtros avançados para encontrar membros
-- Relatórios: como gerar relatórios para o conselho
-- Configurações: como adicionar usuários e configurar módulos
+- Gabinete: como criar e gerenciar o gabinete pastoral (pastores, diáconos, presbíteros) — acesse pelo menu lateral em "Gabinete"
+- Configurações (Config.): como adicionar usuários, configurar módulos e canais de comunicação
 - Agentes IA: como ativar agentes para automatizar tarefas`,
 
   pastor: `Para você como pastor/admin, foque em:
-- Dashboard: como ler as métricas pastorais
-- Pipeline: como acompanhar o caminho de discipulado dos membros
+- Painel: como ler as métricas pastorais
+- Discipulado: como acompanhar o caminho de discipulado dos membros
 - Pessoas: como usar filtros avançados para encontrar membros
-- Relatórios: como gerar relatórios para o conselho
-- Configurações: como adicionar usuários e configurar módulos
+- Gabinete: como criar e gerenciar o gabinete pastoral (pastores, diáconos, presbíteros) — acesse pelo menu lateral em "Gabinete"
+- Configurações (Config.): como adicionar usuários, configurar módulos e canais de comunicação
 - Agentes IA: como ativar agentes para automatizar tarefas`,
 
   lider: `Para você como líder de célula, foque em:
 - Células: como registrar presença da reunião de célula
 - Células: como ver a lista de membros da sua célula
 - Pessoas: como ver o perfil completo de um membro
-- Pipeline: como mover um visitante de etapa
-- Agenda: como ver os eventos da semana`,
+- Discipulado: como mover um visitante de etapa
+- Calendário: como ver os eventos da semana`,
 
   secretario: `Para você como secretário(a), foque em:
 - Pessoas: como cadastrar um novo visitante
@@ -99,8 +99,8 @@ const ROLE_FOCUS: Record<string, string> = {
   supervisor: `Para você como supervisor de células, foque em:
 - Células: como ver todas as células que supervisiona
 - Relatórios: como ver os relatórios de reunião das células
-- Pipeline: como acompanhar visitantes das células
-- Dashboard: como ler métricas de crescimento das células`,
+- Discipulado: como acompanhar visitantes das células
+- Painel: como ler métricas de crescimento das células`,
 }
 
 function buildSystemPrompt(

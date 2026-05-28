@@ -8,15 +8,47 @@ function AgentCard({
   agent,
   isActive,
   canActivate,
-  onActivate,
-  onDeactivate,
+  subscriptionId,
 }: {
   agent: Agent
   isActive: boolean
   canActivate: boolean
-  onActivate: (slug: string) => void
-  onDeactivate: (slug: string) => void
+  subscriptionId: string
 }) {
+  const queryClient = useQueryClient()
+
+  const activateMutation = useMutation({
+    mutationFn: async () => {
+      if (!subscriptionId) throw new Error('No subscription')
+      const { error } = await supabase.from('subscription_agents').insert({
+        subscription_id: subscriptionId,
+        agent_slug: agent.slug,
+        active: true,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
+    },
+    onError: (err: Error) => console.error('Erro ao ativar:', err.message),
+  })
+
+  const deactivateMutation = useMutation({
+    mutationFn: async () => {
+      if (!subscriptionId) throw new Error('No subscription')
+      const { error } = await supabase
+        .from('subscription_agents')
+        .update({ active: false })
+        .eq('subscription_id', subscriptionId)
+        .eq('agent_slug', agent.slug)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
+    },
+    onError: (err: Error) => console.error('Erro ao desativar:', err.message),
+  })
+
   const tierLabel =
     agent.pricing_tier === 'free'
       ? 'Grátis'
@@ -92,7 +124,9 @@ function AgentCard({
               size="sm"
               variant="ghost"
               className="w-full text-xs text-red-600 hover:text-red-700 border border-red-200 hover:bg-red-50"
-              onClick={() => onDeactivate(agent.slug)}
+              onClick={() => deactivateMutation.mutate()}
+              disabled={deactivateMutation.isPending}
+              loading={deactivateMutation.isPending}
             >
               Desativar agente
             </Button>
@@ -101,7 +135,9 @@ function AgentCard({
               size="sm"
               variant="primary"
               className="w-full text-xs"
-              onClick={() => onActivate(agent.slug)}
+              onClick={() => activateMutation.mutate()}
+              disabled={activateMutation.isPending}
+              loading={activateMutation.isPending}
             >
               Ativar agente
             </Button>
@@ -122,44 +158,14 @@ export function Agents() {
     freeAgents,
     alwaysPaidAgents,
     eligibleAgents,
+    comingSoonAgents,
     activeAgentSlugs,
     hasAgent,
     canAddMoreAgents,
     maxAgentSlots,
   } = usePlan()
-  const queryClient = useQueryClient()
 
-  const activateMutation = useMutation({
-    mutationFn: async (agentSlug: string) => {
-      if (!subscription?.id) throw new Error('No subscription')
-      const { error } = await supabase.from('subscription_agents').insert({
-        subscription_id: subscription.id,
-        agent_slug: agentSlug,
-        active: true,
-      })
-      if (error) throw error
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
-    },
-    onError: (err: Error) => console.error('Erro ao ativar:', err.message),
-  })
-
-  const deactivateMutation = useMutation({
-    mutationFn: async (agentSlug: string) => {
-      if (!subscription?.id) throw new Error('No subscription')
-      const { error } = await supabase
-        .from('subscription_agents')
-        .update({ active: false })
-        .eq('subscription_id', subscription.id)
-        .eq('agent_slug', agentSlug)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['subscription_agents'] })
-    },
-    onError: (err: Error) => console.error('Erro ao desativar:', err.message),
-  })
+  const subscriptionId = subscription?.id ?? ''
 
   const eligibleActive = activeAgentSlugs.filter(slug =>
     eligibleAgents.some(a => a.slug === slug)
@@ -197,8 +203,7 @@ export function Agents() {
                 agent={agent}
                 isActive={true}
                 canActivate={false}
-                onActivate={() => {}}
-                onDeactivate={() => {}}
+                subscriptionId={subscriptionId}
               />
             ))}
           </div>
@@ -218,8 +223,7 @@ export function Agents() {
                 agent={agent}
                 isActive={hasAgent(agent.slug)}
                 canActivate={false}
-                onActivate={() => {}}
-                onDeactivate={() => {}}
+                subscriptionId={subscriptionId}
               />
             ))}
           </div>
@@ -246,9 +250,47 @@ export function Agents() {
                 canActivate={
                   canAddMoreAgents || activeAgentSlugs.includes(agent.slug)
                 }
-                onActivate={slug => activateMutation.mutate(slug)}
-                onDeactivate={slug => deactivateMutation.mutate(slug)}
+                subscriptionId={subscriptionId}
               />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Coming soon */}
+      {comingSoonAgents.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="font-medium text-sm text-gray-700">Em breve</h2>
+            <span className="text-xs text-gray-400">novos agentes chegando</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {comingSoonAgents.map(agent => (
+              <div
+                key={agent.slug}
+                className="relative bg-white border border-gray-200 rounded-xl p-5 space-y-3 opacity-75"
+              >
+                {/* Em breve badge */}
+                <div className="absolute top-3 right-3">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-bold"
+                    style={{ background: '#FFF3E0', color: '#C4841D' }}>
+                    Em breve
+                  </span>
+                </div>
+                <div className="pr-20">
+                  <p className="font-semibold text-sm text-gray-900">{agent.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">{agent.short_description}</p>
+                </div>
+                <a
+                  href="https://wa.me/5521993092146?text=Quero%20saber%20mais%20sobre%20os%20agentes%20em%20breve%20do%20Ekthos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-full py-2 px-4 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                  style={{ background: 'var(--color-primary, #e13500)', color: '#fff' }}
+                >
+                  Falar com nosso time
+                </a>
+              </div>
             ))}
           </div>
         </section>

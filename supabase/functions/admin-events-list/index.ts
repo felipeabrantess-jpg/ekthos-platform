@@ -7,6 +7,7 @@
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { jsonError } from '../_shared/errors.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -45,8 +46,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Params ─────────────────────────────────────────────────
@@ -70,8 +70,31 @@ Deno.serve(async (req: Request) => {
 
   if (error) {
     console.error('[admin-events-list]', error)
-    return json({ error: error.message }, 500)
+    return jsonError(CORS)
   }
+
+  // Audit: admin_events.list
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                null,
+    p_admin_user_id:            user.id,
+    p_action:                   'admin_events.list',
+    p_before:                   null,
+    p_after:                    null,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'admin_events',
+    p_resource_id:              null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   null,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-events-list] audit failed:', auditErr.message)
 
   return json({ data: data ?? [], total: data?.length ?? 0 })
 })

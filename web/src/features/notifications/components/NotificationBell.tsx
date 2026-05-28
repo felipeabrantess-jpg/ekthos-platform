@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell } from 'lucide-react'
 import { useNotificationsContext } from '../context/NotificationsContext'
 import NotificationPanel from './NotificationPanel'
@@ -7,6 +8,18 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false)
   const bellRef = useRef<HTMLDivElement>(null)
   const { notifications, loading, unreadCount } = useNotificationsContext()
+
+  // Calcula posição do painel relativa ao viewport (necessário para position:fixed no portal).
+  // Calculado no render com open=true — bellRef está montado e getBoundingClientRect() é fresco.
+  function getPanelPosition() {
+    if (!bellRef.current) return { top: 0, right: 8 }
+    const rect = bellRef.current.getBoundingClientRect()
+    return {
+      top:   rect.bottom + 8,
+      // Math.max garante margem mínima de 8px da borda direita em viewports estreitos
+      right: Math.max(8, window.innerWidth - rect.right),
+    }
+  }
 
   return (
     <div ref={bellRef} className="relative">
@@ -45,12 +58,17 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {open && (
+      {/* Portal → renderiza fora do AppHeader, escapando do stacking context
+          criado por backdropFilter:blur(8px). Sem portal, z-50 fica preso
+          dentro do contexto do header e aparece atrás dos cards do dashboard. */}
+      {open && createPortal(
         <NotificationPanel
           notifications={notifications}
           loading={loading}
           onClose={() => setOpen(false)}
-        />
+          position={getPanelPosition()}
+        />,
+        document.body
       )}
     </div>
   )

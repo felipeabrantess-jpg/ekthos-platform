@@ -29,7 +29,7 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, x-impersonation-session-id, x-request-id',
 }
 
 function json(data: unknown, status = 200) {
@@ -49,8 +49,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   let body: {
@@ -119,11 +118,27 @@ Deno.serve(async (req: Request) => {
     .from('agents_catalog').update(updatePayload).eq('slug', slug).select().single()
   if (updateErr) { console.error('[agents-catalog-update] update error:', updateErr); return json({ error: 'Erro ao atualizar agente' }, 500) }
 
-  await supabase.from('admin_events').insert({
-    admin_user_id: user.id, action: 'agent_catalog_updated',
-    after: { slug, ...updatePayload, stripe_price_rotated: stripePriceRotated, new_stripe_price_id: newStripePriceId },
-    reason: 'Edição manual via cockpit admin — agent pricing',
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id: null,
+    p_admin_user_id: user.id,
+    p_action: 'agents_catalog.update',
+    p_before: current,
+    p_after: { slug, ...updatePayload, stripe_price_rotated: stripePriceRotated, new_stripe_price_id: newStripePriceId },
+    p_reason: 'Edição manual via cockpit admin — agent pricing',
+    p_actor_email: user.email ?? null,
+    p_actor_roles: (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource: 'agents_catalog',
+    p_resource_id: null,
+    p_status: 'success',
+    p_error_msg: null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id: null,
+    p_source: 'cockpit',
+    p_request_id: requestId,
   })
+  if (auditErr) console.error('[agents-catalog-update] audit failed:', auditErr.message)
 
   return json({ agent: updated, stripe_price_rotated: stripePriceRotated, new_stripe_price_id: newStripePriceId })
 })

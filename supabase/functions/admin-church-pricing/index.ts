@@ -57,8 +57,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Parse body ────────────────────────────────────────────
@@ -106,19 +105,33 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Erro ao atualizar precificação' }, 500)
   }
 
-  // ── Registra em admin_events ──────────────────────────────
-  await supabase.from('admin_events').insert({
-    church_id,
-    admin_user_id: user.id,
-    action:        'pricing_updated',
-    before: {
+  // ── Registra em audit via record_audit_event ──────────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                church_id,
+    p_admin_user_id:            user.id,
+    p_action:                   'church.pricing.update',
+    p_before: {
       custom_plan_price_cents:  currentSub.custom_plan_price_cents,
       custom_user_price_cents:  currentSub.custom_user_price_cents,
       custom_agent_price_cents: currentSub.custom_agent_price_cents,
       price_notes:              currentSub.price_notes,
     },
-    after:  patch,
+    p_after:                    patch,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'churches',
+    p_resource_id:              church_id,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   church_id,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
+  if (auditErr) console.error('[admin-church-pricing] audit failed:', auditErr.message)
 
   return json({ ok: true, updated: patch })
 })

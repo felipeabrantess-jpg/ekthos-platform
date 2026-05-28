@@ -100,6 +100,8 @@ interface PersonFields {
   is_dizimista?: boolean | null
   // Acompanhamento — apenas admin (visibilidade no frontend)
   observacoes_pastorais?: string | null
+  // Liderança
+  is_leader?: boolean
 }
 
 interface CreatePersonInput extends PersonFields {
@@ -131,9 +133,9 @@ export function useCreatePerson() {
     },
     onSuccess: (data) => {
       if (!data) return
-      void queryClient.invalidateQueries({ queryKey: ['people', data.church_id] })
-      void queryClient.invalidateQueries({ queryKey: ['people-count', data.church_id] })
-      void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', data.church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['people', data.church_id], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ['people-count', data.church_id], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', data.church_id], exact: false })
     },
   })
 }

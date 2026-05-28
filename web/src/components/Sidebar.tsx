@@ -16,7 +16,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutGrid, Bot, Package, Settings, LogOut,
-  CheckCircle2, Lock, ChevronRight, Sparkles,
+  CheckCircle2, Lock, ChevronRight,
 } from 'lucide-react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -24,7 +24,7 @@ import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import { usePlan } from '@/hooks/usePlan'
 import { useChurch, DEFAULT_MODULES } from '@/hooks/useChurch'
 import { IGREJA_NAV } from '@/lib/navigation'
-import { AGENTS_CONTENT } from '@/lib/agents-content'
+import { INTERNAL_AGENTS, PREMIUM_AGENTS } from '@/lib/agents-content'
 import { MODULES_CONTENT } from '@/lib/modules-content'
 
 type Category = 'igreja' | 'agentes' | 'modulos' | 'config'
@@ -219,15 +219,30 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
             Desabilitados
           </p>
           {disabledItems.map(({ path, label, Icon }) => (
-            <div
-              key={path}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
-              style={{ color: 'var(--text-tertiary)', opacity: 0.4 }}
-              title="Ative nas Configurações"
-            >
-              <Icon size={15} strokeWidth={1.75} className="shrink-0" />
-              <span className="text-[13px]">{label}</span>
-              <Lock size={10} strokeWidth={2} className="ml-auto shrink-0" />
+            <div key={path} className="relative group">
+              <NavLink
+                to="/configuracoes/modulos"
+                className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent select-none"
+                style={{ color: 'var(--text-tertiary)', opacity: 0.4, textDecoration: 'none' }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.65' }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.4' }}
+              >
+                <Icon size={15} strokeWidth={1.75} className="shrink-0" />
+                <span className="text-[13px]">{label}</span>
+                <Lock size={10} strokeWidth={2} className="ml-auto shrink-0" />
+              </NavLink>
+              {/* CSS tooltip — sem Radix */}
+              <div
+                className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-secondary)',
+                  boxShadow: 'var(--shadow-md)',
+                }}
+              >
+                Ative em Configurações → Módulos
+              </div>
             </div>
           ))}
         </>
@@ -246,12 +261,11 @@ interface AgentesSubProps {
   planLoading: boolean
 }
 
-function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, planLoading }: AgentesSubProps) {
-  const catalogSlugs = allAgents.map(a => a.slug)
-  // Apenas os 7 agentes do catálogo frontend (4 interno + 3 premium)
-  const activeContent     = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && hasAgent(c.slug))
-  const standaloneContent = AGENTS_CONTENT.filter(c => catalogSlugs.includes(c.slug) && !hasAgent(c.slug))
-  const exclusiveAgents   = AGENTS_CONTENT.filter(c => c.badge?.includes('Avivamento') && planSlug !== 'avivamento' && !hasAgent(c.slug))
+function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug: _planSlug, planLoading }: AgentesSubProps) {
+  // Seção 1: 4 internos — sempre incluídos no plano, sempre visíveis como "Ativos"
+  const internosContent = INTERNAL_AGENTS
+  // Seção 2: 3 premium pastorais — sempre visíveis como "Contratar avulso"
+  const premiumContent  = PREMIUM_AGENTS
 
   const navItemBase: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10,
@@ -277,77 +291,44 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug, plan
         </span>
       </div>
 
-      {activeContent.length > 0 && (
-        <>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3"
-            style={{ color: 'var(--text-tertiary)' }}>Ativos</p>
-          {activeContent.map(c => (
-            <NavLink key={c.slug} to={`/agentes/${c.slug}/conversar`}
-              style={({ isActive }) => ({
-                ...navItemBase,
-                background: isActive ? 'var(--bg-hover)' : 'transparent',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
-              })}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-            >
-              <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
-              <span className="flex-1 truncate">{c.name}</span>
-              <CheckCircle2 size={11} className="shrink-0" strokeWidth={2} style={{ color: 'var(--color-success)' }} />
-            </NavLink>
-          ))}
-        </>
-      )}
+      {/* Seção 1: Agentes internos — incluídos no plano */}
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-3"
+        style={{ color: 'var(--text-tertiary)' }}>Agentes IA — Ativos</p>
+      {internosContent.map(c => (
+        <NavLink key={c.slug} to={`/agentes/${c.slug}/conversar`}
+          style={({ isActive }) => ({
+            ...navItemBase,
+            background: isActive ? 'var(--bg-hover)' : 'transparent',
+            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+          })}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+        >
+          <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
+          <span className="flex-1 truncate">{c.name}</span>
+          <CheckCircle2 size={11} className="shrink-0" strokeWidth={2} style={{ color: 'var(--color-success)' }} />
+        </NavLink>
+      ))}
 
-      {standaloneContent.length > 0 && (
-        <>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
-            style={{ color: 'var(--text-tertiary)' }}>Contratar avulso</p>
-          {standaloneContent.map(c => (
-            <NavLink key={c.slug} to={`/agentes/${c.slug}`}
-              style={({ isActive }) => ({
-                ...navItemBase,
-                background: isActive ? 'var(--bg-hover)' : 'transparent',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
-              })}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-            >
-              <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
-              <span className="flex-1 truncate">{c.name}</span>
-            </NavLink>
-          ))}
-        </>
-      )}
-
-      {exclusiveAgents.length > 0 && (
-        <>
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
-            style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Plano superior</p>
-          {exclusiveAgents.map(c => (
-            <NavLink key={c.slug} to={`/agentes/${c.slug}`}
-              style={({ isActive }) => ({
-                ...navItemBase,
-                background: isActive ? 'var(--bg-hover)' : 'transparent',
-                color: 'var(--text-tertiary)',
-                opacity: 0.5,
-                borderLeftColor: 'transparent',
-              })}>
-              <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
-              <span className="flex-1 truncate">{c.name}</span>
-              <Sparkles size={10} strokeWidth={2} className="shrink-0" />
-            </NavLink>
-          ))}
-        </>
-      )}
-
-      {activeContent.length === 0 && standaloneContent.length === 0 && (
-        <p className="text-[11px] px-3 py-4 text-center" style={{ color: 'var(--text-tertiary)' }}>
-          Nenhum agente configurado
-        </p>
-      )}
+      {/* Seção 2: Premium pastorais — contratar avulso */}
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)' }}>Contratar Avulso</p>
+      {premiumContent.map(c => (
+        <NavLink key={c.slug} to={`/agentes/${c.slug}`}
+          style={({ isActive }) => ({
+            ...navItemBase,
+            background: isActive ? 'var(--bg-hover)' : 'transparent',
+            color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+            borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+          })}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+        >
+          <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
+          <span className="flex-1 truncate">{c.name}</span>
+        </NavLink>
+      ))}
     </div>
   )
 }
@@ -445,6 +426,10 @@ function ConfigSubPanel() {
         style={{ color: 'var(--text-tertiary)' }}>Assinatura</p>
       <ConfigLink to="/configuracoes/plano"   label="Plano e Cobrança" />
       <ConfigLink to="/configuracoes/modulos" label="Módulos e Add-ons" />
+
+      <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+        style={{ color: 'var(--text-tertiary)' }}>Comunicação</p>
+      <ConfigLink to="/configuracoes/canais" label="Canais" />
 
       <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
         style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}>Integrações</p>

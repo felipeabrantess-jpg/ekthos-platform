@@ -89,6 +89,10 @@ verify_jwt = false   # público — dados mínimos da church para landing de vis
 [functions.dispatch-person-event]
 verify_jwt = false   # interno — autenticado via service_role Bearer pelo chamador
 
+# ── Sprint 1 — Cascade Haiku→Sonnet ──────────────────────────────────────────
+[functions.agent-haiku-triagem]
+verify_jwt = false   # chamada interna via webhook-receiver com service_role Bearer
+
 # ── Frente M — Camada de transporte de mensagens ─────────────────────────────
 [functions.message-enqueue]
 verify_jwt = false   # interno — autenticado via service_role Bearer pelo chamador
@@ -103,7 +107,22 @@ verify_jwt = false   # JWT validado manualmente — admin only
 [functions.coupon-validate]
 verify_jwt = false   # Auth condicional: anônimo p/ landing, JWT p/ cockpit_assisted
 
-# ── Auth — Email recovery (EVE bypass via Resend) ────────────────────────────
+[functions.admin-update-contractor]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-update-pastoral-profile]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-set-ekthos-roles]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-start-impersonation]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+[functions.admin-end-impersonation]
+verify_jwt = false   # JWT validado manualmente — is_ekthos_admin only
+
+# ── Auth — Email recovery (EVE bypass via Google SMTP) ───────────────────────
 [functions.send-recovery-email]
 verify_jwt = false   # público — igual /auth/v1/recover
 

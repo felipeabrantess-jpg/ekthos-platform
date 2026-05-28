@@ -50,7 +50,9 @@ const VALID_TRANSITIONS: Record<HandoffAction, {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return json({ ok: true }, 204, corsHeaders())
+    // 204 No Content — body must be null (HTTP spec). Using json() with 204 caused
+    // the Deno runtime to throw because 204 responses must not include a message body.
+    return new Response(null, { status: 204, headers: corsHeaders() })
   }
 
   // ── 1. Validar JWT ────────────────────────────────────────
@@ -235,7 +237,7 @@ Deno.serve(async (req) => {
         conversation_id,
         from_ownership: logFromOwnership,
         to_ownership:   logToOwnership,
-        actor_type:     'human',
+        actor_type:     'human_staff',
         actor_id:       user.id,
         reason:         handoffAction,
       })
@@ -254,6 +256,9 @@ Deno.serve(async (req) => {
 
 // ── helpers ──────────────────────────────────────────────────
 
+// '*' is hardcoded — auth is JWT-validated (not origin-based), so wildcard is safe.
+// Avoids the ALLOWED_ORIGIN Supabase secret overriding the origin when called from
+// localhost dev or Vercel preview URLs.
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin':  '*',
@@ -262,9 +267,12 @@ function corsHeaders() {
   }
 }
 
+// CORS headers are always included — prevents "Failed to fetch" on error responses.
+// Previously only the success return included corsHeaders(), causing browser to block
+// any 4xx/5xx response and report it as a network error instead of the actual error.
 function json(data: unknown, status = 200, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json', ...extra },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(), ...extra },
   })
 }

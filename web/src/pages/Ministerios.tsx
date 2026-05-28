@@ -13,6 +13,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import PersonSelect from '@/components/ui/PersonSelect'
 import type { MinistryWithLeader } from '@/lib/types/joins'
 
 interface MinistryFormData {
@@ -43,7 +44,7 @@ interface MinistryCardProps {
 }
 
 function MinistryCard({ ministry, onEdit, onDelete }: MinistryCardProps) {
-  const leaderName = ministry.leaders?.people?.name ?? null
+  const leaderName = ministry.people?.name ?? null
 
   return (
     <div className="bg-bg-surface rounded-2xl border border-border-default shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow">
@@ -101,7 +102,7 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
       ? {
           name: editing.name,
           description: editing.description ?? '',
-          leaderPersonId: editing.leaders?.people?.id ?? '',
+          leaderPersonId: editing.people?.id ?? '',
         }
       : emptyForm
   )
@@ -165,13 +166,13 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">ID do Líder (person_id)</label>
-          <Input
-            value={form.leaderPersonId}
-            onChange={(e) => handleChange('leaderPersonId', e.target.value)}
-            placeholder="UUID da pessoa líder (opcional)"
+          <label className="block text-sm font-medium text-gray-500 mb-1">Líder</label>
+          <PersonSelect
+            value={form.leaderPersonId || null}
+            onChange={(id) => handleChange('leaderPersonId', id ?? '')}
+            placeholder="Buscar líder pelo nome..."
+            onlyLeaders={true}
           />
-          <p className="text-xs text-text-tertiary mt-1">Cole o ID da pessoa cadastrada em Pessoas</p>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">

@@ -11,7 +11,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL             = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const ALLOWED_ORIGIN           = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -21,37 +20,62 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+function cors(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') ?? 'https://ekthos-platform.vercel.app'
+  return {
+    'Access-Control-Allow-Origin':  origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  }
 }
 
-function json(data: unknown, status = 200) {
+function json(data: unknown, status: number, req: Request) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...cors(req), 'Content-Type': 'application/json' },
   })
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
-  if (req.method !== 'GET')    return new Response('Method Not Allowed', { status: 405, headers: CORS })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(req) })
+  if (req.method !== 'GET')    return new Response('Method Not Allowed', { status: 405, headers: cors(req) })
 
   // ── Auth ──────────────────────────────────────────────────
   const token = req.headers.get('Authorization')?.replace('Bearer ', '') ?? ''
-  if (!token) return json({ error: 'Unauthorized' }, 401)
+  if (!token) return json({ error: 'Unauthorized' }, 401, req)
 
   const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
-  if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+  if (authErr || !user) return json({ error: 'Unauthorized' }, 401, req)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
-  if (!isAdmin) return json({ error: 'Forbidden' }, 403)
+    user.app_metadata?.is_ekthos_admin === true
+  if (!isAdmin) return json({ error: 'Forbidden' }, 403, req)
 
   const churchId = new URL(req.url).searchParams.get('id')
-  if (!churchId) return json({ error: 'id é obrigatório' }, 400)
+  if (!churchId) return json({ error: 'id é obrigatório' }, 400, req)
+
+  // ── Registra leitura sensível via record_audit_event ────────
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                churchId,
+    p_admin_user_id:            user.id,
+    p_action:                   'church.read.sensitive',
+    p_before:                   null,
+    p_after:                    null,
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'churches',
+    p_resource_id:              churchId,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   churchId,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
+  })
+  if (auditErr) console.error('[admin-church-detail] audit failed:', auditErr.message)
 
   // ── Consultas em paralelo ──────────────────────────────────
   const [
@@ -60,6 +84,7 @@ Deno.serve(async (req: Request) => {
     healthRes,
     usersRes,
     agentsRes,
+    agentGrantsRes,
     adminEventsRes,
     notesRes,
     membersRes,
@@ -98,6 +123,13 @@ Deno.serve(async (req: Request) => {
     supabase
       .from('subscription_agents')
       .select('agent_slug, source, active')
+      .eq('church_id', churchId)
+      .eq('active', true),
+
+    // Agent grants (cockpit-granted — sem subscription_id)
+    supabase
+      .from('agent_grants')
+      .select('agent_slug, grant_type, ends_at, starts_at, active')
       .eq('church_id', churchId)
       .eq('active', true),
 
@@ -144,12 +176,25 @@ Deno.serve(async (req: Request) => {
   ])
 
   if (churchRes.error || !churchRes.data) {
-    return json({ error: 'Igreja não encontrada' }, 404)
+    return json({ error: 'Igreja não encontrada' }, 404, req)
   }
 
   const church = churchRes.data
   const sub    = subRes.data ?? null
   const health = healthRes.data ?? null
+
+  // Busca emails dos usuários da igreja via auth.admin API
+  const roleRows = usersRes.data ?? []
+  const authEmailMap: Record<string, { email: string; last_sign_in_at: string | null }> = {}
+  for (const row of roleRows) {
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(row.user_id)
+    if (authUser) {
+      authEmailMap[row.user_id] = {
+        email:            authUser.email ?? '',
+        last_sign_in_at:  authUser.last_sign_in_at ?? null,
+      }
+    }
+  }
 
   // MRR calculado com preço customizado ou preço padrão do plano
   let mrrCents = 0
@@ -177,6 +222,33 @@ Deno.serve(async (req: Request) => {
     metadata:   e.after ?? {},
   }))
 
+  // Build merged agents list: subscription_agents + agent_grants (sem duplicar por slug)
+  const subAgentsList = (agentsRes.data ?? []) as Array<{ agent_slug: string; active: boolean }>
+  const agentGrantsList = (agentGrantsRes.data ?? []) as Array<{
+    agent_slug: string; grant_type: string; ends_at: string | null; starts_at: string; active: boolean
+  }>
+  const subSlugs = new Set(subAgentsList.map(a => a.agent_slug))
+  const mergedAgents = [
+    ...subAgentsList.map(a => ({
+      id:            a.agent_slug,
+      name:          a.agent_slug,
+      status:        'active',
+      calls_30d:     0,
+      source:        'subscription',
+      grant_ends_at: null as null,
+    })),
+    ...agentGrantsList
+      .filter(g => !subSlugs.has(g.agent_slug))
+      .map(g => ({
+        id:            g.agent_slug,
+        name:          g.agent_slug,
+        status:        'active',
+        calls_30d:     0,
+        source:        g.grant_type,
+        grant_ends_at: g.ends_at,
+      })),
+  ]
+
   return json({
     // Identificação
     id:           church.id,
@@ -189,6 +261,18 @@ Deno.serve(async (req: Request) => {
     timezone:     church.timezone,
     is_matrix:    church.is_matrix  ?? false,
     parent_church_id: church.parent_church_id ?? null,
+
+    // Identidade (campos editáveis na aba Cadastro)
+    pastor_titular_name:   church.pastor_titular_name   ?? null,
+    pastor_titular_phone:  church.pastor_titular_phone  ?? null,
+    denomination:          church.denomination          ?? null,
+    vision_statement:      church.vision_statement      ?? null,
+    address_full:          church.address_full          ?? null,
+    main_phone:            church.main_phone            ?? null,
+    main_email:            church.main_email            ?? null,
+    website_url:           church.website_url           ?? null,
+    social_media_handles:  church.social_media_handles  ?? {},
+    region:                church.region                ?? null,
 
     // Assinatura
     subscription_id:          sub?.id                       ?? null,
@@ -214,18 +298,15 @@ Deno.serve(async (req: Request) => {
     health_components: health?.components ?? {},
 
     // Usuários
-    users: (usersRes.data ?? []).map(u => ({
-      id:   u.user_id,
-      role: u.role,
+    users: roleRows.map(u => ({
+      id:           u.user_id,
+      role:         u.role,
+      email:        authEmailMap[u.user_id]?.email        ?? null,
+      last_sign_in: authEmailMap[u.user_id]?.last_sign_in_at ?? null,
     })),
 
-    // Agentes
-    agents: (agentsRes.data ?? []).map(a => ({
-      id:       a.agent_slug,
-      name:     a.agent_slug,
-      status:   a.active ? 'active' : 'inactive',
-      calls_30d: 0,
-    })),
+    // Agentes (subscription_agents + agent_grants mesclados)
+    agents: mergedAgents,
 
     // Notas internas
     notes: notesRes.data ?? [],
@@ -234,5 +315,5 @@ Deno.serve(async (req: Request) => {
     logs,
 
     generated_at: new Date().toISOString(),
-  })
+  }, 200, req)
 })

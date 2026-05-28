@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -123,6 +123,79 @@ export type Database = {
           },
         ]
       }
+      acolhimento_journey: {
+        Row: {
+          cancelled_reason: string | null
+          church_id: string
+          completed_at: string | null
+          created_at: string
+          current_touchpoint: string
+          id: string
+          next_touchpoint_at: string
+          pastoral_notes: string | null
+          person_id: string
+          responses_received: Json
+          started_at: string
+          status: string
+          touchpoints_sent: Json
+          updated_at: string
+        }
+        Insert: {
+          cancelled_reason?: string | null
+          church_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_touchpoint?: string
+          id?: string
+          next_touchpoint_at?: string
+          pastoral_notes?: string | null
+          person_id: string
+          responses_received?: Json
+          started_at?: string
+          status?: string
+          touchpoints_sent?: Json
+          updated_at?: string
+        }
+        Update: {
+          cancelled_reason?: string | null
+          church_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_touchpoint?: string
+          id?: string
+          next_touchpoint_at?: string
+          pastoral_notes?: string | null
+          person_id?: string
+          responses_received?: Json
+          started_at?: string
+          status?: string
+          touchpoints_sent?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acolhimento_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acolhimento_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acolhimento_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       addon_prices: {
         Row: {
           active: boolean
@@ -180,33 +253,69 @@ export type Database = {
       admin_events: {
         Row: {
           action: string
+          actor_email: string | null
+          actor_roles: string[] | null
           admin_user_id: string
           after: Json | null
           before: Json | null
-          church_id: string
+          church_id: string | null
           created_at: string
+          error_msg: string | null
           id: string
+          impersonated_church_id: string | null
+          impersonation_session_id: string | null
+          ip_address: unknown
           reason: string | null
+          request_id: string | null
+          resource: string | null
+          resource_id: string | null
+          source: string | null
+          status: string | null
+          user_agent: string | null
         }
         Insert: {
           action: string
+          actor_email?: string | null
+          actor_roles?: string[] | null
           admin_user_id: string
           after?: Json | null
           before?: Json | null
-          church_id: string
+          church_id?: string | null
           created_at?: string
+          error_msg?: string | null
           id?: string
+          impersonated_church_id?: string | null
+          impersonation_session_id?: string | null
+          ip_address?: unknown
           reason?: string | null
+          request_id?: string | null
+          resource?: string | null
+          resource_id?: string | null
+          source?: string | null
+          status?: string | null
+          user_agent?: string | null
         }
         Update: {
           action?: string
+          actor_email?: string | null
+          actor_roles?: string[] | null
           admin_user_id?: string
           after?: Json | null
           before?: Json | null
-          church_id?: string
+          church_id?: string | null
           created_at?: string
+          error_msg?: string | null
           id?: string
+          impersonated_church_id?: string | null
+          impersonation_session_id?: string | null
+          ip_address?: unknown
           reason?: string | null
+          request_id?: string | null
+          resource?: string | null
+          resource_id?: string | null
+          source?: string | null
+          status?: string | null
+          user_agent?: string | null
         }
         Relationships: [
           {
@@ -221,6 +330,27 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonated_church_id_fkey"
+            columns: ["impersonated_church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonated_church_id_fkey"
+            columns: ["impersonated_church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonation_session_id_fkey"
+            columns: ["impersonation_session_id"]
+            isOneToOne: false
+            referencedRelation: "impersonate_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -578,6 +708,24 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_channel_routing: {
+        Row: {
+          agent_slug: string
+          channel_type: string
+          context_type: string | null
+        }
+        Insert: {
+          agent_slug: string
+          channel_type: string
+          context_type?: string | null
+        }
+        Update: {
+          agent_slug?: string
+          channel_type?: string
+          context_type?: string | null
+        }
+        Relationships: []
+      }
       agent_chat_sessions: {
         Row: {
           agent_slug: string
@@ -629,6 +777,7 @@ export type Database = {
       agent_conversations: {
         Row: {
           agent_slug: string
+          archived: boolean | null
           church_id: string
           content: string
           created_at: string
@@ -639,6 +788,7 @@ export type Database = {
         }
         Insert: {
           agent_slug: string
+          archived?: boolean | null
           church_id: string
           content: string
           created_at?: string
@@ -649,6 +799,7 @@ export type Database = {
         }
         Update: {
           agent_slug?: string
+          archived?: boolean | null
           church_id?: string
           content?: string
           created_at?: string
@@ -674,6 +825,102 @@ export type Database = {
           },
         ]
       }
+      agent_credit_alerts: {
+        Row: {
+          agent_scope: string
+          church_id: string
+          cycle_start: string
+          threshold_100_at: string | null
+          threshold_70_at: string | null
+          threshold_90_at: string | null
+        }
+        Insert: {
+          agent_scope: string
+          church_id: string
+          cycle_start: string
+          threshold_100_at?: string | null
+          threshold_70_at?: string | null
+          threshold_90_at?: string | null
+        }
+        Update: {
+          agent_scope?: string
+          church_id?: string
+          cycle_start?: string
+          threshold_100_at?: string | null
+          threshold_70_at?: string | null
+          threshold_90_at?: string | null
+        }
+        Relationships: []
+      }
+      agent_credit_plans: {
+        Row: {
+          active: boolean | null
+          applies_to: string[]
+          created_at: string | null
+          monthly_credits: number
+          monthly_price_cents: number
+          name: string
+          slug: string
+          sort_order: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          applies_to: string[]
+          created_at?: string | null
+          monthly_credits: number
+          monthly_price_cents: number
+          name: string
+          slug: string
+          sort_order?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          applies_to?: string[]
+          created_at?: string | null
+          monthly_credits?: number
+          monthly_price_cents?: number
+          name?: string
+          slug?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      agent_credit_usage: {
+        Row: {
+          agent_slug: string
+          church_id: string
+          consumed_at: string | null
+          credits_consumed: number
+          description: string | null
+          id: string
+          operation_type: string
+          related_entity_id: string | null
+          source: string
+        }
+        Insert: {
+          agent_slug: string
+          church_id: string
+          consumed_at?: string | null
+          credits_consumed: number
+          description?: string | null
+          id?: string
+          operation_type: string
+          related_entity_id?: string | null
+          source: string
+        }
+        Update: {
+          agent_slug?: string
+          church_id?: string
+          consumed_at?: string | null
+          credits_consumed?: number
+          description?: string | null
+          id?: string
+          operation_type?: string
+          related_entity_id?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       agent_executions: {
         Row: {
           agent_slug: string
@@ -689,7 +936,9 @@ export type Database = {
           input_tokens: number
           model: string
           output_tokens: number
+          status: string | null
           success: boolean | null
+          trigger_type: string | null
           user_id: string | null
         }
         Insert: {
@@ -706,7 +955,9 @@ export type Database = {
           input_tokens?: number
           model: string
           output_tokens?: number
+          status?: string | null
           success?: boolean | null
+          trigger_type?: string | null
           user_id?: string | null
         }
         Update: {
@@ -723,7 +974,9 @@ export type Database = {
           input_tokens?: number
           model?: string
           output_tokens?: number
+          status?: string | null
           success?: boolean | null
+          trigger_type?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -743,11 +996,157 @@ export type Database = {
           },
         ]
       }
+      agent_grants: {
+        Row: {
+          active: boolean
+          agent_slug: string
+          church_id: string
+          created_at: string
+          ends_at: string | null
+          grant_type: string
+          granted_by: string
+          id: string
+          notes: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          starts_at: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          agent_slug: string
+          church_id: string
+          created_at?: string
+          ends_at?: string | null
+          grant_type: string
+          granted_by: string
+          id?: string
+          notes?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          starts_at?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          agent_slug?: string
+          church_id?: string
+          created_at?: string
+          ends_at?: string | null
+          grant_type?: string
+          granted_by?: string
+          id?: string
+          notes?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          starts_at?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_grants_agent_slug_fkey"
+            columns: ["agent_slug"]
+            isOneToOne: false
+            referencedRelation: "agents_catalog"
+            referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "agent_grants_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_grants_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_pending_messages: {
+        Row: {
+          agent_slug: string
+          attempt_count: number
+          church_id: string
+          created_at: string | null
+          id: string
+          payload: Json
+          resolved_at: string | null
+          scheduled_for: string
+          status: string | null
+        }
+        Insert: {
+          agent_slug: string
+          attempt_count?: number
+          church_id: string
+          created_at?: string | null
+          id?: string
+          payload: Json
+          resolved_at?: string | null
+          scheduled_for: string
+          status?: string | null
+        }
+        Update: {
+          agent_slug?: string
+          attempt_count?: number
+          church_id?: string
+          created_at?: string | null
+          id?: string
+          payload?: Json
+          resolved_at?: string | null
+          scheduled_for?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      agent_prompt_templates: {
+        Row: {
+          active: boolean
+          agent_slug: string
+          base_prompt: string
+          created_at: string
+          id: string
+          name: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          agent_slug: string
+          base_prompt: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          active?: boolean
+          agent_slug?: string
+          base_prompt?: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       agents_catalog: {
         Row: {
           active: boolean
           category: string | null
           created_at: string
+          cta_type: string | null
           features: Json
           full_description: string | null
           id: string
@@ -759,13 +1158,16 @@ export type Database = {
           short_description: string
           slug: string
           sort_order: number | null
+          status: string | null
           updated_at: string | null
+          visible_in_vitrine: boolean | null
           without_me: string | null
         }
         Insert: {
           active?: boolean
           category?: string | null
           created_at?: string
+          cta_type?: string | null
           features?: Json
           full_description?: string | null
           id?: string
@@ -777,13 +1179,16 @@ export type Database = {
           short_description: string
           slug: string
           sort_order?: number | null
+          status?: string | null
           updated_at?: string | null
+          visible_in_vitrine?: boolean | null
           without_me?: string | null
         }
         Update: {
           active?: boolean
           category?: string | null
           created_at?: string
+          cta_type?: string | null
           features?: Json
           full_description?: string | null
           id?: string
@@ -795,7 +1200,9 @@ export type Database = {
           short_description?: string
           slug?: string
           sort_order?: number | null
+          status?: string | null
           updated_at?: string | null
+          visible_in_vitrine?: boolean | null
           without_me?: string | null
         }
         Relationships: []
@@ -1242,6 +1649,415 @@ export type Database = {
           },
         ]
       }
+      channel_dispatch_queue: {
+        Row: {
+          attempt_count: number
+          channel_id: string
+          church_id: string
+          content: string
+          conversation_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          max_attempts: number
+          message_id: string
+          processed_at: string | null
+          provider_response: Json | null
+          scheduled_at: string
+          status: string
+          to_phone: string
+        }
+        Insert: {
+          attempt_count?: number
+          channel_id: string
+          church_id: string
+          content: string
+          conversation_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          message_id: string
+          processed_at?: string | null
+          provider_response?: Json | null
+          scheduled_at?: string
+          status?: string
+          to_phone: string
+        }
+        Update: {
+          attempt_count?: number
+          channel_id?: string
+          church_id?: string
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          max_attempts?: number
+          message_id?: string
+          processed_at?: string | null
+          provider_response?: Json | null
+          scheduled_at?: string
+          status?: string
+          to_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_dispatch_queue_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "church_whatsapp_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_dispatch_queue_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_dispatch_queue_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_dispatch_queue_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_dispatch_queue_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_agent_channel_routing: {
+        Row: {
+          agent_slug: string
+          church_id: string
+          context_type: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          agent_slug: string
+          church_id: string
+          context_type: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_slug?: string
+          church_id?: string
+          context_type?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_agent_channel_routing_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_channel_routing_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_agent_config: {
+        Row: {
+          active: boolean | null
+          agent_name: string | null
+          agent_slug: string
+          church_id: string
+          church_name_short: string | null
+          created_at: string | null
+          custom_instructions: string | null
+          custom_overrides: Json | null
+          denomination: string | null
+          emoji_usage: string | null
+          escalation_config: Json | null
+          first_contact_delay: string | null
+          forbidden_topics: string[] | null
+          formality: string | null
+          pastor_name: string | null
+          pastoral_depth: string | null
+          preferred_verses: string[] | null
+          send_window: Json | null
+          service_schedule: Json | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          agent_name?: string | null
+          agent_slug: string
+          church_id: string
+          church_name_short?: string | null
+          created_at?: string | null
+          custom_instructions?: string | null
+          custom_overrides?: Json | null
+          denomination?: string | null
+          emoji_usage?: string | null
+          escalation_config?: Json | null
+          first_contact_delay?: string | null
+          forbidden_topics?: string[] | null
+          formality?: string | null
+          pastor_name?: string | null
+          pastoral_depth?: string | null
+          preferred_verses?: string[] | null
+          send_window?: Json | null
+          service_schedule?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          agent_name?: string | null
+          agent_slug?: string
+          church_id?: string
+          church_name_short?: string | null
+          created_at?: string | null
+          custom_instructions?: string | null
+          custom_overrides?: Json | null
+          denomination?: string | null
+          emoji_usage?: string | null
+          escalation_config?: Json | null
+          first_contact_delay?: string | null
+          forbidden_topics?: string[] | null
+          formality?: string | null
+          pastor_name?: string | null
+          pastoral_depth?: string | null
+          preferred_verses?: string[] | null
+          send_window?: Json | null
+          service_schedule?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      church_agent_config_history: {
+        Row: {
+          agent_slug: string
+          change_reason: string | null
+          changed_at: string | null
+          changed_by: string | null
+          church_id: string
+          config_snapshot: Json
+          id: string
+        }
+        Insert: {
+          agent_slug: string
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          church_id: string
+          config_snapshot: Json
+          id?: string
+        }
+        Update: {
+          agent_slug?: string
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          church_id?: string
+          config_snapshot?: Json
+          id?: string
+        }
+        Relationships: []
+      }
+      church_agent_credits: {
+        Row: {
+          agent_scope: string
+          church_id: string
+          cycle_credits: number
+          cycle_end: string
+          cycle_start: string
+          topup_credits: number
+          updated_at: string | null
+        }
+        Insert: {
+          agent_scope: string
+          church_id: string
+          cycle_credits?: number
+          cycle_end: string
+          cycle_start: string
+          topup_credits?: number
+          updated_at?: string | null
+        }
+        Update: {
+          agent_scope?: string
+          church_id?: string
+          cycle_credits?: number
+          cycle_end?: string
+          cycle_start?: string
+          topup_credits?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_agent_credits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_credits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_agent_subscriptions: {
+        Row: {
+          active: boolean | null
+          church_id: string
+          created_at: string | null
+          current_cycle_end: string
+          current_cycle_start: string
+          id: string
+          paused_by_quota: boolean | null
+          paused_by_user: boolean | null
+          plan_slug: string
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          church_id: string
+          created_at?: string | null
+          current_cycle_end: string
+          current_cycle_start?: string
+          id?: string
+          paused_by_quota?: boolean | null
+          paused_by_user?: boolean | null
+          plan_slug: string
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          church_id?: string
+          created_at?: string | null
+          current_cycle_end?: string
+          current_cycle_start?: string
+          id?: string
+          paused_by_quota?: boolean | null
+          paused_by_user?: boolean | null
+          plan_slug?: string
+          stripe_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_agent_subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_subscriptions_plan_slug_fkey"
+            columns: ["plan_slug"]
+            isOneToOne: false
+            referencedRelation: "agent_credit_plans"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      church_channels: {
+        Row: {
+          agent_slugs: string[]
+          church_id: string
+          created_at: string
+          display_name: string | null
+          error_message: string | null
+          id: string
+          last_health_check: string | null
+          last_provisioned_at: string | null
+          metadata: Json
+          phone_number: string | null
+          provider: string
+          provider_instance_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_slugs?: string[]
+          church_id: string
+          created_at?: string
+          display_name?: string | null
+          error_message?: string | null
+          id?: string
+          last_health_check?: string | null
+          last_provisioned_at?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          provider: string
+          provider_instance_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_slugs?: string[]
+          church_id?: string
+          created_at?: string
+          display_name?: string | null
+          error_message?: string | null
+          id?: string
+          last_health_check?: string | null
+          last_provisioned_at?: string | null
+          metadata?: Json
+          phone_number?: string | null
+          provider?: string
+          provider_instance_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_events: {
         Row: {
           active: boolean
@@ -1368,6 +2184,72 @@ export type Database = {
           },
         ]
       }
+      church_followup_config: {
+        Row: {
+          agent_slug: string
+          church_id: string
+          created_at: string
+          duration_days: number | null
+          enabled_touchpoints: string[]
+          escalation_conditions: Json
+          followup_enabled: boolean
+          id: string
+          next_action_after_completion: string | null
+          send_window_end: string | null
+          send_window_start: string | null
+          stop_conditions: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          agent_slug: string
+          church_id: string
+          created_at?: string
+          duration_days?: number | null
+          enabled_touchpoints?: string[]
+          escalation_conditions?: Json
+          followup_enabled?: boolean
+          id?: string
+          next_action_after_completion?: string | null
+          send_window_end?: string | null
+          send_window_start?: string | null
+          stop_conditions?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          agent_slug?: string
+          church_id?: string
+          created_at?: string
+          duration_days?: number | null
+          enabled_touchpoints?: string[]
+          escalation_conditions?: Json
+          followup_enabled?: boolean
+          id?: string
+          next_action_after_completion?: string | null
+          send_window_end?: string | null
+          send_window_start?: string | null
+          stop_conditions?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_followup_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_followup_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_notes: {
         Row: {
           admin_user_id: string
@@ -1413,6 +2295,54 @@ export type Database = {
           },
         ]
       }
+      church_pastoral_profile: {
+        Row: {
+          algo_importante_comunidade: string | null
+          church_id: string
+          created_at: string
+          estilo_comunicacao: string | null
+          foco_pastoral_30_dias: string | null
+          horarios_culto: string | null
+          maior_desafio: string | null
+          updated_at: string
+        }
+        Insert: {
+          algo_importante_comunidade?: string | null
+          church_id: string
+          created_at?: string
+          estilo_comunicacao?: string | null
+          foco_pastoral_30_dias?: string | null
+          horarios_culto?: string | null
+          maior_desafio?: string | null
+          updated_at?: string
+        }
+        Update: {
+          algo_importante_comunidade?: string | null
+          church_id?: string
+          created_at?: string
+          estilo_comunicacao?: string | null
+          foco_pastoral_30_dias?: string | null
+          horarios_culto?: string | null
+          maior_desafio?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_pastoral_profile_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_pastoral_profile_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_settings: {
         Row: {
           church_id: string
@@ -1427,6 +2357,8 @@ export type Database = {
           out_of_hours_message: string
           support_hours: Json
           updated_at: string
+          welcome_automation_enabled: boolean
+          whatsapp_contact: string | null
         }
         Insert: {
           church_id: string
@@ -1441,6 +2373,8 @@ export type Database = {
           out_of_hours_message?: string
           support_hours?: Json
           updated_at?: string
+          welcome_automation_enabled?: boolean
+          whatsapp_contact?: string | null
         }
         Update: {
           church_id?: string
@@ -1455,6 +2389,8 @@ export type Database = {
           out_of_hours_message?: string
           support_hours?: Json
           updated_at?: string
+          welcome_automation_enabled?: boolean
+          whatsapp_contact?: string | null
         }
         Relationships: [
           {
@@ -1521,72 +2457,219 @@ export type Database = {
           },
         ]
       }
+      church_whatsapp_channels: {
+        Row: {
+          active: boolean | null
+          channel_type: string
+          church_id: string
+          connected_by_user_id: string | null
+          context_type: string | null
+          created_at: string | null
+          display_name: string | null
+          error_message: string | null
+          id: string
+          instance_id: string | null
+          last_health_check: string | null
+          last_provisioned_at: string | null
+          meta_access_token: string | null
+          meta_phone_number_id: string | null
+          meta_waba_id: string | null
+          metadata: Json | null
+          notes: string | null
+          phone_number: string
+          provider: string | null
+          provider_label: string | null
+          session_status: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          zapi_instance_id: string | null
+          zapi_token: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          channel_type: string
+          church_id: string
+          connected_by_user_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          error_message?: string | null
+          id?: string
+          instance_id?: string | null
+          last_health_check?: string | null
+          last_provisioned_at?: string | null
+          meta_access_token?: string | null
+          meta_phone_number_id?: string | null
+          meta_waba_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          phone_number: string
+          provider?: string | null
+          provider_label?: string | null
+          session_status?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          zapi_instance_id?: string | null
+          zapi_token?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          channel_type?: string
+          church_id?: string
+          connected_by_user_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          error_message?: string | null
+          id?: string
+          instance_id?: string | null
+          last_health_check?: string | null
+          last_provisioned_at?: string | null
+          meta_access_token?: string | null
+          meta_phone_number_id?: string | null
+          meta_waba_id?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          phone_number?: string
+          provider?: string | null
+          provider_label?: string | null
+          session_status?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          zapi_instance_id?: string | null
+          zapi_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_whatsapp_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_whatsapp_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       churches: {
         Row: {
+          address_full: string | null
           branding: Json | null
           city: string | null
           created_at: string
           deleted_at: string | null
+          denomination: string | null
           enabled_modules: Json | null
           id: string
           is_active: boolean
           is_matrix: boolean
           logo_url: string | null
+          main_email: string | null
+          main_phone: string | null
           name: string
+          onboarding_completed_at: string | null
           onboarding_config: Json | null
+          onboarding_step: string
           parent_church_id: string | null
+          pastor_titular_can_be_quoted: boolean
+          pastor_titular_email: string | null
+          pastor_titular_name: string | null
+          pastor_titular_phone: string | null
           primary_color: string | null
+          region: string | null
           secondary_color: string | null
           slug: string
+          social_media_handles: Json | null
           state: string | null
           status: string
           subscription_plan: string | null
           timezone: string
+          uf: string | null
           updated_at: string
+          vision_statement: string | null
+          website_url: string | null
         }
         Insert: {
+          address_full?: string | null
           branding?: Json | null
           city?: string | null
           created_at?: string
           deleted_at?: string | null
+          denomination?: string | null
           enabled_modules?: Json | null
           id?: string
           is_active?: boolean
           is_matrix?: boolean
           logo_url?: string | null
+          main_email?: string | null
+          main_phone?: string | null
           name: string
+          onboarding_completed_at?: string | null
           onboarding_config?: Json | null
+          onboarding_step?: string
           parent_church_id?: string | null
+          pastor_titular_can_be_quoted?: boolean
+          pastor_titular_email?: string | null
+          pastor_titular_name?: string | null
+          pastor_titular_phone?: string | null
           primary_color?: string | null
+          region?: string | null
           secondary_color?: string | null
           slug: string
+          social_media_handles?: Json | null
           state?: string | null
           status?: string
           subscription_plan?: string | null
           timezone?: string
+          uf?: string | null
           updated_at?: string
+          vision_statement?: string | null
+          website_url?: string | null
         }
         Update: {
+          address_full?: string | null
           branding?: Json | null
           city?: string | null
           created_at?: string
           deleted_at?: string | null
+          denomination?: string | null
           enabled_modules?: Json | null
           id?: string
           is_active?: boolean
           is_matrix?: boolean
           logo_url?: string | null
+          main_email?: string | null
+          main_phone?: string | null
           name?: string
+          onboarding_completed_at?: string | null
           onboarding_config?: Json | null
+          onboarding_step?: string
           parent_church_id?: string | null
+          pastor_titular_can_be_quoted?: boolean
+          pastor_titular_email?: string | null
+          pastor_titular_name?: string | null
+          pastor_titular_phone?: string | null
           primary_color?: string | null
+          region?: string | null
           secondary_color?: string | null
           slug?: string
+          social_media_handles?: Json | null
           state?: string | null
           status?: string
           subscription_plan?: string | null
           timezone?: string
+          uf?: string | null
           updated_at?: string
+          vision_statement?: string | null
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -1680,6 +2763,78 @@ export type Database = {
           },
         ]
       }
+      contractors: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          deactivated_at: string | null
+          deactivation_reason: string | null
+          document_number: string
+          document_type: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          person_type: string
+          phone: string | null
+          role_label: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivation_reason?: string | null
+          document_number: string
+          document_type: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          person_type: string
+          phone?: string | null
+          role_label: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivation_reason?: string | null
+          document_number?: string
+          document_type?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          person_type?: string
+          phone?: string | null
+          role_label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractors_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractors_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contributions: {
         Row: {
           amount: number
@@ -1731,6 +2886,279 @@ export type Database = {
           },
           {
             foreignKeyName: "contributions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_events: {
+        Row: {
+          actor_id: string | null
+          actor_name: string | null
+          actor_type: string
+          church_id: string
+          conversation_id: string
+          created_at: string
+          event_type: string
+          id: string
+          message_preview: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_type: string
+          church_id: string
+          conversation_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          message_preview?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_type?: string
+          church_id?: string
+          conversation_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          message_preview?: string | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_messages: {
+        Row: {
+          church_id: string
+          content: string
+          content_type: string
+          conversation_id: string
+          created_at: string
+          direction: string
+          error_detail: string | null
+          id: string
+          metadata: Json | null
+          provider_message_id: string | null
+          sender_id: string | null
+          sender_type: string
+          status: string
+        }
+        Insert: {
+          church_id: string
+          content: string
+          content_type?: string
+          conversation_id: string
+          created_at?: string
+          direction: string
+          error_detail?: string | null
+          id?: string
+          metadata?: Json | null
+          provider_message_id?: string | null
+          sender_id?: string | null
+          sender_type: string
+          status?: string
+        }
+        Update: {
+          church_id?: string
+          content?: string
+          content_type?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          error_detail?: string | null
+          id?: string
+          metadata?: Json | null
+          provider_message_id?: string | null
+          sender_id?: string | null
+          sender_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_messages_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_ownership_log: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          conversation_id: string
+          created_at: string
+          from_ownership: string
+          id: string
+          reason: string | null
+          to_ownership: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          conversation_id: string
+          created_at?: string
+          from_ownership: string
+          id?: string
+          reason?: string | null
+          to_ownership: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          conversation_id?: string
+          created_at?: string
+          from_ownership?: string
+          id?: string
+          reason?: string | null
+          to_ownership?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_ownership_log_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          agent_slug: string | null
+          archived_at: string | null
+          assigned_to: string | null
+          channel_id: string
+          channel_type: string
+          church_id: string
+          closed_at: string | null
+          contact_phone: string
+          created_at: string
+          human_actor_id: string | null
+          human_actor_name: string | null
+          human_assumed_at: string | null
+          id: string
+          last_message_at: string
+          last_message_preview: string | null
+          ownership: string
+          person_id: string | null
+          status: string
+          tags: string[] | null
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          agent_slug?: string | null
+          archived_at?: string | null
+          assigned_to?: string | null
+          channel_id: string
+          channel_type?: string
+          church_id: string
+          closed_at?: string | null
+          contact_phone: string
+          created_at?: string
+          human_actor_id?: string | null
+          human_actor_name?: string | null
+          human_assumed_at?: string | null
+          id?: string
+          last_message_at?: string
+          last_message_preview?: string | null
+          ownership?: string
+          person_id?: string | null
+          status?: string
+          tags?: string[] | null
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          agent_slug?: string | null
+          archived_at?: string | null
+          assigned_to?: string | null
+          channel_id?: string
+          channel_type?: string
+          church_id?: string
+          closed_at?: string | null
+          contact_phone?: string
+          created_at?: string
+          human_actor_id?: string | null
+          human_actor_name?: string | null
+          human_assumed_at?: string | null
+          id?: string
+          last_message_at?: string
+          last_message_preview?: string | null
+          ownership?: string
+          person_id?: string | null
+          status?: string
+          tags?: string[] | null
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "church_whatsapp_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
@@ -2032,6 +3460,103 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "affiliates"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_packages: {
+        Row: {
+          active: boolean | null
+          applies_to: string[]
+          credits: number
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number | null
+          ttl_days: number | null
+          visible_in_ui: boolean | null
+        }
+        Insert: {
+          active?: boolean | null
+          applies_to: string[]
+          credits: number
+          name: string
+          price_cents: number
+          slug: string
+          sort_order?: number | null
+          ttl_days?: number | null
+          visible_in_ui?: boolean | null
+        }
+        Update: {
+          active?: boolean | null
+          applies_to?: string[]
+          credits?: number
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number | null
+          ttl_days?: number | null
+          visible_in_ui?: boolean | null
+        }
+        Relationships: []
+      }
+      credit_topup_purchases: {
+        Row: {
+          church_id: string
+          credits_purchased: number
+          credits_remaining: number
+          expires_at: string
+          id: string
+          package_slug: string
+          purchase_price_cents: number
+          purchased_at: string | null
+          status: string | null
+          stripe_invoice_id: string | null
+        }
+        Insert: {
+          church_id: string
+          credits_purchased: number
+          credits_remaining: number
+          expires_at: string
+          id?: string
+          package_slug: string
+          purchase_price_cents: number
+          purchased_at?: string | null
+          status?: string | null
+          stripe_invoice_id?: string | null
+        }
+        Update: {
+          church_id?: string
+          credits_purchased?: number
+          credits_remaining?: number
+          expires_at?: string
+          id?: string
+          package_slug?: string
+          purchase_price_cents?: number
+          purchased_at?: string | null
+          status?: string | null
+          stripe_invoice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_topup_purchases_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_topup_purchases_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_topup_purchases_package_slug_fkey"
+            columns: ["package_slug"]
+            isOneToOne: false
+            referencedRelation: "credit_packages"
+            referencedColumns: ["slug"]
           },
         ]
       }
@@ -2441,7 +3966,9 @@ export type Database = {
           admin_user_id: string
           church_id: string
           ended_at: string | null
+          ended_reason: string | null
           id: string
+          last_action_at: string | null
           notes: string | null
           started_at: string
         }
@@ -2449,7 +3976,9 @@ export type Database = {
           admin_user_id: string
           church_id: string
           ended_at?: string | null
+          ended_reason?: string | null
           id?: string
+          last_action_at?: string | null
           notes?: string | null
           started_at?: string
         }
@@ -2457,7 +3986,9 @@ export type Database = {
           admin_user_id?: string
           church_id?: string
           ended_at?: string | null
+          ended_reason?: string | null
           id?: string
+          last_action_at?: string | null
           notes?: string | null
           started_at?: string
         }
@@ -2580,6 +4111,79 @@ export type Database = {
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      internal_notifications: {
+        Row: {
+          agent_slug: string | null
+          assigned_to: string | null
+          church_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subscription_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_slug?: string | null
+          assigned_to?: string | null
+          church_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subscription_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_slug?: string | null
+          assigned_to?: string | null
+          church_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subscription_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "internal_notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_notifications_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_agents"
             referencedColumns: ["id"]
           },
         ]
@@ -2848,6 +4452,115 @@ export type Database = {
           },
         ]
       }
+      message_outbox: {
+        Row: {
+          attempts: number
+          body_template_id: string | null
+          body_text: string
+          channel: string
+          church_id: string
+          created_at: string
+          delivered_at: string | null
+          driver: string
+          driver_message_id: string | null
+          driver_response: Json
+          error_message: string | null
+          failed_at: string | null
+          id: string
+          last_attempt_at: string | null
+          max_attempts: number
+          next_attempt_at: string | null
+          person_id: string | null
+          read_at: string | null
+          sent_at: string | null
+          source: string
+          source_event: string | null
+          source_ref_id: string | null
+          status: string
+          to_address: string
+          updated_at: string
+          variables: Json
+        }
+        Insert: {
+          attempts?: number
+          body_template_id?: string | null
+          body_text: string
+          channel: string
+          church_id: string
+          created_at?: string
+          delivered_at?: string | null
+          driver: string
+          driver_message_id?: string | null
+          driver_response?: Json
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string | null
+          person_id?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          source: string
+          source_event?: string | null
+          source_ref_id?: string | null
+          status?: string
+          to_address: string
+          updated_at?: string
+          variables?: Json
+        }
+        Update: {
+          attempts?: number
+          body_template_id?: string | null
+          body_text?: string
+          channel?: string
+          church_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          driver?: string
+          driver_message_id?: string | null
+          driver_response?: Json
+          error_message?: string | null
+          failed_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string | null
+          person_id?: string | null
+          read_at?: string | null
+          sent_at?: string | null
+          source?: string
+          source_event?: string | null
+          source_ref_id?: string | null
+          status?: string
+          to_address?: string
+          updated_at?: string
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_outbox_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_outbox_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_outbox_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_templates: {
         Row: {
           category: string | null
@@ -2883,6 +4596,57 @@ export type Database = {
           },
           {
             foreignKeyName: "message_templates_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaging_config: {
+        Row: {
+          channel: string
+          church_id: string
+          created_at: string
+          driver: string
+          driver_config: Json
+          id: string
+          is_active: boolean
+          is_default: boolean
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          church_id: string
+          created_at?: string
+          driver: string
+          driver_config?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          church_id?: string
+          created_at?: string
+          driver?: string
+          driver_config?: Json
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaging_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_config_church_id_fkey"
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
@@ -2940,10 +4704,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "ministries_leader_id_fkey"
+            foreignKeyName: "ministries_leader_id_people_fkey"
             columns: ["leader_id"]
             isOneToOne: false
-            referencedRelation: "leaders"
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -3006,6 +4770,7 @@ export type Database = {
       }
       n8n_webhooks: {
         Row: {
+          acolhimento_url: string | null
           church_id: string
           created_at: string
           id: string
@@ -3016,6 +4781,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          acolhimento_url?: string | null
           church_id: string
           created_at?: string
           id?: string
@@ -3026,6 +4792,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          acolhimento_url?: string | null
           church_id?: string
           created_at?: string
           id?: string
@@ -3451,7 +5218,9 @@ export type Database = {
           instagram_handle: string | null
           interested_in_cell: boolean | null
           invited_by: string | null
+          is_bulk_import: boolean
           is_dizimista: boolean | null
+          is_leader: boolean
           is_volunteer: boolean
           last_attendance_at: string | null
           last_contact_at: string | null
@@ -3474,6 +5243,7 @@ export type Database = {
           person_stage: Database["public"]["Enums"]["person_stage"] | null
           phone: string | null
           phone_secondary: string | null
+          pipeline_stage_id: string | null
           previous_church: string | null
           reengagement_last_sent_at: string | null
           reengagement_status: string | null
@@ -3527,7 +5297,9 @@ export type Database = {
           instagram_handle?: string | null
           interested_in_cell?: boolean | null
           invited_by?: string | null
+          is_bulk_import?: boolean
           is_dizimista?: boolean | null
+          is_leader?: boolean
           is_volunteer?: boolean
           last_attendance_at?: string | null
           last_contact_at?: string | null
@@ -3550,6 +5322,7 @@ export type Database = {
           person_stage?: Database["public"]["Enums"]["person_stage"] | null
           phone?: string | null
           phone_secondary?: string | null
+          pipeline_stage_id?: string | null
           previous_church?: string | null
           reengagement_last_sent_at?: string | null
           reengagement_status?: string | null
@@ -3603,7 +5376,9 @@ export type Database = {
           instagram_handle?: string | null
           interested_in_cell?: boolean | null
           invited_by?: string | null
+          is_bulk_import?: boolean
           is_dizimista?: boolean | null
+          is_leader?: boolean
           is_volunteer?: boolean
           last_attendance_at?: string | null
           last_contact_at?: string | null
@@ -3626,6 +5401,7 @@ export type Database = {
           person_stage?: Database["public"]["Enums"]["person_stage"] | null
           phone?: string | null
           phone_secondary?: string | null
+          pipeline_stage_id?: string | null
           previous_church?: string | null
           reengagement_last_sent_at?: string | null
           reengagement_status?: string | null
@@ -3662,6 +5438,13 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_pipeline_stage_id_fkey"
+            columns: ["pipeline_stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -4083,6 +5866,7 @@ export type Database = {
           description: string | null
           included_agents: number
           max_agents: number | null
+          max_members: number | null
           max_users: number
           name: string
           price_cents: number
@@ -4097,6 +5881,7 @@ export type Database = {
           description?: string | null
           included_agents?: number
           max_agents?: number | null
+          max_members?: number | null
           max_users?: number
           name: string
           price_cents: number
@@ -4111,6 +5896,7 @@ export type Database = {
           description?: string | null
           included_agents?: number
           max_agents?: number | null
+          max_members?: number | null
           max_users?: number
           name?: string
           price_cents?: number
@@ -4210,6 +5996,88 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: true
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reengagement_journey: {
+        Row: {
+          cancelled_reason: string | null
+          church_id: string
+          completed_at: string | null
+          created_at: string
+          current_touchpoint: string
+          id: string
+          is_sensitive_case: boolean
+          iteration: number
+          next_touchpoint_at: string
+          pastoral_notes: string | null
+          person_id: string
+          responses_received: Json
+          started_at: string
+          status: string
+          stop_reason: string | null
+          touchpoints_sent: Json
+          updated_at: string
+        }
+        Insert: {
+          cancelled_reason?: string | null
+          church_id: string
+          completed_at?: string | null
+          created_at?: string
+          current_touchpoint: string
+          id?: string
+          is_sensitive_case?: boolean
+          iteration?: number
+          next_touchpoint_at: string
+          pastoral_notes?: string | null
+          person_id: string
+          responses_received?: Json
+          started_at?: string
+          status?: string
+          stop_reason?: string | null
+          touchpoints_sent?: Json
+          updated_at?: string
+        }
+        Update: {
+          cancelled_reason?: string | null
+          church_id?: string
+          completed_at?: string | null
+          created_at?: string
+          current_touchpoint?: string
+          id?: string
+          is_sensitive_case?: boolean
+          iteration?: number
+          next_touchpoint_at?: string
+          pastoral_notes?: string | null
+          person_id?: string
+          responses_received?: Json
+          started_at?: string
+          status?: string
+          stop_reason?: string | null
+          touchpoints_sent?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reengagement_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -4416,6 +6284,123 @@ export type Database = {
           },
         ]
       }
+      stripe_coupons: {
+        Row: {
+          active: boolean | null
+          amount_off: number | null
+          applies_to_products: string[] | null
+          archived_at: string | null
+          created_at: string | null
+          created_by: string | null
+          currency: string | null
+          discount_target: string | null
+          discount_type: string
+          duration: string
+          id: string
+          last_synced_at: string | null
+          livemode: boolean | null
+          max_redemptions: number | null
+          metadata: Json | null
+          name: string
+          percent_off: number | null
+          promo_code: string | null
+          purpose: string | null
+          redeem_by: string | null
+          stripe_promo_code_id: string | null
+          times_redeemed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          amount_off?: number | null
+          applies_to_products?: string[] | null
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          discount_target?: string | null
+          discount_type: string
+          duration: string
+          id: string
+          last_synced_at?: string | null
+          livemode?: boolean | null
+          max_redemptions?: number | null
+          metadata?: Json | null
+          name: string
+          percent_off?: number | null
+          promo_code?: string | null
+          purpose?: string | null
+          redeem_by?: string | null
+          stripe_promo_code_id?: string | null
+          times_redeemed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          amount_off?: number | null
+          applies_to_products?: string[] | null
+          archived_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          currency?: string | null
+          discount_target?: string | null
+          discount_type?: string
+          duration?: string
+          id?: string
+          last_synced_at?: string | null
+          livemode?: boolean | null
+          max_redemptions?: number | null
+          metadata?: Json | null
+          name?: string
+          percent_off?: number | null
+          promo_code?: string | null
+          purpose?: string | null
+          redeem_by?: string | null
+          stripe_promo_code_id?: string | null
+          times_redeemed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      stripe_payment_links: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          key: string
+          livemode: boolean | null
+          metadata: Json | null
+          nickname: string | null
+          price_id: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id: string
+          key: string
+          livemode?: boolean | null
+          metadata?: Json | null
+          nickname?: string | null
+          price_id: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          key?: string
+          livemode?: boolean | null
+          metadata?: Json | null
+          nickname?: string | null
+          price_id?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       stripe_prices: {
         Row: {
           active: boolean
@@ -4460,25 +6445,43 @@ export type Database = {
       }
       subscription_agents: {
         Row: {
+          activation_status: string
           active: boolean
           agent_slug: string
           created_at: string
+          credits_balance: number | null
+          credits_total: number | null
           id: string
+          metadata: Json | null
+          package_type: string | null
           subscription_id: string
+          updated_at: string | null
         }
         Insert: {
+          activation_status?: string
           active?: boolean
           agent_slug: string
           created_at?: string
+          credits_balance?: number | null
+          credits_total?: number | null
           id?: string
+          metadata?: Json | null
+          package_type?: string | null
           subscription_id: string
+          updated_at?: string | null
         }
         Update: {
+          activation_status?: string
           active?: boolean
           agent_slug?: string
           created_at?: string
+          credits_balance?: number | null
+          credits_total?: number | null
           id?: string
+          metadata?: Json | null
+          package_type?: string | null
           subscription_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -4941,8 +6944,71 @@ export type Database = {
           },
         ]
       }
+      church_agent_activity_last_30d: {
+        Row: {
+          agent_slug: string | null
+          avg_duration_ms: number | null
+          church_id: string | null
+          error_count: number | null
+          last_execution_at: string | null
+          model: string | null
+          rate_limited_count: number | null
+          skipped_count: number | null
+          success_count: number | null
+          total_cache_creation_tokens: number | null
+          total_cache_read_tokens: number | null
+          total_executions: number | null
+          total_input_tokens: number | null
+          total_output_tokens: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      _is_ekthos_admin: { Args: never; Returns: boolean }
+      activate_agent: { Args: { p_sa_id: string }; Returns: Json }
+      admin_grant_agent: {
+        Args: {
+          p_agent_slug: string
+          p_church_id: string
+          p_duration_days?: number
+          p_grant_type: string
+          p_notes?: string
+          p_stripe_payment_intent_id?: string
+        }
+        Returns: Json
+      }
+      admin_list_grantable_agents: {
+        Args: { p_church_id: string }
+        Returns: Json
+      }
+      admin_revoke_agent: {
+        Args: { p_agent_slug: string; p_church_id: string }
+        Returns: Json
+      }
+      apply_credit_topup: {
+        Args: {
+          p_church_id: string
+          p_package_slug: string
+          p_stripe_invoice_id?: string
+        }
+        Returns: Json
+      }
       apply_discipleship_template: {
         Args: { p_church_id: string; p_template_slug: string }
         Returns: undefined
@@ -4954,18 +7020,69 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      cancel_agent: { Args: { p_sa_id: string }; Returns: Json }
       capture_visitor_to_pipeline: {
         Args: { p_church_id: string; p_person_id: string }
         Returns: string
       }
+      check_credit_thresholds: { Args: never; Returns: Json }
       church_has_access: { Args: { p_church_id: string }; Returns: boolean }
+      count_remaining_admins: {
+        Args: { p_exclude_id: string }
+        Returns: number
+      }
       create_default_pipeline_stages: {
         Args: { p_church_id: string }
         Returns: undefined
       }
+      debit_agent_credits: {
+        Args: {
+          p_agent_slug: string
+          p_church_id: string
+          p_credits: number
+          p_description?: string
+          p_operation_type: string
+          p_related_entity_id?: string
+        }
+        Returns: Json
+      }
       generate_event_occurrences: {
         Args: { p_event_id: string }
         Returns: undefined
+      }
+      get_agent_prompt_resolved: {
+        Args: { p_agent_slug: string; p_church_id: string }
+        Returns: {
+          agent_slug: string
+          base_prompt: string
+          church_config: Json
+          church_id: string
+          custom_instructions: string
+          has_custom_config: boolean
+          resolved_prompt: string
+          template_version: number
+        }[]
+      }
+      get_church_agent_config: {
+        Args: { p_agent_slug: string; p_church_id: string }
+        Returns: {
+          agent_slug: string
+          church_id: string
+          created_at: string
+          custom_instructions: string
+          denomination: string
+          formality: string
+          updated_at: string
+          updated_by: string
+        }[]
+      }
+      get_church_agent_full_config: {
+        Args: { p_agent_slug: string; p_church_id: string }
+        Returns: Json
+      }
+      get_church_onboarding_state: {
+        Args: { p_church_id: string }
+        Returns: Json
       }
       grant_access: {
         Args: {
@@ -4984,11 +7101,62 @@ export type Database = {
         }
         Returns: string
       }
+      has_ekthos_role: { Args: { p_role: string }; Returns: boolean }
       increment_qr_scanned_count: {
         Args: { p_church_id: string }
         Returns: undefined
       }
       is_ekthos_admin: { Args: never; Returns: boolean }
+      list_church_channels: {
+        Args: { p_church_id: string }
+        Returns: {
+          agent_slugs: string[]
+          display_name: string
+          error_message: string
+          id: string
+          last_provisioned_at: string
+          phone_number: string
+          provider: string
+          provider_instance_id: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      list_church_whatsapp_channels: {
+        Args: { p_church_id: string }
+        Returns: {
+          display_name: string
+          error_message: string
+          id: string
+          instance_id: string
+          last_provisioned_at: string
+          phone_number: string
+          provider: string
+          status: string
+          updated_at: string
+        }[]
+      }
+      list_pending_activations: {
+        Args: never
+        Returns: {
+          activation_status: string
+          agent_name: string
+          agent_slug: string
+          church_id: string
+          church_name: string
+          created_at: string
+          credits_balance: number
+          credits_total: number
+          metadata: Json
+          notification_id: string
+          notification_status: string
+          package_type: string
+          sa_id: string
+          subscription_id: string
+        }[]
+      }
+      pause_agent: { Args: { p_sa_id: string }; Returns: Json }
+      pause_agents_at_zero: { Args: never; Returns: Json }
       process_invoice_payment_failed: {
         Args: { p_payload: Json }
         Returns: Json
@@ -4999,11 +7167,110 @@ export type Database = {
       }
       process_subscription_deleted: { Args: { p_payload: Json }; Returns: Json }
       process_subscription_updated: { Args: { p_payload: Json }; Returns: Json }
+      record_audit_event: {
+        Args: {
+          p_action: string
+          p_actor_email?: string
+          p_actor_roles?: string[]
+          p_admin_user_id: string
+          p_after?: Json
+          p_before?: Json
+          p_church_id: string
+          p_error_msg?: string
+          p_impersonated_church_id?: string
+          p_impersonation_session_id?: string
+          p_reason?: string
+          p_request_id?: string
+          p_resource?: string
+          p_resource_id?: string
+          p_source?: string
+          p_status?: string
+        }
+        Returns: string
+      }
+      reengajamento_scan_disparar: { Args: never; Returns: undefined }
+      renew_agent_credit_cycles: { Args: never; Returns: Json }
+      reset_church_agent_config: {
+        Args: { p_agent_slug: string; p_church_id: string }
+        Returns: undefined
+      }
+      resolve_notification: {
+        Args: { p_notification_id: string }
+        Returns: boolean
+      }
+      start_agent_setup: {
+        Args: { p_notes?: string; p_sa_id: string }
+        Returns: Json
+      }
+      upsert_church_agent_config: {
+        Args: {
+          p_agent_slug: string
+          p_church_id: string
+          p_custom_instructions: string
+        }
+        Returns: Json
+      }
+      upsert_church_agent_config_admin: {
+        Args: { p_agent_slug: string; p_church_id: string; p_data: Json }
+        Returns: Json
+      }
+      upsert_church_cadastro_cristalino: {
+        Args: {
+          p_church_data: Json
+          p_church_id: string
+          p_contractor_data: Json
+        }
+        Returns: Json
+      }
+      upsert_church_channel: {
+        Args: {
+          p_agent_slugs: string[]
+          p_channel_id?: string
+          p_church_id: string
+          p_display_name: string
+          p_initial_status?: string
+          p_phone_number: string
+          p_provider: string
+          p_provider_instance_id: string
+        }
+        Returns: {
+          channel_id: string
+          is_new: boolean
+        }[]
+      }
+      upsert_church_followup_config_admin: {
+        Args: { p_agent_slug: string; p_church_id: string; p_data: Json }
+        Returns: Json
+      }
+      upsert_church_onboarding_pastoral: {
+        Args: { p_church_id: string; p_pastoral_data: Json }
+        Returns: Json
+      }
+      upsert_church_whatsapp_channel: {
+        Args: {
+          p_church_id: string
+          p_display_name: string
+          p_initial_status?: string
+          p_instance_id: string
+          p_phone_number: string
+          p_provider: string
+        }
+        Returns: {
+          channel_id: string
+          is_new: boolean
+        }[]
+      }
       upsert_session_token: { Args: { p_church_id: string }; Returns: string }
       validate_session_token: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {
-      agent_pricing_tier: "free" | "always_paid" | "eligible"
+      agent_pricing_tier:
+        | "free"
+        | "always_paid"
+        | "eligible"
+        | "coming_soon"
+        | "premium"
+        | "internal"
       app_role:
         | "admin"
         | "admin_departments"
@@ -5153,7 +7420,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      agent_pricing_tier: ["free", "always_paid", "eligible"],
+      agent_pricing_tier: [
+        "free",
+        "always_paid",
+        "eligible",
+        "coming_soon",
+        "premium",
+        "internal",
+      ],
       app_role: [
         "admin",
         "admin_departments",
@@ -5182,3 +7456,4 @@ export const Constants = {
     },
   },
 } as const
+

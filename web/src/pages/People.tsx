@@ -9,7 +9,7 @@
  *  - Em Risco       → stage: inativo
  */
 
-import { useState } from 'react'
+import { useState, Component, type ReactNode } from 'react'
 import { Pencil, Trash2, Gift, QrCode } from 'lucide-react'
 import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
@@ -23,6 +23,20 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Badge from '@/components/ui/Badge'
 import type { Person, PersonWithStage } from '@/lib/types/joins'
+
+// ── Error Boundary para PersonDetailPanel ────────────────────────────────────
+class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() { return { hasError: true } }
+  componentDidCatch(error: Error) { console.error('[PanelErrorBoundary]', error) }
+  render() {
+    if (this.state.hasError) return null
+    return this.props.children
+  }
+}
 
 type BadgeVariant = 'blue' | 'green' | 'yellow' | 'gray' | 'red' | 'purple'
 
@@ -185,13 +199,13 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
-          {person.tags.slice(0, 3).map((tag) => (
+          {(person.tags ?? []).slice(0, 3).map((tag) => (
             <span key={tag} className="text-xs bg-bg-hover text-primary-text rounded-full px-2 py-0.5 font-medium">
               {tag}
             </span>
           ))}
-          {person.tags.length > 3 && (
-            <span className="text-xs text-text-tertiary">+{person.tags.length - 3}</span>
+          {(person.tags ?? []).length > 3 && (
+            <span className="text-xs text-text-tertiary">+{(person.tags ?? []).length - 3}</span>
           )}
         </div>
       </td>
@@ -405,11 +419,13 @@ export default function People() {
       />
 
       {/* Detail Panel */}
-      <PersonDetailPanel
-        person={selectedPerson}
-        onClose={() => setSelectedPerson(null)}
-        onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
-      />
+      <PanelErrorBoundary>
+        <PersonDetailPanel
+          person={selectedPerson}
+          onClose={() => setSelectedPerson(null)}
+          onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
+        />
+      </PanelErrorBoundary>
 
       {/* QR Code Modal */}
       <QrCodeModal

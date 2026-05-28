@@ -1,5 +1,36 @@
 // ============================================================
-// Edge Function: stripe-webhook v11 — B1: pending_activation para agentes premium
+// Edge Function: stripe-webhook v13 — Fix C1: handleInvoicePaid colunas corretas
+//
+// MUDANÇAS v12 → v13:
+//   - handleInvoicePaid: INSERT corrigido para colunas reais da tabela invoices.
+//     Colunas removidas (não existem): stripe_subscription_id, stripe_customer_id,
+//       currency, period_start, period_end.
+//     Mapeamentos corrigidos: amount_paid→amount_cents, invoice_pdf→pdf_url.
+//     Campo adicionado: paid_at (unixToIso de status_transitions.paid_at).
+//     Error handling: throw em erro genuíno (Stripe retenta via 500);
+//       ignorar 23505 (UNIQUE stripe_invoice_id — idempotente em retries).
+//
+// INALTERADO v12 → v13:
+//   - handleInvoicePaymentFailed
+//   - handleSubscriptionUpdated / handleSubscriptionDeleted
+//   - handleCheckoutSessionCompleted / handleCaminhoACheckout
+//   - handleLandingPageCheckout / handleCockpitCheckout / handleAgentPurchase
+//   - handleChargeRefunded + affiliate helpers
+//
+// MUDANÇAS v11 → v12:
+//   - handleCaminhoACheckout: source='caminho_a' cria church via RPC atômica
+//     (mesma process_stripe_checkout_completed do landing_page) + INSERT profiles
+//     + internal_notification de onboarding para time Ekthos.
+//   - Bug Vanessa fix: inviteUserByEmail não cria profiles; adicionado upsert
+//     em profiles após invite em Caminho A (e em admin-church-create v4).
+//
+// INALTERADO v11 → v12:
+//   - handleAgentPurchase (B1)
+//   - handleLandingPageCheckout (F6)
+//   - handleCockpitCheckout
+//   - handleInvoicePaid / handleInvoicePaymentFailed
+//   - handleSubscriptionUpdated / handleSubscriptionDeleted
+//   - handleChargeRefunded + affiliate helpers
 //
 // MUDANÇAS v10 → v11:
 //   - handleAgentPurchase: checkout.session.completed com
@@ -461,6 +492,228 @@ async function handleAgentPurchase(
   console.log(`[stripe-webhook] ✅ agent_purchase pending: church=${churchId} agent=${agentSlug} sub=${newAgentSub.id} email=${customerEmail ?? 'none'}`)
 }
 
+// ── Caminho A: pagamento Stripe direto (Fase 6.2) ────────────
+
+/**
+ * Caminho A — checkout.session.completed com metadata.source='caminho_a'.
+ * Cria church + subscription via RPC atômica + profile + notificação onboarding.
+ * Idempotente via stripe_checkout_session_id (mesma RPC que landing_page).
+ */
+async function handleCaminhoACheckout(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
+  // Idempotência
+  const { data: existingCheck } = await supabase
+    .from('subscriptions')
+    .select('id, church_id')
+    .eq('stripe_checkout_session_id', session.id)
+    .maybeSingle()
+  if (existingCheck?.id) {
+    console.log(`[caminho-a] já processado: session=${session.id}`)
+    return
+  }
+
+  const customerId = typeof session.customer === 'string'
+    ? session.customer : (session.customer as Stripe.Customer | null)?.id ?? null
+  const subId = typeof session.subscription === 'string'
+    ? session.subscription : (session.subscription as Stripe.Subscription | null)?.id ?? null
+  const email = session.customer_email ?? session.customer_details?.email ?? session.metadata?.email ?? null
+  if (!email) { console.error('[caminho-a] sem email:', session.id); return }
+
+  const planSlug   = session.metadata?.plan_slug ?? 'chamado'
+  const pastorName = (session.metadata?.name ?? session.customer_details?.name ?? '').trim()
+  const churchName = (session.metadata?.church_name ?? (pastorName ? `Igreja de ${pastorName}` : `Igreja ${email.split('@')[0]}`)).trim()
+  const churchSlug = `${slugify(churchName)}-${Date.now().toString(36)}`
+
+  const { data: planData } = await supabase.from('plans').select('price_cents').eq('slug', planSlug).single()
+  const originalPriceCents = planData?.price_cents ?? 0
+
+  const couponInfo    = await resolveCouponFromSession(session, email, planSlug)
+  const billingOrigin = couponInfo?.billingOrigin ?? 'stripe'
+  const discountCents = couponInfo?.discountCents ?? 0
+  const couponId      = couponInfo?.couponId      ?? null
+  const redemptionId  = couponInfo?.redemptionId  ?? null
+  const finalOriginal = couponInfo?.originalCents ?? originalPriceCents
+
+  // Cria usuário e envia invite para definir senha
+  let userId: string | null = null
+  try {
+    const { data: invited, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
+      redirectTo: `${ALLOWED_ORIGIN}/auth/set-password`,
+      data: { full_name: pastorName },
+    })
+    if (inviteErr) console.warn('[caminho-a] inviteUserByEmail (non-fatal):', inviteErr.message)
+    else userId = invited?.user?.id ?? null
+  } catch (e) { console.warn('[caminho-a] invite failed (non-fatal):', (e as Error).message) }
+
+  // Cria church + subscription + access_grant via RPC atômica (mesma do landing_page)
+  const { data: rpcResult, error: rpcErr } = await supabase.rpc('process_stripe_checkout_completed', {
+    p_payload: {
+      session_id:           session.id,
+      stripe_event_id:      eventId,
+      stripe_subscription_id: subId,
+      stripe_customer_id:   customerId,
+      church_name:          churchName,
+      church_slug:          churchSlug,
+      plan_slug:            planSlug,
+      user_id:              userId,
+      billing_origin:       billingOrigin,
+      original_price_cents: finalOriginal,
+      discount_cents:       discountCents,
+      coupon_id:            couponId,
+      redemption_id:        redemptionId,
+    },
+  })
+
+  if (rpcErr || !rpcResult?.success) {
+    throw new Error(`[caminho-a] checkout RPC failed: ${rpcErr?.message ?? rpcResult?.error ?? 'RPC failure'}`)
+  }
+  if (rpcResult.already_processed) {
+    console.log('[caminho-a] idempotente via RPC')
+    return
+  }
+
+  const churchId = rpcResult.church_id as string
+  console.log(`[caminho-a] church criada: ${churchId} plan=${planSlug}`)
+
+  // Atualiza app_metadata (auth_church_id() lê apenas app_metadata — CLAUDE.md)
+  if (userId && churchId) {
+    try {
+      await supabase.auth.admin.updateUserById(userId, {
+        app_metadata: { church_id: churchId, role: 'admin' },
+      })
+    } catch (e) { console.warn('[caminho-a] updateUserById (non-fatal):', (e as Error).message) }
+  }
+
+  // INSERT profile — inviteUserByEmail NÃO cria profiles (Bug Vanessa fix)
+  if (userId && churchId) {
+    const displayName = pastorName || email.split('@')[0]
+    const { error: profileErr } = await supabase
+      .from('profiles')
+      .upsert({
+        id:           crypto.randomUUID(),
+        user_id:      userId,
+        church_id:    churchId,
+        name:         displayName,
+        display_name: displayName,
+      } as any, { onConflict: 'user_id,church_id', ignoreDuplicates: true })
+    if (profileErr) console.warn('[caminho-a] profile insert (non-fatal):', profileErr.message)
+    else console.log(`[caminho-a] profile criado: userId=${userId} churchId=${churchId}`)
+  }
+
+  // Atualiza customer Stripe com church_id para resolveChurchId funcionar em invoices futuras
+  if (customerId && churchId) {
+    try { await stripe.customers.update(customerId, { metadata: { church_id: churchId } }) }
+    catch (e) { console.warn('[caminho-a] stripe customer update (non-fatal):', (e as Error).message) }
+  }
+
+  // Notificação interna — time Ekthos inicia onboarding
+  await supabase.from('internal_notifications').insert({
+    notification_type: 'caminho_a_new_church',
+    church_id:         churchId,
+    title:   `Nova igreja via Caminho A: ${churchName}`,
+    message: `Cliente ${email} assinou plano ${planSlug} via Caminho A (Stripe direto). Igreja: ${churchId}. Iniciar onboarding.`,
+    metadata: {
+      email, church_name: churchName, plan_slug: planSlug,
+      session_id: session.id, event_id: eventId,
+    },
+  }).then(({ error }) => {
+    if (error) console.warn('[caminho-a] internal_notification (non-fatal):', error.message)
+    else console.log(`[caminho-a] internal_notification criada: church=${churchId}`)
+  })
+
+  // ── G1: user_roles (OPS-DEBT-031) ───────────────────────────
+  // Sem user_roles o pastor não tem acesso role-based ao CRM.
+  // Idempotente via onConflict user_id+church_id.
+  if (userId && churchId) {
+    const { error: roleErr } = await supabase
+      .from('user_roles')
+      .upsert(
+        { user_id: userId, church_id: churchId, role: 'admin' } as any,
+        { onConflict: 'user_id,church_id', ignoreDuplicates: true },
+      )
+    if (roleErr) console.warn('[caminho-a] user_roles upsert (non-fatal):', roleErr.message)
+    else console.log(`[caminho-a] user_roles criado: userId=${userId} churchId=${churchId}`)
+  }
+
+  // ── G2: subscription_agents (OPS-DEBT-031) ───────────────────
+  // agent-guard verifica subscription_agents.active=true antes de processar.
+  // Agentes internos: ativados imediatamente (sem setup manual).
+  // Agente premium comprado junto (agent_slug no metadata): pending_activation.
+  const { data: subRow } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('church_id', churchId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (subRow?.id) {
+    const subRowId = subRow.id
+
+    // Seed agentes internos — ativos imediatamente
+    const { error: internalErr } = await supabase
+      .from('subscription_agents')
+      .upsert([
+        { subscription_id: subRowId, agent_slug: 'agent-suporte',    active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+        { subscription_id: subRowId, agent_slug: 'agent-onboarding', active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+        { subscription_id: subRowId, agent_slug: 'agent-cadastro',   active: true, activation_status: 'active', package_type: 'avulso', credits_total: 0, credits_balance: 0 },
+      ] as any[], { onConflict: 'subscription_id,agent_slug', ignoreDuplicates: true })
+    if (internalErr) console.warn('[caminho-a] subscription_agents internos (non-fatal):', internalErr.message)
+    else console.log(`[caminho-a] subscription_agents internos criados: sub=${subRowId}`)
+
+    // Agente premium comprado junto (ex: agent-acolhimento via Payment Link)
+    const purchasedAgentSlug = session.metadata?.agent_slug ?? null
+    if (purchasedAgentSlug) {
+      const { data: existingAgent } = await supabase
+        .from('subscription_agents')
+        .select('id')
+        .eq('subscription_id', subRowId)
+        .eq('agent_slug', purchasedAgentSlug)
+        .maybeSingle()
+
+      if (!existingAgent?.id) {
+        const { data: newSa, error: saErr } = await supabase
+          .from('subscription_agents')
+          .insert({
+            subscription_id:   subRowId,
+            agent_slug:        purchasedAgentSlug,
+            active:            false,
+            activation_status: 'pending_activation',
+            package_type:      'avulso',
+            credits_total:     0,
+            credits_balance:   0,
+          } as any)
+          .select()
+          .single()
+
+        if (saErr) {
+          console.warn('[caminho-a] subscription_agents agente premium (non-fatal):', saErr.message)
+        } else {
+          const { data: agentCatalog } = await supabase
+            .from('agents_catalog').select('name').eq('slug', purchasedAgentSlug).maybeSingle()
+          const agentDisplayName = agentCatalog?.name ?? purchasedAgentSlug
+          await supabase.from('internal_notifications').insert({
+            notification_type: 'agent_purchase_pending',
+            church_id:         churchId,
+            agent_slug:        purchasedAgentSlug,
+            subscription_id:   newSa.id,
+            title:   `Nova compra via Caminho A: ${agentDisplayName}`,
+            message: `Igreja "${churchName}" comprou ${agentDisplayName} junto com plano ${planSlug} via Caminho A. Aguardando setup assistido.`,
+            metadata: { agent_name: agentDisplayName, session_id: session.id, event_id: eventId },
+          }).then(({ error }) => {
+            if (error) console.warn('[caminho-a] notif agente premium (non-fatal):', error.message)
+          })
+          console.log(`[caminho-a] agente premium pendente: ${purchasedAgentSlug} sa=${newSa.id}`)
+        }
+      } else {
+        console.log(`[caminho-a] agente premium já existe: ${purchasedAgentSlug} sa=${existingAgent.id}`)
+      }
+    }
+  }
+
+  await recordAffiliateConversion(session, churchId)
+  console.log(`[caminho-a] ✅ church=${churchId} plan=${planSlug} user=${userId ?? 'none'}`)
+}
+
 // ── Handlers existentes (inalterados de v10) ─────────────────
 
 async function handleLandingPageCheckout(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
@@ -584,6 +837,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     await handleAgentPurchase(session, eventId)
     return
   }
+  // Caminho A: pagamento Stripe direto — cria church do zero (Fase 6.2)
+  if (session.metadata?.source === 'caminho_a') {
+    console.log(`[stripe-webhook] caminho_a: session=${session.id} plan=${session.metadata.plan_slug ?? 'chamado'}`)
+    await handleCaminhoACheckout(session, eventId)
+    return
+  }
   // F6: Landing page cria church do zero
   if (session.metadata?.source === 'landing_page') {
     await handleLandingPageCheckout(session, eventId)
@@ -608,26 +867,65 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     current_period_end:   subLine?.period ? unixToIso(subLine.period.end)   : null,
     updated_at: new Date().toISOString(),
   })
-  const subId = typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as Stripe.Subscription | null)?.id ?? null
-  await supabase.from('invoices').insert({
-    church_id: churchId, stripe_invoice_id: invoice.id, stripe_subscription_id: subId,
-    stripe_customer_id: customerId, amount_paid: invoice.amount_paid, currency: invoice.currency,
-    period_start: subLine?.period ? unixToIso(subLine.period.start) : null,
-    period_end:   subLine?.period ? unixToIso(subLine.period.end)   : null,
-    hosted_invoice_url: invoice.hosted_invoice_url ?? null, invoice_pdf: invoice.invoice_pdf ?? null,
-    status: invoice.status ?? 'paid', created_at: new Date().toISOString(),
-  }).then(({ error }) => { if (error) console.error('[stripe-webhook] invoice insert:', error.message) })
+  // ── Fix C1: colunas reais da tabela invoices ──────────────────
+  // Schema: church_id, stripe_invoice_id, amount_cents, status,
+  //         paid_at, hosted_invoice_url, pdf_url, description, created_at
+  // REMOVIDOS (colunas não existem): stripe_subscription_id, stripe_customer_id,
+  //   currency, period_start, period_end
+  // ── Fix C2: upsert (não insert) — cobre retry após payment_failed ─
+  // Se payment_failed gravou status='open', aqui atualizamos para 'paid'
+  // ON CONFLICT (stripe_invoice_id) DO UPDATE → sempre vence com status final
+  const { error: invoiceErr } = await supabase.from('invoices').upsert({
+    church_id:          churchId,
+    stripe_invoice_id:  invoice.id,
+    amount_cents:       invoice.amount_paid,                                      // amount_paid = valor Stripe; coluna = amount_cents
+    status:             invoice.status ?? 'paid',
+    paid_at:            unixToIso(invoice.status_transitions?.paid_at ?? null),
+    hosted_invoice_url: invoice.hosted_invoice_url ?? null,
+    pdf_url:            invoice.invoice_pdf ?? null,                              // invoice_pdf = campo Stripe; pdf_url = coluna DB
+    description:        invoice.description ?? null,
+  }, { onConflict: 'stripe_invoice_id' })
+  if (invoiceErr) {
+    console.error('[stripe-webhook] invoice upsert falhou:', invoiceErr.message, invoiceErr.code)
+    throw new Error(`invoice upsert failed: ${invoiceErr.message}`)
+  }
+  console.log(`[stripe-webhook] ✅ invoice gravada/atualizada: ${invoice.id} church=${churchId} amount_cents=${invoice.amount_paid}`)
   await recordAffiliateCommission(invoice, churchId)
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   const subId = typeof invoice.subscription === 'string' ? invoice.subscription : (invoice.subscription as Stripe.Subscription | null)?.id ?? null
   if (!subId) { console.warn('[stripe-webhook] invoice.payment_failed: sem sub_id', invoice.id); return }
+
+  // ── Atualiza subscription para past_due via RPC ──────────────
   const { data: result, error } = await supabase.rpc('process_invoice_payment_failed', {
     p_payload: { stripe_subscription_id: subId, stripe_event_id: invoice.id },
   })
   if (error) { console.error('[stripe-webhook] process_invoice_payment_failed RPC:', error.message); return }
   if (!result?.success) { console.warn('[stripe-webhook] subscription not found', subId); return }
+
+  // ── Fix C2: grava invoice no histórico ───────────────────────
+  // ignoreDuplicates: true → ON CONFLICT DO NOTHING
+  // Preserva status 'paid' caso invoice.paid já tenha sido processado antes (raro mas possível)
+  const customerId = typeof invoice.customer === 'string' ? invoice.customer : (invoice.customer as Stripe.Customer | null)?.id ?? null
+  const churchId   = await resolveChurchId(invoice.metadata as Record<string, string> | null, customerId)
+  if (churchId) {
+    const { error: invErr } = await supabase.from('invoices').upsert({
+      church_id:          churchId,
+      stripe_invoice_id:  invoice.id,
+      amount_cents:       invoice.amount_due,
+      status:             (invoice.status as string) ?? 'open',
+      paid_at:            null,
+      hosted_invoice_url: invoice.hosted_invoice_url ?? null,
+      pdf_url:            invoice.invoice_pdf ?? null,
+      description:        invoice.description ?? null,
+    }, { onConflict: 'stripe_invoice_id', ignoreDuplicates: true })
+    if (invErr) console.warn('[stripe-webhook] invoice.payment_failed: upsert ignorado:', invErr.message)
+    else console.log(`[stripe-webhook] invoice.payment_failed gravada: ${invoice.id} church=${churchId}`)
+  } else {
+    console.warn('[stripe-webhook] invoice.payment_failed: church não encontrada para invoice:', invoice.id)
+  }
+
   console.log(`[stripe-webhook] invoice.payment_failed → past_due: church=${result.church_id}`)
 }
 

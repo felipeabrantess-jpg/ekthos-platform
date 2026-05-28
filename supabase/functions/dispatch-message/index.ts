@@ -31,11 +31,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, content-type'
-}
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 // Mapa agente → webhook n8n (fallback quando não usa ChatPro)
 const AGENT_WEBHOOK_CONFIG: Record<string, { envVar: string; fallback: string }> = {
@@ -60,8 +56,18 @@ function getWebhookUrl(agentSlug: string): string | null {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({ ok: true }, 200)
+  if (req.method === 'OPTIONS') return json({ ok: false, error: 'method_not_allowed' }, 405)
   if (req.method !== 'POST')    return json({ ok: false, error: 'method_not_allowed' }, 405)
+
+  // ── Auth interna (Bearer SERVICE_ROLE_KEY) ───────────────────
+  if (!SERVICE_ROLE_KEY) {
+    console.error('[dispatch-message] SUPABASE_SERVICE_ROLE_KEY não configurado')
+    return json({ ok: false, error: 'misconfigured' }, 500)
+  }
+  const authHeader = req.headers.get('Authorization') ?? ''
+  if (authHeader !== `Bearer ${SERVICE_ROLE_KEY}`) {
+    return json({ ok: false, error: 'unauthorized' }, 401)
+  }
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL')!,
@@ -141,7 +147,10 @@ Deno.serve(async (req) => {
       try {
         const chatproRes = await fetch(`${supabaseUrl}/functions/v1/chatpro-send`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+          },
           body:    JSON.stringify({ to_phone, message }),
           signal:  AbortSignal.timeout(20_000),
         })
@@ -330,6 +339,6 @@ Deno.serve(async (req) => {
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   })
 }

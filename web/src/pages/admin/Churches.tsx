@@ -194,8 +194,8 @@ export default function AdminChurches() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       })
       if (!res.ok) throw new Error('Erro ao carregar igrejas')
-      const json = await res.json() as ChurchRow[]
-      setRows(json)
+      const result = await res.json() as { data: ChurchRow[]; total: number; page: number }
+      setRows(result.data ?? [])
     } catch {
       // Fallback: query direta via Supabase (requer políticas admin)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,29 +211,49 @@ export default function AdminChurches() {
 
   useEffect(() => { void load() }, [])
 
+  const [impersonateLoading, setImpersonateLoading] = useState<string | null>(null) // church.id em loading
+  const [impersonateError,   setImpersonateError]   = useState<string | null>(null)
+
   async function startImpersonate(church: ChurchRow) {
-    // Registra sessão de impersonação na tabela de auditoria
+    if (impersonateLoading) return
+    setImpersonateLoading(church.id)
+    setImpersonateError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('impersonate_sessions').insert({
-          admin_user_id: session.user.id,
-          church_id:     church.id,
-          notes:         `Impersonação iniciada via cockpit admin — ${church.name}`,
-        })
-      }
-    } catch (err) {
-      // Falha silenciosa — não bloqueia o fluxo de impersonação
-      console.error('[impersonate] failed to log session:', err)
-    }
+      if (!session?.access_token) throw new Error('Sessão expirada')
 
-    localStorage.setItem('impersonating', JSON.stringify({
-      church_id:   church.id,
-      church_name: church.name,
-    }))
-    navigate('/dashboard')
-    window.location.reload()
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-start-impersonation`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          church_id: church.id,
+          notes:     `Impersonação iniciada via cockpit admin — ${church.name}`,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? `Erro ${res.status} ao iniciar sessão`)
+      }
+      const result = await res.json() as { session_id: string; started_at: string; church_name: string }
+
+      localStorage.setItem('impersonating', JSON.stringify({
+        church_id:   church.id,
+        church_name: church.name,
+        session_id:  result.session_id,
+      }))
+      navigate('/dashboard')
+      window.location.reload()
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Falha ao iniciar sessão de impersonação'
+      setImpersonateError(msg)
+      console.error('[impersonate] start failed:', err)
+    } finally {
+      setImpersonateLoading(null)
+    }
   }
 
   const filtered = rows.filter(r => {
@@ -422,11 +442,15 @@ export default function AdminChurches() {
                           </button>
                           <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-black/5 py-1 w-40 hidden group-focus-within:block z-10">
                             <button
-                              onClick={() => startImpersonate(church)}
-                              className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                              onClick={() => void startImpersonate(church)}
+                              disabled={impersonateLoading === church.id}
+                              className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
                             >
-                              Entrar como pastor
+                              {impersonateLoading === church.id ? 'Iniciando...' : 'Entrar como pastor'}
                             </button>
+                            {impersonateError && impersonateLoading === null && (
+                              <p className="px-3 py-1 text-xs text-red-600">{impersonateError}</p>
+                            )}
                             <button
                               onClick={() => navigate(`/admin/churches/${church.id}`)}
                               className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"

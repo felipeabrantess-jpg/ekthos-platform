@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v2 — Sprint 3B
+// Edge Function: agent-acolhimento  v19 — Fase 6.3
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -11,6 +11,21 @@
 //   trigger_type: 'internal'         → alias de 'journey'
 //   trigger_type: 'inbound_message'  → resposta reativa a mensagem recebida
 //     body: { conversation_id, message_id, church_id, person_id?, inbound_text }
+//
+// MUDANÇAS v19 (Fase 6.3 — Observabilidade):
+//   - Importa logAgentExecution de _shared/log-agent-execution.ts
+//   - runToolLoop acumula token usage (UsageTotals) e retorna { result, usage }
+//   - processJourney: t0 + try/finally → logAgentExecution em 3 saídas
+//     (rate_limited, success, error)
+//   - processInbound: t0 + try/finally → logAgentExecution em 3 saídas
+//     (rate_limited, success, error)
+//   - Handler passa triggerType ('cron'|'journey') para processJourney
+//
+// MUDANÇAS v3 (Passo 6 mínimo viável):
+//   - fetchChurchConfig passa a chamar get_agent_prompt_resolved (RPC)
+//   - resolved_prompt substitui SYSTEM_BLOCK_A + SYSTEM_BLOCK_B_TEMPLATE
+//   - Fallback seguro: se RPC falhar, usa hardcoded (comportamento v2)
+//   - Log estruturado: { used_template, template_version, has_custom_instructions }
 //
 // MUDANÇAS v2 (Sprint 3B):
 //   - Usa enqueue_message (conversation_messages + channel_dispatch_queue)
@@ -24,6 +39,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 import { AGENT_TOOLS, executeTool, checkAntiSpam } from '../_shared/agent-tools.ts'
+import { logAgentExecution } from '../_shared/log-agent-execution.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -40,8 +56,9 @@ const MAX_TOKENS = 2048
 const BATCH_SIZE = 10
 
 // ── CORS ───────────────────────────────────────────────────
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
 const CORS = {
-  'Access-Control-Allow-Origin':  '*',
+  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 }
@@ -54,7 +71,9 @@ function json(data: unknown, status = 200): Response {
 }
 
 // ─────────────────────────────────────────────────────────────
-// BLOCOS DE SISTEMA — 2 blocos cacheados grandes (≥1024 tokens)
+// BLOCOS DE SISTEMA HARDCODED — mantidos como FALLBACK SEGURO
+// Usados se get_agent_prompt_resolved falhar (RPC indisponível ou erro)
+// NÃO DELETAR — garantem continuidade operacional mesmo sem DB
 // ─────────────────────────────────────────────────────────────
 
 const SYSTEM_BLOCK_A = `
@@ -174,28 +193,126 @@ const TOOLS_INBOUND = AGENT_TOOLS.filter(t =>
 )
 
 // ─────────────────────────────────────────────────────────────
-// BUSCAR CONFIG DA IGREJA
+// TIPOS
 // ─────────────────────────────────────────────────────────────
 
-async function fetchChurchConfig(churchId: string) {
-  const [{ data: church }, { data: agentConfig }] = await Promise.all([
+interface ResolvedPrompt {
+  resolved_prompt:      string
+  template_version:     number
+  has_custom_config:    boolean
+  custom_instructions:  string | null
+}
+
+interface LegacyConfig {
+  formality:        string | null
+  denomination:     string | null
+  preferred_verses: string[] | null
+  pastoral_depth:   string | null
+  send_window:      Record<string, unknown> | null
+  emoji_usage:      string | null
+  custom_overrides: Record<string, unknown> | null
+}
+
+// v19: token usage acumulado por execução
+interface UsageTotals {
+  input_tokens:          number
+  output_tokens:         number
+  cache_read_tokens:     number
+  cache_creation_tokens: number
+}
+
+// ─────────────────────────────────────────────────────────────
+// BUSCAR CONFIG DA IGREJA (v3 — via RPC get_agent_prompt_resolved)
+// ─────────────────────────────────────────────────────────────
+
+async function fetchChurchConfig(churchId: string): Promise<{
+  church:      { name?: string; timezone?: string; city?: string } | null
+  agentConfig: LegacyConfig | null
+  resolved:    ResolvedPrompt | null
+}> {
+  const [{ data: church }, rpcResult] = await Promise.all([
     supabaseAdmin
       .from('churches')
       .select('name, timezone, city')
       .eq('id', churchId)
       .maybeSingle(),
     supabaseAdmin
+      .rpc('get_agent_prompt_resolved', {
+        p_church_id:  churchId,
+        p_agent_slug: AGENT_SLUG,
+      })
+      .single(),
+  ])
+
+  // Fallback: se RPC falhar, buscamos config legada para o SYSTEM_BLOCK_B_TEMPLATE
+  let agentConfig: LegacyConfig | null = null
+  let resolved:    ResolvedPrompt | null = null
+
+  if (rpcResult.error || !rpcResult.data) {
+    console.warn('[agent-acolhimento] RPC get_agent_prompt_resolved falhou, usando fallback hardcoded:', rpcResult.error?.message)
+    // Buscar config estruturada para o fallback
+    const { data: cfg } = await supabaseAdmin
       .from('church_agent_config')
       .select('formality, denomination, preferred_verses, forbidden_topics, pastoral_depth, send_window, emoji_usage, custom_overrides')
       .eq('church_id', churchId)
       .eq('agent_slug', AGENT_SLUG)
-      .maybeSingle(),
-  ])
-  return { church, agentConfig }
+      .maybeSingle()
+    agentConfig = cfg as LegacyConfig | null
+  } else {
+    resolved = rpcResult.data as ResolvedPrompt
+  }
+
+  return { church, agentConfig, resolved }
 }
 
 // ─────────────────────────────────────────────────────────────
-// TOOL LOOP GENÉRICO
+// MONTAR BLOCOS DE SISTEMA (v3)
+// Usa resolved_prompt da RPC se disponível; cai no hardcoded se não
+// ─────────────────────────────────────────────────────────────
+
+function buildSystemBlocks(
+  resolved:    ResolvedPrompt | null,
+  church:      { name?: string } | null,
+  agentConfig: LegacyConfig | null,
+  churchId:    string,
+): { text: string; cache: boolean }[] {
+
+  if (resolved) {
+    // Caminho principal: prompt resolvido pela RPC (Camada 1 + 2 + 3)
+    console.log('[agent-acolhimento] prompt source', {
+      church_id:               churchId,
+      used_template:           true,
+      template_version:        resolved.template_version,
+      has_custom_config:       resolved.has_custom_config,
+      has_custom_instructions: resolved.custom_instructions != null,
+    })
+    return [{ text: resolved.resolved_prompt, cache: true }]
+  }
+
+  // Fallback hardcoded (v2) — garante operação se RPC indisponível
+  console.warn('[agent-acolhimento] prompt source', {
+    church_id:     churchId,
+    used_template: false,
+    reason:        'rpc_failed_using_hardcoded_fallback',
+  })
+  const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
+    church?.name || 'Igreja',
+    agentConfig?.denomination || '',
+    agentConfig?.formality || 'semiformal',
+    agentConfig?.pastoral_depth || 'moderate',
+    agentConfig?.emoji_usage || 'moderate',
+    agentConfig?.preferred_verses || [],
+    (agentConfig?.send_window as Record<string, unknown>) || null,
+    (agentConfig?.custom_overrides as Record<string, unknown>) || null,
+  )
+  return [
+    { text: SYSTEM_BLOCK_A, cache: true },
+    { text: systemBlockB,   cache: true },
+  ]
+}
+
+// ─────────────────────────────────────────────────────────────
+// TOOL LOOP GENÉRICO  (v19 — retorna { result, usage })
 // ─────────────────────────────────────────────────────────────
 
 async function runToolLoop(
@@ -203,7 +320,7 @@ async function runToolLoop(
   userMessage:  string,
   tools:        typeof AGENT_TOOLS,
   churchId:     string,
-): Promise<string> {
+): Promise<{ result: string; usage: UsageTotals }> {
   const messages: Anthropic.MessageParam[] = [
     { role: 'user', content: userMessage },
   ]
@@ -218,6 +335,14 @@ async function runToolLoop(
   let iterations  = 0
   const MAX_IT    = 10
 
+  // v19: acumulador de tokens
+  const totalUsage: UsageTotals = {
+    input_tokens:          0,
+    output_tokens:         0,
+    cache_read_tokens:     0,
+    cache_creation_tokens: 0,
+  }
+
   while (iterations < MAX_IT) {
     iterations++
 
@@ -228,6 +353,13 @@ async function runToolLoop(
       tools:      tools as Anthropic.Tool[],
       messages,
     })
+
+    // v19: acumular tokens de cada iteração
+    const u = response.usage as Record<string, number>
+    totalUsage.input_tokens          += u.input_tokens                    ?? 0
+    totalUsage.output_tokens         += u.output_tokens                   ?? 0
+    totalUsage.cache_read_tokens     += u.cache_read_input_tokens         ?? 0
+    totalUsage.cache_creation_tokens += u.cache_creation_input_tokens     ?? 0
 
     messages.push({ role: 'assistant', content: response.content })
 
@@ -264,17 +396,20 @@ async function runToolLoop(
     break // stop_reason inesperado
   }
 
-  return finalResult
+  return { result: finalResult, usage: totalUsage }
 }
 
 // ─────────────────────────────────────────────────────────────
-// PROCESSAR UMA JOURNEY (modo proativo)
+// PROCESSAR UMA JOURNEY (modo proativo)  (v19 — logAgentExecution)
 // ─────────────────────────────────────────────────────────────
 
 async function processJourney(
-  journeyId: string,
-  churchId:  string,
+  journeyId:   string,
+  churchId:    string,
+  triggerType: string = 'cron',
 ): Promise<{ ok: boolean; result?: string; error?: string }> {
+
+  const t0 = Date.now()
 
   // Lock atômico — evita race condition entre instâncias do cron
   const { data: locked } = await supabaseAdmin
@@ -294,7 +429,7 @@ async function processJourney(
   const personId = locked.person_id
 
   try {
-    const { church, agentConfig } = await fetchChurchConfig(churchId)
+    const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
     const churchTimezone = church?.timezone || 'America/Sao_Paulo'
 
     // Anti-spam check (v2 — lê conversation_messages)
@@ -307,19 +442,22 @@ async function processJourney(
         .update(reschedule)
         .eq('id', journeyId)
         .eq('church_id', churchId)
+
+      // v19: log anti-spam como 'skipped'
+      await logAgentExecution(supabaseAdmin, {
+        church_id:    churchId,
+        agent_slug:   AGENT_SLUG,
+        model:        MODEL,
+        trigger_type: triggerType,
+        status:       'skipped',
+        duration_ms:  Date.now() - t0,
+        error:        `anti_spam:${spamCheck.reason}`,
+      })
+
       return { ok: true, result: `skipped_anti_spam:${spamCheck.reason}` }
     }
 
-    const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
-      church?.name || 'Igreja',
-      agentConfig?.denomination || '',
-      agentConfig?.formality || 'semiformal',
-      agentConfig?.pastoral_depth || 'moderate',
-      agentConfig?.emoji_usage || 'moderate',
-      agentConfig?.preferred_verses || [],
-      (agentConfig?.send_window as Record<string, unknown>) || null,
-      (agentConfig?.custom_overrides as Record<string, unknown>) || null,
-    )
+    const systemBlocks = buildSystemBlocks(resolved, church, agentConfig, churchId)
 
     const userMessage = `
 Processe o touchpoint atual da jornada de acolhimento.
@@ -341,11 +479,8 @@ Passos:
 Seja conciso, pastoral e humano.
 `.trim()
 
-    const finalResult = await runToolLoop(
-      [
-        { text: SYSTEM_BLOCK_A,   cache: true },
-        { text: systemBlockB,     cache: true },
-      ],
+    const { result: finalResult, usage } = await runToolLoop(
+      systemBlocks,
       userMessage,
       TOOLS_PROATIVO,
       churchId,
@@ -380,6 +515,20 @@ Seja conciso, pastoral e humano.
       console.warn('[agent-acolhimento] debit_agent_credits falhou (não crítico):', creditErr)
     }
 
+    // v19: log sucesso
+    await logAgentExecution(supabaseAdmin, {
+      church_id:             churchId,
+      agent_slug:            AGENT_SLUG,
+      model:                 MODEL,
+      trigger_type:          triggerType,
+      status:                'success',
+      duration_ms:           Date.now() - t0,
+      input_tokens:          usage.input_tokens,
+      output_tokens:         usage.output_tokens,
+      cache_read_tokens:     usage.cache_read_tokens,
+      cache_creation_tokens: usage.cache_creation_tokens,
+    })
+
     return { ok: true, result: finalResult }
 
   } catch (err) {
@@ -393,12 +542,23 @@ Seja conciso, pastoral e humano.
       .eq('church_id', churchId)
       .eq('status', 'processing')
 
+    // v19: log erro
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: triggerType,
+      status:       'error',
+      duration_ms:  Date.now() - t0,
+      error:        String(err),
+    })
+
     return { ok: false, error: String(err) }
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// PROCESSAR MENSAGEM INBOUND (modo reativo)
+// PROCESSAR MENSAGEM INBOUND (modo reativo)  (v19 — logAgentExecution)
 // Chamado pelo conversation-router quando ownership=agent
 // ─────────────────────────────────────────────────────────────
 
@@ -409,15 +569,25 @@ async function processInbound(
   inboundText:    string,
 ): Promise<{ ok: boolean; result?: string; error?: string }> {
 
+  const t0 = Date.now()
+
   // 1. Buscar dados da conversa — valida ownership e pega person_id
+  // F2 v27: adicionado filtro church_id para defesa em profundidade (cross-tenant protection)
   const { data: conv } = await supabaseAdmin
     .from('conversations')
-    .select('ownership, agent_slug, person_id, contact_phone')
+    .select('church_id, ownership, agent_slug, person_id, contact_phone')
     .eq('id', conversationId)
+    .eq('church_id', churchId)
     .maybeSingle()
 
   if (!conv) {
     return { ok: false, error: 'conversation_not_found' }
+  }
+
+  // Isolamento cross-tenant: rejeitar conversas de outra church
+  if (conv.church_id !== churchId) {
+    console.warn(`[agent-acolhimento] FORBIDDEN conv=${conversationId} conv.church_id=${conv.church_id} req.church_id=${churchId}`)
+    return { ok: false, error: 'forbidden: conversa de outra church' }
   }
 
   // Não responder se humano assumiu — conversation-router já filtra, mas dupla checagem
@@ -426,8 +596,61 @@ async function processInbound(
     return { ok: true, result: 'skipped_not_agent_ownership' }
   }
 
-  // 2. Buscar config da igreja
-  const { church, agentConfig } = await fetchChurchConfig(churchId)
+  // Rate limit: máx 5 respostas automáticas por conversa em 5 minutos
+  // DEVE ocorrer antes de qualquer chamada ao Claude Sonnet
+  // NOTA: count: 'exact' com head:true retorna null no Deno runtime (bug supabase-js v2).
+  //       Usamos select('id').limit(5) e medimos data.length — mais confiável.
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  const { data: recentMsgs } = await supabaseAdmin
+    .from('conversation_messages')
+    .select('id')
+    .eq('conversation_id', conversationId)
+    .eq('direction', 'outbound')
+    .eq('sender_type', 'agent')
+    .gte('created_at', fiveMinAgo)
+    .limit(5)
+
+  const recentCount = recentMsgs?.length ?? 0
+
+  if (recentCount >= 5) {
+    console.warn(`[agent-acolhimento] RATE_LIMIT conv=${conversationId} outbound_agent_5min=${recentCount}`)
+    // Notificar admins (best-effort)
+    try {
+      const { data: admins } = await supabaseAdmin
+        .from('user_roles')
+        .select('user_id')
+        .eq('church_id', churchId)
+        .in('role', ['admin', 'pastor_celulas'])
+      for (const admin of admins ?? []) {
+        await supabaseAdmin.from('notifications').insert({
+          church_id:       churchId,
+          user_id:         admin.user_id,
+          title:           'Rate limit atingido — resposta automática pausada',
+          body:            `A conversa atingiu 5 respostas automáticas em 5 minutos. Possível spam ou loop.`,
+          type:            'warning',
+          read:            false,
+          link:            `/conversas/${conversationId}`,
+          automation_name: 'inbound_rate_limit',
+        })
+      }
+    } catch { /* não crítico */ }
+
+    // v19: log rate_limited
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: 'inbound_message',
+      status:       'rate_limited',
+      duration_ms:  Date.now() - t0,
+      error:        'max 5 respostas automáticas por conversa em 5 minutos',
+    })
+
+    return { ok: false, error: 'rate_limit_exceeded', result: 'max 5 respostas automáticas por conversa em 5 minutos' }
+  }
+
+  // 2. Buscar config da igreja (v3 — via RPC)
+  const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
 
   // 3. Buscar histórico da conversa (últimas 20 mensagens, ordem cronológica)
   const { data: history } = await supabaseAdmin
@@ -449,16 +672,7 @@ async function processInbound(
     })
     .join('\n')
 
-  const systemBlockB = SYSTEM_BLOCK_B_TEMPLATE(
-    church?.name || 'Igreja',
-    agentConfig?.denomination || '',
-    agentConfig?.formality || 'semiformal',
-    agentConfig?.pastoral_depth || 'moderate',
-    agentConfig?.emoji_usage || 'moderate',
-    agentConfig?.preferred_verses || [],
-    (agentConfig?.send_window as Record<string, unknown>) || null,
-    (agentConfig?.custom_overrides as Record<string, unknown>) || null,
-  )
+  const systemBlocks = buildSystemBlocks(resolved, church, agentConfig, churchId)
 
   const personContext = conv.person_id
     ? `Person ID disponível: ${conv.person_id} (use read_person para obter os dados)`
@@ -491,20 +705,43 @@ Responda como a equipe pastoral da igreja — com calor, sem pressão, sem revel
 `.trim()
 
   try {
-    const finalResult = await runToolLoop(
-      [
-        { text: SYSTEM_BLOCK_A, cache: true },
-        { text: systemBlockB,   cache: true },
-      ],
+    const { result: finalResult, usage } = await runToolLoop(
+      systemBlocks,
       userMessage,
       TOOLS_INBOUND,
       churchId,
     )
 
+    // v19: log sucesso inbound
+    await logAgentExecution(supabaseAdmin, {
+      church_id:             churchId,
+      agent_slug:            AGENT_SLUG,
+      model:                 MODEL,
+      trigger_type:          'inbound_message',
+      status:                'success',
+      duration_ms:           Date.now() - t0,
+      input_tokens:          usage.input_tokens,
+      output_tokens:         usage.output_tokens,
+      cache_read_tokens:     usage.cache_read_tokens,
+      cache_creation_tokens: usage.cache_creation_tokens,
+    })
+
     return { ok: true, result: finalResult }
 
   } catch (err) {
     console.error('[agent-acolhimento] processInbound error:', err)
+
+    // v19: log erro inbound
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: 'inbound_message',
+      status:       'error',
+      duration_ms:  Date.now() - t0,
+      error:        String(err),
+    })
+
     return { ok: false, error: String(err) }
   }
 }
@@ -540,7 +777,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const results = await Promise.allSettled(
-      journeys.map(j => processJourney(j.id, j.church_id))
+      journeys.map(j => processJourney(j.id, j.church_id, 'cron'))
     )
 
     const summary = results.map((r, i) => ({
@@ -561,7 +798,7 @@ Deno.serve(async (req: Request) => {
       return json({ ok: false, error: 'journey_id e church_id obrigatórios para trigger journey/internal' }, 400)
     }
 
-    const result = await processJourney(journeyId, churchId)
+    const result = await processJourney(journeyId, churchId, 'journey')
     return json(result)
   }
 

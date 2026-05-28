@@ -8,6 +8,7 @@ export interface Plan {
   price_cents: number
   max_users: number
   included_agents: number
+  included_agent_slugs: string[]
 }
 
 export interface Agent {
@@ -18,7 +19,7 @@ export interface Agent {
   features: string[]
   pain_solved: string | null
   without_me: string | null
-  pricing_tier: 'free' | 'always_paid' | 'eligible'
+  pricing_tier: 'free' | 'always_paid' | 'eligible' | 'coming_soon' | 'premium' | 'internal'
   price_cents: number
 }
 
@@ -94,9 +95,16 @@ export function usePlan() {
   const alwaysPaidAgents = allAgents.filter(a => a.pricing_tier === 'always_paid')
   // Eligible agents that the church has chosen
   const eligibleAgents = allAgents.filter(a => a.pricing_tier === 'eligible')
+  // Coming soon agents — not yet available, shown as preview
+  const comingSoonAgents = allAgents.filter(a => a.pricing_tier === 'coming_soon')
 
   const hasAgent = (slug: string): boolean => {
     if (!isActive) return false
+    const agent = allAgents.find(a => a.slug === slug)
+    if (agent?.pricing_tier === 'free' || agent?.pricing_tier === 'internal') return true
+    // always_paid: disponível para qualquer assinatura ativa (sem slot — nunca vai para subscription_agents)
+    if (agent?.pricing_tier === 'always_paid') return true
+    if (subscription?.plan?.included_agent_slugs?.includes(slug)) return true
     return activeAgentSlugs.includes(slug)
   }
 
@@ -116,6 +124,7 @@ export function usePlan() {
     freeAgents,
     alwaysPaidAgents,
     eligibleAgents,
+    comingSoonAgents,
     activeAgentSlugs,
     hasAgent,
     canAddMoreAgents,

@@ -50,8 +50,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Parse body ────────────────────────────────────────────
@@ -170,17 +169,32 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Registra evento admin ─────────────────────────────────
-  await supabase.from('admin_events').insert({
-    admin_user_id: user.id,
-    action:        'plan_updated',
-    after: {
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                null,
+    p_admin_user_id:            user.id,
+    p_action:                   'plans.update',
+    p_before:                   null,
+    p_after: {
       slug,
       ...updatePayload,
       stripe_price_rotated: stripePriceRotated,
       new_stripe_price_id:  newStripePriceId,
     },
-    reason: 'Edição manual via cockpit admin — pricing',
+    p_reason:                   'Edição manual via cockpit admin — pricing',
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'plans',
+    p_resource_id:              null,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   null,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
+  if (auditErr) console.error('[plans-update] audit failed:', auditErr.message)
 
   return json({
     plan:                 updated,

@@ -69,8 +69,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   const isAdmin =
-    user.app_metadata?.is_ekthos_admin === true ||
-    user.user_metadata?.is_ekthos_admin === true
+    user.app_metadata?.is_ekthos_admin === true
   if (!isAdmin) return json({ error: 'Forbidden' }, 403)
 
   // ── Parse body ────────────────────────────────────────────
@@ -114,11 +113,27 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Erro ao atualizar cupom' }, 500)
   }
 
-  await supabase.from('admin_events').insert({
-    admin_user_id: user.id,
-    action:        active ? 'affiliate_coupon_activated' : 'affiliate_coupon_deactivated',
-    after:         { id: coupon_id, active },
+  const impersonationSessionId = req.headers.get('x-impersonation-session-id') ?? null
+  const requestId = req.headers.get('x-request-id') ?? null
+  const { error: auditErr } = await supabase.rpc('record_audit_event', {
+    p_church_id:                null,
+    p_admin_user_id:            user.id,
+    p_action:                   'affiliate.coupon.toggle',
+    p_before:                   { id: coupon_id, active: !active },
+    p_after:                    { id: coupon_id, active },
+    p_reason:                   null,
+    p_actor_email:              user.email ?? null,
+    p_actor_roles:              (user.app_metadata?.ekthos_roles as string[] | undefined) ?? null,
+    p_resource:                 'coupons',
+    p_resource_id:              coupon_id,
+    p_status:                   'success',
+    p_error_msg:                null,
+    p_impersonation_session_id: impersonationSessionId,
+    p_impersonated_church_id:   null,
+    p_source:                   'cockpit',
+    p_request_id:               requestId,
   })
+  if (auditErr) console.error('[affiliate-coupon-toggle] audit failed:', auditErr.message)
 
   return json({ coupon: updated })
 })

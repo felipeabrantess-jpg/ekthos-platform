@@ -443,6 +443,24 @@ export default function OnboardingConfiguring() {
     )
   }, [])
 
+  // Hidrata steps com dados já existentes no banco (revisitas após conclusão)
+  useEffect(() => {
+    if (!sessionId) return
+    async function loadExistingSteps() {
+      const { data } = await supabase
+        .from('onboarding_steps')
+        .select('step_number, label, status, error_msg')
+        .eq('session_id', sessionId!)
+      if (data && data.length > 0) {
+        setSteps(prev => prev.map(s => {
+          const found = data.find((d: { step_number: number }) => d.step_number === s.step_number)
+          return found ? { ...s, ...found } : s
+        }))
+      }
+    }
+    void loadExistingSteps()
+  }, [sessionId])
+
   // Realtime: onboarding_steps
   useEffect(() => {
     if (!sessionId) return

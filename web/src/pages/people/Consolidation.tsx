@@ -14,6 +14,7 @@ interface ConsolidationPerson {
   avatar_url: string | null
   conversion_date: string | null
   first_visit_date: string | null
+  created_at: string
   stage_name: string | null
   days_in_stage: number
   at_risk: boolean
@@ -86,23 +87,24 @@ export default function Consolidation() {
     queryKey: ['consolidation', churchId],
     enabled: !!churchId,
     queryFn: async () => {
-      // Get people with recent conversion or first visit (last 90 days)
-      // Note: person_stage is an ENUM (visitante/contato/…), not a UUID FK to pipeline_stages.
-      // The two systems aren't linked yet — filter only by conversion_date.
+      // Get people with recent activity (last 90 days).
+      // C2: usa OR entre conversion_date, first_visit_date e created_at como fallback
+      // para incluir visitantes que chegaram via QR Code mas sem conversion_date.
       const ninetyDaysAgo = new Date()
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+      const dateStr = ninetyDaysAgo.toISOString().split('T')[0]
 
-      const query = supabase
+      const { data } = await supabase
         .from('people')
-        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage')
+        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage, created_at')
         .eq('church_id', churchId!)
-        .gte('conversion_date', ninetyDaysAgo.toISOString().split('T')[0])
-
-      const { data } = await query.order('conversion_date', { ascending: false })
+        // C2: OR entre os 3 campos para incluir visitantes QR Code (sem conversion_date)
+        .or(`conversion_date.gte.${dateStr},first_visit_date.gte.${dateStr},created_at.gte.${dateStr}`)
+        .order('conversion_date', { ascending: false, nullsFirst: false })
 
       return (data ?? []).map(p => {
-        // Days since conversion (or first visit as fallback)
-        const refDate = p.first_visit_date ?? p.conversion_date
+        // C2: fallback hierárquico: conversion_date → first_visit_date → created_at
+        const refDate = p.conversion_date ?? p.first_visit_date ?? p.created_at
         const days = daysSince(refDate)
         // person_stage is ENUM — show its value as label directly
         const stageName = p.person_stage as string | null

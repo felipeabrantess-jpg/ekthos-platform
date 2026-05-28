@@ -17,7 +17,6 @@ import {
   MessageCircle,
   Rocket,
   UserPlus,
-  Settings2,
   Heart,
   Zap,
   UserCheck,
@@ -43,7 +42,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-suporte',
-    name:       'Suporte 24h',
+    name:       'Agente Suporte',
     Icon:       MessageCircle,
     category:   'interno',
     shortDesc:  'Tira dúvidas sobre o Ekthos a qualquer hora, sem espera.',
@@ -59,7 +58,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-onboarding',
-    name:       'Onboarding de Líderes',
+    name:       'Agente Onboarding',
     Icon:       Rocket,
     category:   'interno',
     shortDesc:  'Guia novos líderes no primeiro acesso e nas primeiras semanas.',
@@ -76,7 +75,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-cadastro',
-    name:       'Assistente de Cadastro',
+    name:       'Agente Cadastro',
     Icon:       UserPlus,
     category:   'interno',
     shortDesc:  'Cadastra membros e visitantes via conversa, sem formulário.',
@@ -91,28 +90,11 @@ export const AGENTS_CONTENT: AgentContent[] = [
     forWhom: 'Igrejas com fluxo ativo de visitantes e conversões semanais. Ideal para recepcionistas e pastores de evangelismo.',
   },
 
-  {
-    slug:       'agent-config',
-    name:       'Configurador Inteligente',
-    Icon:       Settings2,
-    category:   'interno',
-    shortDesc:  'Configura pipeline, áreas e ministérios via conversa natural.',
-    longDesc:   'O Configurador Inteligente guia o pastor ou administrador pela personalização do sistema sem precisar navegar por menus técnicos. Configura etapas do pipeline, cria áreas ministeriais, ajusta escalas e adapta o Ekthos à realidade única da sua Igreja — tudo por conversa.',
-    howItWorks: [
-      'Cria e reorganiza etapas do pipeline de discipulado',
-      'Configura áreas, ministérios e células da Igreja',
-      'Ajusta nomenclaturas e campos personalizados',
-      'Orienta sobre melhores práticas de configuração',
-      'Aplica mudanças com confirmação antes de salvar',
-    ],
-    forWhom: 'Administradores e pastores responsáveis pela configuração inicial e ajustes do sistema.',
-  },
-
   // ── Premium Pastorais — vendidos sempre à parte ──────────────────
 
   {
     slug:       'agent-acolhimento',
-    name:       'Acolhimento Pastoral',
+    name:       'Agente Acolhimento Pastoral',
     Icon:       Heart,
     category:   'premium',
     shortDesc:  'Acolhe visitantes e conduz os primeiros 90 dias na Igreja.',
@@ -131,7 +113,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-operacao',
-    name:       'Operação Pastoral',
+    name:       'Agente Operação Pastoral',
     Icon:       Zap,
     category:   'premium',
     shortDesc:  'Orquestra antes, durante e depois de cada culto ou evento.',
@@ -150,7 +132,7 @@ export const AGENTS_CONTENT: AgentContent[] = [
 
   {
     slug:       'agent-reengajamento',
-    name:       'Reengajamento Pastoral',
+    name:       'Agente Reengajamento Pastoral',
     Icon:       UserCheck,
     category:   'premium',
     shortDesc:  'Detecta membros esfriando e retoma o vínculo antes que se percam.',

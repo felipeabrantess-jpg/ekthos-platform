@@ -27,6 +27,7 @@ const ResetPassword         = lazy(() => import('@/pages/ResetPassword'))
 const ChoosePlan            = lazy(() => import('@/pages/ChoosePlan'))
 const Onboarding            = lazy(() => import('@/pages/Onboarding'))
 const OnboardingConfiguring = lazy(() => import('@/pages/onboarding/Configuring'))
+const OnboardingWizard      = lazy(() => import('@/pages/onboarding/Wizard'))
 const Blocked               = lazy(() => import('@/pages/Blocked'))
 const Cancelled             = lazy(() => import('@/pages/Cancelled'))
 const PaymentPending        = lazy(() => import('@/pages/PaymentPending'))
@@ -84,6 +85,9 @@ const DiscipleshipSettingsPage = lazy(() =>
 const QrVisitorPage = lazy(() =>
   import('@/pages/configuracoes/QrVisitor').then(m => ({ default: m.QrVisitor }))
 )
+const CanaisPage = lazy(() =>
+  import('@/pages/configuracoes/Canais').then(m => ({ default: m.Canais }))
+)
 // Settings legados — mantidos para backward compat
 const SettingsLayoutPage = lazy(() =>
   import('@/pages/settings/Layout').then(m => ({ default: m.SettingsLayout }))
@@ -110,6 +114,11 @@ const AdminPricing     = lazy(() => import('@/pages/admin/Pricing'))
 const AdminAffiliates  = lazy(() => import('@/pages/admin/Affiliates'))
 const AffiliateDetail  = lazy(() => import('@/pages/admin/AffiliateDetail'))
 const AdminComunicacao = lazy(() => import('@/pages/admin/AdminComunicacao'))
+const AgentConfigCockpit  = lazy(() => import('@/pages/admin/AgentConfigCockpit'))
+const AdminAtivacoes      = lazy(() => import('@/pages/admin/Ativacoes'))
+const AdminAtivacaoDetail = lazy(() => import('@/pages/admin/AtivacaoDetail'))
+const AdminCupons         = lazy(() => import('@/pages/admin/Cupons'))
+const AdminNotifications  = lazy(() => import('@/pages/admin/Notifications'))
 
 // ── Loaders ────────────────────────────────────────────────
 
@@ -205,6 +214,13 @@ export default function App() {
           <Route path="/choose-plan" element={<ErrorBoundary><ChoosePlan /></ErrorBoundary>} />
           <Route path="/onboarding" element={<ErrorBoundary><Onboarding /></ErrorBoundary>} />
           <Route path="/onboarding/configuring" element={<ErrorBoundary><OnboardingConfiguring /></ErrorBoundary>} />
+          <Route path="/onboarding/wizard" element={
+            <ErrorBoundary>
+              <ProtectedRoute>
+                <Suspense fallback={<FullScreenSpinner />}><OnboardingWizard /></Suspense>
+              </ProtectedRoute>
+            </ErrorBoundary>
+          } />
 
           {/* ── Páginas de status de conta ── */}
           <Route
@@ -302,6 +318,7 @@ export default function App() {
               <Route path="modulos"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModulosPage /></Suspense></ErrorBoundary>} />
               <Route path="discipulado"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DiscipleshipSettingsPage /></Suspense></ErrorBoundary>} />
               <Route path="qr-visitante" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><QrVisitorPage /></Suspense></ErrorBoundary>} />
+              <Route path="canais"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CanaisPage /></Suspense></ErrorBoundary>} />
             </Route>
 
             {/* ── Settings legados (backward compat) ── */}
@@ -328,6 +345,7 @@ export default function App() {
             <Route path="cockpit"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminCockpit /></Suspense></ErrorBoundary>} />
             <Route path="churches"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurches /></Suspense></ErrorBoundary>} />
             <Route path="churches/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminChurch /></Suspense></ErrorBoundary>} />
+            <Route path="churches/:id/agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentConfigCockpit /></Suspense></ErrorBoundary>} />
             <Route path="onboardings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminOnboardings /></Suspense></ErrorBoundary>} />
             <Route path="leads"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminLeads /></Suspense></ErrorBoundary>} />
             <Route path="tasks"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminTasks /></Suspense></ErrorBoundary>} />
@@ -336,6 +354,10 @@ export default function App() {
             <Route path="afiliados"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAffiliates /></Suspense></ErrorBoundary>} />
             <Route path="afiliados/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AffiliateDetail /></Suspense></ErrorBoundary>} />
             <Route path="comunicacao"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminComunicacao /></Suspense></ErrorBoundary>} />
+            <Route path="cockpit/ativacoes"     element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAtivacoes /></Suspense></ErrorBoundary>} />
+            <Route path="cockpit/ativacoes/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminAtivacaoDetail /></Suspense></ErrorBoundary>} />
+            <Route path="cockpit/cupons"        element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminCupons /></Suspense></ErrorBoundary>} />
+            <Route path="notifications"         element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AdminNotifications /></Suspense></ErrorBoundary>} />
           </Route>
         </Routes>
       </Suspense>

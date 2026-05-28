@@ -36,18 +36,26 @@ const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // CORS — whitelist explícita, nunca wildcard
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS_EXACT = [
   'https://ekthos-platform.vercel.app',
   'https://www.ekthosai.com',
   'https://ekthosai.com',
   'https://ekthosai.net',
   'https://www.ekthosai.net',
 ]
+// E1: aceita preview deployments Vercel (ex: ekthos-platform-abc123.vercel.app)
+const ALLOWED_ORIGIN_PREVIEW_RE = /^https:\/\/ekthos-platform(-[a-z0-9]+)*\.vercel\.app$/
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS_EXACT.includes(origin)) return true
+  return ALLOWED_ORIGIN_PREVIEW_RE.test(origin)
+}
 
 function corsHeaders(origin: string | null): Record<string, string> {
-  const allowed = origin && ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : ALLOWED_ORIGINS[0]
+  const allowed = isOriginAllowed(origin)
+    ? origin!
+    : ALLOWED_ORIGINS_EXACT[0]
   return {
     'Access-Control-Allow-Origin':  allowed,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -189,6 +197,8 @@ Deno.serve(async (req: Request) => {
     if (existing?.id) {
       // Pessoa já existe — atualiza metadados de contato
       const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
+      // D1: atualiza name se fornecido (novo scan pode ter nome mais completo)
+      if (name) updates.name = name
       // invitedByName vai para observacoes_pastorais (como_conheceu só aceita enum fixo)
       if (invitedByName) updates.observacoes_pastorais = 'Convidado por: ' + invitedByName
 
