@@ -18,6 +18,10 @@ const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
 // Frente B — landing pública de visitantes via QR Code
 const VisitorLanding = lazy(() => import('@/pages/VisitorLanding'))
 
+// LGPD — Políticas públicas
+const Privacy = lazy(() => import('@/pages/Privacy'))
+const Terms   = lazy(() => import('@/pages/Terms'))
+
 // Públicas
 const Login                 = lazy(() => import('@/pages/Login'))
 const Signup                = lazy(() => import('@/pages/Signup'))
@@ -204,6 +208,10 @@ export default function App() {
               </ErrorBoundary>
             }
           />
+
+          {/* ── LGPD — Políticas públicas ── */}
+          <Route path="/privacy" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Privacy /></Suspense></ErrorBoundary>} />
+          <Route path="/terms"   element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Terms /></Suspense></ErrorBoundary>} />
 
           {/* ── Rotas públicas ── */}
           <Route path="/login"    element={<ErrorBoundary><Login /></ErrorBoundary>} />

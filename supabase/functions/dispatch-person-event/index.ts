@@ -121,20 +121,38 @@ Deno.serve(async (req: Request) => {
     if (person.person_stage === 'visitante' && person.is_bulk_import !== true) {
       await createAcolhimentoJourney(sb, churchId, personId)
 
-      // ── 1d. Email de boas-vindas (fire-and-forget) ────────
-      // Só dispara se a pessoa tiver email cadastrado
-      if (person.email) {
-        const welcomeEmailUrl = `${SUPABASE_URL}/functions/v1/send-welcome-email`
-        fetch(welcomeEmailUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type':  'application/json',
-            Authorization:   `Bearer ${SERVICE_ROLE_KEY}`,
-          },
-          body:   JSON.stringify({ person_id: personId }),
-          signal: AbortSignal.timeout(10_000),
-        }).catch(e => console.warn('[dispatch-person-event] send-welcome-email falhou:', e))
-        console.log(`[dispatch-person-event] Email boas-vindas disparado para ${person.email}`)
+      // ── D3 GUARD: pessimistic lock — welcome só é enviado UMA VEZ por (church_id, person_id) ──
+      // Tenta setar welcome_dispatched_at de NULL → NOW() atomicamente.
+      // Se retornar linha → somos os primeiros → prosseguir com welcome.
+      // Se não retornar linha → outro processo já enviou → skip.
+      const { data: d3LockResult } = await sb
+        .from('acolhimento_journey')
+        .update({ welcome_dispatched_at: new Date().toISOString() })
+        .eq('church_id', churchId)
+        .eq('person_id', personId)
+        .is('welcome_dispatched_at', null)
+        .select('id')
+        .maybeSingle()
+
+      if (!d3LockResult) {
+        // Welcome já foi enviado anteriormente para esta pessoa — D3 GUARD ATIVADO
+        console.log('[D3 GUARD] Welcome já despachado para person', personId, '— skip')
+      } else {
+        // ── 1d. Email de boas-vindas (fire-and-forget) ────────
+        // Só dispara se a pessoa tiver email cadastrado
+        if (person.email) {
+          const welcomeEmailUrl = `${SUPABASE_URL}/functions/v1/send-welcome-email`
+          fetch(welcomeEmailUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              Authorization:   `Bearer ${SERVICE_ROLE_KEY}`,
+            },
+            body:   JSON.stringify({ person_id: personId }),
+            signal: AbortSignal.timeout(10_000),
+          }).catch(e => console.warn('[dispatch-person-event] send-welcome-email falhou:', e))
+          console.log(`[dispatch-person-event] Email boas-vindas disparado para ${person.email}`)
+        }
       }
     }
 
@@ -238,6 +256,17 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 7. Disparar webhook (fire-and-forget com timeout) ─
+    // Bug 4 fix: respeitar N8N_OUTBOUND_ENABLED antes de disparar via n8n_webhooks.people_url
+    const n8nEnabled = Deno.env.get('N8N_OUTBOUND_ENABLED') === 'true'
+    if (!n8nEnabled) {
+      console.log('[dispatch-person-event] N8N_OUTBOUND_ENABLED=false — skip n8n webhook (people_url)')
+      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+        reason: 'n8n_outbound_disabled',
+        webhook_url: webhook.people_url,
+      })
+      return ok()
+    }
+
     try {
       const res = await fetch(webhook.people_url as string, {
         method:  'POST',

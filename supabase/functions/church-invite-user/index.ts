@@ -1,6 +1,13 @@
 // ============================================================
-// Edge Function: church-invite-user
-// Convida um usuário para a igreja via Supabase inviteUserByEmail.
+// Edge Function: church-invite-user v2
+// Convida um usuário para a igreja via generateLink + SMTP.
+//
+// MUDANÇA v1 → v2 (Frente 2C — piloto):
+//   - Migrado de inviteUserByEmail para generateLink + Google SMTP
+//   - Bypassa EVE (Email Validation Extended) do Supabase
+//   - Email enviado via smtp.gmail.com:465 (denomailer — padrão canônico)
+//   - generate_link type='invite' cria o user se não existe E retorna user.id
+//   - Fallback: lookupUserByEmail caso action_link não traga user inline
 //
 // POST /church-invite-user
 // Headers: Authorization: Bearer <supabase-jwt>
@@ -9,13 +16,19 @@
 //          400/403/409/500 com { error }
 //
 // verify_jwt: false — validação manual (padrão ES256)
+// Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+//          GMAIL_SMTP_USER, GMAIL_APP_PASSWORD, ALLOWED_ORIGIN
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const GMAIL_SMTP_USER           = Deno.env.get('GMAIL_SMTP_USER')     || ''
+const GMAIL_APP_PASSWORD        = Deno.env.get('GMAIL_APP_PASSWORD')   || ''
+const FROM_EMAIL                = Deno.env.get('GMAIL_SMTP_FROM')      || GMAIL_SMTP_USER || 'noreply@ekthosai.net'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -42,6 +55,125 @@ function jsonOk(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   })
+}
+
+// ── Template HTML de invite ───────────────────────────────────
+function buildInviteHtml(actionLink: string): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Acesso Ekthos</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f0eb;font-family:'DM Sans',Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background-color:#f4f0eb;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:600px;width:100%;">
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <img src="https://ekthos-platform.vercel.app/logo-ekthos-200.png"
+                alt="Ekthos Church" width="56" height="56"
+                style="display:block;border:0;outline:none;">
+              <p style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;color:#161616;letter-spacing:0.5px;">
+                Ekthos Church
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#ffffff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.07);overflow:hidden;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#e13500;height:5px;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:40px 48px 32px;">
+                    <p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#161616;line-height:1.3;">
+                      Seu acesso ao Ekthos está pronto
+                    </p>
+                    <p style="margin:0 0 16px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;color:#444444;line-height:1.7;">
+                      Você foi convidado para acessar a plataforma de gestão pastoral Ekthos.
+                      Clique no botão abaixo para configurar sua senha e acessar o sistema.
+                    </p>
+                    <p style="margin:0 0 32px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;color:#444444;line-height:1.7;">
+                      O link é válido por <strong>24 horas</strong>.
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                      style="margin:0 auto 40px;">
+                      <tr>
+                        <td align="center" style="border-radius:8px;background-color:#e13500;">
+                          <a href="${actionLink}"
+                            target="_blank"
+                            style="display:inline-block;padding:16px 40px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;letter-spacing:0.3px;">
+                            Configurar minha senha
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                      style="margin-bottom:28px;">
+                      <tr>
+                        <td style="border-top:1px solid #eeeeee;font-size:0;line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                      style="margin-bottom:32px;">
+                      <tr>
+                        <td style="background-color:#FDE8E0;border-left:3px solid #e13500;border-radius:4px;padding:14px 18px;">
+                          <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#C42E00;line-height:1.6;">
+                            <strong>Não esperava este convite?</strong><br>
+                            Se você não foi convidado para o Ekthos, ignore este e-mail com segurança.
+                            Nenhuma ação será tomada.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                    <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:15px;color:#444444;line-height:1.7;">
+                      Que Deus abençoe você e o ministério da sua igreja.
+                    </p>
+                    <p style="margin:8px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#161616;font-weight:700;">
+                      Felipe Abrantes
+                    </p>
+                    <p style="margin:2px 0 0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:13px;color:#999999;">
+                      Fundador — Ekthos
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr><td style="height:24px;">&nbsp;</td></tr>
+          <tr>
+            <td style="background-color:#161616;border-radius:12px;padding:28px 48px;">
+              <p style="margin:0 0 12px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:13px;color:#888888;text-align:center;line-height:1.6;">
+                Recebeu este e-mail porque alguém do seu ministério configurou seu acesso ao Ekthos.
+                Se não foi você, pode ignorar com segurança.
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="margin:12px 0;">
+                <tr>
+                  <td style="border-top:1px solid #2e2e2e;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+              <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:12px;color:#555555;text-align:center;line-height:1.6;">
+                Ekthos Tecnologia LTDA · Brasil<br>
+                noreply@ekthosai.net
+              </p>
+            </td>
+          </tr>
+          <tr><td style="height:40px;">&nbsp;</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
 }
 
 Deno.serve(async (req: Request) => {
@@ -72,6 +204,12 @@ Deno.serve(async (req: Request) => {
     return jsonErr(`role deve ser: ${ALLOWED_ROLES.join(', ')}`, 400)
   }
 
+  // ── Guard: SMTP credentials necessárias ──────────────────
+  if (!GMAIL_SMTP_USER || !GMAIL_APP_PASSWORD) {
+    console.error('[church-invite-user] GMAIL_SMTP_USER ou GMAIL_APP_PASSWORD não configurados')
+    return jsonErr('Configuração de email incompleta no servidor', 500)
+  }
+
   // ── Checar limite de assentos ─────────────────────────────
   const { data: sub } = await supabase
     .from('subscriptions')
@@ -92,7 +230,6 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Verificar se email já pertence a outra organização (#28) ─
-  // GoTrue admin REST aceita ?filter=<email> para busca pontual.
   const usersListResp = await fetch(
     `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
     {
@@ -112,7 +249,6 @@ Deno.serve(async (req: Request) => {
     if (found) {
       const existingChurchId = found.app_metadata?.church_id
       if (existingChurchId && existingChurchId !== churchId) {
-        // Cross-church: bloquear — nunca mover usuário entre igrejas automaticamente
         console.warn(
           `[church-invite-user] 409 cross-church: ${email} já pertence à church ${existingChurchId}, tentativa da church ${churchId}`,
         )
@@ -124,27 +260,86 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── Convidar via Admin API ─────────────────────────────────
-  const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
-    email,
-    { redirectTo: `${ALLOWED_ORIGIN}/auth/set-password`, data: { name: name ?? '' } },
-  )
+  // ── Step 1: generateLink type='invite' via Admin REST ─────
+  // Bypassa EVE — não dispara o mailer GoTrue.
+  // IMPORTANTE: generate_link type='invite' CRIA o usuário se não existir
+  // e retorna action_link + user.id na response.
+  let actionLink: string
+  let newUserId: string
 
-  if (inviteErr) {
-    console.error('[church-invite-user] inviteUserByEmail error:', inviteErr.message)
-    // Se o usuário já existe no sistema Supabase, inviteUserByEmail pode falhar.
-    // Retornamos a mensagem original para o frontend tratar.
-    return jsonErr(inviteErr.message, 500)
+  try {
+    const genResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        type: 'invite',
+        email,
+        options: { redirect_to: `${ALLOWED_ORIGIN}/auth/set-password` },
+      }),
+    })
+
+    if (!genResp.ok) {
+      const errText = await genResp.text()
+      console.error(`[church-invite-user] generateLink failed ${genResp.status}: ${errText}`)
+      return jsonErr('Falha ao gerar link de acesso', 500)
+    }
+
+    const genData = await genResp.json() as {
+      action_link?: string
+      user?: { id?: string }
+    }
+
+    if (!genData.action_link) {
+      console.error('[church-invite-user] action_link ausente na resposta de generateLink')
+      return jsonErr('Falha ao gerar link de acesso: resposta inválida', 500)
+    }
+
+    actionLink = genData.action_link
+
+    // generate_link type='invite' retorna user.id na response
+    if (genData.user?.id) {
+      newUserId = genData.user.id
+    } else {
+      // Fallback: busca por email caso response não traga user.id
+      const lookupResp = await fetch(
+        `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
+        {
+          headers: {
+            'apikey': SUPABASE_SERVICE_ROLE_KEY,
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        },
+      )
+      if (!lookupResp.ok) {
+        console.error('[church-invite-user] lookup fallback failed')
+        return jsonErr('Falha ao localizar usuário após geração do link', 500)
+      }
+      const lookupData = await lookupResp.json() as {
+        users?: Array<{ id: string; email?: string }>
+      }
+      const found = lookupData.users?.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
+      )
+      if (!found) {
+        console.error('[church-invite-user] usuário não encontrado após generateLink')
+        return jsonErr('Falha ao localizar usuário após geração do link', 500)
+      }
+      newUserId = found.id
+    }
+  } catch (err) {
+    console.error('[church-invite-user] generateLink exception:', err)
+    return jsonErr('Falha ao gerar link de acesso', 500)
   }
 
-  const newUserId = inviteData.user.id
-
-  // ── Setar app_metadata — merge seguro (preserva campos existentes) ──
-  // GET atual para não sobrescrever is_ekthos_admin / ekthos_roles
+  // ── Step 2: Setar app_metadata — merge seguro ─────────────
   const { data: existingUserData } = await supabase.auth.admin.getUserById(newUserId)
   const mergedAppMetadata = {
-    ...existingUserData?.user?.app_metadata,  // preserva todos os campos (ekthos_roles, is_ekthos_admin, etc.)
-    church_id: churchId,                       // seta/sobrescreve apenas o necessário
+    ...existingUserData?.user?.app_metadata,
+    church_id: churchId,
     role,
   }
   const { error: updateErr } = await supabase.auth.admin.updateUserById(newUserId, {
@@ -152,16 +347,16 @@ Deno.serve(async (req: Request) => {
   })
   if (updateErr) {
     console.error('[church-invite-user] updateUserById error:', updateErr.message)
-    // Não abortamos — convite já enviado. Logar e continuar.
+    // Não abortamos — link já gerado. Logar e continuar.
   }
 
-  // ── Inserir user_role ──────────────────────────────────────
+  // ── Step 3: Inserir user_role ──────────────────────────────
   await supabase.from('user_roles').upsert(
     { user_id: newUserId, church_id: churchId, role },
     { onConflict: 'user_id,church_id' },
   )
 
-  // ── Upsert perfil ─────────────────────────────────────────
+  // ── Step 4: Upsert perfil ─────────────────────────────────
   await supabase.from('profiles').upsert(
     {
       user_id:      newUserId,
@@ -172,6 +367,35 @@ Deno.serve(async (req: Request) => {
     { onConflict: 'user_id' },
   )
 
-  console.log(`[church-invite-user] invited ${email} as ${role} for church ${churchId}`)
+  // ── Step 5: Enviar email via Google SMTP ──────────────────
+  try {
+    const client = new SMTPClient({
+      connection: {
+        hostname: 'smtp.gmail.com',
+        port: 465,
+        tls: true,
+        auth: {
+          username: GMAIL_SMTP_USER,
+          password: GMAIL_APP_PASSWORD,
+        },
+      },
+    })
+
+    await client.send({
+      from:    `Ekthos <${FROM_EMAIL}>`,
+      to:      [email],
+      subject: 'Seu acesso ao Ekthos está pronto',
+      html:    buildInviteHtml(actionLink),
+    })
+
+    await client.close()
+    console.log(`[church-invite-user] SMTP OK → ${email} (role=${role}, church=${churchId})`)
+  } catch (err) {
+    // SMTP falhou, mas usuário e roles já foram criados.
+    // Logar o erro — não retornar 500 para o cliente (user_id já existe).
+    // O admin pode reenviar o convite via outro mecanismo.
+    console.error('[church-invite-user] SMTP exception (user criado, roles OK):', err)
+  }
+
   return jsonOk({ user_id: newUserId, email, role }, 201)
 })

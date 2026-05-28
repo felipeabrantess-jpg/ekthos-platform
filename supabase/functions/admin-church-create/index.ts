@@ -141,6 +141,49 @@ Deno.serve(async (req: Request) => {
 
   if (planErr || !plan) return json({ error: `Plano "${planSlug}" não encontrado` }, 400)
 
+  // ── 2b. Check rollback: verificar se email já existe ANTES de criar church ──
+  // Previne criar church órfã se o invite falhar por "User already registered".
+  // Se o email existe mas sem church_id → reutilizamos (re-invite do mesmo pastor).
+  // Se o email existe com church_id diferente → 409 (cross-church bloqueado).
+  // Mantemos inviteUserByEmail abaixo — este check apenas garante o rollback early.
+  {
+    const emailCheckResp = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(pastorEmail)}&per_page=10`,
+      {
+        headers: {
+          apikey:        SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      },
+    )
+    if (emailCheckResp.ok) {
+      const emailCheckData = await emailCheckResp.json() as {
+        users?: Array<{ id: string; email?: string; app_metadata?: { church_id?: string } }>
+      }
+      const existingUser = emailCheckData.users?.find(
+        (u) => u.email?.toLowerCase() === pastorEmail.toLowerCase(),
+      )
+      if (existingUser) {
+        const existingChurchId = existingUser.app_metadata?.church_id
+        if (existingChurchId) {
+          // Email já vinculado a outra church — bloquear antes de criar qualquer recurso
+          console.warn(
+            `[admin-church-create] 409 pre-check: ${pastorEmail} já pertence à church ${existingChurchId}`,
+          )
+          return json(
+            { error: `Email ${pastorEmail} já está vinculado a outra organização. Para migrar, acione suporte.` },
+            409,
+          )
+        }
+        // Email existe mas sem church_id → inviteUserByEmail vai reenviar o convite normalmente
+        console.log(
+          `[admin-church-create] email ${pastorEmail} já existe no auth sem church_id — prosseguindo com re-invite`,
+        )
+      }
+    }
+    // Se o lookup falhar (erro de rede etc.) → prosseguir; o invite vai reportar o erro se houver conflito
+  }
+
   // ── 3. Cria church com status='onboarding' ────────────────
   // BUG FIX 1: era 'pending_payment' — correto para Caminho B é 'onboarding'
   // Slug gerado a partir do nome — onboarding-engineer step 1 sobrescreve com slug definitivo

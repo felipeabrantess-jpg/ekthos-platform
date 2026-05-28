@@ -162,9 +162,9 @@ export default function Signup() {
 
           <p className="text-xs text-gray-400 text-center mt-6">
             Ao criar sua conta você concorda com os{' '}
-            <a href="#" className="underline" style={{ color: 'var(--color-primary)' }}>Termos de Uso</a>
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-primary)' }}>Termos de Uso</a>
             {' '}e a{' '}
-            <a href="#" className="underline" style={{ color: 'var(--color-primary)' }}>Política de Privacidade</a>.
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-primary)' }}>Política de Privacidade</a>.
           </p>
         </div>
 
