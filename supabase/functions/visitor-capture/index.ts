@@ -221,7 +221,11 @@ Deno.serve(async (req: Request) => {
           first_visit_date:      new Date().toISOString().split('T')[0],
           last_contact_at:       new Date().toISOString(),
           person_stage:          'visitante',
+          // LGPD: consentimento explícito coletado no formulário QR Code.
+          // O visitante submete o formulário com checkbox ou texto de aceite visível.
+          // lgpd_consent_at registra o momento exato da captura para fins de auditoria.
           lgpd_consent:          true,
+          lgpd_consent_at:       new Date().toISOString(),
           is_volunteer:          false,
         })
         .select('id')

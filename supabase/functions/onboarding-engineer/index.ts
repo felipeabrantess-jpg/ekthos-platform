@@ -365,7 +365,10 @@ async function runStep(
           // Convida usuário via Supabase Auth
           const { data: inviteData } = await supabase.auth.admin.inviteUserByEmail(
             u.email as string,
-            { data: { church_id: churchId, full_name: u.name, role: u.role } }
+            {
+              redirectTo: `${ALLOWED_ORIGIN}/auth/set-password`,
+              data: { church_id: churchId, full_name: u.name, role: u.role },
+            }
           )
           if (inviteData?.user) {
             // Cria role
@@ -374,6 +377,18 @@ async function runStep(
               church_id: churchId,
               role:      mapRole(u.role as string),
             }, { onConflict: 'user_id, church_id' })
+            // INSERT profile — inviteUserByEmail NÃO cria profiles automaticamente
+            const inviteDisplayName = (u.name as string) || (u.email as string).split('@')[0]
+            const { error: profileErr } = await supabase
+              .from('profiles')
+              .upsert({
+                id:           crypto.randomUUID(),
+                user_id:      inviteData.user.id,
+                church_id:    churchId,
+                name:         inviteDisplayName,
+                display_name: inviteDisplayName,
+              } as any, { onConflict: 'user_id,church_id', ignoreDuplicates: true })
+            if (profileErr) console.warn('[onboarding-engineer] profile insert (non-fatal):', profileErr.message)
           }
         } catch {
           // Usuário pode já existir — ok

@@ -327,6 +327,12 @@ async function processInbound(
           phone:        normalized.from_phone,
           person_stage: 'visitante',
           observacoes_pastorais: 'Cadastrado automaticamente via WhatsApp inbound',
+          // LGPD: base legal = legítimo interesse (Art. 7º, IX, LGPD).
+          // Pessoa iniciou contato via WhatsApp — não há consentimento explícito.
+          // lgpd_consent=false documenta ausência de opt-in explícito.
+          // lgpd_consent_at=null indica que não houve consentimento formal.
+          lgpd_consent:    false,
+          lgpd_consent_at: null,
         })
         .select('id, first_name, last_name')
         .single()
