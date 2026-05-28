@@ -118,13 +118,31 @@ Deno.serve(async (req: Request) => {
 
     // ── 1c. Criar jornada de acolhimento (Sprint 2) ───────
     // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
-    if (person.person_stage === 'visitante' && person.is_bulk_import !== true) {
+
+    // Guard bulk import: skip com audit antes de qualquer processamento
+    // (proteção idêntica à checagem interna anterior, agora com observabilidade preservada)
+    if (person.is_bulk_import === true) {
+      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+        reason: 'is_bulk_import',
+      })
+      console.log('[dispatch-person-event] Skipped: is_bulk_import')
+      return ok()
+    }
+
+    if (person.person_stage === 'visitante') {
       await createAcolhimentoJourney(sb, churchId, personId)
 
       // ── D3 GUARD: pessimistic lock — welcome só é enviado UMA VEZ por (church_id, person_id) ──
       // Tenta setar welcome_dispatched_at de NULL → NOW() atomicamente.
-      // Se retornar linha → somos os primeiros → prosseguir com welcome.
-      // Se não retornar linha → outro processo já enviou → skip.
+      // Se retornar linha → somos os primeiros → prosseguir com welcome + n8n.
+      // Se não retornar linha → outro processo já enviou → skip de tudo.
+      //
+      // LIMITAÇÃO CONHECIDA (Cenário F): o lock é adquirido na primeira
+      // invocação, independente do estado de N8N_OUTBOUND_ENABLED.
+      // Se a flag estiver OFF na 1ª chamada → email dispara, n8n skipa →
+      // lock fica travado → 2ª chamada com flag ON → n8n não dispara.
+      // Mitigação: N8N_OUTBOUND_ENABLED é flag de ativação permanente,
+      // NÃO deve ser usada como toggle de manutenção.
       const { data: d3LockResult } = await sb
         .from('acolhimento_journey')
         .update({ welcome_dispatched_at: new Date().toISOString() })
@@ -153,146 +171,141 @@ Deno.serve(async (req: Request) => {
           }).catch(e => console.warn('[dispatch-person-event] send-welcome-email falhou:', e))
           console.log(`[dispatch-person-event] Email boas-vindas disparado para ${person.email}`)
         }
+
+        // ── 2. Verificar elegibilidade para webhook n8n ───────
+        // Dentro do D3 guard — n8n só dispara se welcome ainda não foi enviado antes.
+        // Garante que EF chamada duas vezes não duplica nem email nem n8n.
+
+        // 2a. Source elegível?
+        if (!WELCOME_SOURCES.has(person.source as string)) {
+          await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+            reason: 'source_not_eligible', source: person.source,
+          })
+          console.log('[dispatch-person-event] Skipped: source_not_eligible', person.source)
+          return ok()
+        }
+
+        // 2b. welcome_automation_enabled?
+        const { data: settings } = await sb
+          .from('church_settings')
+          .select('welcome_automation_enabled')
+          .eq('church_id', churchId)
+          .maybeSingle()
+
+        if (settings && settings.welcome_automation_enabled === false) {
+          await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+            reason: 'welcome_automation_disabled',
+          })
+          console.log('[dispatch-person-event] Skipped: welcome_automation_disabled')
+          return ok()
+        }
+
+        // ── 3. Buscar webhook configurado ────────────────────
+        const { data: webhook } = await sb
+          .from('n8n_webhooks')
+          .select('people_url, secret_token')
+          .eq('church_id', churchId)
+          .eq('is_active', true)
+          .not('people_url', 'is', null)
+          .maybeSingle()
+
+        if (!webhook?.people_url) {
+          await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+            reason: 'no_webhook_configured',
+          })
+          console.log('[dispatch-person-event] Skipped: no_webhook_configured')
+          return ok()
+        }
+
+        // ── 4. Buscar dados complementares ───────────────────
+        const [churchRes, pipelineRes] = await Promise.all([
+          sb.from('churches').select('name, slug').eq('id', churchId).single(),
+          sb.from('person_pipeline')
+            .select('stage_id')
+            .eq('person_id', personId)
+            .maybeSingle(),
+        ])
+
+        const churchName      = (churchRes.data?.name      as string | undefined) ?? null
+        const churchSlug      = (churchRes.data?.slug      as string | undefined) ?? null
+        const pipelineStageId = (pipelineRes.data?.stage_id as string | undefined) ?? null
+
+        // ── 5. Montar payload ────────────────────────────────
+        const payload = {
+          event:       'person_welcome_eligible',
+          church_id:   churchId,
+          church_slug: churchSlug,
+          church_name: churchName,
+          person_id:   personId,
+          person: {
+            name:                  person.name,
+            phone:                 person.phone,
+            email:                 person.email,
+            person_stage:          person.person_stage,
+            source:                person.source,
+            como_conheceu:         person.como_conheceu,
+            observacoes_pastorais: person.observacoes_pastorais,
+            first_visit_date:      person.first_visit_date,
+          },
+          pipeline_stage_id: pipelineStageId,
+          dispatched_at:     new Date().toISOString(),
+        }
+
+        const bodyStr = JSON.stringify(payload)
+
+        // ── 6. Montar headers ────────────────────────────────
+        const reqHeaders: Record<string, string> = {
+          'Content-Type':   'application/json',
+          'X-Ekthos-Event': 'person_welcome_eligible',
+        }
+
+        if (webhook.secret_token) {
+          const sig = await hmacSha256(webhook.secret_token as string, bodyStr)
+          reqHeaders['X-Ekthos-Signature'] = 'sha256=' + sig
+        }
+
+        // ── 7. Disparar webhook (fire-and-forget com timeout) ─
+        // Bug 4 fix: respeitar N8N_OUTBOUND_ENABLED antes de disparar via n8n_webhooks.people_url
+        const n8nEnabled = Deno.env.get('N8N_OUTBOUND_ENABLED') === 'true'
+        if (!n8nEnabled) {
+          console.log('[dispatch-person-event] N8N_OUTBOUND_ENABLED=false — skip n8n webhook (people_url)')
+          await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+            reason: 'n8n_outbound_disabled',
+            webhook_url: webhook.people_url,
+          })
+          return ok()
+        }
+
+        try {
+          const res = await fetch(webhook.people_url as string, {
+            method:  'POST',
+            headers: reqHeaders,
+            body:    bodyStr,
+            signal:  AbortSignal.timeout(5_000),
+          })
+
+          const statusCode = res.status
+          console.log('[dispatch-person-event] Webhook dispatched:', statusCode, webhook.people_url)
+
+          await writeAudit(sb, churchId, personId, 'person_event_dispatched', {
+            webhook_url:  webhook.people_url,
+            status_code:  statusCode,
+            event_type:   'person_welcome_eligible',
+          })
+
+        } catch (fetchErr) {
+          const msg = fetchErr instanceof Error ? (fetchErr.stack ?? fetchErr.message) : String(fetchErr)
+          console.error('[dispatch-person-event] Webhook failed:', msg)
+
+          await writeAudit(sb, churchId, personId, 'person_event_dispatch_failed', {
+            webhook_url: webhook.people_url,
+            error:       msg,
+            event_type:  'person_welcome_eligible',
+          })
+        }
+
+        return ok()
       }
-    }
-
-    // ── 2. Verificar elegibilidade para webhook n8n ───────
-
-    // 2a. Source elegível?
-    if (!WELCOME_SOURCES.has(person.source as string)) {
-      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
-        reason: 'source_not_eligible', source: person.source,
-      })
-      console.log('[dispatch-person-event] Skipped: source_not_eligible', person.source)
-      return ok()
-    }
-
-    // 2b. Não é bulk import?
-    if (person.is_bulk_import === true) {
-      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
-        reason: 'is_bulk_import',
-      })
-      console.log('[dispatch-person-event] Skipped: is_bulk_import')
-      return ok()
-    }
-
-    // 2c. welcome_automation_enabled?
-    const { data: settings } = await sb
-      .from('church_settings')
-      .select('welcome_automation_enabled')
-      .eq('church_id', churchId)
-      .maybeSingle()
-
-    if (settings && settings.welcome_automation_enabled === false) {
-      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
-        reason: 'welcome_automation_disabled',
-      })
-      console.log('[dispatch-person-event] Skipped: welcome_automation_disabled')
-      return ok()
-    }
-
-    // ── 3. Buscar webhook configurado ────────────────────
-    const { data: webhook } = await sb
-      .from('n8n_webhooks')
-      .select('people_url, secret_token')
-      .eq('church_id', churchId)
-      .eq('is_active', true)
-      .not('people_url', 'is', null)
-      .maybeSingle()
-
-    if (!webhook?.people_url) {
-      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
-        reason: 'no_webhook_configured',
-      })
-      console.log('[dispatch-person-event] Skipped: no_webhook_configured')
-      return ok()
-    }
-
-    // ── 4. Buscar dados complementares ───────────────────
-    const [churchRes, pipelineRes] = await Promise.all([
-      sb.from('churches').select('name, slug').eq('id', churchId).single(),
-      sb.from('person_pipeline')
-        .select('stage_id')
-        .eq('person_id', personId)
-        .maybeSingle(),
-    ])
-
-    const churchName  = (churchRes.data?.name  as string | undefined) ?? null
-    const churchSlug  = (churchRes.data?.slug  as string | undefined) ?? null
-    const pipelineStageId = (pipelineRes.data?.stage_id as string | undefined) ?? null
-
-    // ── 5. Montar payload ────────────────────────────────
-    const payload = {
-      event:       'person_welcome_eligible',
-      church_id:   churchId,
-      church_slug: churchSlug,
-      church_name: churchName,
-      person_id:   personId,
-      person: {
-        name:                  person.name,
-        phone:                 person.phone,
-        email:                 person.email,
-        person_stage:          person.person_stage,
-        source:                person.source,
-        como_conheceu:         person.como_conheceu,
-        observacoes_pastorais: person.observacoes_pastorais,
-        first_visit_date:      person.first_visit_date,
-      },
-      pipeline_stage_id: pipelineStageId,
-      dispatched_at:     new Date().toISOString(),
-    }
-
-    const bodyStr = JSON.stringify(payload)
-
-    // ── 6. Montar headers ────────────────────────────────
-    const reqHeaders: Record<string, string> = {
-      'Content-Type':   'application/json',
-      'X-Ekthos-Event': 'person_welcome_eligible',
-    }
-
-    if (webhook.secret_token) {
-      const sig = await hmacSha256(webhook.secret_token as string, bodyStr)
-      reqHeaders['X-Ekthos-Signature'] = 'sha256=' + sig
-    }
-
-    // ── 7. Disparar webhook (fire-and-forget com timeout) ─
-    // Bug 4 fix: respeitar N8N_OUTBOUND_ENABLED antes de disparar via n8n_webhooks.people_url
-    const n8nEnabled = Deno.env.get('N8N_OUTBOUND_ENABLED') === 'true'
-    if (!n8nEnabled) {
-      console.log('[dispatch-person-event] N8N_OUTBOUND_ENABLED=false — skip n8n webhook (people_url)')
-      await writeAudit(sb, churchId, personId, 'person_event_skipped', {
-        reason: 'n8n_outbound_disabled',
-        webhook_url: webhook.people_url,
-      })
-      return ok()
-    }
-
-    try {
-      const res = await fetch(webhook.people_url as string, {
-        method:  'POST',
-        headers: reqHeaders,
-        body:    bodyStr,
-        signal:  AbortSignal.timeout(5_000),
-      })
-
-      const statusCode = res.status
-      console.log('[dispatch-person-event] Webhook dispatched:', statusCode, webhook.people_url)
-
-      await writeAudit(sb, churchId, personId, 'person_event_dispatched', {
-        webhook_url:  webhook.people_url,
-        status_code:  statusCode,
-        event_type:   'person_welcome_eligible',
-      })
-
-    } catch (fetchErr) {
-      const msg = fetchErr instanceof Error ? (fetchErr.stack ?? fetchErr.message) : String(fetchErr)
-      console.error('[dispatch-person-event] Webhook failed:', msg)
-
-      await writeAudit(sb, churchId, personId, 'person_event_dispatch_failed', {
-        webhook_url: webhook.people_url,
-        error:       msg,
-        event_type:  'person_welcome_eligible',
-      })
     }
 
     return ok()
