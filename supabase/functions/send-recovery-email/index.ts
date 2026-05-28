@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: send-recovery-email v1
+// Edge Function: send-recovery-email v2
 //
 // Workaround para EVE (Email Validation Extended) do Supabase
 // que bloqueia domínios "não-reputados" como ekthosai.net.
@@ -7,20 +7,25 @@
 // Estratégia:
 //   1. Admin API generateLink({type:'recovery'}) → gera link JWT
 //      sem disparar o mailer GoTrue (bypassa EVE)
-//   2. Envia email via Resend com o link gerado
+//   2. Envia email via Google Workspace SMTP (denomailer port 465)
 //
 // POST /send-recovery-email
 // Body: { email: string }
 // Returns: SEMPRE 200 { success: true } — anti-enumeração
 //
 // verify_jwt: false — endpoint público (igual /auth/v1/recover)
+// Secrets necessários: GMAIL_SMTP_USER, GMAIL_APP_PASSWORD
+// Opcional: GMAIL_SMTP_FROM (padrão: GMAIL_SMTP_USER)
 // ============================================================
+
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts"
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const RESEND_API_KEY            = Deno.env.get('RESEND_API_KEY') || ''
+const GMAIL_SMTP_USER           = Deno.env.get('GMAIL_SMTP_USER')     || ''
+const GMAIL_APP_PASSWORD        = Deno.env.get('GMAIL_APP_PASSWORD')   || ''
+const FROM_EMAIL                = Deno.env.get('GMAIL_SMTP_FROM')      || GMAIL_SMTP_USER || 'noreply@ekthosai.net'
 const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
-const FROM_EMAIL                = 'noreply@ekthosai.net'
 const REDIRECT_TO               = `${ALLOWED_ORIGIN}/auth/reset-password`
 
 const CORS: Record<string, string> = {
@@ -165,9 +170,9 @@ Deno.serve(async (req: Request) => {
   const email = body.email?.trim().toLowerCase()
   if (!email) return jsonOk()
 
-  // ── Guardar: RESEND_API_KEY necessária ────────────────────
-  if (!RESEND_API_KEY) {
-    console.error('[send-recovery-email] RESEND_API_KEY não configurada')
+  // ── Guard: SMTP credentials necessárias ──────────────────
+  if (!GMAIL_SMTP_USER || !GMAIL_APP_PASSWORD) {
+    console.error('[send-recovery-email] GMAIL_SMTP_USER ou GMAIL_APP_PASSWORD não configurados')
     return jsonOk()
   }
 
@@ -207,30 +212,31 @@ Deno.serve(async (req: Request) => {
     return jsonOk()
   }
 
-  // ── Step 2: Enviar email via Resend ───────────────────────
+  // ── Step 2: Enviar email via Google SMTP (denomailer) ─────
   try {
-    const resendResp = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: GMAIL_SMTP_USER,
+          password: GMAIL_APP_PASSWORD,
+        },
       },
-      body: JSON.stringify({
-        from: FROM_EMAIL,
-        to: email,
-        subject: 'Redefinir sua senha do Ekthos',
-        html: buildRecoveryHtml(actionLink, email),
-      }),
     })
 
-    if (!resendResp.ok) {
-      const errBody = await resendResp.text()
-      console.error(`[send-recovery-email] Resend error ${resendResp.status}: ${errBody}`)
-    } else {
-      console.log(`[send-recovery-email] email enviado para ${email}`)
-    }
+    await client.send({
+      from: `Ekthos <${FROM_EMAIL}>`,
+      to: [email],
+      subject: "Redefinir sua senha do Ekthos",
+      html: buildRecoveryHtml(actionLink, email),
+    })
+
+    await client.close()
+    console.log(`[send-recovery-email] SMTP OK → ${email}`)
   } catch (err) {
-    console.error('[send-recovery-email] Resend exception:', err)
+    console.error('[send-recovery-email] SMTP exception:', err)
   }
 
   return jsonOk()
