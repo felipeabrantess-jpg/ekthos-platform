@@ -1273,7 +1273,7 @@ export default function Landing() {
           <div className="pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderColor: 'rgba(59,130,246,0.08)' }}>
             <p className="text-xs" style={{ color: 'rgba(226,232,240,0.2)' }}>© 2026 Ekthos Church. Todos os direitos reservados.</p>
             <div className="flex gap-5">
-              {[['#', 'Política de Privacidade'], ['#', 'Termos de Uso']].map(([h, l]) => (
+              {[['/privacy', 'Política de Privacidade'], ['/terms', 'Termos de Uso']].map(([h, l]) => (
                 <a key={l} href={h} className="text-xs transition-colors" style={{ color: 'rgba(226,232,240,0.2)' }}
                   onMouseEnter={e => (e.currentTarget.style.color = '#60a5fa')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'rgba(226,232,240,0.2)')}>{l}</a>
