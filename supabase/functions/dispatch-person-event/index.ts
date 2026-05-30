@@ -1,6 +1,12 @@
 // ============================================================
-// Edge Function: dispatch-person-event
+// Edge Function: dispatch-person-event  v34
 // Sistema genérico de eventos de pessoa — Frente B (extensível).
+//
+// Changelog:
+//   v34 (2026-05-29) — R-PREMIUM-GUARD: verifica contratação ativa
+//                      de agent-acolhimento (agent_grants OU
+//                      subscription_agents) antes de criar journey.
+//                      canon §10 D7 inegociável.
 //
 // POST /functions/v1/dispatch-person-event
 // verify_jwt = false — chamada interna via service_role Bearer
@@ -119,6 +125,56 @@ Deno.serve(async (req: Request) => {
     // ── 1c. Criar jornada de acolhimento (Sprint 2) ───────
     // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
     if (person.person_stage === 'visitante' && person.is_bulk_import !== true) {
+      // ═══════════════════════════════════════════════════════
+      // R-PREMIUM-GUARD v34 — verifica contratação ativa
+      // de agent-acolhimento antes de criar journey.
+      // canon §10 D7 + R-PREMIUM-GUARD inegociável.
+      // ═══════════════════════════════════════════════════════
+      const nowIso = new Date().toISOString()
+
+      const { data: grantRow } = await sb
+        .from('agent_grants')
+        .select('id')
+        .eq('church_id', churchId)
+        .eq('agent_slug', 'agent-acolhimento')
+        .is('revoked_at', null)
+        .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+        .limit(1)
+        .maybeSingle()
+
+      let hasContract = !!grantRow
+
+      if (!hasContract) {
+        const { data: subRow } = await sb
+          .from('subscription_agents')
+          .select('id, subscriptions!inner(church_id)')
+          .eq('agent_slug', 'agent-acolhimento')
+          .eq('activation_status', 'active')
+          .eq('subscriptions.church_id', churchId)
+          .limit(1)
+          .maybeSingle()
+
+        hasContract = !!subRow
+      }
+
+      if (!hasContract) {
+        console.log(`[guard] no_active_contract church_id=${churchId} agent=agent-acolhimento person_id=${personId}`)
+
+        await writeAudit(sb, churchId, personId, 'person_event_skipped', {
+          reason: 'no_active_contract',
+          agent_slug: 'agent-acolhimento',
+          person_stage: person.person_stage,
+          check_failed: ['agent_grants', 'subscription_agents'],
+        })
+
+        return new Response(
+          JSON.stringify({ ok: true, skipped: true, reason: 'no_active_contract' }),
+          { headers: { 'Content-Type': 'application/json' }, status: 200 }
+        )
+      }
+      // FIM R-PREMIUM-GUARD v34
+      // ═══════════════════════════════════════════════════════
+
       await createAcolhimentoJourney(sb, churchId, personId)
 
       // ── D3 GUARD: pessimistic lock — welcome só é enviado UMA VEZ por (church_id, person_id) ──
