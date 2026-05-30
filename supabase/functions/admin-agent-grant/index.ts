@@ -14,9 +14,20 @@ function jsonResponse(data: unknown, status = 200, extraHeaders: Record<string, 
   })
 }
 
+// SA-B7 MEGA-ONDA SEGURANÇA: CORS origin validation (fix RISK-001)
+// Reflete apenas origens conhecidas; rejeita todas as demais.
+const ALLOWED_ORIGINS = [
+  'https://ekthos-platform.vercel.app',
+  'https://ekthosai.com',
+  'https://www.ekthosai.com',
+  'https://app.ekthosai.com',
+]
+
 function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') ?? ''
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
   return {
-    'Access-Control-Allow-Origin':  req.headers.get('origin') ?? '*',
+    'Access-Control-Allow-Origin':  allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
   }

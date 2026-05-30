@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v21 — Fase 6.3
+// Edge Function: agent-acolhimento  v22 — Fase 6.3
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -20,6 +20,12 @@
 //   - processInbound: t0 + try/finally → logAgentExecution em 3 saídas
 //     (rate_limited, success, error)
 //   - Handler passa triggerType ('cron'|'journey') para processJourney
+//
+// MUDANÇAS v22 (2026-05-30 — SA-B3 MEGA-ONDA SEGURANÇA):
+//   - processJourney: lê send_window de agentConfig antes de checkAntiSpam
+//     silenceStartH = send_window.end (default 21), silenceEndH = send_window.start (default 8)
+//   - _shared/agent-tools.ts: delay_until calculado via horas relativas ao timezone local
+//     (bug: setHours() operava em UTC → loop infinito de reagendamento em timezones não-UTC)
 //
 // MUDANÇAS v21 (2026-05-30 — D4 MEGA-ONDA CIRÚRGICA):
 //   - processInbound: debit_agent_credits (best-effort) após runToolLoop sucesso
@@ -441,8 +447,16 @@ async function processJourney(
     const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
     const churchTimezone = church?.timezone || 'America/Sao_Paulo'
 
-    // Anti-spam check (v2 — lê conversation_messages)
-    const spamCheck = await checkAntiSpam(churchId, personId, churchTimezone)
+    // Anti-spam check (v22-SA-B3 — lê send_window de agentConfig)
+    // send_window = {"start": h1, "end": h2} → ativo entre h1 e h2 (silêncio fora disso)
+    const sendWindow = agentConfig?.send_window as { start: number; end: number } | undefined
+    const spamCheck = await checkAntiSpam(
+      churchId,
+      personId,
+      churchTimezone,
+      sendWindow?.end   ?? 21,  // silenceStartH = fim da janela ativa  ({"start":8,"end":21} → 21)
+      sendWindow?.start ?? 8,   // silenceEndH   = início da janela ativa ({"start":8,"end":21} → 8)
+    )
     if (!spamCheck.allowed) {
       const reschedule: Record<string, unknown> = { status: 'pending' }
       if (spamCheck.delay_until) reschedule.next_touchpoint_at = spamCheck.delay_until
