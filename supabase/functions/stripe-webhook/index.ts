@@ -1,4 +1,12 @@
 // ============================================================
+// Edge Function: stripe-webhook v14 — is_test_church filter (MEGA-ONDA F1.4)
+//
+// MUDANÇAS v13 → v14:
+//   - is_test_church guard em handleCaminhoACheckout, handleLandingPageCheckout,
+//     handleCheckoutSessionCompleted (cockpit path). Igrejas de teste ignoram
+//     eventos Stripe. canon §10 F1.4 inegociável.
+//
+// ============================================================
 // Edge Function: stripe-webhook v13 — Fix C1: handleInvoicePaid colunas corretas
 //
 // MUDANÇAS v12 → v13:
@@ -574,6 +582,13 @@ async function handleCaminhoACheckout(session: Stripe.Checkout.Session, eventId:
   const churchId = rpcResult.church_id as string
   console.log(`[caminho-a] church criada: ${churchId} plan=${planSlug}`)
 
+  // is_test_church guard v14 — igrejas de teste ignoram eventos Stripe
+  const { data: churchCheck } = await supabase.from('churches').select('is_test_church').eq('id', churchId).maybeSingle()
+  if (churchCheck?.is_test_church) {
+    console.log(`[stripe-webhook] skip caminho-a church=${churchId} reason=is_test_church`)
+    return
+  }
+
   // Atualiza app_metadata (auth_church_id() lê apenas app_metadata — CLAUDE.md)
   if (userId && churchId) {
     try {
@@ -771,6 +786,13 @@ async function handleLandingPageCheckout(session: Stripe.Checkout.Session, event
   const churchId = rpcResult.church_id as string
   console.log(`[F6] church criada: ${churchId} plan=${planSlug}`)
 
+  // is_test_church guard v14 — igrejas de teste ignoram eventos Stripe
+  const { data: f6ChurchCheck } = await supabase.from('churches').select('is_test_church').eq('id', churchId).maybeSingle()
+  if (f6ChurchCheck?.is_test_church) {
+    console.log(`[stripe-webhook] skip landing-page church=${churchId} reason=is_test_church`)
+    return
+  }
+
   if (userId && churchId) {
     try {
       await supabase.auth.admin.updateUserById(userId, { app_metadata: { church_id: churchId, role: 'admin' } })
@@ -865,6 +887,14 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
   const customerId = typeof session.customer === 'string' ? session.customer : (session.customer as Stripe.Customer | null)?.id ?? null
   const churchId = await resolveChurchId(session.metadata as Record<string, string> | null, customerId, session.id)
   if (!churchId) { console.error('[stripe-webhook] checkout: church_id não encontrado', session.id); return }
+
+  // is_test_church guard v14 — igrejas de teste ignoram eventos Stripe
+  const { data: cockpitChurchCheck } = await supabase.from('churches').select('is_test_church').eq('id', churchId).maybeSingle()
+  if (cockpitChurchCheck?.is_test_church) {
+    console.log(`[stripe-webhook] skip cockpit church=${churchId} reason=is_test_church`)
+    return
+  }
+
   console.log(`[stripe-webhook] checkout (cockpit) church=${churchId}`)
   await handleCockpitCheckout(session, churchId)
 }
