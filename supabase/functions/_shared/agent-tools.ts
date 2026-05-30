@@ -46,10 +46,14 @@ export async function checkAntiSpam(
     })
   )
   if (localHour >= silenceStartH || localHour < silenceEndH) {
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(silenceEndH, 0, 0, 0)
-    return { allowed: false, reason: 'silence_window', delay_until: tomorrow.toISOString() }
+    // v22-SA-B3: delay_until calculado respeitando timezone da igreja
+    // Bug anterior: setHours(silenceEndH) operava em UTC → 08h UTC = 05h BRT (ainda no silêncio!)
+    // Fix: calcular quantas horas inteiras faltam até silenceEndH no timezone local da igreja
+    const hoursUntilWindowOpen = localHour < silenceEndH
+      ? (silenceEndH - localHour)          // ainda hoje (ex: localHour=5, end=8 → +3h = 08h local)
+      : (24 - localHour + silenceEndH)     // passou da meia-noite (ex: localHour=22, end=8 → +10h)
+    const delayUntil = new Date(now.getTime() + hoursUntilWindowOpen * 3_600_000)
+    return { allowed: false, reason: 'silence_window', delay_until: delayUntil.toISOString() }
   }
 
   // 2. Buscar conversation_ids desta pessoa (two-step — Supabase JS não suporta subquery nativa)

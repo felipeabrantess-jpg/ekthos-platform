@@ -36,7 +36,8 @@ const ZAPI_BASE = 'https://api.z-api.io'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return json({ ok: true }, 200)
+    // SA-B7: OPTIONS deve retornar 204 vazio com CORS headers (não JSON 200)
+    return new Response(null, { status: 204, headers: CORS_HEADERS })
   }
   if (req.method !== 'POST') {
     return json({ ok: false, error: 'method_not_allowed' }, 405)
