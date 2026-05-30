@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: conversation-router
+// Edge Function: conversation-router  v20
 // Decisor de roteamento — sem lógica de entrega.
 //
 // POST /functions/v1/conversation-router
@@ -15,6 +15,12 @@
 //
 // REGRA: Este EF NUNCA envia mensagem. Só decide e delega.
 //        A entrega é responsabilidade do channel-dispatcher.
+//
+// Changelog:
+//   v20 (2026-05-30) — R-PREMIUM-GUARD: verifica contratação ativa
+//                      de agent-acolhimento (agent_grants OU
+//                      subscription_agents) antes de rotear inbound.
+//                      canon §10 D7 inegociável.
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -110,6 +116,65 @@ Deno.serve(async (req) => {
     // ── agent: chamar o agente correto ──────────────────────
     if (effectiveOwnership === 'agent') {
       const agentFn = AGENT_FUNCTIONS[effectiveAgentSlug] ?? DEFAULT_AGENT
+
+      // ═══════════════════════════════════════════════════════
+      // R-PREMIUM-GUARD v20 — verifica contratação ativa
+      // de agent-acolhimento antes de roteamento inbound.
+      // canon §10 D7 + R-PREMIUM-GUARD inegociável.
+      // NÃO importar _shared/agent-guard.ts (singleton diferente).
+      // ═══════════════════════════════════════════════════════
+      if (agentFn === 'agent-acolhimento') {
+        const nowIso = new Date().toISOString()
+
+        const { data: grantRow } = await sb
+          .from('agent_grants')
+          .select('id')
+          .eq('church_id', church_id)
+          .eq('agent_slug', 'agent-acolhimento')
+          .is('revoked_at', null)
+          .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+          .limit(1)
+          .maybeSingle()
+
+        let hasContract = !!grantRow
+
+        if (!hasContract) {
+          const { data: subRow } = await sb
+            .from('subscription_agents')
+            .select('id, subscriptions!inner(church_id)')
+            .eq('agent_slug', 'agent-acolhimento')
+            .eq('activation_status', 'active')
+            .eq('subscriptions.church_id', church_id)
+            .limit(1)
+            .maybeSingle()
+
+          hasContract = !!subRow
+        }
+
+        if (!hasContract) {
+          console.log(`[guard] no_active_contract church_id=${church_id} agent=agent-acolhimento`)
+
+          await sb.from('audit_logs').insert({
+            church_id,
+            entity_type: 'conversation',
+            entity_id:   conversation_id,
+            action:      'conversation_routing_skipped',
+            actor_type:  'system',
+            actor_id:    'conversation-router',
+            payload: {
+              reason:      'no_active_contract',
+              agent_slug:  'agent-acolhimento',
+              check_failed: ['agent_grants', 'subscription_agents'],
+            },
+            model_used:  null,
+            tokens_used: 0,
+          }).catch((e: unknown) => console.warn('[conversation-router] audit_log falhou (não crítico):', e))
+
+          return json({ ok: true, skipped: true, reason: 'no_active_contract' })
+        }
+      }
+      // FIM R-PREMIUM-GUARD v20
+      // ═══════════════════════════════════════════════════════
 
       console.log(
         `[conversation-router] ${conversation_id} → ${agentFn} ` +

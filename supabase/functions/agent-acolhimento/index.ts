@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v19 — Fase 6.3
+// Edge Function: agent-acolhimento  v20 — Fase 6.3
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -20,6 +20,11 @@
 //   - processInbound: t0 + try/finally → logAgentExecution em 3 saídas
 //     (rate_limited, success, error)
 //   - Handler passa triggerType ('cron'|'journey') para processJourney
+//
+// MUDANÇAS v20 (2026-05-30 — R-PREMIUM-GUARD §10 D7):
+//   - Modo cron: filtro por churches com contrato ativo antes de processar journeys.
+//     Usa agent_grants (revoked_at IS NULL + ends_at null/future) OU
+//     subscription_agents (activation_status='active'). NÃO usa church_agent_config.
 //
 // MUDANÇAS v3 (Passo 6 mínimo viável):
 //   - fetchChurchConfig passa a chamar get_agent_prompt_resolved (RPC)
@@ -765,11 +770,45 @@ Deno.serve(async (req: Request) => {
 
   // ── MODO BATCH (cron) ─────────────────────────────────────
   if (triggerType === 'cron') {
+    // ═══════════════════════════════════════════════════════
+    // R-PREMIUM-GUARD v20 — filtra apenas churches com
+    // agent-acolhimento contratado ativo antes de processar.
+    // Evita executar jornadas para churches sem contrato.
+    // ═══════════════════════════════════════════════════════
+    const nowIso = new Date().toISOString()
+
+    const [{ data: grantChurches }, { data: subChurches }] = await Promise.all([
+      supabaseAdmin
+        .from('agent_grants')
+        .select('church_id')
+        .eq('agent_slug', AGENT_SLUG)
+        .is('revoked_at', null)
+        .or(`ends_at.is.null,ends_at.gt.${nowIso}`),
+      supabaseAdmin
+        .from('subscription_agents')
+        .select('subscriptions!inner(church_id)')
+        .eq('agent_slug', AGENT_SLUG)
+        .eq('activation_status', 'active'),
+    ])
+
+    const contractedIds = new Set<string>([
+      ...(grantChurches?.map((r: { church_id: string }) => r.church_id) ?? []),
+      ...(subChurches?.map((r: { subscriptions: { church_id: string } }) => r.subscriptions.church_id) ?? []),
+    ])
+
+    if (contractedIds.size === 0) {
+      console.log('[agent-acolhimento] cron: no contracted churches with agent-acolhimento')
+      return json({ ok: true, processed: 0, message: 'no_contracted_churches' })
+    }
+
+    console.log(`[agent-acolhimento] cron: ${contractedIds.size} contracted churches`)
+
     const { data: journeys } = await supabaseAdmin
       .from('acolhimento_journey')
       .select('id, church_id')
       .eq('status', 'pending')
       .lte('next_touchpoint_at', new Date().toISOString())
+      .in('church_id', Array.from(contractedIds))
       .limit(BATCH_SIZE)
 
     if (!journeys || journeys.length === 0) {
