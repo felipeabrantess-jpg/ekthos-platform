@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-haiku-triagem  v4 — Fase 6.3
+// Edge Function: agent-haiku-triagem  v5 — Fase 6.3
 //
 // POST /functions/v1/agent-haiku-triagem
 // verify_jwt = false — chamada interna via webhook-receiver
@@ -13,10 +13,16 @@
 //   2. Rotear:
 //      - ownership='human'     → notificar liderança, não processar
 //      - category=handoff_humano → transferir, notificar, confirmar ao membro
-//      - escalate_to_sonnet    → fire-and-forget ao agent-acolhimento
+//      - escalate_to_sonnet    → R-PREMIUM-GUARD → agent-acolhimento
 //      - trivial/informativa   → responder diretamente via Haiku
 //   3. Salvar classificação em conversation_messages.metadata
 //   4. Notificar via internal_notifications quando necessário
+//
+// MUDANÇAS v5 (2026-05-30 — R-PREMIUM-GUARD §10 D7):
+//   - hasAcolhimentoContract(): verifica agent_grants OU subscription_agents
+//     antes de qualquer escalation para agent-acolhimento.
+//   - escalateToSonnet() refatorada para async com guard inline.
+//   - NÃO usa _shared/agent-guard.ts (campo legado .active vs activation_status).
 //
 // MUDANÇAS v4 (Fase 6.3 — Observabilidade):
 //   - Importa logAgentExecution de _shared/log-agent-execution.ts
@@ -276,12 +282,77 @@ async function notifyInternal(
   }
 }
 
-function escalateToSonnet(
+// ═══════════════════════════════════════════════════════════
+// R-PREMIUM-GUARD v5 — verifica contratação ativa de
+// agent-acolhimento antes de qualquer escalation.
+// canon §10 D7 inegociável.
+// NÃO usa _shared/agent-guard.ts (campo legado .active).
+// ═══════════════════════════════════════════════════════════
+
+async function hasAcolhimentoContract(
+  supabase: ReturnType<typeof createClient>,
+  churchId: string,
+): Promise<boolean> {
+  const nowIso = new Date().toISOString()
+
+  const { data: grantRow } = await supabase
+    .from('agent_grants')
+    .select('id')
+    .eq('church_id', churchId)
+    .eq('agent_slug', 'agent-acolhimento')
+    .is('revoked_at', null)
+    .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
+    .limit(1)
+    .maybeSingle()
+
+  if (grantRow) return true
+
+  const { data: subRow } = await supabase
+    .from('subscription_agents')
+    .select('id, subscriptions!inner(church_id)')
+    .eq('agent_slug', 'agent-acolhimento')
+    .eq('activation_status', 'active')
+    .eq('subscriptions.church_id', churchId)
+    .limit(1)
+    .maybeSingle()
+
+  return !!subRow
+}
+
+async function escalateToSonnet(
+  supabase: ReturnType<typeof createClient>,
   conversationId: string,
   messageId: string,
   churchId: string,
   inboundText: string,
-): void {
+  haiku_response_fallback?: string | null,
+): Promise<void> {
+  // R-PREMIUM-GUARD: verifica contrato antes de chamar agent-acolhimento
+  const hasContract = await hasAcolhimentoContract(supabase, churchId)
+  if (!hasContract) {
+    console.log(`[guard] no_active_contract church_id=${churchId} agent=agent-acolhimento`)
+    await supabase.from('audit_logs').insert({
+      church_id,
+      entity_type: 'conversation',
+      entity_id:   conversationId,
+      action:      'haiku_escalation_skipped',
+      actor_type:  'system',
+      actor_id:    'agent-haiku-triagem',
+      payload: {
+        reason:      'no_active_contract',
+        agent_slug:  'agent-acolhimento',
+        conversation_id: conversationId,
+      },
+      model_used:  null,
+      tokens_used: 0,
+    }).catch((e: unknown) => console.warn('[agent-haiku-triagem] audit_log falhou (não crítico):', e))
+
+    // Fallback: envia resposta haiku se disponível, senão resposta genérica
+    const fallback = haiku_response_fallback ?? 'Recebemos sua mensagem. Nossa equipe pastoral retornará em breve. 🙏'
+    await enqueueOutboundMessage(supabase, conversationId, churchId, fallback)
+    return
+  }
+
   const url = `${SUPABASE_URL}/functions/v1/agent-acolhimento`
   fetch(url, {
     method:  'POST',
@@ -399,7 +470,7 @@ Deno.serve(async (req: Request) => {
       totalUsage     = result.usage
     } catch (err) {
       console.error(`[${AGENT_SLUG}] classifyMessage threw:`, err)
-      escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+      await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text)
       logStatus = 'error'
       logError  = String(err)
       return json({ ok: true, routed: 'sonnet_fallback', error: 'classification_failed' })
@@ -451,9 +522,9 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, routed: 'handoff_humano', classification })
     }
 
-    // 4b. Escalate para Sonnet
+    // 4b. Escalate para Sonnet (R-PREMIUM-GUARD v5 inside escalateToSonnet)
     if (escalate_to_sonnet || sentiment === 'distressed') {
-      escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+      await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text)
       console.log(`[${AGENT_SLUG}] routed=sonnet (escalate=${escalate_to_sonnet} distressed=${sentiment === 'distressed'})`)
       return json({ ok: true, routed: 'sonnet', classification })
     }
@@ -465,8 +536,8 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, routed: 'haiku', classification })
     }
 
-    // Fallback
-    escalateToSonnet(conversation_id, message_id, church_id, inbound_text)
+    // Fallback (R-PREMIUM-GUARD v5 inside escalateToSonnet)
+    await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text)
     console.log(`[${AGENT_SLUG}] routed=sonnet_fallback (haiku_response null without escalate flag)`)
     return json({ ok: true, routed: 'sonnet_fallback', classification })
 
