@@ -7,6 +7,7 @@ export default function Signup() {
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [show, setShow] = useState({ password: false, confirm: false })
+  const [lgpdConsent, setLgpdConsent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -23,15 +24,40 @@ export default function Signup() {
     if (!form.email.trim()) return setError('Informe seu email.')
     if (form.password.length < 8) return setError('A senha deve ter pelo menos 8 caracteres.')
     if (form.password !== form.confirm) return setError('As senhas não conferem.')
+    if (!lgpdConsent) return setError('Você precisa aceitar os Termos de Uso e a Política de Privacidade para continuar.')
 
     setLoading(true)
+    const lgpdConsentAt = new Date().toISOString()
+
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email:    form.email.trim(),
         password: form.password,
-        options:  { data: { full_name: form.name.trim() } },
+        options:  {
+          data: {
+            full_name:       form.name.trim(),
+            lgpd_consent:    true,
+            lgpd_consent_at: lgpdConsentAt,
+          },
+        },
       })
       if (signUpError) throw signUpError
+
+      // Persiste consentimento LGPD em profiles (colunas confirmadas)
+      // Igreja ainda não existe neste momento — church_id omitido.
+      // Upsert idempotente por user_id.
+      if (data.user?.id) {
+        await supabase.from('profiles').upsert({
+          id:              crypto.randomUUID(),
+          user_id:         data.user.id,
+          name:            form.name.trim(),
+          display_name:    form.name.trim(),
+          lgpd_consent:    true,
+          lgpd_consent_at: lgpdConsentAt,
+        } as any, { onConflict: 'user_id', ignoreDuplicates: false })
+        // Erros silenciosos: se church_id for NOT NULL a gravação falha mas o
+        // consentimento já está registrado em raw_user_meta_data (options.data acima).
+      }
 
       // Checa is_ekthos_admin no app_metadata retornado pelo signup.
       // O trigger 00015 já seta o flag antes do INSERT, então o JWT
@@ -148,10 +174,48 @@ export default function Signup() {
               </div>
             </div>
 
+            {/* LGPD Consent — obrigatório */}
+            <div className="flex items-start gap-3 pt-1">
+              <input
+                id="lgpd-consent"
+                type="checkbox"
+                checked={lgpdConsent}
+                onChange={e => setLgpdConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 cursor-pointer flex-shrink-0"
+                style={{ accentColor: 'var(--color-primary)' }}
+              />
+              <label htmlFor="lgpd-consent" className="text-xs text-gray-600 leading-relaxed cursor-pointer">
+                Declaro que li e aceito os{' '}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-medium"
+                  style={{ color: 'var(--color-primary)' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  Termos de Uso
+                </a>
+                {' '}e a{' '}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-medium"
+                  style={{ color: 'var(--color-primary)' }}
+                  onClick={e => e.stopPropagation()}
+                >
+                  Política de Privacidade
+                </a>
+                , incluindo o tratamento dos meus dados pessoais nos termos da LGPD
+                (Lei nº&nbsp;13.709/2018). <span className="text-red-500">*</span>
+              </label>
+            </div>
+
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !lgpdConsent}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
               style={{ background: 'var(--color-primary)' }}
             >
@@ -159,13 +223,6 @@ export default function Signup() {
               {loading ? 'Criando conta...' : 'Criar conta'}
             </button>
           </form>
-
-          <p className="text-xs text-gray-400 text-center mt-6">
-            Ao criar sua conta você concorda com os{' '}
-            <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-primary)' }}>Termos de Uso</a>
-            {' '}e a{' '}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: 'var(--color-primary)' }}>Política de Privacidade</a>.
-          </p>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">

@@ -1,6 +1,7 @@
 // Privacy.tsx — Política de Privacidade Ekthos Church
-// Stub revisável pelo jurídico. Versão operacional mínima.
-// Última revisão: 2026-05-28
+// Controlador: F C Abrantes Ltda — CNPJ 60.940.150/0001-07
+// DPO: Felipe Abrantes — felipe@ekthosai.net
+// Versão: 1.0 — 28/05/2026
 
 export default function Privacy() {
   return (
@@ -9,97 +10,115 @@ export default function Privacy() {
         <h1 className="font-display text-3xl font-bold text-gray-900 mb-2">
           Política de Privacidade
         </h1>
-        <p className="text-xs text-gray-400 mb-10">Última atualização: 28 de maio de 2026</p>
+        <p className="text-xs text-gray-400 mb-10">Última atualização: 28 de maio de 2026 — Versão 1.0</p>
 
         <section className="space-y-8 text-sm text-gray-700 leading-relaxed">
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">1. Controlador dos Dados</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">1. Identificação do Controlador</h2>
             <p>
-              Ekthos Sistemas Ltda., inscrita no CNPJ [a preencher], com sede em [cidade/UF],
-              é a controladora dos dados pessoais coletados por meio desta plataforma,
-              nos termos da Lei nº 13.709/2018 (LGPD).
+              <strong>F C Abrantes Ltda.</strong>, inscrita no CNPJ&nbsp;60.940.150/0001-07,
+              é a controladora dos dados pessoais coletados por meio da plataforma Ekthos Church,
+              nos termos da Lei nº&nbsp;13.709/2018 (Lei Geral de Proteção de Dados — LGPD).
             </p>
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">2. Finalidade do Tratamento</h2>
-            <p>
-              Os dados coletados são utilizados exclusivamente para prestação dos serviços
-              de gestão pastoral contratados pela instituição religiosa (Igreja) cliente,
-              incluindo: gestão de membros e visitantes, comunicação pastoral via WhatsApp,
-              organização de eventos, escalas e células, e relatórios de acompanhamento espiritual.
-            </p>
-          </div>
-
-          <div>
-            <h2 className="font-semibold text-gray-900 mb-2">3. Dados Coletados</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">2. Dados Coletados</h2>
+            <p className="mb-2">Coletamos apenas os dados necessários à prestação do serviço contratado:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>Nome completo</li>
-              <li>Número de telefone (WhatsApp)</li>
-              <li>Endereço de e-mail (quando fornecido)</li>
+              <li>Endereço de e-mail</li>
+              <li>Número de telefone / WhatsApp (quando fornecido)</li>
               <li>Data de nascimento (quando fornecida)</li>
-              <li>Participação em eventos e atividades da Igreja</li>
-              <li>Histórico de conversas iniciadas pelo próprio titular via WhatsApp</li>
+              <li>Participação em eventos, células e escalas da Igreja</li>
+              <li>Histórico de interações iniciadas pelo próprio titular via WhatsApp</li>
+              <li>Dados de acesso: IP, data/hora de login (logs de segurança)</li>
             </ul>
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">4. Base Legal</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">3. Finalidade do Tratamento</h2>
             <p>
-              O tratamento ocorre com base em: (i) consentimento explícito do titular,
-              quando coletado via formulário de visitante (QR Code); ou (ii) legítimo interesse
-              da Igreja, quando o contato é iniciado pelo próprio titular via WhatsApp
-              (Art. 7º, incisos I e IX da LGPD).
+              Os dados são utilizados exclusivamente para: (i) prestação dos serviços de gestão
+              pastoral contratados pela Igreja; (ii) comunicação pastoral autorizada via WhatsApp;
+              (iii) organização de eventos, escalas e células; (iv) relatórios de acompanhamento
+              espiritual; e (v) envio de comunicações sobre o serviço contratado.
+            </p>
+          </div>
+
+          <div>
+            <h2 className="font-semibold text-gray-900 mb-2">4. Base Legal (Art. 7º da LGPD)</h2>
+            <p>
+              O tratamento de dados ocorre com fundamento em: (i) <strong>consentimento</strong> do titular,
+              coletado no momento do cadastro ou via formulário de visitante (Art.&nbsp;7º, I);
+              (ii) <strong>execução de contrato</strong>, quando necessário à prestação dos serviços
+              contratados pela Igreja (Art.&nbsp;7º, V); e (iii) <strong>legítimo interesse</strong>,
+              para fins de segurança, prevenção a fraudes e melhoria da plataforma (Art.&nbsp;7º, IX).
             </p>
           </div>
 
           <div>
             <h2 className="font-semibold text-gray-900 mb-2">5. Retenção dos Dados</h2>
             <p>
-              Os dados são mantidos enquanto vigente o contrato entre a Ekthos e a Igreja
-              contratante. Após o encerramento, os dados são anonimizados ou excluídos
-              em até 90 dias, salvo obrigação legal de retenção.
+              Os dados são mantidos pelo período de vigência do contrato entre a F C Abrantes Ltda.
+              e a Igreja contratante, acrescido de <strong>5 (cinco) anos</strong> para fins de
+              cumprimento de obrigações legais e defesa em processos judiciais ou administrativos.
+              Após esse prazo, os dados são anonimizados ou definitivamente excluídos.
             </p>
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">6. Direitos do Titular</h2>
-            <p>
-              O titular dos dados pode, a qualquer momento, solicitar: confirmação de
-              existência de tratamento, acesso, correção, anonimização, portabilidade,
-              eliminação ou revogação de consentimento. Solicitações devem ser enviadas
-              para:{' '}
+            <h2 className="font-semibold text-gray-900 mb-2">6. Direitos do Titular (Art. 18 da LGPD)</h2>
+            <p className="mb-2">O titular dos dados pode, a qualquer momento, solicitar:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Confirmação da existência de tratamento</li>
+              <li>Acesso aos dados que possuímos sobre você</li>
+              <li>Correção de dados incompletos, inexatos ou desatualizados</li>
+              <li>Anonimização, bloqueio ou eliminação de dados desnecessários</li>
+              <li>Portabilidade dos dados a outro fornecedor</li>
+              <li>Revogação do consentimento, sem prejuízo da legalidade de tratamentos anteriores</li>
+            </ul>
+            <p className="mt-2">
+              Solicitações devem ser enviadas para:{' '}
               <a
-                href="mailto:privacidade@ekthosai.net"
+                href="mailto:felipe@ekthosai.net"
                 className="underline"
                 style={{ color: 'var(--color-primary)' }}
               >
-                privacidade@ekthosai.net
+                felipe@ekthosai.net
               </a>
             </p>
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">7. Encarregado (DPO)</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">7. Encarregado de Proteção de Dados (DPO)</h2>
             <p>
-              Encarregado de Proteção de Dados: [Nome a preencher]<br />
+              Encarregado: <strong>Felipe Abrantes</strong><br />
               Contato:{' '}
               <a
-                href="mailto:privacidade@ekthosai.net"
+                href="mailto:felipe@ekthosai.net"
                 className="underline"
                 style={{ color: 'var(--color-primary)' }}
               >
-                privacidade@ekthosai.net
+                felipe@ekthosai.net
               </a>
             </p>
           </div>
 
           <div>
-            <h2 className="font-semibold text-gray-900 mb-2">8. Alterações</h2>
+            <h2 className="font-semibold text-gray-900 mb-2">8. Contato e Versão</h2>
             <p>
               Esta política pode ser atualizada periodicamente. A data de última atualização
-              é sempre indicada no topo deste documento.
+              e o número de versão são sempre indicados no topo deste documento.
+              Para dúvidas gerais:{' '}
+              <a
+                href="mailto:contato@ekthosai.net"
+                className="underline"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                contato@ekthosai.net
+              </a>
             </p>
           </div>
 
