@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: agent-acolhimento  v20 — Fase 6.3
+// Edge Function: agent-acolhimento  v21 — Fase 6.3
 // Agente de Acolhimento Pastoral — jornada 90 dias para visitantes
 //
 // POST /functions/v1/agent-acolhimento
@@ -20,6 +20,10 @@
 //   - processInbound: t0 + try/finally → logAgentExecution em 3 saídas
 //     (rate_limited, success, error)
 //   - Handler passa triggerType ('cron'|'journey') para processJourney
+//
+// MUDANÇAS v21 (2026-05-30 — D4 MEGA-ONDA CIRÚRGICA):
+//   - processInbound: debit_agent_credits (best-effort) após runToolLoop sucesso
+//     p_operation_type='inbound_reply', p_credits=1, p_related_entity_id=conversationId
 //
 // MUDANÇAS v20 (2026-05-30 — R-PREMIUM-GUARD §10 D7):
 //   - Modo cron: filtro por churches com contrato ativo antes de processar journeys.
@@ -716,6 +720,20 @@ Responda como a equipe pastoral da igreja — com calor, sem pressão, sem revel
       TOOLS_INBOUND,
       churchId,
     )
+
+    // v21: Debitar créditos — inbound_reply (best-effort)
+    try {
+      await supabaseAdmin.rpc('debit_agent_credits', {
+        p_church_id:         churchId,
+        p_agent_slug:        AGENT_SLUG,
+        p_credits:           1,
+        p_operation_type:    'inbound_reply',
+        p_related_entity_id: conversationId,
+        p_description:       `Resposta inbound — conv=${conversationId}`,
+      })
+    } catch (creditErr) {
+      console.warn('[agent-acolhimento] debit_agent_credits falhou (não crítico):', creditErr)
+    }
 
     // v19: log sucesso inbound
     await logAgentExecution(supabaseAdmin, {
