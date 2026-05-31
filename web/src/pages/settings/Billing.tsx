@@ -86,6 +86,42 @@ export function Billing() {
     setUpgradeError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
+
+      // ── Anti double-billing: se já existe stripe_subscription_id, usa
+      //    subscription-change (update prorrateado) em vez de nova checkout ──
+      if (subscription?.stripe_subscription_id) {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/subscription-change`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({ plan_slug: planSlug }),
+          }
+        )
+        const body = (await res.json()) as {
+          ok?: boolean
+          error?: string
+          message?: string
+          new_plan?: string
+        }
+
+        if (body.error === 'stripe_price_id_not_configured') {
+          // Fallback gracioso: informa Felipe e continua com checkout normal
+          console.warn('subscription-change: stripe_price_id não configurado, usando checkout como fallback')
+          // Segue para o checkout abaixo
+        } else if (body.error) {
+          throw new Error(body.message ?? body.error)
+        } else if (body.ok) {
+          // Upgrade feito sem nova assinatura — recarrega a página
+          window.location.href = `${window.location.origin}/settings/billing?upgrade=success`
+          return
+        }
+      }
+
+      // ── Sem subscription existente (ou fallback): Stripe Checkout normal ──
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
         {
