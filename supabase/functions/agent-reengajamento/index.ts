@@ -420,6 +420,24 @@ async function handleReengajamentoScan(body: Record<string, unknown>): Promise<R
       return jsonOk({ ok: false, error: `queue_failed: ${qErr.message}` })
     }
 
+    // B4 FIX: Debitar créditos após dispatch bem-sucedido de reengajamento (best-effort)
+    try {
+      const { error: debitError } = await supabase.rpc('debit_agent_credits', {
+        p_church_id:         churchId,
+        p_agent_slug:        AGENT_SLUG,
+        p_credits:           1,
+        p_operation_type:    'touchpoint',
+        p_related_entity_id: conv.id ?? null,
+        p_description:       `reengajamento ${touchpoint}`,
+      })
+      if (debitError) {
+        console.error('[agent-reengajamento] debit_agent_credits failed (best-effort):', debitError.message)
+      }
+    } catch (e) {
+      console.error('[agent-reengajamento] debit_agent_credits exception (best-effort):', e)
+    }
+    // fim B4 FIX
+
     // 6. Upsert reengagement_journey
     const { data: existingJourney } = await supabase
       .from('reengagement_journey')
