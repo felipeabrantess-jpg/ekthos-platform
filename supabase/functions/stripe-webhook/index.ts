@@ -718,6 +718,20 @@ async function handleCaminhoACheckout(session: Stripe.Checkout.Session, eventId:
             if (error) console.warn('[caminho-a] notif agente premium (non-fatal):', error.message)
           })
           console.log(`[caminho-a] agente premium pendente: ${purchasedAgentSlug} sa=${newSa.id}`)
+
+          // ── MEGA-ONDA B / F2: auto-ativação imediata via caminho-A ──────
+          // activate_agent_internal: SECURITY DEFINER, GRANT TO service_role
+          // Non-fatal: se falhar, o cron caminho-a-rescue ativa em até 1h
+          const { error: activateErr } = await supabase.rpc('activate_agent_internal', {
+            p_church_id: churchId,
+            p_agent_slug: purchasedAgentSlug,
+            p_source: 'caminho_a',
+          })
+          if (activateErr) {
+            console.warn(`[caminho-a] activate_agent_internal non-fatal (rescue cron retry): ${activateErr.message}`)
+          } else {
+            console.log(`[caminho-a] ✅ agente auto-ativado imediatamente: ${purchasedAgentSlug}`)
+          }
         }
       } else {
         console.log(`[caminho-a] agente premium já existe: ${purchasedAgentSlug} sa=${existingAgent.id}`)
