@@ -328,10 +328,10 @@ function deriveEnabledModules(answers: Record<string, string>): Record<string, b
     ministerios: true,
     financeiro:  true,
     agenda:      true,
-    celulas:     hasCells,
+    celulas:     true,        // sempre habilitado em todos os planos
     voluntarios: hasEscalas,
     escalas:     hasEscalas,
-    gabinete:    hasGabinete,
+    gabinete:    true,        // sempre habilitado em todos os planos
   }
 }
 
