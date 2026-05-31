@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: 'invalid_phone', phone: cleanPhone }, 400)
   }
 
-  console.log(`[chatpro-send] Enviando para ${cleanPhone} via ${CHATPRO_BASE_URL}`)
+  console.log(`[chatpro-send] Enviando para ***${cleanPhone.slice(-4)} via ${CHATPRO_BASE_URL}`)
 
   // ── Chamada ChatPro ──────────────────────────────────────────
   const endpoint = `${CHATPRO_BASE_URL}/api/v1/send_message`
@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       result = { raw: await chatproRes.text().catch(() => '') }
     }
 
-    console.log(`[chatpro-send] ChatPro status=${chatproRes.status}`, JSON.stringify(result))
+    console.log(`[chatpro-send] ChatPro status=${chatproRes.status}`)
 
     if (chatproRes.ok) {
       return json({

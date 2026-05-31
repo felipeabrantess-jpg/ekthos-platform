@@ -172,7 +172,8 @@ Deno.serve(async (req: Request) => {
   try {
     lineItem = await resolvePriceLineItem(plan_slug, plan.name, customPriceCents)
   } catch (e) {
-    return err((e as Error).message, 500)
+    console.error('[stripe-checkout] resolvePriceLineItem error:', e)
+    return err('internal_error', 500)
   }
 
   // Checkout Session
@@ -190,7 +191,8 @@ Deno.serve(async (req: Request) => {
       billing_address_collection: 'auto',
     })
   } catch (e) {
-    return err('Erro ao criar sessão Stripe', 502, (e as Error).message)
+    console.error('[stripe-checkout] stripe sessions.create error:', e)
+    return err('internal_error', 502)
   }
 
   if (!session.url) return err('Stripe retornou sessão sem URL', 502)

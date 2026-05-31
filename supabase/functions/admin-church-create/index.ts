@@ -258,10 +258,10 @@ Deno.serve(async (req: Request) => {
     })
 
   if (grantErr) {
-    console.error('[admin-church-create] grant_access:', grantErr)
+    console.error('[admin-church-create] grant_access error:', grantErr)
     await deleteSub(church.id)
     await deleteChurch(church.id)
-    return json({ error: 'Falha ao criar grant de trial: ' + grantErr.message }, 500)
+    return json({ error: 'internal_error' }, 500)
   }
 
   // ── 6. Convida o pastor ───────────────────────────────────
@@ -283,7 +283,7 @@ Deno.serve(async (req: Request) => {
     await deleteGrant(church.id)
     await deleteSub(church.id)
     await deleteChurch(church.id)
-    return json({ error: 'Falha ao enviar invite: ' + (inviteErr?.message ?? 'sem retorno de user') }, 500)
+    return json({ error: 'internal_error' }, 500)
   }
 
   const pastorId = inviteData.user.id

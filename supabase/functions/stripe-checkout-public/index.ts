@@ -95,10 +95,33 @@ async function resolvePriceLineItem(
   return { quantity: 1, price: sp.stripe_price_id }
 }
 
+// ── B-SB08: In-memory rate limit (15 req/IP/min) ───────────
+// Deno Edge Functions são stateless por invocação mas o isolate pode
+// ser reutilizado — o Map persiste dentro do mesmo isolate.
+// Isso é uma primeira camada de defesa; não substitui rate-limit CDN.
+const _rlMap = new Map<string, { count: number; resetAt: number }>()
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = _rlMap.get(ip)
+  if (!entry || now > entry.resetAt) {
+    _rlMap.set(ip, { count: 1, resetAt: now + 60_000 })
+    return true
+  }
+  if (entry.count >= 15) return false
+  entry.count++
+  return true
+}
+
 // ── Handler ────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
   if (req.method !== 'POST')    return err('Method not allowed', 405)
+
+  const ip = (req.headers.get('x-forwarded-for') ?? '0.0.0.0').split(',')[0].trim()
+  if (!checkRateLimit(ip)) {
+    console.warn(`[stripe-checkout-public] B-SB08: rate limit — IP ${ip}`)
+    return err('rate_limit_exceeded', 429)
+  }
 
   let body: {
     plan_slug?:    string
@@ -160,7 +183,8 @@ Deno.serve(async (req: Request) => {
   try {
     lineItem = await resolvePriceLineItem(plan_slug, plan.name)
   } catch (e) {
-    return err((e as Error).message, 500)
+    console.error('[stripe-checkout-public] resolvePriceLineItem error:', e)
+    return err('internal_error', 500)
   }
 
   // Monta metadata com UTMs para rastreamento de conversão

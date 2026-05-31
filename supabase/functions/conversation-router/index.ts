@@ -199,8 +199,29 @@ Deno.serve(async (req) => {
           trigger:      'inbound_message',
         }),
         signal: AbortSignal.timeout(3_000),
-      }).catch(err => {
-        console.warn(`[conversation-router] ${agentFn} call falhou:`, err.message)
+      // B-SB04: fallback para agent-operacao inexistente → evita falha silenciosa
+      }).catch(async (err: Error) => {
+        console.warn(`[conversation-router] ${agentFn} call falhou:`, err?.message)
+        if (agentFn === 'agent-operacao') {
+          console.error('[router] B-SB04: agent-operacao indisponível, fallback → agent-acolhimento:', err?.message)
+          await fetch(`${SUPABASE_URL}/functions/v1/agent-acolhimento`, {
+            method:  'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              conversation_id,
+              message_id,
+              church_id,
+              person_id:    person_id ?? null,
+              agent_slug:   effectiveAgentSlug,
+              inbound_text,
+              trigger:      'inbound_message',
+            }),
+            signal: AbortSignal.timeout(3_000),
+          }).catch(e => console.error('[router] fallback agent-acolhimento também falhou:', e?.message))
+        }
       })
 
       return json({ ok: true, routed_to: agentFn })
