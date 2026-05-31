@@ -27,13 +27,20 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// ── B-SB02: Z-API Client-Token validation ──────────────────
-// Opt-in: se ZAPI_CLIENT_TOKEN não estiver configurado, todos os webhooks passam.
+// ── B2 FIX: Z-API Client-Token validation — OBRIGATÓRIO ────
+// IMPORTANTE: ZAPI_CLIENT_TOKEN DEVE estar configurado no Supabase Secrets.
+// Se não estiver configurado, REJEITA por segurança (não opt-in).
 // Quando configurado, valida assinatura em tempo constante (previne timing attacks).
+// ⚠️  Felipe: confirmar que secret ZAPI_CLIENT_TOKEN está setado no Dashboard
+//     (Settings → Edge Functions → Secrets) com o Client-Token da instância Z-API.
 const ZAPI_CLIENT_TOKEN_SECRET = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
 
 function validateZApiSignature(req: Request): boolean {
-  if (!ZAPI_CLIENT_TOKEN_SECRET) return true  // opt-in: sem token configurado, passa
+  if (!ZAPI_CLIENT_TOKEN_SECRET) {
+    // B2 FIX: secret não configurado → rejeitar por segurança (remover opt-in)
+    console.error('[webhook-receiver] B2: ZAPI_CLIENT_TOKEN not configured — rejecting for security. Configure via Supabase Dashboard → Edge Functions → Secrets.')
+    return false
+  }
   const incoming = req.headers.get('Client-Token') ?? ''
   if (incoming.length !== ZAPI_CLIENT_TOKEN_SECRET.length) return false
   let mismatch = 0
@@ -192,9 +199,24 @@ Deno.serve(async (req) => {
   const channelId = url.searchParams.get('channel_id') ?? null   // UUID direto (chatpro)
   const instanceId = url.searchParams.get('instance_id') ?? ''  // zapi legado
 
-  // B-SB02: validar Client-Token para webhooks Z-API
+  // B2 FIX: validar Client-Token para webhooks Z-API (obrigatório)
   if (provider === 'zapi' && !validateZApiSignature(req)) {
-    console.warn('[webhook-receiver] B-SB02: Client-Token inválido ou ausente — 401')
+    console.warn('[webhook-receiver] B2: Client-Token inválido ou ausente — 401')
+    // Audit log best-effort
+    const sbAudit = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    sbAudit.from('audit_logs').insert({
+      id:          crypto.randomUUID(),
+      church_id:   null,
+      entity_type: 'webhook',
+      entity_id:   null,
+      action:      'webhook_zapi_rejected_unauthorized',
+      actor_type:  'system',
+      actor_id:    null,
+      payload:     { provider: 'zapi', ip: req.headers.get('x-forwarded-for') ?? null, secret_configured: !!ZAPI_CLIENT_TOKEN_SECRET },
+      created_at:  new Date().toISOString(),
+    }).catch(() => { /* best-effort, ignorar erro de audit */ })
     return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
