@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
         .maybeSingle()
       ZAPI_CLIENT_TOKEN = vaultRow?.decrypted_secret ?? ''
     } catch (e) {
-      console.error('[zapi-send] Falha ao ler ZAPI_CLIENT_TOKEN do vault:', e)
+      console.error('[zapi-send] Falha ao ler ZAPI_CLIENT_TOKEN do vault:', (e instanceof Error) ? e.message : 'unknown error')
     }
   }
 
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: 'invalid_phone', phone }, 400)
   }
 
-  console.log(`[zapi-send] Enviando para ${phone} via ${ZAPI_BASE_URL}`)
+  console.log(`[zapi-send] Enviando para ***${phone.slice(-4)} via ${ZAPI_BASE_URL}`)
 
   // ── Chamada Z-API ────────────────────────────────────────────
   const endpoint = `${ZAPI_BASE_URL}/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`
@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
       result = { raw: await zapiRes.text().catch(() => '') }
     }
 
-    console.log(`[zapi-send] Z-API status=${zapiRes.status}`, JSON.stringify(result))
+    console.log(`[zapi-send] Z-API status=${zapiRes.status}`)
 
     if (zapiRes.ok) {
       const r = result as Record<string, unknown>

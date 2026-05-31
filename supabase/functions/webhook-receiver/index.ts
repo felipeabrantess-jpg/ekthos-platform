@@ -27,6 +27,22 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+// ── B-SB02: Z-API Client-Token validation ──────────────────
+// Opt-in: se ZAPI_CLIENT_TOKEN não estiver configurado, todos os webhooks passam.
+// Quando configurado, valida assinatura em tempo constante (previne timing attacks).
+const ZAPI_CLIENT_TOKEN_SECRET = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
+
+function validateZApiSignature(req: Request): boolean {
+  if (!ZAPI_CLIENT_TOKEN_SECRET) return true  // opt-in: sem token configurado, passa
+  const incoming = req.headers.get('Client-Token') ?? ''
+  if (incoming.length !== ZAPI_CLIENT_TOKEN_SECRET.length) return false
+  let mismatch = 0
+  for (let i = 0; i < incoming.length; i++) {
+    mismatch |= incoming.charCodeAt(i) ^ ZAPI_CLIENT_TOKEN_SECRET.charCodeAt(i)
+  }
+  return mismatch === 0
+}
+
 // ── Normalizar telefone ────────────────────────────────────
 // Remove tudo que não é dígito, garante código Brasil
 function normalizePhone(raw: string | undefined | null): string {
@@ -176,6 +192,15 @@ Deno.serve(async (req) => {
   const channelId = url.searchParams.get('channel_id') ?? null   // UUID direto (chatpro)
   const instanceId = url.searchParams.get('instance_id') ?? ''  // zapi legado
 
+  // B-SB02: validar Client-Token para webhooks Z-API
+  if (provider === 'zapi' && !validateZApiSignature(req)) {
+    console.warn('[webhook-receiver] B-SB02: Client-Token inválido ou ausente — 401')
+    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const raw = await req.json().catch(() => null)
 
   // Responde 200 imediatamente (ChatPro não pode esperar timeout)
@@ -298,15 +323,22 @@ async function processInbound(
     const { id: resolvedChannelId, church_id: churchId } = channel
 
     // ── 3. Deduplicar ─────────────────────────────────────
-    if (normalized.provider_message_id) {
-      const { count } = await sb
-        .from('conversation_messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('provider_message_id', normalized.provider_message_id)
-      if ((count ?? 0) > 0) {
-        console.log(`[webhook-receiver] duplicada, ignorando: ${normalized.provider_message_id}`)
-        return
-      }
+    // B-SB03: provider_message_id vazio/nulo → rejeitar imediatamente
+    // (antes, string vazia passava o if e o dedup era pulado → N processamentos)
+    if (!normalized.provider_message_id?.trim()) {
+      console.warn('[webhook-receiver] B-SB03: rejeitado — provider_message_id vazio', {
+        from_phone: normalized.from_phone,
+        provider:   resolvedProvider,
+      })
+      return
+    }
+    const { count } = await sb
+      .from('conversation_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('provider_message_id', normalized.provider_message_id)
+    if ((count ?? 0) > 0) {
+      console.log(`[webhook-receiver] duplicada, ignorando: ${normalized.provider_message_id}`)
+      return
     }
 
     // ── 4. Identificar / criar pessoa ─────────────────────

@@ -90,7 +90,8 @@ Deno.serve(async (req: Request) => {
       p_agent_slug: agent_slug as string,
     })
     if (error) {
-      return jsonResponse({ error: error.message }, 400, cors)
+      console.error('[admin-agent-grant] admin_revoke_agent error:', error)
+      return jsonResponse({ error: 'internal_error' }, 500, cors)
     }
     return jsonResponse(data, 200, cors)
   }
@@ -132,7 +133,8 @@ Deno.serve(async (req: Request) => {
   })
 
   if (error) {
-    return jsonResponse({ error: error.message }, 400, cors)
+    console.error('[admin-agent-grant] admin_grant_agent error:', error)
+    return jsonResponse({ error: 'internal_error' }, 500, cors)
   }
 
   // ── Registra grant via record_audit_event ──────────────────
