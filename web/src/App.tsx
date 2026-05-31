@@ -63,6 +63,9 @@ const AgentConfig            = lazy(() => import('@/pages/agents/AgentConfig'))
 const AcolhimentoDashboard   = lazy(() => import('@/pages/agents/AcolhimentoDashboard'))
 const ModuleDetail = lazy(() => import('@/pages/modules/ModuleDetail'))
 
+// MEGA-ONDA B — Consumo + Recargas
+const ConsumePage  = lazy(() => import('@/pages/consumo'))
+
 const ConfiguracoesLayoutPage = lazy(() =>
   import('@/pages/configuracoes/SettingsLayout').then(m => ({ default: m.ConfiguracoesLayout }))
 )
@@ -316,6 +319,9 @@ export default function App() {
 
             {/* ── MEGA-ONDA B: Dashboards de agentes ── */}
             <Route path="agentes/agent-acolhimento/dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AcolhimentoDashboard /></Suspense></ErrorBoundary>} />
+
+            {/* ── MEGA-ONDA B: Consumo + Recargas ── */}
+            <Route path="consumo"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConsumePage /></Suspense></ErrorBoundary>} />
 
             {/* ── Lote A: Módulos ── */}
             <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
