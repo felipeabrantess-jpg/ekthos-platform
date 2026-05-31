@@ -20,7 +20,7 @@ export const DEFAULT_MODULES: EnabledModules = {
   pessoas:      true,
   aniversarios: true,
   pipeline:     true,
-  celulas:      false,
+  celulas:      true,
   ministerios:  true,
   voluntarios:  false,
   escalas:      false,

@@ -213,7 +213,7 @@ async function runStep(
       const secondaryColor = (tenant.secondary_color as string | null) ?? '#670000'
       const enabledModules = (tenant.enabled_modules as Record<string, boolean> | null) ?? {
         pessoas: true, pipeline: true, ministerios: true, financeiro: true, agenda: true,
-        celulas: false, voluntarios: false, escalas: false, gabinete: false,
+        celulas: true, voluntarios: false, escalas: false, gabinete: true,
       }
 
       const churchPayload = {
