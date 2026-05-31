@@ -482,6 +482,32 @@ async function processJourney(
 
     const systemBlocks = buildSystemBlocks(resolved, church, agentConfig, churchId)
 
+    // ── B3 FIX: Credit pre-check antes de chamar Claude (processJourney) ──────
+    const { data: creditsJourney } = await supabaseAdmin
+      .from('church_agent_credits')
+      .select('cycle_credits, topup_credits')
+      .eq('church_id', churchId)
+      .eq('agent_scope', AGENT_SLUG)
+      .maybeSingle()
+    const availableJourney = (creditsJourney?.cycle_credits ?? 0) + (creditsJourney?.topup_credits ?? 0)
+    if (availableJourney <= 0) {
+      console.warn(`[agent-acolhimento] church ${churchId} sem créditos (${availableJourney}) — bloqueando processJourney`)
+      supabaseAdmin.from('audit_logs').insert({
+        id: crypto.randomUUID(), church_id: churchId,
+        entity_type: 'agent_execution', entity_id: journeyId,
+        action: 'credit_exhausted_blocked', actor_type: 'system', actor_id: null,
+        payload: { agent_slug: AGENT_SLUG, available_credits: availableJourney, trigger: 'processJourney' },
+        created_at: new Date().toISOString(),
+      }).catch(e => console.error('[agent-acolhimento] audit credit_exhausted_blocked error:', e))
+      await supabaseAdmin
+        .from('acolhimento_journey')
+        .update({ status: 'pending' })
+        .eq('id', journeyId)
+        .eq('church_id', churchId)
+      return { ok: false, error: 'credit_exhausted', result: 'blocked_no_credits' }
+    }
+    // ── fim B3 FIX ────────────────────────────────────────────────────────────
+
     const userMessage = `
 Processe o touchpoint atual da jornada de acolhimento.
 
@@ -696,6 +722,27 @@ async function processInbound(
     .join('\n')
 
   const systemBlocks = buildSystemBlocks(resolved, church, agentConfig, churchId)
+
+  // ── B3 FIX: Credit pre-check antes de chamar Claude (processInbound) ─────
+  const { data: creditsInbound } = await supabaseAdmin
+    .from('church_agent_credits')
+    .select('cycle_credits, topup_credits')
+    .eq('church_id', churchId)
+    .eq('agent_scope', AGENT_SLUG)
+    .maybeSingle()
+  const availableInbound = (creditsInbound?.cycle_credits ?? 0) + (creditsInbound?.topup_credits ?? 0)
+  if (availableInbound <= 0) {
+    console.warn(`[agent-acolhimento] church ${churchId} sem créditos (${availableInbound}) — bloqueando processInbound`)
+    supabaseAdmin.from('audit_logs').insert({
+      id: crypto.randomUUID(), church_id: churchId,
+      entity_type: 'agent_execution', entity_id: conversationId,
+      action: 'credit_exhausted_blocked', actor_type: 'system', actor_id: null,
+      payload: { agent_slug: AGENT_SLUG, available_credits: availableInbound, trigger: 'processInbound' },
+      created_at: new Date().toISOString(),
+    }).catch(e => console.error('[agent-acolhimento] audit credit_exhausted_blocked error:', e))
+    return { ok: false, error: 'credit_exhausted', result: 'blocked_no_credits' }
+  }
+  // ── fim B3 FIX ────────────────────────────────────────────────────────────
 
   const personContext = conv.person_id
     ? `Person ID disponível: ${conv.person_id} (use read_person para obter os dados)`
