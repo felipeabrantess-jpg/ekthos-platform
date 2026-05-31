@@ -879,11 +879,131 @@ async function handleCockpitCheckout(session: Stripe.Checkout.Session, churchId:
   await recordAffiliateConversion(session, churchId)
 }
 
+/**
+ * handleRechargePurchase — MEGA-ONDA B / F3
+ *
+ * Disparado quando checkout.session.completed tem metadata.source='topup_purchase'.
+ * Credita topup_credits na scope primária da church com TTL de 90 dias.
+ *
+ * Scope logic (mesma lógica de debit_agent_credits):
+ *   - Se church tem pool ativo → scope = 'pool-*'
+ *   - Else → primeiro agent_scope ativo em church_agent_credits
+ */
+async function handleRechargePurchase(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
+  const churchId     = session.metadata?.church_id
+  const rechargeSlug = session.metadata?.recharge_slug
+  const creditsStr   = session.metadata?.credits
+  const ttlDaysStr   = session.metadata?.ttl_days
+
+  if (!churchId || !rechargeSlug || !creditsStr) {
+    console.error('[topup] metadata incompleto:', { churchId, rechargeSlug, creditsStr })
+    return
+  }
+
+  const credits = parseInt(creditsStr, 10)
+  const ttlDays = parseInt(ttlDaysStr ?? '90', 10)
+  if (isNaN(credits) || credits <= 0) {
+    console.error('[topup] credits inválido:', creditsStr)
+    return
+  }
+
+  // Idempotência: verificar se já processamos este session
+  const { data: existingEvent } = await supabase
+    .from('audit_logs')
+    .select('id')
+    .eq('action', 'topup_purchase')
+    .filter('payload->session_id', 'eq', `"${session.id}"`)
+    .maybeSingle()
+
+  if (existingEvent?.id) {
+    console.log(`[topup] já processado: session=${session.id}`)
+    return
+  }
+
+  // Determinar scope primária: pool se existir, senão primeiro agent ativo
+  let targetScope: string | null = null
+
+  const { data: poolScope } = await supabase
+    .from('church_agent_credits')
+    .select('agent_scope')
+    .eq('church_id', churchId)
+    .like('agent_scope', 'pool-%')
+    .gt('cycle_credits', 0)
+    .order('agent_scope')
+    .limit(1)
+    .maybeSingle()
+
+  if (poolScope) {
+    targetScope = poolScope.agent_scope
+  } else {
+    const { data: agentScope } = await supabase
+      .from('church_agent_credits')
+      .select('agent_scope')
+      .eq('church_id', churchId)
+      .order('agent_scope')
+      .limit(1)
+      .maybeSingle()
+    targetScope = agentScope?.agent_scope ?? null
+  }
+
+  if (!targetScope) {
+    console.error('[topup] nenhuma scope ativa encontrada para church:', churchId)
+    return
+  }
+
+  const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000).toISOString()
+
+  // Creditar topup_credits + setar expires_at (fetch-then-update: service_role, sem concorrência relevante)
+  const { data: current } = await supabase
+    .from('church_agent_credits')
+    .select('topup_credits')
+    .eq('church_id', churchId)
+    .eq('agent_scope', targetScope)
+    .single()
+
+  const newTopup = (current?.topup_credits ?? 0) + credits
+
+  const { error: updateErr } = await supabase
+    .from('church_agent_credits')
+    .update({ topup_credits: newTopup, expires_at: expiresAt, updated_at: new Date().toISOString() })
+    .eq('church_id', churchId)
+    .eq('agent_scope', targetScope)
+
+  if (updateErr) {
+    console.error('[topup] update church_agent_credits failed:', updateErr.message)
+    return
+  }
+
+  // Auditoria
+  await supabase.from('audit_logs').insert({
+    action:      'topup_purchase',
+    entity_type: 'church_agent_credits',
+    entity_id:   churchId,
+    actor_type:  'service_role',
+    payload:     {
+      recharge_slug: rechargeSlug,
+      credits_added: credits,
+      ttl_days:      ttlDays,
+      expires_at:    expiresAt,
+      target_scope:  targetScope,
+      session_id:    session.id,
+    },
+  })
+
+  console.log(`[topup] ✅ church=${churchId} scope=${targetScope} +${credits}cr expires=${expiresAt}`)
+}
+
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, eventId: string): Promise<void> {
   // B1: Compra de agente premium — pending_activation
   if (session.metadata?.source === 'agent_purchase') {
     console.log(`[stripe-webhook] agent_purchase: session=${session.id} agent=${session.metadata.agent_slug ?? 'n/a'}`)
     await handleAgentPurchase(session, eventId)
+    return
+  }
+  // MEGA-ONDA B / F3: Compra de recarga (topup) — crédita church_agent_credits com TTL
+  if (session.metadata?.source === 'topup_purchase') {
+    console.log(`[stripe-webhook] topup_purchase: session=${session.id} recharge=${session.metadata.recharge_slug ?? 'n/a'}`)
+    await handleRechargePurchase(session, eventId)
     return
   }
   // Caminho A: pagamento Stripe direto — cria church do zero (Fase 6.2)

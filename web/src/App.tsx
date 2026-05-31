@@ -56,11 +56,16 @@ const EventsList       = lazy(() => import('@/pages/events/EventsList'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 
 // Lote A — Agentes, Módulos, Configurações
-const AgentsList   = lazy(() => import('@/pages/agents/AgentsList'))
-const AgentDetail  = lazy(() => import('@/pages/agents/AgentDetail'))
-const AgentChat    = lazy(() => import('@/pages/agents/AgentChat'))
-const AgentConfig  = lazy(() => import('@/pages/agents/AgentConfig'))
-const ModuleDetail = lazy(() => import('@/pages/modules/ModuleDetail'))
+const AgentsList            = lazy(() => import('@/pages/agents/AgentsList'))
+const AgentDetail           = lazy(() => import('@/pages/agents/AgentDetail'))
+const AgentChat             = lazy(() => import('@/pages/agents/AgentChat'))
+const AgentConfig           = lazy(() => import('@/pages/agents/AgentConfig'))
+const AcolhimentoDashboard  = lazy(() => import('@/pages/agents/AcolhimentoDashboard'))
+const ModuleDetail          = lazy(() => import('@/pages/modules/ModuleDetail'))
+
+// MEGA-ONDA B — Consumo + Recargas
+const ConsumePage  = lazy(() => import('@/pages/consumo'))
+const RecargasPage = lazy(() => import('@/pages/recargas'))
 
 const ConfiguracoesLayoutPage = lazy(() =>
   import('@/pages/configuracoes/SettingsLayout').then(m => ({ default: m.ConfiguracoesLayout }))
@@ -312,6 +317,13 @@ export default function App() {
             <Route path="agentes/:slug/configurar"           element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentConfig /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
             <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
+
+            {/* ── MEGA-ONDA B: Dashboards de agentes ── */}
+            <Route path="agentes/agent-acolhimento/dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AcolhimentoDashboard /></Suspense></ErrorBoundary>} />
+
+            {/* ── MEGA-ONDA B: Consumo + Recargas ── */}
+            <Route path="consumo"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConsumePage /></Suspense></ErrorBoundary>} />
+            <Route path="recargas"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><RecargasPage /></Suspense></ErrorBoundary>} />
 
             {/* ── Lote A: Módulos ── */}
             <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
