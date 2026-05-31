@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, AlertTriangle, Settings2 } from 'lucide-react'
+import { X, AlertTriangle, Settings2, Search, ArrowUpDown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
 import Spinner from '@/components/ui/Spinner'
@@ -30,20 +30,29 @@ function slaStatus(enteredAt: string | undefined, slaHours: number | null | unde
   return 'ok'
 }
 
+function slaBadgeLabel(enteredAt: string | undefined, slaHours: number | null | undefined): string | null {
+  if (!slaHours || !enteredAt) return null
+  const days = Math.floor(hoursElapsed(enteredAt) / 24)
+  const slaDays = Math.round(slaHours / 24)
+  return `${days}d / ${slaDays}d`
+}
+
 // ──────────────────────────────────────────────────────────────
 // PersonCard
 // ──────────────────────────────────────────────────────────────
 
 interface PersonCardProps {
   person: PersonWithStage
+  stageSlhours: number | null | undefined
   onDragStart: (personId: string, fromStageId: string) => void
   onClick: (person: PersonWithStage) => void
 }
 
-function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
+function PersonCard({ person, stageSlhours, onDragStart, onClick }: PersonCardProps) {
   const pipeline = person.person_pipeline?.[0]
   const lastActivity = pipeline?.last_activity_at
-  const status = slaStatus(pipeline?.entered_at ?? undefined, pipeline?.pipeline_stages?.sla_hours)
+  const status = slaStatus(pipeline?.entered_at ?? undefined, stageSlhours)
+  const badgeLabel = slaBadgeLabel(pipeline?.entered_at ?? undefined, stageSlhours)
 
   return (
     <div
@@ -54,23 +63,28 @@ function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
         }
       }}
       onClick={() => onClick(person)}
-      className="bg-bg-primary rounded-xl border border-border-default p-3 shadow-sm cursor-grab active:cursor-grabbing hover:bg-white hover:shadow-md transition-all select-none"
+      className="bg-white rounded-2xl border border-black/6 shadow-sm p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none"
     >
-      <div className="flex items-start justify-between gap-1">
-        <p className="text-sm font-medium text-ekthos-black truncate">{person.name ?? '—'}</p>
-        {status === 'breach' && (
-          <span className="shrink-0 text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 leading-none">
-            SLA
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-ekthos-black truncate leading-snug">{person.name ?? '—'}</p>
+        {status === 'breach' && badgeLabel && (
+          <span className="shrink-0 bg-[#FDE8E0] text-[#e13500] text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+            {badgeLabel}
           </span>
         )}
-        {status === 'warning' && (
-          <span className="shrink-0 text-xs font-semibold text-white bg-amber-400 rounded-full px-1.5 py-0.5 leading-none">
-            SLA
+        {status === 'warning' && badgeLabel && (
+          <span className="shrink-0 bg-[#FFF8E6] text-[#b45309] text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+            {badgeLabel}
+          </span>
+        )}
+        {status === 'ok' && badgeLabel && (
+          <span className="shrink-0 bg-[#E8F5E9] text-[#2D7A4F] text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+            {badgeLabel}
           </span>
         )}
       </div>
       {person.phone && (
-        <p className="text-xs text-ekthos-black/50 mt-0.5">{person.phone}</p>
+        <p className="text-xs text-ekthos-black/50 mt-0.5 truncate">{person.phone}</p>
       )}
       {lastActivity && (
         <p className="text-xs text-ekthos-black/40 mt-1">{daysAgo(lastActivity)}</p>
@@ -160,16 +174,20 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
 // KanbanColumn
 // ──────────────────────────────────────────────────────────────
 
+type SortOrder = 'newest' | 'oldest'
+
 interface KanbanColumnProps {
   stage: PipelineStage
   people: PersonWithStage[]
+  totalCount: number
   onDragStart: (personId: string, fromStageId: string) => void
   onDrop: (toStageId: string) => void
   onCardClick: (person: PersonWithStage) => void
 }
 
-function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: KanbanColumnProps) {
+function KanbanColumn({ stage, people, totalCount, onDragStart, onDrop, onCardClick }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
   const dragCounter = useRef(0)
 
   // Count cards with active SLA breach for column header alert
@@ -177,6 +195,13 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
     const pipeline = p.person_pipeline?.[0]
     return slaStatus(pipeline?.entered_at ?? undefined, stage.sla_hours) === 'breach'
   }).length
+
+  // Sort people by entered_at
+  const sortedPeople = [...people].sort((a, b) => {
+    const aDate = new Date(a.person_pipeline?.[0]?.entered_at ?? 0).getTime()
+    const bDate = new Date(b.person_pipeline?.[0]?.entered_at ?? 0).getTime()
+    return sortOrder === 'oldest' ? aDate - bDate : bDate - aDate
+  })
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault()
@@ -202,6 +227,8 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
     onDrop(stage.id)
   }
 
+  const isFiltered = people.length !== totalCount
+
   return (
     <div
       className={`flex flex-col rounded-2xl border ${isDragOver ? 'ring-2 ring-primary/40 border-border-default bg-bg-hover/30' : 'border-border-default bg-bg-hover'} min-w-[260px] max-w-[260px] transition-all`}
@@ -215,7 +242,7 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="text-sm font-semibold text-ekthos-black truncate">{stage.name}</h3>
           {stage.sla_hours && (
-            <span className="text-xs text-ekthos-black/40 shrink-0">{stage.sla_hours}h</span>
+            <span className="text-xs text-ekthos-black/40 shrink-0">{stage.sla_hours}h SLA</span>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -225,22 +252,44 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
             </span>
           )}
           <span className="text-xs font-medium text-ekthos-black/60 bg-bg-hover rounded-full px-2 py-0.5">
-            {people.length}
+            {isFiltered ? `${people.length} / ${totalCount}` : `${totalCount}`}
           </span>
         </div>
       </div>
 
+      {/* Sort toggle */}
+      <div className="px-3 py-1.5 border-b border-border-default/50">
+        <button
+          onClick={() => setSortOrder(o => o === 'newest' ? 'oldest' : 'newest')}
+          className="flex items-center gap-1 text-[11px] text-ekthos-black/40 hover:text-ekthos-black/70 transition-colors"
+        >
+          <ArrowUpDown size={11} strokeWidth={2} />
+          {sortOrder === 'newest' ? 'Mais recentes' : 'Mais antigos'}
+        </button>
+      </div>
+
       {/* Cards */}
       <div className="flex flex-col gap-2 p-2 min-h-[120px] flex-1">
-        {people.length === 0 ? (
-          <p className="text-xs text-ekthos-black/40 text-center pt-4 px-2">
-            Nenhuma pessoa nesta etapa
-          </p>
+        {sortedPeople.length === 0 ? (
+          <div className="flex flex-col items-center justify-center pt-6 pb-4 px-3 text-center space-y-1.5">
+            <p className="text-2xl">🕊️</p>
+            <p className="text-xs font-medium text-ekthos-black/50">
+              {totalCount === 0
+                ? 'Ninguém nesta etapa ainda'
+                : 'Nenhum resultado para a busca'}
+            </p>
+            <p className="text-[11px] text-ekthos-black/35 leading-relaxed">
+              {totalCount === 0
+                ? 'As pessoas chegam quando Deus abre portas.'
+                : 'Tente buscar por outro nome.'}
+            </p>
+          </div>
         ) : (
-          people.map((person) => (
+          sortedPeople.map((person) => (
             <PersonCard
               key={person.id}
               person={person}
+              stageSlhours={stage.sla_hours}
               onDragStart={onDragStart}
               onClick={onCardClick}
             />
@@ -258,15 +307,15 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
 interface MobileStagePickerProps {
   stages: PipelineStage[]
   activeId: string | null
-  board: Record<string, PersonWithStage[]>
+  filteredBoard: Record<string, PersonWithStage[]>
   onSelect: (id: string) => void
 }
 
-function MobileStagePicker({ stages, activeId, board, onSelect }: MobileStagePickerProps) {
+function MobileStagePicker({ stages, activeId, filteredBoard, onSelect }: MobileStagePickerProps) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
       {stages.map(stage => {
-        const count = (board[stage.id] ?? []).length
+        const count = (filteredBoard[stage.id] ?? []).length
         const isActive = activeId === stage.id
         return (
           <button
@@ -302,6 +351,7 @@ export default function Pipeline() {
   const [dragging, setDragging] = useState<{ personId: string; fromStageId: string } | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
   const [mobileActiveStageId, setMobileActiveStageId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const { data: stages, isLoading: stagesLoading, isError: stagesError, refetch: refetchStages } = usePipelineStages(churchId ?? '')
   const { data: board, isLoading: boardLoading, isError: boardError, refetch: refetchBoard } = usePipelineBoard(churchId ?? '')
@@ -350,10 +400,21 @@ export default function Pipeline() {
   const displayedStages = stages ?? []
   const displayedBoard = board ?? {}
 
+  // Filter board in memory by search query (name match, case-insensitive)
+  const query = searchQuery.trim().toLowerCase()
+  const filteredBoard: Record<string, PersonWithStage[]> = {}
+  for (const stageId of Object.keys(displayedBoard)) {
+    filteredBoard[stageId] = query
+      ? (displayedBoard[stageId] ?? []).filter(p =>
+          (p.name ?? '').toLowerCase().includes(query)
+        )
+      : (displayedBoard[stageId] ?? [])
+  }
+
   // Auto-select first stage on mobile when stages load
   const effectiveStageId = mobileActiveStageId ?? displayedStages[0]?.id ?? null
 
-  // Total de pessoas com SLA estourado em todo o board
+  // Total de pessoas com SLA estourado em todo o board (sobre dados originais, não filtrado)
   const totalBreaches = displayedStages.reduce((acc, stage) => {
     const people = displayedBoard[stage.id] ?? []
     return acc + people.filter((p) => {
@@ -361,6 +422,13 @@ export default function Pipeline() {
       return slaStatus(pipeline?.entered_at ?? undefined, stage.sla_hours) === 'breach'
     }).length
   }, 0)
+
+  // Total de pessoas visíveis (filtrado)
+  const totalFiltered = displayedStages.reduce((acc, stage) =>
+    acc + (filteredBoard[stage.id]?.length ?? 0), 0)
+
+  const totalAll = displayedStages.reduce((acc, stage) =>
+    acc + (displayedBoard[stage.id]?.length ?? 0), 0)
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -379,6 +447,35 @@ export default function Pipeline() {
         </button>
       </div>
 
+      {/* Search bar */}
+      <div className="relative max-w-xs">
+        <Search size={14} strokeWidth={2} className="absolute left-3 top-1/2 -translate-y-1/2 text-ekthos-black/35 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Buscar pessoa..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-8 pr-3 py-2 text-sm border border-[#EDE0CC] bg-white rounded-xl placeholder:text-ekthos-black/35 text-ekthos-black focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition-all"
+        />
+        {query && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-ekthos-black/30 hover:text-ekthos-black/60"
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* Search summary */}
+      {query && (
+        <p className="text-xs text-ekthos-black/50 -mt-2">
+          {totalFiltered === 0
+            ? 'Nenhuma pessoa encontrada'
+            : `${totalFiltered} de ${totalAll} ${totalAll === 1 ? 'pessoa' : 'pessoas'} encontrada${totalFiltered !== 1 ? 's' : ''}`}
+        </p>
+      )}
+
       {/* SLA alert banner */}
       {totalBreaches > 0 && (
         <div className="flex items-center gap-2 bg-bg-hover border border-border-default rounded-xl px-4 py-2.5 text-sm text-primary-text">
@@ -395,13 +492,14 @@ export default function Pipeline() {
           <MobileStagePicker
             stages={displayedStages}
             activeId={effectiveStageId}
-            board={displayedBoard}
+            filteredBoard={filteredBoard}
             onSelect={setMobileActiveStageId}
           />
           {effectiveStageId && (
             <KanbanColumn
               stage={displayedStages.find(s => s.id === effectiveStageId)!}
-              people={displayedBoard[effectiveStageId] ?? []}
+              people={filteredBoard[effectiveStageId] ?? []}
+              totalCount={(displayedBoard[effectiveStageId] ?? []).length}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
               onCardClick={setSelectedPerson}
@@ -417,15 +515,18 @@ export default function Pipeline() {
             <KanbanColumn
               key={stage.id}
               stage={stage}
-              people={displayedBoard[stage.id] ?? []}
+              people={filteredBoard[stage.id] ?? []}
+              totalCount={(displayedBoard[stage.id] ?? []).length}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
               onCardClick={setSelectedPerson}
             />
           ))}
           {displayedStages.length === 0 && (
-            <div className="flex items-center justify-center w-full py-16">
-              <p className="text-sm text-ekthos-black/40">Nenhuma etapa configurada ainda.</p>
+            <div className="flex flex-col items-center justify-center w-full py-16 space-y-2 text-center">
+              <p className="text-3xl">🌱</p>
+              <p className="text-sm font-medium text-ekthos-black/50">Nenhuma etapa configurada ainda</p>
+              <p className="text-xs text-ekthos-black/35">Configure o caminho de discipulado para começar.</p>
             </div>
           )}
         </div>
@@ -433,8 +534,10 @@ export default function Pipeline() {
 
       {/* Mobile empty state */}
       {displayedStages.length === 0 && (
-        <div className="md:hidden flex items-center justify-center py-16">
-          <p className="text-sm text-ekthos-black/40">Nenhuma etapa configurada ainda.</p>
+        <div className="md:hidden flex flex-col items-center justify-center py-16 space-y-2 text-center">
+          <p className="text-3xl">🌱</p>
+          <p className="text-sm font-medium text-ekthos-black/50">Nenhuma etapa configurada ainda</p>
+          <p className="text-xs text-ekthos-black/35">Configure o caminho de discipulado para começar.</p>
         </div>
       )}
 
