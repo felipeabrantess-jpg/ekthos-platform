@@ -9,6 +9,7 @@ import {
 } from '@/features/escalas/hooks/useEscalas'
 import { useMinisterios } from '@/features/ministerios/hooks/useMinisterios'
 import { useVoluntarios } from '@/features/voluntarios/hooks/useVoluntarios'
+import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
@@ -163,10 +164,13 @@ function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }:
   const [role, setRole] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [overloadModal, setOverloadModal] = useState<{
+    open: boolean
+    message: string
+    onConfirm: () => void
+  }>({ open: false, message: '', onConfirm: () => {} })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!volunteerId) return
+  async function doAdd() {
     setSubmitting(true)
     setError(null)
     try {
@@ -184,40 +188,96 @@ function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }:
     }
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!volunteerId) return
+
+    // Verificação de sobrecarga: consulta RPC antes de adicionar
+    const { data: monthCount } = await supabase.rpc('get_volunteer_month_count', {
+      p_volunteer_id: volunteerId,
+    })
+
+    const volunteer = (volunteers ?? []).find((v) => v.id === volunteerId)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const maxServices: number = (volunteer as any)?.max_services_per_month ?? 4
+    const currentCount: number = (monthCount as number | null) ?? 0
+
+    if (currentCount >= maxServices) {
+      const volunteerName = volunteer?.people?.name ?? 'Este voluntário'
+      setOverloadModal({
+        open: true,
+        message: `${volunteerName} já tem ${currentCount} escala${currentCount !== 1 ? 's' : ''} este mês (máximo recomendado: ${maxServices}). Deseja adicionar mesmo assim?`,
+        onConfirm: () => {
+          setOverloadModal((m) => ({ ...m, open: false }))
+          void doAdd()
+        },
+      })
+      return
+    }
+
+    await doAdd()
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Adicionar à Escala" size="sm">
-      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Voluntário *</label>
-          <select
-            value={volunteerId}
-            onChange={(e) => setVolunteerId(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            required
-          >
-            <option value="">Selecionar voluntário...</option>
-            {(volunteers ?? []).map((v) => (
-              <option key={v.id} value={v.id}>{v.people?.name ?? v.id}</option>
-            ))}
-          </select>
+    <>
+      <Modal open={open} onClose={onClose} title="Adicionar à Escala" size="sm">
+        <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Voluntário *</label>
+            <select
+              value={volunteerId}
+              onChange={(e) => setVolunteerId(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            >
+              <option value="">Selecionar voluntário...</option>
+              {(volunteers ?? []).map((v) => (
+                <option key={v.id} value={v.id}>{v.people?.name ?? v.id}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Função na escala</label>
+            <Input
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="Ex: Tecladista, Vocal..."
+            />
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" disabled={submitting || !volunteerId}>
+              {submitting ? 'Adicionando...' : 'Adicionar'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal de confirmação de sobrecarga — sem window.confirm (armadilha #1) */}
+      {overloadModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-semibold text-lg text-[#161616] mb-2">Voluntário Sobrecarregado</h3>
+            <p className="text-[#5A5A5A] text-sm mb-6">{overloadModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setOverloadModal((m) => ({ ...m, open: false }))}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:border-[#e13500] hover:text-[#e13500] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { void overloadModal.onConfirm() }}
+                className="px-4 py-2 rounded-xl bg-[#e13500] text-white text-sm font-semibold hover:bg-[#c42e00] transition-colors"
+              >
+                Adicionar mesmo assim
+              </button>
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Função na escala</label>
-          <Input
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            placeholder="Ex: Tecladista, Vocal..."
-          />
-        </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={submitting || !volunteerId}>
-            {submitting ? 'Adicionando...' : 'Adicionar'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+      )}
+    </>
   )
 }
 
@@ -274,6 +334,12 @@ export default function Escalas() {
   const { churchId } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({ open: false, title: '', message: '', onConfirm: () => {} })
   const publishSchedule = usePublishSchedule()
   const cancelSchedule = useCancelSchedule()
 
@@ -282,14 +348,28 @@ export default function Escalas() {
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
-  async function handlePublish(id: string) {
-    if (!confirm('Publicar esta escala? Os voluntários serão notificados.')) return
-    await publishSchedule.mutateAsync({ id, churchId: churchId! })
+  function handlePublish(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Publicar Escala',
+      message: 'Publicar esta escala? Os voluntários serão notificados.',
+      onConfirm: async () => {
+        setConfirmModal((m) => ({ ...m, open: false }))
+        await publishSchedule.mutateAsync({ id, churchId: churchId! })
+      },
+    })
   }
 
-  async function handleCancel(id: string) {
-    if (!confirm('Cancelar esta escala?')) return
-    await cancelSchedule.mutateAsync({ id, churchId: churchId! })
+  function handleCancel(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Cancelar Escala',
+      message: 'Tem certeza que deseja cancelar esta escala? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmModal((m) => ({ ...m, open: false }))
+        await cancelSchedule.mutateAsync({ id, churchId: churchId! })
+      },
+    })
   }
 
   function toggleExpand(id: string) {
@@ -369,7 +449,7 @@ export default function Escalas() {
                           </button>
                           {s.status === 'draft' && (
                             <button
-                              onClick={() => { void handlePublish(s.id) }}
+                              onClick={() => { handlePublish(s.id) }}
                               className="text-xs text-green-600 hover:text-green-700 font-medium"
                             >
                               Publicar
@@ -377,7 +457,7 @@ export default function Escalas() {
                           )}
                           {(s.status === 'draft' || s.status === 'published') && (
                             <button
-                              onClick={() => { void handleCancel(s.id) }}
+                              onClick={() => { handleCancel(s.id) }}
                               className="text-xs text-red-500 hover:text-red-600 font-medium"
                             >
                               Cancelar
@@ -409,6 +489,30 @@ export default function Escalas() {
           churchId={churchId}
           ministries={(ministries ?? []).map((m) => ({ id: m.id, name: m.name }))}
         />
+      )}
+
+      {/* Modal de Confirmação (armadilha #1 — sem window.confirm) */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-semibold text-lg text-[#161616] mb-2">{confirmModal.title}</h3>
+            <p className="text-[#5A5A5A] text-sm mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal((m) => ({ ...m, open: false }))}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:border-[#e13500] hover:text-[#e13500] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { void confirmModal.onConfirm() }}
+                className="px-4 py-2 rounded-xl bg-[#e13500] text-white text-sm font-semibold hover:bg-[#c42e00] transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
