@@ -1,9 +1,12 @@
 // ============================================================
-// Edge Function: escala-confirm-handler  v2 (rate limit: max 5/min per phone)
+// Edge Function: escala-confirm-handler  v3 (rate limit: max 5/min per phone)
 // Processa respostas de confirmação de escala via WhatsApp.
 // POST { from_phone: string, message: string, church_id: uuid }
 // Detecta 'CONFIRMO' ou 'CANCELAR' (NFD-normalizado, case-insensitive)
 // Chamado pelo conversation-router quando mensagem inbound é recebida
+// Changelog:
+//   v3 (2026-06-01) — enfileira reply em channel_dispatch_queue (non-fatal)
+//                     D7: SEM debit_agent_credits (confirmação gratuita)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -73,7 +76,7 @@ Deno.serve(async (req: Request) => {
           .not('confirmed_at', 'is', null)
 
         if ((recentConfirms ?? 0) >= 5) {
-          console.warn('[escala-confirm-handler v2] rate limit exceeded', { from_phone, church_id })
+          console.warn('[escala-confirm-handler v3] rate limit exceeded', { from_phone, church_id })
           return new Response(JSON.stringify({ handled: false, reason: 'rate limit exceeded' }), {
             status: 429,
             headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
@@ -145,13 +148,37 @@ Deno.serve(async (req: Request) => {
       ? `✅ Ótimo, ${person.name}! Sua presença em *${scheduleName}* está confirmada. Deus abençoe seu serviço! 🙏`
       : `Tudo bem, ${person.name}. Registramos que você não poderá comparecer a *${scheduleName}*. O líder será avisado. Obrigado por avisar!`
 
+    // ── Enfileirar reply para voluntário via WhatsApp ─────────
+    // D7: SEM debit_agent_credits — confirmação é gratuita (incluída no módulo)
+    const { data: channel } = await supabase
+      .from('church_whatsapp_channels')
+      .select('id')
+      .eq('church_id', church_id)
+      .eq('active', true)
+      .maybeSingle()
+
+    if (channel) {
+      await supabase.from('channel_dispatch_queue').insert({
+        church_id,
+        channel_id: channel.id,
+        to_phone: from_phone,
+        message_body: replyMessage,
+        agent_slug: 'escala-confirm-handler',
+        status: 'pending',
+        metadata: { assignment_id: assignment.id, intent, person_id: person.id },
+      }).catch(() => null) // non-fatal
+      console.log(`[escala-confirm-handler v3] reply enfileirado church_id=${church_id} intent=${intent}`)
+    } else {
+      console.warn(`[escala-confirm-handler v3] canal WA ativo não encontrado church_id=${church_id} — reply não enfileirado`)
+    }
+
     return new Response(JSON.stringify({ handled: true, intent, reply: replyMessage, assignment_id: assignment.id }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     })
 
   } catch (err: unknown) {
-    console.error('[escala-confirm-handler v2]', err)
+    console.error('[escala-confirm-handler v3]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
