@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+﻿import { Fragment, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   useEscalas,
@@ -226,15 +226,167 @@ interface ScheduleDetailProps {
   churchId: string
 }
 
+// -- Modal Solicitar Troca (D9) -----------------------------------------------
+
+interface RequestSwapModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  assignmentId: string
+  requesterVolunteerId: string
+  volunteerName: string
+}
+
+function RequestSwapModal({
+  open,
+  onClose,
+  churchId,
+  assignmentId,
+  requesterVolunteerId,
+  volunteerName,
+}: RequestSwapModalProps) {
+  const requestSwap = useRequestSwap()
+  const [note, setNote] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setError(null)
+    try {
+      await requestSwap.mutateAsync({
+        churchId,
+        assignmentId,
+        requesterVolunteerId,
+        note: note.trim() || null,
+      })
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao solicitar troca')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Solicitar Troca de Escala" size="sm">
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+        <p className="text-sm text-gray-600">
+          Solicitando troca para{' '}
+          <span className="font-medium text-gray-900">{volunteerName}</span>.
+          O coordenador sera notificado.
+        </p>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Ex: viagem, compromisso de saude..."
+            rows={3}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          />
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? 'Enviando...' : 'Solicitar Troca'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// -- Painel de Trocas Pendentes (D9) ------------------------------------------
+
+interface SwapPanelProps {
+  churchId: string
+}
+
+function SwapPanel({ churchId }: SwapPanelProps) {
+  const { data: swaps, isLoading } = useSwapRequests(churchId)
+  const resolveSwap = useResolveSwap()
+
+  if (isLoading || !swaps || swaps.length === 0) return null
+
+  async function handleResolve(id: string, status: 'accepted' | 'declined') {
+    await resolveSwap.mutateAsync({ id, churchId, status })
+  }
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-white text-xs font-bold">
+          {swaps.length}
+        </span>
+        <h2 className="text-sm font-semibold text-amber-800">
+          {swaps.length === 1 ? 'Troca pendente' : 'Trocas pendentes'}
+        </h2>
+      </div>
+      <div className="space-y-2">
+        {swaps.map((swap) => (
+          <div
+            key={swap.id}
+            className="bg-white rounded-lg border border-amber-100 px-3 py-2 flex items-center justify-between gap-3"
+          >
+            <div className="text-xs text-gray-700 min-w-0">
+              <span className="font-mono text-gray-400">{swap.assignment_id.slice(0, 8)}...</span>
+              {swap.requester_note && (
+                <span className="block text-gray-500 truncate mt-0.5">{swap.requester_note}</span>
+              )}
+            </div>
+            <div className="flex gap-1.5 shrink-0">
+              <button
+                onClick={() => { void handleResolve(swap.id, 'accepted') }}
+                disabled={resolveSwap.isPending}
+                className="text-xs text-green-700 border border-green-200 rounded px-2 py-0.5 hover:bg-green-50 transition-colors disabled:opacity-50"
+              >
+                Aceitar
+              </button>
+              <button
+                onClick={() => { void handleResolve(swap.id, 'declined') }}
+                disabled={resolveSwap.isPending}
+                className="text-xs text-red-600 border border-red-200 rounded px-2 py-0.5 hover:bg-red-50 transition-colors disabled:opacity-50"
+              >
+                Recusar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// -- ScheduleDetail com botao Trocar ------------------------------------------
+
+interface ScheduleDetailProps {
+  schedule: ScheduleWithAssignments
+  churchId: string
+}
+
 function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
   const [addOpen, setAddOpen] = useState(false)
+  const [swapModal, setSwapModal] = useState<{
+    open: boolean
+    assignmentId: string
+    volunteerId: string
+    volunteerName: string
+  }>({ open: false, assignmentId: '', volunteerId: '', volunteerName: '' })
+
   const assignments = schedule.service_schedule_assignments ?? []
+
+  function openSwap(assignmentId: string, volunteerId: string, volunteerName: string) {
+    setSwapModal({ open: true, assignmentId, volunteerId, volunteerName })
+  }
 
   return (
     <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          Voluntários escalados ({assignments.length})
+          {`Voluntarios escalados (${assignments.length})`}
         </p>
         <button
           onClick={() => setAddOpen(true)}
@@ -244,17 +396,29 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
         </button>
       </div>
       {assignments.length === 0 ? (
-        <p className="text-xs text-gray-400">Nenhum voluntário escalado ainda.</p>
+        <p className="text-xs text-gray-400">Nenhum voluntario escalado ainda.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {assignments.map((a) => (
-            <div key={a.id} className="text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
-              <span className="font-medium text-gray-800">
-                {a.volunteers?.people?.name ?? 'Voluntário'}
-              </span>
-              {a.role && <span className="text-gray-500 ml-1">· {a.role}</span>}
-            </div>
-          ))}
+          {assignments.map((a) => {
+            const name = a.volunteers?.people?.name ?? 'Voluntario'
+            return (
+              <div key={a.id} className="text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 flex items-center gap-2">
+                <span>
+                  <span className="font-medium text-gray-800">{name}</span>
+                  {a.role && <span className="text-gray-500 ml-1">{'·'} {a.role}</span>}
+                </span>
+                {(schedule.status === 'published' || schedule.status === 'confirmed') && (
+                  <button
+                    onClick={() => openSwap(a.id, a.volunteer_id, name)}
+                    className="text-[10px] text-[#5A5A5A] hover:text-[#e13500] border border-gray-200 rounded px-1.5 py-0.5 transition-colors"
+                    title="Solicitar troca"
+                  >
+                    Trocar
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
       {addOpen && (
@@ -266,14 +430,19 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
           ministryId={schedule.ministry_id}
         />
       )}
+      {swapModal.open && (
+        <RequestSwapModal
+          open={swapModal.open}
+          onClose={() => setSwapModal((m) => ({ ...m, open: false }))}
+          churchId={churchId}
+          assignmentId={swapModal.assignmentId}
+          requesterVolunteerId={swapModal.volunteerId}
+          volunteerName={swapModal.volunteerName}
+        />
+      )}
     </div>
   )
 }
-
-export default function Escalas() {
-  const { churchId } = useAuth()
-  const [createOpen, setCreateOpen] = useState(false)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
   const publishSchedule = usePublishSchedule()
   const cancelSchedule = useCancelSchedule()
 
@@ -309,6 +478,9 @@ export default function Escalas() {
         <Button onClick={() => setCreateOpen(true)}>+ Nova Escala</Button>
       </div>
 
+
+      {/* Trocas Pendentes (D9) */}
+      <SwapPanel churchId={churchId} />
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
