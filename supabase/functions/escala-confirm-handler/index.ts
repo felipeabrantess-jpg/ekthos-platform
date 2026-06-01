@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: escala-confirm-handler  v1
+// Edge Function: escala-confirm-handler  v2 (rate limit: max 5/min per phone)
 // Processa respostas de confirmação de escala via WhatsApp.
 // POST { from_phone: string, message: string, church_id: uuid }
 // Detecta 'CONFIRMO' ou 'CANCELAR' (NFD-normalizado, case-insensitive)
@@ -45,6 +45,41 @@ Deno.serve(async (req: Request) => {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       })
+    }
+
+    // Rate limit: max 5 confirmações por phone+church nos últimos 60 segundos
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString()
+    const { data: rateCheckPerson } = await supabase
+      .from('people')
+      .select('id')
+      .eq('church_id', church_id)
+      .eq('phone', from_phone)
+      .maybeSingle()
+
+    if (rateCheckPerson) {
+      const { data: rateCheckVol } = await supabase
+        .from('volunteers')
+        .select('id')
+        .eq('person_id', rateCheckPerson.id)
+        .eq('church_id', church_id)
+        .maybeSingle()
+
+      if (rateCheckVol) {
+        const { count: recentConfirms } = await supabase
+          .from('service_schedule_assignments')
+          .select('id', { count: 'exact', head: true })
+          .eq('volunteer_id', rateCheckVol.id)
+          .gt('confirmed_at', oneMinuteAgo)
+          .not('confirmed_at', 'is', null)
+
+        if ((recentConfirms ?? 0) >= 5) {
+          console.warn('[escala-confirm-handler v2] rate limit exceeded', { from_phone, church_id })
+          return new Response(JSON.stringify({ handled: false, reason: 'rate limit exceeded' }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+          })
+        }
+      }
     }
 
     // Lookup: phone → person → volunteer → assignment mais recente não confirmado
@@ -116,7 +151,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[escala-confirm-handler v1]', err)
+    console.error('[escala-confirm-handler v2]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: notify-escala  v1
+// Edge Function: notify-escala  v2 (pool fix: agent-escalas)
 // Envia notificações WhatsApp para voluntários de uma escala.
 // POST { schedule_id: uuid }
 // Auth: Bearer JWT do usuário (church_id via app_metadata)
@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
       const totalCredits = Math.round(notified * creditsPerMessage * 10) / 10
       await supabase.rpc('debit_agent_credits', {
         p_church_id: churchId,
-        p_agent_scope: 'agent-reengajamento', // usa pool compartilhado
+        p_agent_scope: 'agent-escalas', // usa pool agent-escalas (correto)
         p_amount: totalCredits,
       }).catch(() => null) // non-blocking
 
@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[notify-escala v1]', err)
+    console.error('[notify-escala v2]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...headers, 'Content-Type': 'application/json' },
