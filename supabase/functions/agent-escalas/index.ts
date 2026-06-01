@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // Edge Function: agent-escalas v23
 // Agente de Escalas — Claude Haiku — geração e gestão de escalas
 //
@@ -270,7 +270,7 @@ Língua: português brasileiro.`
         }))
       } catch (err: unknown) {
         const msg = (err as { message?: string }).message ?? 'Erro interno'
-        console.error('[agent-escalas] stream error:', msg)
+        console.error('[agent-escalas v23] stream error:', msg)
 
         await supabase.from('agent_executions').insert({
           church_id:             churchId,
