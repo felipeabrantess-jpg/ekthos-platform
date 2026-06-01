@@ -42,8 +42,7 @@ const Dashboard   = lazy(() => import('@/pages/Dashboard'))
 const People      = lazy(() => import('@/pages/People'))
 const Pipeline    = lazy(() => import('@/pages/Pipeline'))
 const Ministerios = lazy(() => import('@/pages/Ministerios'))
-const Escalas          = lazy(() => import('@/pages/Escalas'))
-const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
+const Escalas     = lazy(() => import('@/pages/Escalas'))
 const Financeiro  = lazy(() => import('@/pages/Financeiro'))
 const Agenda      = lazy(() => import('@/pages/Agenda'))
 const Gabinete    = lazy(() => import('@/pages/Gabinete'))
@@ -199,7 +198,7 @@ interface ModuleRouteProps {
 function ModuleRoute({ children, moduleKey, redirectTo = '/configuracoes/modulos' }: ModuleRouteProps) {
   const { data: church, isLoading } = useChurch()
 
-  if (isLoading) return null // aguarda sem flash
+  if (isLoading) return null // aguarda sem flash de conteúdo indevido
 
   const enabled = (church?.enabled_modules ?? {}) as Record<string, boolean>
   const isEnabled = enabled[moduleKey] === true
@@ -324,8 +323,8 @@ export default function App() {
             <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Suspense fallback={<PageLoader />}><Ministerios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="escalas"          element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
-            <Route path="escalas/relatorio" element={<ErrorBoundary><RoleRoute path="escalas"><Suspense fallback={<PageLoader />}><RelatorioEscalas /></Suspense></RoleRoute></ErrorBoundary>} />
+            {/* R-MODULE-GUARD: /escalas requer módulo 'escalas' ativo em enabled_modules */}
+            <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
 

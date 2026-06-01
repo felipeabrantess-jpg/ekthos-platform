@@ -37,19 +37,15 @@ DECLARE
   v_church_id UUID;
   v_event_name TEXT;
 BEGIN
-  -- Só age quando attendance_confirmed muda de null/false para true
   IF (NEW.attendance_confirmed = true) AND
      (OLD.attendance_confirmed IS DISTINCT FROM true) THEN
 
-    -- Buscar church_id do assignment
     v_church_id := NEW.church_id;
 
-    -- Buscar nome do evento
     SELECT ss.event_name INTO v_event_name
     FROM service_schedules ss
     WHERE ss.id = NEW.schedule_id;
 
-    -- Award 10 pontos por serviço confirmado
     INSERT INTO volunteer_points (volunteer_id, church_id, points, reason, metadata)
     VALUES (
       NEW.volunteer_id,
@@ -64,7 +60,6 @@ BEGIN
 END;
 $$;
 
--- Trigger (pode coexistir com o trigger de last_attendance_at criado por outro SA)
 DROP TRIGGER IF EXISTS trg_award_service_points ON service_schedule_assignments;
 CREATE TRIGGER trg_award_service_points
   AFTER UPDATE OF attendance_confirmed ON service_schedule_assignments
