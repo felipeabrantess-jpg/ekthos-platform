@@ -7,6 +7,11 @@ import {
   useCancelSchedule,
   useAddAssignment,
 } from '@/features/escalas/hooks/useEscalas'
+import {
+  useSwapRequests,
+  useRequestSwap,
+  useResolveSwap,
+} from '@/features/escalas/hooks/useSwapRequests'
 import { useMinisterios } from '@/features/ministerios/hooks/useMinisterios'
 import { useVoluntarios } from '@/features/voluntarios/hooks/useVoluntarios'
 import { supabase } from '@/lib/supabase'
