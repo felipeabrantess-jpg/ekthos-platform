@@ -1,11 +1,14 @@
 ﻿// ============================================================
-// Edge Function: agent-escalas
+// Edge Function: agent-escalas v23
 // Agente de Escalas — Claude Haiku — geração e gestão de escalas
 //
 // POST /agent-escalas
 // Headers: Authorization: Bearer <supabase-jwt>
 // Body: { message: string, clear_history?: boolean }
 // Returns: SSE stream
+//
+// v23: R-MODULE-GUARD (Volunteer Pro) + R-PREMIUM-GUARD canônico
+//      (corrige uso de .active legado e guard pulável — armadilha #6)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -66,27 +69,47 @@ Deno.serve(async (req: Request) => {
 
   if (!churchId) return jsonErr('church_id não encontrado no token', 400)
 
-  // ── Verifica se agente está ativado ─────────────────────
-  const { data: sub } = await supabase
-    .from('subscriptions')
+  // ── R-MODULE-GUARD — Volunteer Pro ──────────────────────
+  const { data: churchModRow } = await supabase
+    .from('churches')
+    .select('enabled_modules')
+    .eq('id', churchId)
+    .maybeSingle()
+  const mods = (churchModRow?.enabled_modules ?? {}) as Record<string, boolean>
+  if (!mods['escalas'] && !mods['voluntarios']) {
+    return jsonErr('Módulo Volunteer Pro não habilitado para esta conta', 403)
+  }
+
+  // ── R-PREMIUM-GUARD canônico (activation_status, NÃO .active legado) ──
+  const { data: cas } = await supabase
+    .from('church_agent_subscriptions')
     .select('id')
     .eq('church_id', churchId)
-    .in('status', ['active', 'trialing'])
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .eq('active', true)
     .maybeSingle()
 
-  if (sub) {
+  let hasSubscription = false
+  if (cas) {
     const { data: sa } = await supabase
       .from('subscription_agents')
-      .select('active')
-      .eq('subscription_id', sub.id)
+      .select('activation_status')
+      .eq('subscription_id', cas.id)
       .eq('agent_slug', AGENT_SLUG)
       .maybeSingle()
+    hasSubscription = sa?.activation_status === 'active'
+  }
 
-    if (!sa?.active) {
-      return jsonErr('Agente não ativado para esta conta', 403)
-    }
+  const { data: grant } = await supabase
+    .from('agent_grants')
+    .select('id')
+    .eq('church_id', churchId)
+    .eq('agent_slug', AGENT_SLUG)
+    .is('revoked_at', null)
+    .or('ends_at.is.null,ends_at.gt.' + new Date().toISOString())
+    .maybeSingle()
+
+  if (!hasSubscription && !grant) {
+    return jsonErr('Agente Escalas não ativado para esta conta', 403)
   }
 
   // ── Body ────────────────────────────────────────────────
