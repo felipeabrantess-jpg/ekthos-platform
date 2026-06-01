@@ -4,11 +4,14 @@ import {
   ArrowLeft, Building2, CreditCard, Users, Activity,
   Heart, DollarSign, FileText, Bot, UserCheck,
   Loader, StickyNote, Save, Trash2, CheckCircle2, XCircle,
+  LayoutGrid, Link2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalHabilitarAgente from '@/components/admin/ModalHabilitarAgente'
 import { useChurchIdentity } from '@/hooks/useChurchIdentity'
+import ModulosToggle from '@/components/admin/ModulosToggle'
+import TabVendaConsultiva from '@/pages/admin/TabVendaConsultiva'
 
 // ── Tipos ──────────────────────────────────────────────────
 
@@ -64,6 +67,8 @@ interface ChurchDetail {
   website_url:           string | null
   social_media_handles:  { instagram?: string; youtube?: string; facebook?: string } | null
   region:                string | null
+  // Módulos habilitados
+  enabled_modules:       Record<string, boolean> | null
   // Notas internas
   notes: Array<{
     id:            string
@@ -102,6 +107,8 @@ const TABS = [
   { id: 'saude',        label: 'Saúde',            icon: <Heart       size={14} strokeWidth={1.75} /> },
   { id: 'financeiro',   label: 'Financeiro',       icon: <DollarSign  size={14} strokeWidth={1.75} /> },
   { id: 'pricing',      label: 'Precificação',     icon: <DollarSign  size={14} strokeWidth={1.75} /> },
+  { id: 'modulos',      label: 'Módulos',          icon: <LayoutGrid  size={14} strokeWidth={1.75} /> },
+  { id: 'venda',        label: 'Venda Consultiva', icon: <Link2       size={14} strokeWidth={1.75} /> },
   { id: 'notas',        label: 'Notas Internas',   icon: <FileText    size={14} strokeWidth={1.75} /> },
   { id: 'logs',         label: 'Logs e Ações',     icon: <FileText    size={14} strokeWidth={1.75} /> },
 ]
@@ -1547,6 +1554,7 @@ const EMPTY_DETAIL: ChurchDetail = {
   denomination: null, vision_statement: null, address_full: null,
   main_phone: null, main_email: null, website_url: null,
   social_media_handles: null, region: null,
+  enabled_modules: null,
 }
 
 export default function AdminChurch() {
@@ -1711,6 +1719,16 @@ export default function AdminChurch() {
       {tab === 'saude'        && <TabSaude        data={data} />}
       {tab === 'financeiro'   && <TabFinanceiro   data={data} />}
       {tab === 'pricing'      && <TabPricing data={data} churchId={id ?? ''} onSaved={load} />}
+      {tab === 'modulos'      && (
+        <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
+          <ModulosToggle
+            churchId={id ?? ''}
+            enabledModules={data.enabled_modules}
+            onChanged={updated => setData(d => d ? { ...d, enabled_modules: updated } : d)}
+          />
+        </div>
+      )}
+      {tab === 'venda'        && <TabVendaConsultiva churchId={id ?? ''} churchName={data.name} />}
       {tab === 'notas'        && <TabNotas   data={data} churchId={id ?? ''} onSaved={load} />}
       {tab === 'logs'         && <TabLogs         data={data} onImpersonate={() => void startImpersonate()} impersonateLoading={impersonateLoading} impersonateError={impersonateError} />}
     </div>

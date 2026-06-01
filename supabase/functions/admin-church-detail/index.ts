@@ -324,6 +324,9 @@ Deno.serve(async (req: Request) => {
     // Logs (admin_events)
     logs,
 
+    // Módulos habilitados (feature flags por igreja)
+    enabled_modules: (church.enabled_modules as Record<string, boolean> | null) ?? null,
+
     generated_at: new Date().toISOString(),
   }, 200, req)
 })
