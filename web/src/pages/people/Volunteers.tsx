@@ -197,6 +197,8 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
 
 // ── EditVolunteerModal ────────────────────────────────────────────────────────
 
+const DAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
 interface EditVolunteerModalProps {
   volunteer: VolunteerRow
   onClose: () => void
@@ -204,20 +206,45 @@ interface EditVolunteerModalProps {
   ministries: Ministry[]
 }
 
+interface EditForm {
+  ministryId: string
+  role: string
+  availability: { days: number[]; period: string }
+  min_days_between_services: number
+}
+
 function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVolunteerModalProps) {
   const updateVolunteer = useUpdateVolunteer()
-  const [ministryId, setMinistryId] = useState(volunteer.ministries?.id ?? '')
-  const [role, setRole] = useState(volunteer.role ?? 'volunteer')
+
+  // Normaliza availability.days para number[] independente do que vier do banco
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawDays = (volunteer as any).availability?.days ?? []
+  const initialDays: number[] = rawDays.map((d: unknown) => Number(d))
+
+  const [editForm, setEditForm] = useState<EditForm>({
+    ministryId: volunteer.ministries?.id ?? '',
+    role: volunteer.role ?? 'volunteer',
+    availability: {
+      days: initialDays,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      period: (volunteer as any).availability?.period ?? 'any',
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    min_days_between_services: (volunteer as any).min_days_between_services ?? 7,
+  })
   const [error, setError] = useState<string | null>(null)
 
   async function handleSave() {
     setError(null)
     try {
-      await updateVolunteer.mutateAsync({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (updateVolunteer.mutateAsync as any)({
         id: volunteer.id,
         church_id: churchId,
-        ministry_id: ministryId || undefined,
-        role,
+        ministry_id: editForm.ministryId || undefined,
+        role: editForm.role,
+        availability: editForm.availability,
+        min_days_between_services: editForm.min_days_between_services,
       })
       onClose()
     } catch (err) {
@@ -225,10 +252,18 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
     }
   }
 
+  function toggleDay(idx: number) {
+    setEditForm(f => {
+      const current = f.availability.days
+      const updated = current.includes(idx) ? current.filter(d => d !== idx) : [...current, idx]
+      return { ...f, availability: { ...f.availability, days: updated } }
+    })
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
+      <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-ekthos-black">Editar Voluntário</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
@@ -240,11 +275,12 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
           {volunteer.people?.name ?? 'Voluntário'}
         </p>
 
+        {/* Ministério */}
         <div>
           <label className="block text-sm font-medium text-ekthos-black mb-1.5">Ministério</label>
           <select
-            value={ministryId}
-            onChange={e => setMinistryId(e.target.value)}
+            value={editForm.ministryId}
+            onChange={e => setEditForm(f => ({ ...f, ministryId: e.target.value }))}
             className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
           >
             <option value="">Sem ministério</option>
@@ -254,17 +290,72 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
           </select>
         </div>
 
+        {/* Função */}
         <div>
           <label className="block text-sm font-medium text-ekthos-black mb-1.5">Função</label>
           <select
-            value={role}
-            onChange={e => setRole(e.target.value)}
+            value={editForm.role}
+            onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
             className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
           >
             <option value="volunteer">Voluntário</option>
             <option value="leader">Líder</option>
             <option value="co-leader">Co-líder</option>
           </select>
+        </div>
+
+        {/* Dias disponíveis */}
+        <div>
+          <label className="text-sm font-medium text-[#5A5A5A] mb-2 block">Dias disponíveis</label>
+          <div className="flex gap-2 flex-wrap">
+            {DAYS_PT.map((day, idx) => {
+              const isSelected = editForm.availability.days.includes(idx)
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => toggleDay(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                    isSelected
+                      ? 'bg-[#e13500] text-white border-[#e13500]'
+                      : 'bg-white text-[#5A5A5A] border-gray-200 hover:border-[#e13500]'
+                  }`}
+                >
+                  {day}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Período preferencial */}
+        <div>
+          <label className="text-sm font-medium text-[#5A5A5A] mb-2 block">Período preferencial</label>
+          <select
+            value={editForm.availability.period}
+            onChange={e => setEditForm(f => ({ ...f, availability: { ...f.availability, period: e.target.value } }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+          >
+            <option value="any">Qualquer período</option>
+            <option value="morning">Manhã</option>
+            <option value="afternoon">Tarde</option>
+            <option value="evening">Noite</option>
+          </select>
+        </div>
+
+        {/* Intervalo mínimo entre escalas */}
+        <div>
+          <label className="text-sm font-medium text-[#5A5A5A] mb-2 block">
+            Intervalo mínimo entre escalas (dias)
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="90"
+            value={editForm.min_days_between_services}
+            onChange={e => setEditForm(f => ({ ...f, min_days_between_services: parseInt(e.target.value) || 7 }))}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
+          />
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -287,9 +378,28 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
 
 // ── VolunteerCard ─────────────────────────────────────────────────────────────
 
-function VolunteerCard({ volunteer, onRemove, onEdit }: { volunteer: VolunteerRow; onRemove: (v: VolunteerRow) => void; onEdit: (v: VolunteerRow) => void }) {
+interface VolunteerPointsEntry {
+  volunteer_id: string
+  total_points: number
+  total_awards: number
+}
+
+function VolunteerCard({
+  volunteer,
+  onRemove,
+  onEdit,
+  points,
+}: {
+  volunteer: VolunteerRow
+  onRemove: (v: VolunteerRow) => void
+  onEdit: (v: VolunteerRow) => void
+  points?: VolunteerPointsEntry
+}) {
   const person = volunteer.people
   const ministry = volunteer.ministries
+  const pts = points?.total_points ?? 0
+  const medal = pts >= 100 ? '🥇' : pts >= 50 ? '🥈' : pts >= 20 ? '🥉' : '⭐'
+
   return (
     <div className="bg-white rounded-2xl border border-black/10 p-4 flex gap-3">
       {/* Avatar */}
@@ -331,6 +441,12 @@ function VolunteerCard({ volunteer, onRemove, onEdit }: { volunteer: VolunteerRo
               {ROLE_LABELS[volunteer.role] ?? volunteer.role}
             </span>
           )}
+          {/* Badge de pontos — mostrar apenas se > 0 */}
+          {pts > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium bg-[#f9eedc] text-[#670000] rounded-full px-2 py-0.5">
+              {medal} {pts} pts
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -367,6 +483,21 @@ export default function Volunteers() {
     churchId ?? '',
     ministryFilter || undefined,
   )
+
+  // Pontos de gamificação por voluntário (D8)
+  const { data: pointsData } = useQuery({
+    queryKey: ['volunteer-points', churchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('volunteer_total_points')
+        .select('volunteer_id, total_points, total_awards')
+        .eq('church_id', churchId!)
+      return Object.fromEntries(
+        (data ?? []).map(p => [p.volunteer_id, p as VolunteerPointsEntry])
+      )
+    },
+    enabled: Boolean(churchId),
+  })
 
   const filteredVolunteers = (volunteers as VolunteerRow[]).filter(v =>
     !search.trim() ||
@@ -478,7 +609,13 @@ export default function Volunteers() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {filteredVolunteers.map(v => (
-            <VolunteerCard key={v.id} volunteer={v} onRemove={setRemovingVolunteer} onEdit={setEditingVolunteer} />
+            <VolunteerCard
+              key={v.id}
+              volunteer={v}
+              onRemove={setRemovingVolunteer}
+              onEdit={setEditingVolunteer}
+              points={pointsData?.[v.id]}
+            />
           ))}
         </div>
       )}

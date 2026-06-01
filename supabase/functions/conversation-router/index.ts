@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: conversation-router  v20
+// Edge Function: conversation-router  v21
 // Decisor de roteamento — sem lógica de entrega.
 //
 // POST /functions/v1/conversation-router
@@ -17,6 +17,8 @@
 //        A entrega é responsabilidade do channel-dispatcher.
 //
 // Changelog:
+//   v21 (2026-06-01) — AGENT_FUNCTIONS: adiciona escala-confirm-handler
+//                      para roteamento de confirmações de escala via WA.
 //   v20 (2026-05-30) — R-PREMIUM-GUARD: verifica contratação ativa
 //                      de agent-acolhimento (agent_grants OU
 //                      subscription_agents) antes de rotear inbound.
@@ -30,9 +32,10 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // Mapa agent_slug → EF correspondente
 const AGENT_FUNCTIONS: Record<string, string> = {
-  'agent-acolhimento':   'agent-acolhimento',
-  'agent-reengajamento': 'agent-reengajamento',   // Sprint 4
-  'agent-operacao':      'agent-operacao',         // Sprint 4
+  'agent-acolhimento':      'agent-acolhimento',
+  'agent-reengajamento':    'agent-reengajamento',    // Sprint 4
+  'agent-operacao':         'agent-operacao',          // Sprint 4
+  'escala-confirm-handler': 'escala-confirm-handler',  // Volunteer Pro
 }
 
 // Agente default quando conversa não tem agente definido
