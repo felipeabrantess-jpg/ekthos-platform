@@ -7,6 +7,11 @@ import {
   useCancelSchedule,
   useAddAssignment,
 } from '@/features/escalas/hooks/useEscalas'
+import {
+  useSwapRequests,
+  useRequestSwap,
+  useResolveSwap,
+} from '@/features/escalas/hooks/useSwapRequests'
 import { useMinisterios } from '@/features/ministerios/hooks/useMinisterios'
 import { useVoluntarios } from '@/features/voluntarios/hooks/useVoluntarios'
 import Spinner from '@/components/ui/Spinner'
@@ -274,6 +279,12 @@ export default function Escalas() {
   const { churchId } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({ open: false, title: '', message: '', onConfirm: () => {} })
   const publishSchedule = usePublishSchedule()
   const cancelSchedule = useCancelSchedule()
 
@@ -282,14 +293,28 @@ export default function Escalas() {
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
-  async function handlePublish(id: string) {
-    if (!confirm('Publicar esta escala? Os voluntários serão notificados.')) return
-    await publishSchedule.mutateAsync({ id, churchId: churchId! })
+  function handlePublish(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Publicar Escala',
+      message: 'Publicar esta escala? Os voluntários serão notificados.',
+      onConfirm: async () => {
+        setConfirmModal((m) => ({ ...m, open: false }))
+        await publishSchedule.mutateAsync({ id, churchId: churchId! })
+      },
+    })
   }
 
-  async function handleCancel(id: string) {
-    if (!confirm('Cancelar esta escala?')) return
-    await cancelSchedule.mutateAsync({ id, churchId: churchId! })
+  function handleCancel(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Cancelar Escala',
+      message: 'Tem certeza que deseja cancelar esta escala? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmModal((m) => ({ ...m, open: false }))
+        await cancelSchedule.mutateAsync({ id, churchId: churchId! })
+      },
+    })
   }
 
   function toggleExpand(id: string) {
@@ -409,6 +434,30 @@ export default function Escalas() {
           churchId={churchId}
           ministries={(ministries ?? []).map((m) => ({ id: m.id, name: m.name }))}
         />
+      )}
+
+      {/* Modal de Confirmação (armadilha #1 — sem window.confirm) */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-semibold text-lg text-[#161616] mb-2">{confirmModal.title}</h3>
+            <p className="text-[#5A5A5A] text-sm mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal((m) => ({ ...m, open: false }))}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:border-[#e13500] hover:text-[#e13500] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { void confirmModal.onConfirm() }}
+                className="px-4 py-2 rounded-xl bg-[#e13500] text-white text-sm font-semibold hover:bg-[#c42e00] transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
