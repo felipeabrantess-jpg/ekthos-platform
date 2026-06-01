@@ -1,5 +1,5 @@
-// ============================================================
-// Edge Function: escala-confirm-handler  v3 (rate limit: max 5/min per phone)
+﻿// ============================================================
+// Edge Function: escala-confirm-handler  v4 (fix channel_dispatch_queue schema)
 // Processa respostas de confirmação de escala via WhatsApp.
 // POST { from_phone: string, message: string, church_id: uuid }
 // Detecta 'CONFIRMO' ou 'CANCELAR' (NFD-normalizado, case-insensitive)
@@ -7,6 +7,8 @@
 // Changelog:
 //   v3 (2026-06-01) — enfileira reply em channel_dispatch_queue (non-fatal)
 //                     D7: SEM debit_agent_credits (confirmação gratuita)
+//   v4 (2026-06-01) — fix schema: content (não message_body), conversation_id/message_id null
+//                     fix select: event_name/event_date/event_time (não title/date/start_time)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -76,7 +78,7 @@ Deno.serve(async (req: Request) => {
           .not('confirmed_at', 'is', null)
 
         if ((recentConfirms ?? 0) >= 5) {
-          console.warn('[escala-confirm-handler v2] rate limit exceeded', { from_phone, church_id })
+          console.warn('[escala-confirm-handler v4] rate limit exceeded', { from_phone, church_id })
           return new Response(JSON.stringify({ handled: false, reason: 'rate limit exceeded' }), {
             status: 429,
             headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
@@ -115,9 +117,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // Assignment mais recente com notified_at não nulo e attendance_confirmed nulo
+    // v4: colunas corretas da service_schedules (event_name, event_date, event_time)
     const { data: assignment } = await supabase
       .from('service_schedule_assignments')
-      .select('id, service_schedules!inner(title, date, start_time)')
+      .select('id, service_schedules!inner(event_name, event_date, event_time)')
       .eq('volunteer_id', volunteer.id)
       .not('notified_at', 'is', null)
       .is('attendance_confirmed', null)
@@ -142,14 +145,15 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', assignment.id)
 
-    const schedule = (assignment as unknown as { service_schedules: { title: string; date: string | null; start_time: string | null } }).service_schedules
-    const scheduleName = schedule?.title ?? 'sua escala'
+    const scheduleRaw = (assignment as unknown as { service_schedules: { event_name: string; event_date: string | null; event_time: string | null } }).service_schedules
+    const scheduleName = scheduleRaw?.event_name ?? 'sua escala'
     const replyMessage = intent === 'confirm'
       ? `✅ Ótimo, ${person.name}! Sua presença em *${scheduleName}* está confirmada. Deus abençoe seu serviço! 🙏`
       : `Tudo bem, ${person.name}. Registramos que você não poderá comparecer a *${scheduleName}*. O líder será avisado. Obrigado por avisar!`
 
     // ── Enfileirar reply para voluntário via WhatsApp ─────────
     // D7: SEM debit_agent_credits — confirmação é gratuita (incluída no módulo)
+    // v4: schema correto — content (não message_body), conversation_id/message_id null para outbound
     const { data: channel } = await supabase
       .from('church_whatsapp_channels')
       .select('id')
@@ -162,14 +166,14 @@ Deno.serve(async (req: Request) => {
         church_id,
         channel_id: channel.id,
         to_phone: from_phone,
-        message_body: replyMessage,
-        agent_slug: 'escala-confirm-handler',
+        content: replyMessage,
+        conversation_id: null,
+        message_id: null,
         status: 'pending',
-        metadata: { assignment_id: assignment.id, intent, person_id: person.id },
       }).catch(() => null) // non-fatal
-      console.log(`[escala-confirm-handler v3] reply enfileirado church_id=${church_id} intent=${intent}`)
+      console.log(`[escala-confirm-handler v4] reply enfileirado church_id=${church_id} intent=${intent}`)
     } else {
-      console.warn(`[escala-confirm-handler v3] canal WA ativo não encontrado church_id=${church_id} — reply não enfileirado`)
+      console.warn(`[escala-confirm-handler v4] canal WA ativo não encontrado church_id=${church_id} — reply não enfileirado`)
     }
 
     return new Response(JSON.stringify({ handled: true, intent, reply: replyMessage, assignment_id: assignment.id }), {
@@ -178,7 +182,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[escala-confirm-handler v3]', err)
+    console.error('[escala-confirm-handler v4]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
