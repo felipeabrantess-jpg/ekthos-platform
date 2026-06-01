@@ -55,7 +55,8 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/dashboard',   label: 'Painel',      Icon: LayoutDashboard, moduleKey: null          },
   { path: '/pessoas',     label: 'Pessoas',     Icon: Users,           moduleKey: 'pessoas'     },
   { path: '/lideres',      label: 'Líderes',      Icon: Users2,     moduleKey: 'pessoas'  },
-  { path: '/voluntarios',  label: 'Voluntários',  Icon: HandHeart,  moduleKey: 'pessoas'  },
+  { path: '/voluntarios',  label: 'Voluntários',  Icon: HandHeart,  moduleKey: 'voluntarios'  },
+  { path: '/escalas',      label: 'Escalas',      Icon: CalendarDays, moduleKey: 'escalas' },
   { path: '/consolidacao', label: 'Consolidação', Icon: Heart,      moduleKey: 'pipeline' },
   { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,       moduleKey: 'pipeline'    },
   { path: '/celulas',     label: 'Células',     Icon: Network,         moduleKey: 'celulas'     },
@@ -75,8 +76,8 @@ export const IGREJA_NAV: NavItem[] = [
 export const MODULE_ADDONS: ModuleAddon[] = [
   {
     id:          'volunteer',
-    label:       'Volunteer',
-    price:       'R$ 289,90',
+    label:       'Volunteer Pro',
+    price:       'R$ 890,00',
     description: 'Gestão de voluntários e escalas de serviço',
   },
   {
