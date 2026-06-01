@@ -4,6 +4,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { AuthProvider } from '@/lib/auth-context'
 import { useAuth } from '@/hooks/useAuth'
 import { canAccess, defaultRoute, type AppRole } from '@/hooks/useRole'
+import { useChurch } from '@/hooks/useChurch'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Layout from '@/components/Layout'
 import AdminLayout from '@/components/AdminLayout'
@@ -186,6 +187,29 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+// R-MODULE-GUARD: redireciona para /configuracoes/modulos se o módulo não estiver ativo.
+// Frontend não é segurança, mas guia o pastor corretamente e evita páginas em branco.
+interface ModuleRouteProps {
+  children: React.ReactNode
+  moduleKey: string
+  redirectTo?: string
+}
+
+function ModuleRoute({ children, moduleKey, redirectTo = '/configuracoes/modulos' }: ModuleRouteProps) {
+  const { data: church, isLoading } = useChurch()
+
+  if (isLoading) return null // aguarda sem flash de conteúdo indevido
+
+  const enabled = (church?.enabled_modules ?? {}) as Record<string, boolean>
+  const isEnabled = enabled[moduleKey] === true
+
+  if (!isEnabled) {
+    return <Navigate to={redirectTo} replace />
+  }
+
+  return <>{children}</>
+}
+
 // ── App ────────────────────────────────────────────────────
 
 export default function App() {
@@ -299,7 +323,8 @@ export default function App() {
             <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Suspense fallback={<PageLoader />}><Ministerios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></RoleRoute></ErrorBoundary>} />
+            {/* R-MODULE-GUARD: /escalas requer módulo 'escalas' ativo em enabled_modules */}
+            <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
 
