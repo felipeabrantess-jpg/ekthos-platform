@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: admin-cockpit-sell  v1
+// Edge Function: admin-cockpit-sell  v2 (idempotency guard)
 // Ativa agentes e/ou módulos para uma igreja via cockpit admin.
 // POST {
 //   church_id: uuid,
@@ -64,6 +64,28 @@ Deno.serve(async (req: Request) => {
       if (!slug || !grant_type) { errors.push(`invalid agent entry: ${JSON.stringify(agent)}`); continue }
 
       try {
+        // Idempotency: skip if already active via subscription or grant
+        const { data: alreadyActive } = await supabase
+          .from('subscription_agents')
+          .select('agent_slug')
+          .eq('church_id', church_id)
+          .eq('agent_slug', slug)
+          .eq('active', true)
+          .maybeSingle()
+
+        const { data: alreadyGranted } = await supabase
+          .from('agent_grants')
+          .select('agent_slug')
+          .eq('church_id', church_id)
+          .eq('agent_slug', slug)
+          .is('revoked_at', null)
+          .maybeSingle()
+
+        if (alreadyActive || alreadyGranted) {
+          activated.push(`agent:${slug}:already_active`)
+          continue
+        }
+
         // Usar activate_agent_internal (SECURITY DEFINER sem guard)
         const { error: rpcErr } = await supabase.rpc('activate_agent_internal', {
           p_church_id: church_id,
@@ -126,7 +148,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[admin-cockpit-sell v1]', err)
+    console.error('[admin-cockpit-sell v2]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...headers, 'Content-Type': 'application/json' },

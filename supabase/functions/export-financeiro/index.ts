@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: export-financeiro  v1
+// Edge Function: export-financeiro  v2 (pagination: remove hard limit 5000)
 // GET ?start=YYYY-MM-DD&end=YYYY-MM-DD
 // Retorna CSV com BOM UTF-8 das doações do período.
 // Auth: Bearer JWT do usuário (church_id via app_metadata)
@@ -58,22 +58,40 @@ Deno.serve(async (req: Request) => {
     const start = url.searchParams.get('start')
     const end = url.searchParams.get('end')
 
-    let query = supabase
-      .from('donations')
-      .select('id, created_at, amount, currency, type, payment_method, status, confirmed_at, notes, people(name)')
-      .eq('church_id', churchId)
-      .order('created_at', { ascending: false })
-      .limit(5000)
+    // Fetch all records via cursor pagination (no hard limit)
+    const BATCH_SIZE = 1000
 
-    if (start) query = query.gte('created_at', start)
-    if (end) query = query.lte('created_at', end + 'T23:59:59')
+    type DonationRow = {
+      id: string; created_at: string; amount: number | string; currency: string | null;
+      type: string | null; payment_method: string | null; status: string | null;
+      confirmed_at: string | null; notes: string | null;
+      people: { name: string } | null
+    }
+    const allDonations: DonationRow[] = []
+    let offset = 0
 
-    const { data: donations, error } = await query
-    if (error) throw error
+    while (true) {
+      let q = supabase
+        .from('donations')
+        .select('id, created_at, amount, currency, type, payment_method, status, confirmed_at, notes, people(name)')
+        .eq('church_id', churchId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + BATCH_SIZE - 1)
+
+      if (start) q = q.gte('created_at', start)
+      if (end) q = q.lte('created_at', end + 'T23:59:59')
+
+      const { data: batch, error } = await q
+      if (error) throw error
+      if (!batch || batch.length === 0) break
+      allDonations.push(...(batch as unknown as DonationRow[]))
+      if (batch.length < BATCH_SIZE) break
+      offset += BATCH_SIZE
+    }
 
     // Build CSV
     const cols = ['Data', 'Membro', 'Valor', 'Tipo', 'Forma de pagamento', 'Status', 'Confirmado em', 'Notas']
-    const rows = (donations ?? []).map(d => {
+    const rows = allDonations.map(d => {
       const person = (d.people as unknown as { name: string } | null)
       // Detect if amount is in centavos or decimal (auto-detect: >10000 presumed centavos)
       const amountNum = typeof d.amount === 'number' ? d.amount : parseFloat(d.amount)
@@ -105,7 +123,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[export-financeiro v1]', err)
+    console.error('[export-financeiro v2]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...headers, 'Content-Type': 'application/json' },
