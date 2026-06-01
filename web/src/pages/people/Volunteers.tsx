@@ -287,9 +287,28 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
 
 // ── VolunteerCard ─────────────────────────────────────────────────────────────
 
-function VolunteerCard({ volunteer, onRemove, onEdit }: { volunteer: VolunteerRow; onRemove: (v: VolunteerRow) => void; onEdit: (v: VolunteerRow) => void }) {
+interface VolunteerPointsEntry {
+  volunteer_id: string
+  total_points: number
+  total_awards: number
+}
+
+function VolunteerCard({
+  volunteer,
+  onRemove,
+  onEdit,
+  points,
+}: {
+  volunteer: VolunteerRow
+  onRemove: (v: VolunteerRow) => void
+  onEdit: (v: VolunteerRow) => void
+  points?: VolunteerPointsEntry
+}) {
   const person = volunteer.people
   const ministry = volunteer.ministries
+  const pts = points?.total_points ?? 0
+  const medal = pts >= 100 ? '🥇' : pts >= 50 ? '🥈' : pts >= 20 ? '🥉' : '⭐'
+
   return (
     <div className="bg-white rounded-2xl border border-black/10 p-4 flex gap-3">
       {/* Avatar */}
@@ -331,6 +350,12 @@ function VolunteerCard({ volunteer, onRemove, onEdit }: { volunteer: VolunteerRo
               {ROLE_LABELS[volunteer.role] ?? volunteer.role}
             </span>
           )}
+          {/* Badge de pontos — mostrar apenas se > 0 */}
+          {pts > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs font-medium bg-[#f9eedc] text-[#670000] rounded-full px-2 py-0.5">
+              {medal} {pts} pts
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -367,6 +392,21 @@ export default function Volunteers() {
     churchId ?? '',
     ministryFilter || undefined,
   )
+
+  // Pontos de gamificação por voluntário (D8)
+  const { data: pointsData } = useQuery({
+    queryKey: ['volunteer-points', churchId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('volunteer_total_points')
+        .select('volunteer_id, total_points, total_awards')
+        .eq('church_id', churchId!)
+      return Object.fromEntries(
+        (data ?? []).map(p => [p.volunteer_id, p as VolunteerPointsEntry])
+      )
+    },
+    enabled: Boolean(churchId),
+  })
 
   const filteredVolunteers = (volunteers as VolunteerRow[]).filter(v =>
     !search.trim() ||
@@ -478,7 +518,13 @@ export default function Volunteers() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {filteredVolunteers.map(v => (
-            <VolunteerCard key={v.id} volunteer={v} onRemove={setRemovingVolunteer} onEdit={setEditingVolunteer} />
+            <VolunteerCard
+              key={v.id}
+              volunteer={v}
+              onRemove={setRemovingVolunteer}
+              onEdit={setEditingVolunteer}
+              points={pointsData?.[v.id]}
+            />
           ))}
         </div>
       )}
