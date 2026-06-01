@@ -1,12 +1,11 @@
 /**
  * navigation.ts — Configuração centralizada da navegação do CRM Pastoral
  *
- * Fase 1: 4 camadas — IGREJA | AGENTES IA | MÓDULOS | CONTA
- *
- * Regra de design:
- *  - IGREJA: módulos operacionais do CRM (acessados por role + enabled_modules)
+ * Fase 1 (atual):
+ *  - TRONCO: módulos CRM core (acessados por role + enabled_modules key)
+ *  - BRAÇO Volunteer Pro: VOLUNTEER_PRO_NAV (moduleKey: 'volunteer-pro')
  *  - AGENTES IA: agentes comprados na subscription
- *  - MÓDULOS: add-ons pagos separados (Volunteer, Kids, Financeiro Pro)
+ *  - MÓDULOS: add-ons pagos (Volunteer, Kids, Financeiro Pro)
  *  - CONTA: configurações + logout
  */
 
@@ -25,6 +24,7 @@ import {
   CalendarDays,
   ShieldCheck,
   MessageSquare,
+  ClipboardList,  // ← novo: para Relatórios de escalas
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -44,28 +44,36 @@ export interface ModuleAddon {
   description: string
 }
 
-// ── Itens da categoria IGREJA ─────────────────────────────────────────────────
+// ── Itens da categoria IGREJA (TRONCO CRM) ───────────────────────────────────
 //
 // Removidos do primeiro nível (Fase 1):
 //   - Aniversários → subtela de Pessoas
-//   - Voluntários  → MÓDULOS Volunteer
-//   - Escalas      → MÓDULOS Volunteer
+//   - Voluntários  → BRAÇO Volunteer Pro (VOLUNTEER_PRO_NAV)
+//   - Escalas      → BRAÇO Volunteer Pro (VOLUNTEER_PRO_NAV)
 
 export const IGREJA_NAV: NavItem[] = [
   { path: '/dashboard',   label: 'Painel',      Icon: LayoutDashboard, moduleKey: null          },
   { path: '/pessoas',     label: 'Pessoas',     Icon: Users,           moduleKey: 'pessoas'     },
-  { path: '/lideres',      label: 'Líderes',      Icon: Users2,     moduleKey: 'pessoas'  },
-  { path: '/voluntarios',  label: 'Voluntários',  Icon: HandHeart,  moduleKey: 'voluntarios'  },
-  { path: '/escalas',      label: 'Escalas',      Icon: CalendarDays, moduleKey: 'escalas' },
-  { path: '/consolidacao', label: 'Consolidação', Icon: Heart,      moduleKey: 'pipeline' },
-  { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,       moduleKey: 'pipeline'    },
-  { path: '/celulas',     label: 'Células',     Icon: Network,         moduleKey: 'celulas'     },
-  { path: '/ministerios', label: 'Ministérios', Icon: Building2,       moduleKey: 'ministerios' },
-  { path: '/agenda',      label: 'Calendário',  Icon: Calendar,        moduleKey: 'agenda'      },
-  { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,    moduleKey: 'agenda'      },
-  { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,     moduleKey: 'gabinete'    },
-  { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,          moduleKey: 'financeiro'  },
-  { path: '/conversas',  label: 'Conversas',   Icon: MessageSquare,   moduleKey: null           },
+  { path: '/lideres',      label: 'Líderes',     Icon: Users2,          moduleKey: 'pessoas'     },
+  { path: '/consolidacao', label: 'Consolidação', Icon: Heart,          moduleKey: 'pipeline'    },
+  { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,        moduleKey: 'pipeline'    },
+  { path: '/celulas',     label: 'Células',     Icon: Network,          moduleKey: 'celulas'     },
+  { path: '/ministerios', label: 'Ministérios', Icon: Building2,        moduleKey: 'ministerios' },
+  { path: '/agenda',      label: 'Calendário',  Icon: Calendar,         moduleKey: 'agenda'      },
+  { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,     moduleKey: 'agenda'      },
+  { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,      moduleKey: 'gabinete'    },
+  { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,           moduleKey: 'financeiro'  },
+  { path: '/conversas',  label: 'Conversas',   Icon: MessageSquare,    moduleKey: null           },
+]
+
+// ── Itens do BRAÇO Volunteer Pro ──────────────────────────────────────────────
+// Estas rotas SÓ aparecem quando church.enabled_modules['volunteer-pro'] === true
+// moduleKey: 'volunteer-pro' — guard na Sidebar e em ModuleRoute no App.tsx
+
+export const VOLUNTEER_PRO_NAV: NavItem[] = [
+  { path: '/volunteer/voluntarios', label: 'Voluntários', Icon: HandHeart,     moduleKey: 'volunteer-pro' },
+  { path: '/volunteer/escalas',     label: 'Escalas',     Icon: CalendarDays,  moduleKey: 'volunteer-pro' },
+  { path: '/volunteer/relatorios',  label: 'Relatórios',  Icon: ClipboardList, moduleKey: 'volunteer-pro' },
 ]
 
 // ── Módulos add-on — sempre bloqueados até Fase 4 ─────────────────────────────
