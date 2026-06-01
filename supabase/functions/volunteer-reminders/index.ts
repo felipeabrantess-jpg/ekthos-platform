@@ -65,7 +65,8 @@ Deno.serve(async (req: Request) => {
 
     for (const church of churches) {
       const mods = (church.enabled_modules ?? {}) as Record<string, boolean>
-      if (!mods['escalas'] && !mods['voluntarios']) continue
+      // D3: aceita 'volunteer-pro' (novo canônico) OU legados
+      if (!mods['volunteer-pro'] && !mods['escalas'] && !mods['voluntarios']) continue
 
       // R-MODULE-GUARD: verificar entitlement
       const { data: subRow } = await supabase

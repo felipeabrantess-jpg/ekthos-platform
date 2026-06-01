@@ -23,7 +23,7 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import { usePlan } from '@/hooks/usePlan'
 import { useChurch, DEFAULT_MODULES } from '@/hooks/useChurch'
-import { IGREJA_NAV } from '@/lib/navigation'
+import { IGREJA_NAV, VOLUNTEER_PRO_NAV } from '@/lib/navigation'
 import { INTERNAL_AGENTS, PREMIUM_AGENTS } from '@/lib/agents-content'
 import { MODULES_CONTENT } from '@/lib/modules-content'
 
@@ -35,6 +35,7 @@ function inferCategory(pathname: string): Category {
   if (pathname.startsWith('/agentes')) return 'agentes'
   if (pathname.startsWith('/modulos')) return 'modulos'
   if (pathname.startsWith('/configuracoes') || pathname.startsWith('/settings')) return 'config'
+  // /volunteer/* pertence ao contexto Igreja (Volunteer Pro é braço do CRM)
   return 'igreja'
 }
 
@@ -165,8 +166,10 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
     return (allowed as string[] | undefined)?.includes(role) ?? true
   })
 
-  const enabledItems  = roleFilteredItems.filter(i => !i.moduleKey || enabledModules[i.moduleKey] !== false)
-  const disabledItems = roleFilteredItems.filter(i => i.moduleKey && enabledModules[i.moduleKey] === false)
+  // Fix guard: === true (anteriormente !== false que deixava undefined passar)
+  // undefined significa módulo não configurado → deve bloquear
+  const enabledItems  = roleFilteredItems.filter(i => !i.moduleKey || enabledModules[i.moduleKey] === true)
+  const disabledItems = roleFilteredItems.filter(i => i.moduleKey && enabledModules[i.moduleKey] !== true)
 
   const navItemBase: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10,
@@ -244,6 +247,45 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
                 Ative em Configurações → Módulos
               </div>
             </div>
+          ))}
+        </>
+      )}
+
+      {/* ── Volunteer Pro (braço separado) — só quando módulo ativo ── */}
+      {enabledModules['volunteer-pro'] === true && (
+        <>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
+            style={{ color: 'var(--text-tertiary)' }}>
+            Volunteer Pro
+          </p>
+          {VOLUNTEER_PRO_NAV.map(({ path, label, Icon }) => (
+            <NavLink
+              key={path}
+              to={path}
+              style={({ isActive }) => ({
+                ...navItemBase,
+                background: isActive ? 'var(--bg-hover)' : 'transparent',
+                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
+                borderLeftColor: isActive ? 'var(--color-primary)' : 'transparent',
+              })}
+              onMouseEnter={e => {
+                const el = e.currentTarget
+                if (!el.dataset.active) {
+                  el.style.background = 'var(--bg-hover)'
+                  el.style.color = 'var(--text-primary)'
+                }
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget
+                if (!el.dataset.active) {
+                  el.style.background = 'transparent'
+                  el.style.color = 'var(--text-secondary)'
+                }
+              }}
+            >
+              <Icon size={15} strokeWidth={1.75} className="shrink-0" />
+              <span>{label}</span>
+            </NavLink>
           ))}
         </>
       )}
