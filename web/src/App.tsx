@@ -52,6 +52,7 @@ const Agents         = lazy(() => import('@/pages/Agents').then(m => ({ default:
 const Leaders        = lazy(() => import('@/pages/people/Leaders'))
 const Consolidation  = lazy(() => import('@/pages/people/Consolidation'))
 const VolunteersPage = lazy(() => import('@/pages/people/Volunteers'))
+const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
 const EventsList       = lazy(() => import('@/pages/events/EventsList'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
@@ -322,11 +323,22 @@ export default function App() {
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Suspense fallback={<PageLoader />}><Ministerios /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></RoleRoute></ErrorBoundary>} />
-            {/* R-MODULE-GUARD: /escalas requer módulo 'escalas' ativo em enabled_modules */}
-            <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="escalas"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
+            {/* R-MODULE-GUARD: /voluntarios requer módulo 'volunteer-pro' ativo em enabled_modules */}
+            <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
+            {/* R-MODULE-GUARD: /escalas requer módulo 'volunteer-pro' ativo em enabled_modules */}
+            <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
+
+            {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
+            {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}
+            <Route path="volunteer">
+              <Route path="voluntarios"  element={<ErrorBoundary><RoleRoute path="voluntarios"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
+              <Route path="escalas"      element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
+              <Route path="relatorios"   element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><RelatorioEscalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
+            </Route>
+            {/* Aliases D2 — backward compat por 1 release → redirect para /volunteer/* */}
+            {/* REMOVER na próxima release após todas as igrejas migrarem bookmarks */}
 
             {/* ── Sprint 3C: Central de Conversas ── */}
             <Route path="conversas"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
