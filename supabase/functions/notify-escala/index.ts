@@ -1,9 +1,9 @@
 // ============================================================
-// Edge Function: notify-escala  v2 (pool fix: agent-escalas)
+// Edge Function: notify-escala  v3 (column fix, remove debit D6, R-MODULE-GUARD)
 // Envia notificações WhatsApp para voluntários de uma escala.
 // POST { schedule_id: uuid }
 // Auth: Bearer JWT do usuário (church_id via app_metadata)
-// Debita 0.3cr por voluntário notificado (confirmação curta)
+// Volunteer Pro incluso no módulo — sem débito de créditos (D6)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -43,25 +43,69 @@ Deno.serve(async (req: Request) => {
     const churchId = user.app_metadata?.church_id
     if (!churchId) return new Response(JSON.stringify({ error: 'no church_id' }), { status: 403, headers: { ...headers, 'Content-Type': 'application/json' } })
 
+    // R-MODULE-GUARD — Volunteer Pro
+    const { data: churchRow } = await supabase
+      .from('churches')
+      .select('enabled_modules')
+      .eq('id', churchId)
+      .maybeSingle()
+    const mods = (churchRow?.enabled_modules ?? {}) as Record<string, boolean>
+    if (!mods['escalas'] && !mods['voluntarios']) {
+      return new Response(JSON.stringify({ error: 'Módulo Volunteer Pro não habilitado' }), {
+        status: 403, headers: { ...headers, 'Content-Type': 'application/json' },
+      })
+    }
+    const { data: subRow } = await supabase
+      .from('church_agent_subscriptions')
+      .select('id')
+      .eq('church_id', churchId)
+      .eq('active', true)
+      .maybeSingle()
+    let hasEntitlement = false
+    if (subRow) {
+      const { data: sa } = await supabase
+        .from('subscription_agents')
+        .select('activation_status')
+        .eq('subscription_id', subRow.id)
+        .eq('agent_slug', 'agent-escalas')
+        .maybeSingle()
+      hasEntitlement = sa?.activation_status === 'active'
+    }
+    if (!hasEntitlement) {
+      const { data: grant } = await supabase
+        .from('agent_grants')
+        .select('id')
+        .eq('church_id', churchId)
+        .eq('agent_slug', 'agent-escalas')
+        .is('revoked_at', null)
+        .or('ends_at.is.null,ends_at.gt.' + new Date().toISOString())
+        .maybeSingle()
+      if (!grant) {
+        return new Response(JSON.stringify({ error: 'Módulo Volunteer Pro não contratado' }), {
+          status: 403, headers: { ...headers, 'Content-Type': 'application/json' },
+        })
+      }
+    }
+
     const { schedule_id } = await req.json()
     if (!schedule_id) return new Response(JSON.stringify({ error: 'missing schedule_id' }), { status: 400, headers: { ...headers, 'Content-Type': 'application/json' } })
 
-    // Buscar escala
+    // Buscar escala — B-ESC-1: colunas corretas (event_name, event_date, event_time)
     const { data: schedule } = await supabase
       .from('service_schedules')
-      .select('id, title, date, start_time')
+      .select('id, event_name, event_date, event_time')
       .eq('id', schedule_id)
       .eq('church_id', churchId)
       .maybeSingle()
 
     if (!schedule) return new Response(JSON.stringify({ error: 'schedule not found' }), { status: 404, headers: { ...headers, 'Content-Type': 'application/json' } })
 
-    // Buscar canal WhatsApp
+    // Buscar canal WhatsApp — B-ESC-2: coluna correta (active, não is_active)
     const { data: channel } = await supabase
       .from('church_whatsapp_channels')
       .select('id')
       .eq('church_id', churchId)
-      .eq('is_active', true)
+      .eq('active', true)
       .maybeSingle()
 
     if (!channel) return new Response(JSON.stringify({ error: 'no active whatsapp channel' }), { status: 422, headers: { ...headers, 'Content-Type': 'application/json' } })
@@ -89,19 +133,21 @@ Deno.serve(async (req: Request) => {
     const { data: church } = await supabase.from('churches').select('name').eq('id', churchId).maybeSingle()
     const churchName = church?.name ?? 'nossa igreja'
 
-    const scheduleDate = schedule.date
-      ? new Date(schedule.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })
+    // B-ESC-1: usar event_date e event_time
+    const scheduleDate = (schedule as unknown as { event_date: string | null }).event_date
+      ? new Date((schedule as unknown as { event_date: string }).event_date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })
       : ''
+    const scheduleTime = (schedule as unknown as { event_time: string | null }).event_time
+    const scheduleName = (schedule as unknown as { event_name: string }).event_name
 
     let notified = 0
-    const creditsPerMessage = 0.3 // confirmação curta
 
     for (const assignment of assignments) {
       const vol = assignment.volunteers as unknown as { id: string; people: { id: string; name: string; phone: string | null } }
       const person = vol.people
       if (!person?.phone) continue
 
-      const msg = `Olá, ${person.name}! 👋\n\nVocê está escalado(a) em ${churchName}:\n📅 ${scheduleDate}${schedule.start_time ? ' às ' + schedule.start_time : ''}\n📌 Função: ${assignment.role ?? 'Voluntário'}\n\nResponda *CONFIRMO* para confirmar ou *CANCELAR* se não puder comparecer.`
+      const msg = `Olá, ${person.name}! 👋\n\nVocê está escalado(a) em ${churchName}:\n📅 ${scheduleDate}${scheduleTime ? ' às ' + scheduleTime : ''}\n📌 Função: ${assignment.role ?? 'Voluntário'}\n\nResponda *CONFIRMO* para confirmar ou *CANCELAR* se não puder comparecer.`
 
       await supabase.from('channel_dispatch_queue').insert({
         church_id: churchId,
@@ -110,7 +156,7 @@ Deno.serve(async (req: Request) => {
         message_body: msg,
         agent_slug: 'notify-escala',
         status: 'pending',
-        metadata: { assignment_id: assignment.id, schedule_id, person_id: person.id },
+        metadata: { assignment_id: assignment.id, schedule_id, person_id: person.id, schedule_name: scheduleName },
       })
 
       // Marcar como notificado
@@ -122,23 +168,7 @@ Deno.serve(async (req: Request) => {
       notified++
     }
 
-    // Debit créditos
-    if (notified > 0) {
-      const totalCredits = Math.round(notified * creditsPerMessage * 10) / 10
-      await supabase.rpc('debit_agent_credits', {
-        p_church_id: churchId,
-        p_agent_scope: 'agent-escalas', // usa pool agent-escalas (correto)
-        p_amount: totalCredits,
-      }).catch(() => null) // non-blocking
-
-      await supabase.from('agent_credit_usage').insert({
-        church_id: churchId,
-        agent_slug: 'notify-escala',
-        operation_type: 'message',
-        credits_consumed: totalCredits,
-        consumed_at: new Date().toISOString(),
-      }).catch(() => null)
-    }
+    // D6: WhatsApp de escala incluso no Volunteer Pro — sem débito de créditos
 
     return new Response(JSON.stringify({ ok: true, notified, schedule_id }), {
       status: 200,
@@ -146,7 +176,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[notify-escala v2]', err)
+    console.error('[notify-escala v3]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...headers, 'Content-Type': 'application/json' },

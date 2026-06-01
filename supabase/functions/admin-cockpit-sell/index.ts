@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: admin-cockpit-sell  v2 (idempotency guard)
+// Edge Function: admin-cockpit-sell  v3 (D4 Volunteer Pro auto-activate)
 // Ativa agentes e/ou módulos para uma igreja via cockpit admin.
 // POST {
 //   church_id: uuid,
@@ -8,6 +8,7 @@
 // }
 // Auth: Bearer JWT de ekthos_admin
 // Registra em admin_events. NÃO mexe em dados CRM da igreja.
+// D4: ativar módulo 'voluntarios' ou 'escalas' ativa AUTOMÁTICO agent-escalas
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -131,6 +132,59 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // D4: Ativar Volunteer Pro ativa automático agent-escalas em subscription_agents
+    const volunteerModulesActivated = modules.filter((m: string) => m === 'voluntarios' || m === 'escalas')
+    if (volunteerModulesActivated.length > 0) {
+      try {
+        // Verificar se agent-escalas já está ativo via subscription
+        const { data: subForAgentCheck } = await supabase
+          .from('church_agent_subscriptions')
+          .select('id')
+          .eq('church_id', church_id)
+          .eq('active', true)
+          .maybeSingle()
+
+        if (subForAgentCheck) {
+          const { data: existingSA } = await supabase
+            .from('subscription_agents')
+            .select('id, activation_status')
+            .eq('subscription_id', subForAgentCheck.id)
+            .eq('agent_slug', 'agent-escalas')
+            .maybeSingle()
+
+          if (!existingSA || existingSA.activation_status !== 'active') {
+            // Ativar via activate_agent_internal (SECURITY DEFINER sem guard)
+            const { error: agentErr } = await supabase.rpc('activate_agent_internal', {
+              p_church_id: church_id,
+              p_agent_slug: 'agent-escalas',
+              p_source: `volunteer_pro_auto:${user.id}`,
+            })
+            if (!agentErr) {
+              activated.push('agent:agent-escalas:auto_volunteer_pro')
+            } else {
+              console.warn('[admin-cockpit-sell v3 D4] auto-activate agent-escalas failed:', agentErr)
+            }
+          } else {
+            activated.push('agent:agent-escalas:already_active')
+          }
+        } else {
+          // Sem subscription ativa: criar agent_grant de cortesia para agent-escalas
+          await supabase.from('agent_grants').insert({
+            church_id,
+            agent_slug: 'agent-escalas',
+            grant_type: 'courtesy',
+            granted_by: user.id,
+            starts_at: new Date().toISOString(),
+            ends_at: null, // forever (enquanto módulo ativo)
+          }).catch(() => null)
+          activated.push('agent:agent-escalas:grant_courtesy')
+        }
+      } catch (e: unknown) {
+        console.warn('[admin-cockpit-sell v3 D4] auto-activate warning:', String(e))
+        // Non-fatal — módulo foi ativado, só o agent que não pegou
+      }
+    }
+
     // Audit log
     await supabase.from('admin_events').insert({
       church_id,
@@ -148,7 +202,7 @@ Deno.serve(async (req: Request) => {
     })
 
   } catch (err: unknown) {
-    console.error('[admin-cockpit-sell v2]', err)
+    console.error('[admin-cockpit-sell v3]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...headers, 'Content-Type': 'application/json' },
