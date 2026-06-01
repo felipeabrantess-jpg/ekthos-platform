@@ -52,7 +52,8 @@ Deno.serve(async (req: Request) => {
       .eq('id', churchId)
       .maybeSingle()
     const mods = (churchRow?.enabled_modules ?? {}) as Record<string, boolean>
-    if (!mods['escalas'] && !mods['voluntarios']) {
+    // D3: aceita 'volunteer-pro' (novo canônico) OU legados 'escalas'/'voluntarios'
+    if (!mods['volunteer-pro'] && !mods['escalas'] && !mods['voluntarios']) {
       return new Response(JSON.stringify({ error: 'Módulo Volunteer Pro não habilitado' }), {
         status: 403, headers: { ...headers, 'Content-Type': 'application/json' },
       })
