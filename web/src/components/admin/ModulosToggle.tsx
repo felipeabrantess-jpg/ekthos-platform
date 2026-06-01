@@ -5,7 +5,7 @@
 // igreja via enabled_modules jsonb na tabela churches.
 //
 // Regra: toggle ON  → admin-cockpit-sell (EF com auditoria)
-//        toggle OFF → update direto via supabase client
+//        toggle OFF → update direto via supabase client + audit admin_events
 //        coming_soon → toggle desabilitado, badge "Em breve"
 // ============================================================
 
@@ -92,6 +92,24 @@ export default function ModulosToggle({ churchId, enabledModules, onChanged }: M
           .update({ enabled_modules: updated })
           .eq('id', churchId)
         if (dbErr) throw new Error(dbErr.message)
+
+        // Audit trail: registra desativação do módulo em admin_events (non-fatal)
+        // admin_user_id é NOT NULL — só insere se sessão disponível
+        await supabase.auth.getSession().then(({ data: { session: s } }) => {
+          if (!s?.user?.id) return
+          return supabase
+            .from('admin_events')
+            .insert({
+              church_id: churchId,
+              admin_user_id: s.user.id,
+              actor_email: s.user.email ?? null,
+              action: 'module_toggle_off',
+              before: { [key]: true },
+              after: { [key]: false },
+              reason: `Módulo ${key} desativado via cockpit`,
+              source: 'modulos-toggle',
+            })
+        }).catch(() => null) // non-fatal: auditoria não bloqueia o toggle
       }
 
       const next = { ...local, [key]: newValue }

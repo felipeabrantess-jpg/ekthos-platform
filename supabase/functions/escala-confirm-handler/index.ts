@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // Edge Function: escala-confirm-handler  v4 (fix channel_dispatch_queue schema)
 // Processa respostas de confirmação de escala via WhatsApp.
 // POST { from_phone: string, message: string, church_id: uuid }
