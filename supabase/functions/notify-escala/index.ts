@@ -1,9 +1,11 @@
 // ============================================================
-// Edge Function: notify-escala  v3 (column fix, remove debit D6, R-MODULE-GUARD)
+// Edge Function: notify-escala  v4 (fix channel_dispatch_queue schema)
 // Envia notificações WhatsApp para voluntários de uma escala.
 // POST { schedule_id: uuid }
 // Auth: Bearer JWT do usuário (church_id via app_metadata)
 // Volunteer Pro incluso no módulo — sem débito de créditos (D6)
+// v3: column fix, remove debit D6, R-MODULE-GUARD
+// v4: corrige schema channel_dispatch_queue (content, conversation_id/message_id null para outbound)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -90,7 +92,7 @@ Deno.serve(async (req: Request) => {
     const { schedule_id } = await req.json()
     if (!schedule_id) return new Response(JSON.stringify({ error: 'missing schedule_id' }), { status: 400, headers: { ...headers, 'Content-Type': 'application/json' } })
 
-    // Buscar escala — B-ESC-1: colunas corretas (event_name, event_date, event_time)
+    // Buscar escala — colunas corretas (event_name, event_date, event_time)
     const { data: schedule } = await supabase
       .from('service_schedules')
       .select('id, event_name, event_date, event_time')
@@ -100,7 +102,7 @@ Deno.serve(async (req: Request) => {
 
     if (!schedule) return new Response(JSON.stringify({ error: 'schedule not found' }), { status: 404, headers: { ...headers, 'Content-Type': 'application/json' } })
 
-    // Buscar canal WhatsApp — B-ESC-2: coluna correta (active, não is_active)
+    // Buscar canal WhatsApp — coluna correta (active, não is_active)
     const { data: channel } = await supabase
       .from('church_whatsapp_channels')
       .select('id')
@@ -133,7 +135,6 @@ Deno.serve(async (req: Request) => {
     const { data: church } = await supabase.from('churches').select('name').eq('id', churchId).maybeSingle()
     const churchName = church?.name ?? 'nossa igreja'
 
-    // B-ESC-1: usar event_date e event_time
     const scheduleRaw = schedule as unknown as { event_name: string; event_date: string | null; event_time: string | null }
     const scheduleName = scheduleRaw.event_name
     const scheduleDate = scheduleRaw.event_date
@@ -150,14 +151,15 @@ Deno.serve(async (req: Request) => {
 
       const msg = `Olá, ${person.name}! 👋\n\nVocê está escalado(a) em ${churchName}:\n📅 ${scheduleDate}${scheduleTime ? ' às ' + scheduleTime : ''}\n📌 Função: ${assignment.role ?? 'Voluntário'}\n\nResponda *CONFIRMO* para confirmar ou *CANCELAR* se não puder comparecer.`
 
+      // v4: schema correto — 'content' (não 'message_body'), conversation_id/message_id null para outbound
       await supabase.from('channel_dispatch_queue').insert({
         church_id: churchId,
         channel_id: channel.id,
         to_phone: person.phone,
-        message_body: msg,
-        agent_slug: 'notify-escala',
+        content: msg,
+        conversation_id: null,
+        message_id: null,
         status: 'pending',
-        metadata: { assignment_id: assignment.id, schedule_id, person_id: person.id, schedule_name: scheduleName },
       })
 
       // Marcar como notificado
@@ -171,13 +173,13 @@ Deno.serve(async (req: Request) => {
 
     // D6: WhatsApp de escala incluso no Volunteer Pro — sem débito de créditos
 
-    return new Response(JSON.stringify({ ok: true, notified, schedule_id }), {
+    return new Response(JSON.stringify({ ok: true, notified, schedule_id, schedule_name: scheduleName }), {
       status: 200,
       headers: { ...headers, 'Content-Type': 'application/json' },
     })
 
   } catch (err: unknown) {
-    console.error('[notify-escala v3]', err)
+    console.error('[notify-escala v4]', err)
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
       headers: { ...headers, 'Content-Type': 'application/json' },

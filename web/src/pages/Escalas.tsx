@@ -1,4 +1,4 @@
-﻿import { Fragment, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   useEscalas,
@@ -7,6 +7,11 @@ import {
   useCancelSchedule,
   useAddAssignment,
 } from '@/features/escalas/hooks/useEscalas'
+import {
+  useSwapRequests,
+  useRequestSwap,
+  useResolveSwap,
+} from '@/features/escalas/hooks/useSwapRequests'
 import { useMinisterios } from '@/features/ministerios/hooks/useMinisterios'
 import { useVoluntarios } from '@/features/voluntarios/hooks/useVoluntarios'
 import Spinner from '@/components/ui/Spinner'
@@ -226,167 +231,15 @@ interface ScheduleDetailProps {
   churchId: string
 }
 
-// -- Modal Solicitar Troca (D9) -----------------------------------------------
-
-interface RequestSwapModalProps {
-  open: boolean
-  onClose: () => void
-  churchId: string
-  assignmentId: string
-  requesterVolunteerId: string
-  volunteerName: string
-}
-
-function RequestSwapModal({
-  open,
-  onClose,
-  churchId,
-  assignmentId,
-  requesterVolunteerId,
-  volunteerName,
-}: RequestSwapModalProps) {
-  const requestSwap = useRequestSwap()
-  const [note, setNote] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
-    setError(null)
-    try {
-      await requestSwap.mutateAsync({
-        churchId,
-        assignmentId,
-        requesterVolunteerId,
-        note: note.trim() || null,
-      })
-      onClose()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao solicitar troca')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Modal open={open} onClose={onClose} title="Solicitar Troca de Escala" size="sm">
-      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Solicitando troca para{' '}
-          <span className="font-medium text-gray-900">{volunteerName}</span>.
-          O coordenador sera notificado.
-        </p>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Motivo (opcional)</label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Ex: viagem, compromisso de saude..."
-            rows={3}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-          />
-        </div>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? 'Enviando...' : 'Solicitar Troca'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  )
-}
-
-// -- Painel de Trocas Pendentes (D9) ------------------------------------------
-
-interface SwapPanelProps {
-  churchId: string
-}
-
-function SwapPanel({ churchId }: SwapPanelProps) {
-  const { data: swaps, isLoading } = useSwapRequests(churchId)
-  const resolveSwap = useResolveSwap()
-
-  if (isLoading || !swaps || swaps.length === 0) return null
-
-  async function handleResolve(id: string, status: 'accepted' | 'declined') {
-    await resolveSwap.mutateAsync({ id, churchId, status })
-  }
-
-  return (
-    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-400 text-white text-xs font-bold">
-          {swaps.length}
-        </span>
-        <h2 className="text-sm font-semibold text-amber-800">
-          {swaps.length === 1 ? 'Troca pendente' : 'Trocas pendentes'}
-        </h2>
-      </div>
-      <div className="space-y-2">
-        {swaps.map((swap) => (
-          <div
-            key={swap.id}
-            className="bg-white rounded-lg border border-amber-100 px-3 py-2 flex items-center justify-between gap-3"
-          >
-            <div className="text-xs text-gray-700 min-w-0">
-              <span className="font-mono text-gray-400">{swap.assignment_id.slice(0, 8)}...</span>
-              {swap.requester_note && (
-                <span className="block text-gray-500 truncate mt-0.5">{swap.requester_note}</span>
-              )}
-            </div>
-            <div className="flex gap-1.5 shrink-0">
-              <button
-                onClick={() => { void handleResolve(swap.id, 'accepted') }}
-                disabled={resolveSwap.isPending}
-                className="text-xs text-green-700 border border-green-200 rounded px-2 py-0.5 hover:bg-green-50 transition-colors disabled:opacity-50"
-              >
-                Aceitar
-              </button>
-              <button
-                onClick={() => { void handleResolve(swap.id, 'declined') }}
-                disabled={resolveSwap.isPending}
-                className="text-xs text-red-600 border border-red-200 rounded px-2 py-0.5 hover:bg-red-50 transition-colors disabled:opacity-50"
-              >
-                Recusar
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// -- ScheduleDetail com botao Trocar ------------------------------------------
-
-interface ScheduleDetailProps {
-  schedule: ScheduleWithAssignments
-  churchId: string
-}
-
 function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
   const [addOpen, setAddOpen] = useState(false)
-  const [swapModal, setSwapModal] = useState<{
-    open: boolean
-    assignmentId: string
-    volunteerId: string
-    volunteerName: string
-  }>({ open: false, assignmentId: '', volunteerId: '', volunteerName: '' })
-
   const assignments = schedule.service_schedule_assignments ?? []
-
-  function openSwap(assignmentId: string, volunteerId: string, volunteerName: string) {
-    setSwapModal({ open: true, assignmentId, volunteerId, volunteerName })
-  }
 
   return (
     <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-          {`Voluntarios escalados (${assignments.length})`}
+          Voluntários escalados ({assignments.length})
         </p>
         <button
           onClick={() => setAddOpen(true)}
@@ -396,29 +249,17 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
         </button>
       </div>
       {assignments.length === 0 ? (
-        <p className="text-xs text-gray-400">Nenhum voluntario escalado ainda.</p>
+        <p className="text-xs text-gray-400">Nenhum voluntário escalado ainda.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {assignments.map((a) => {
-            const name = a.volunteers?.people?.name ?? 'Voluntario'
-            return (
-              <div key={a.id} className="text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 flex items-center gap-2">
-                <span>
-                  <span className="font-medium text-gray-800">{name}</span>
-                  {a.role && <span className="text-gray-500 ml-1">{'·'} {a.role}</span>}
-                </span>
-                {(schedule.status === 'published' || schedule.status === 'confirmed') && (
-                  <button
-                    onClick={() => openSwap(a.id, a.volunteer_id, name)}
-                    className="text-[10px] text-[#5A5A5A] hover:text-[#e13500] border border-gray-200 rounded px-1.5 py-0.5 transition-colors"
-                    title="Solicitar troca"
-                  >
-                    Trocar
-                  </button>
-                )}
-              </div>
-            )
-          })}
+          {assignments.map((a) => (
+            <div key={a.id} className="text-xs bg-white border border-gray-200 rounded-lg px-2.5 py-1.5">
+              <span className="font-medium text-gray-800">
+                {a.volunteers?.people?.name ?? 'Voluntário'}
+              </span>
+              {a.role && <span className="text-gray-500 ml-1">· {a.role}</span>}
+            </div>
+          ))}
         </div>
       )}
       {addOpen && (
@@ -430,19 +271,20 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
           ministryId={schedule.ministry_id}
         />
       )}
-      {swapModal.open && (
-        <RequestSwapModal
-          open={swapModal.open}
-          onClose={() => setSwapModal((m) => ({ ...m, open: false }))}
-          churchId={churchId}
-          assignmentId={swapModal.assignmentId}
-          requesterVolunteerId={swapModal.volunteerId}
-          volunteerName={swapModal.volunteerName}
-        />
-      )}
     </div>
   )
 }
+
+export default function Escalas() {
+  const { churchId } = useAuth()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({ open: false, title: '', message: '', onConfirm: () => {} })
   const publishSchedule = usePublishSchedule()
   const cancelSchedule = useCancelSchedule()
 
@@ -451,14 +293,28 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
-  async function handlePublish(id: string) {
-    if (!confirm('Publicar esta escala? Os voluntários serão notificados.')) return
-    await publishSchedule.mutateAsync({ id, churchId: churchId! })
+  function handlePublish(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Publicar Escala',
+      message: 'Publicar esta escala? Os voluntários serão notificados.',
+      onConfirm: async () => {
+        setConfirmModal((m) => ({ ...m, open: false }))
+        await publishSchedule.mutateAsync({ id, churchId: churchId! })
+      },
+    })
   }
 
-  async function handleCancel(id: string) {
-    if (!confirm('Cancelar esta escala?')) return
-    await cancelSchedule.mutateAsync({ id, churchId: churchId! })
+  function handleCancel(id: string) {
+    setConfirmModal({
+      open: true,
+      title: 'Cancelar Escala',
+      message: 'Tem certeza que deseja cancelar esta escala? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        setConfirmModal((m) => ({ ...m, open: false }))
+        await cancelSchedule.mutateAsync({ id, churchId: churchId! })
+      },
+    })
   }
 
   function toggleExpand(id: string) {
@@ -478,9 +334,6 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
         <Button onClick={() => setCreateOpen(true)}>+ Nova Escala</Button>
       </div>
 
-
-      {/* Trocas Pendentes (D9) */}
-      <SwapPanel churchId={churchId} />
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
@@ -581,6 +434,30 @@ function ScheduleDetail({ schedule, churchId }: ScheduleDetailProps) {
           churchId={churchId}
           ministries={(ministries ?? []).map((m) => ({ id: m.id, name: m.name }))}
         />
+      )}
+
+      {/* Modal de Confirmação (armadilha #1 — sem window.confirm) */}
+      {confirmModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h3 className="font-semibold text-lg text-[#161616] mb-2">{confirmModal.title}</h3>
+            <p className="text-[#5A5A5A] text-sm mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal((m) => ({ ...m, open: false }))}
+                className="px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:border-[#e13500] hover:text-[#e13500] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => { void confirmModal.onConfirm() }}
+                className="px-4 py-2 rounded-xl bg-[#e13500] text-white text-sm font-semibold hover:bg-[#c42e00] transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
