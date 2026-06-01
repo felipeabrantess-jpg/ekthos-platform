@@ -1,0 +1,123 @@
+// ============================================================
+// Edge Function: generate-receipt  v1
+// POST { donation_id: uuid }
+// Retorna HTML imprimível do recibo de doação.
+// Auth: Bearer JWT do usuário (church_id via app_metadata)
+// ============================================================
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+})
+
+function corsHeaders(origin: string) {
+  const allowed = [ALLOWED_ORIGIN, 'http://localhost:5173', 'http://localhost:3000']
+  const o = allowed.includes(origin) ? origin : ALLOWED_ORIGIN
+  return {
+    'Access-Control-Allow-Origin': o,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  }
+}
+
+Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('origin') || ''
+  const headers = corsHeaders(origin)
+
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers })
+
+  try {
+    const token = (req.headers.get('authorization') ?? '').replace('Bearer ', '')
+    if (!token) return new Response('unauthorized', { status: 401 })
+
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) return new Response('invalid token', { status: 401 })
+
+    const churchId = user.app_metadata?.church_id
+    if (!churchId) return new Response('no church_id', { status: 403 })
+
+    const { donation_id } = await req.json()
+    if (!donation_id) return new Response('missing donation_id', { status: 400 })
+
+    const { data: donation } = await supabase
+      .from('donations')
+      .select('*, people(name), churches(name, city, state)')
+      .eq('id', donation_id)
+      .eq('church_id', churchId)
+      .maybeSingle()
+
+    if (!donation) return new Response('donation not found', { status: 404 })
+
+    const person = (donation.people as unknown as { name: string } | null)
+    const church = (donation.churches as unknown as { name: string; city: string | null; state: string | null } | null)
+    const amountNum = typeof donation.amount === 'number' ? donation.amount : parseFloat(donation.amount)
+    const displayAmount = amountNum > 10000 ? amountNum / 100 : amountNum
+    const amountFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(displayAmount)
+    const date = new Date(donation.confirmed_at ?? donation.created_at).toLocaleDateString('pt-BR')
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Recibo de Doação</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Georgia, serif; color: #161616; background: #fff; }
+  .page { max-width: 600px; margin: 40px auto; padding: 40px; border: 2px solid #161616; }
+  .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 24px; margin-bottom: 24px; }
+  .church-name { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+  .church-loc { font-size: 0.875rem; color: #5A5A5A; margin-top: 4px; }
+  .title { font-size: 1.125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 16px; }
+  .amount-box { text-align: center; margin: 32px 0; padding: 24px; background: #f9eedc; border-radius: 8px; }
+  .amount { font-size: 2.5rem; font-weight: 700; font-family: 'Courier New', monospace; color: #161616; }
+  .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #eee; }
+  .label { font-size: 0.8125rem; color: #5A5A5A; }
+  .value { font-size: 0.8125rem; font-weight: 600; }
+  .footer { margin-top: 32px; text-align: center; font-size: 0.75rem; color: #8A8A8A; }
+  @media print { .page { border: none; margin: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="church-name">${church?.name ?? 'Igreja'}</div>
+    ${church?.city ? `<div class="church-loc">${church.city}${church.state ? ', ' + church.state : ''}</div>` : ''}
+    <div class="title">Recibo de Doação</div>
+  </div>
+
+  <div class="amount-box">
+    <div class="amount">${amountFmt}</div>
+  </div>
+
+  <div class="row"><span class="label">Doador</span><span class="value">${person?.name ?? '—'}</span></div>
+  <div class="row"><span class="label">Data</span><span class="value">${date}</span></div>
+  <div class="row"><span class="label">Tipo</span><span class="value">${donation.type ?? '—'}</span></div>
+  <div class="row"><span class="label">Forma de pagamento</span><span class="value">${donation.payment_method ?? '—'}</span></div>
+  <div class="row"><span class="label">Status</span><span class="value">${donation.status ?? '—'}</span></div>
+  <div class="row"><span class="label">Referência</span><span class="value" style="font-family:monospace;font-size:0.75rem">${donation.id.slice(0, 8).toUpperCase()}</span></div>
+
+  <div class="footer">
+    <p>Emitido em ${new Date().toLocaleDateString('pt-BR')} · Plataforma Ekthos</p>
+  </div>
+</div>
+</body>
+</html>`
+
+    return new Response(html, {
+      status: 200,
+      headers: {
+        ...headers,
+        'Content-Type': 'text/html; charset=utf-8',
+      },
+    })
+
+  } catch (err: unknown) {
+    console.error('[generate-receipt v1]', err)
+    return new Response(String(err), { status: 500 })
+  }
+})
