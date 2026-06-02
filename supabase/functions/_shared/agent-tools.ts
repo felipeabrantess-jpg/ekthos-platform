@@ -323,7 +323,42 @@ export const AGENT_TOOLS = [
       },
       required: ['journey_id', 'next_touchpoint']
     }
-  }
+  },
+
+  // ── Escalada pastoral (Fix C) ───────────────────────────
+  {
+    name: 'create_pastor_task',
+    description:
+      'Cria uma tarefa pastoral urgente e transfere a conversa para um humano. ' +
+      'Use quando a situação exige atenção humana: crise emocional grave, pedido de oração por ' +
+      'doença/internação, situação de risco, pedido de visita presencial, ou qualquer momento ' +
+      'que exija discernimento pastoral específico. ' +
+      'Após chamar esta tool, a conversa passa para ownership=human e a IA não responde mais.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        conversation_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'ID da conversa a ser transferida para humano',
+        },
+        person_id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID da pessoa cadastrada (se disponível)',
+        },
+        title: {
+          type: 'string',
+          description: 'Título claro e acionável (ex: "Pedido de oração urgente: esposo internado")',
+        },
+        description: {
+          type: 'string',
+          description: 'Resumo para o pastor: o que a pessoa relatou, o que precisa de atenção, tom sugerido',
+        },
+      },
+      required: ['conversation_id', 'title', 'description'],
+    },
+  },
 ]
 
 // ── Execução das tools ─────────────────────────────────────
@@ -755,6 +790,110 @@ export async function executeTool(
         next_touchpoint:     isComplete ? 'complete' : nextTp,
         next_touchpoint_at:  nextAt,
         status:              isComplete ? 'completed' : 'pending',
+      }
+    }
+
+    // ── create_pastor_task (Fix C) ───────────────────────────
+    case 'create_pastor_task': {
+      const { conversation_id, person_id: inputPersonId, title, description } = input as {
+        conversation_id: string
+        person_id?:      string
+        title:           string
+        description:     string
+      }
+
+      // Resolve person_id: LLM pode omitir → busca da conversa (tasks.person_id é NOT NULL)
+      let resolvedPersonId = inputPersonId ?? null
+      if (!resolvedPersonId) {
+        const { data: convRow } = await supabaseAdmin
+          .from('conversations')
+          .select('person_id')
+          .eq('id', conversation_id)
+          .eq('church_id', churchId)
+          .maybeSingle()
+        resolvedPersonId = convRow?.person_id ?? null
+      }
+
+      // 1. Criar task pastoral (só se person_id disponível — NOT NULL constraint)
+      let taskId: string | null = null
+      if (resolvedPersonId) {
+        const { data: task, error: taskErr } = await supabaseAdmin
+          .from('tasks')
+          .insert({
+            id:          crypto.randomUUID(),
+            church_id:   churchId,
+            person_id:   resolvedPersonId,
+            title,
+            description,
+            status:      'pending',
+            created_at:  new Date().toISOString(),
+          })
+          .select('id')
+          .maybeSingle()
+
+        if (taskErr) {
+          console.error('[agent-tools] create_pastor_task insert error:', taskErr.message)
+          // Não aborta — handoff ainda acontece mesmo se task falhar
+        } else {
+          taskId = task?.id ?? null
+        }
+      } else {
+        console.warn('[agent-tools] create_pastor_task: person_id não resolvido — task não criada, handoff prossegue')
+      }
+
+      // 2. Transferir conversa para humano (handoff imediato)
+      await supabaseAdmin
+        .from('conversations')
+        .update({ ownership: 'human' })
+        .eq('id', conversation_id)
+        .eq('church_id', churchId)
+
+      // 3. Registrar evento de escalada na conversa
+      await supabaseAdmin
+        .from('conversation_events')
+        .insert({
+          conversation_id,
+          church_id:   churchId,
+          event_type:  'escalated_to_human',
+          actor_type:  agentSlug,
+          actor_id:    agentSlug,
+          actor_name:  'agent-acolhimento',
+        })
+        .then(({ error: evtErr }) => {
+          if (evtErr) console.warn('[agent-tools] create_pastor_task event insert falhou:', evtErr.message)
+        })
+
+      // 4. Notificação interna para admins/pastores (best-effort)
+      try {
+        await supabaseAdmin
+          .from('internal_notifications')
+          .insert({
+            notification_type: 'pastoral_task',
+            church_id:         churchId,
+            agent_slug:        agentSlug,
+            title:             `📋 ${title}`,
+            message:           description,
+            metadata: {
+              conversation_id,
+              person_id: resolvedPersonId ?? null,
+              task_id:   taskId ?? null,
+            },
+            status: 'pending',
+          })
+      } catch (notifErr) {
+        console.warn('[agent-tools] create_pastor_task notificação falhou (não crítico):', notifErr)
+      }
+
+      console.log(`[agent-tools] create_pastor_task: task=${taskId} conv=${conversation_id} ownership→human`)
+
+      return {
+        ok:              true,
+        task_id:         taskId ?? null,
+        conversation_id,
+        ownership:       'human',
+        message:         taskId
+          ? 'Tarefa pastoral criada. Conversa transferida para a equipe humana.'
+          : 'Conversa transferida para a equipe humana (task não criada: person_id não disponível).',
       }
     }
 

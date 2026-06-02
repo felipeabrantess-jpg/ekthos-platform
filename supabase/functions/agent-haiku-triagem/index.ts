@@ -320,11 +320,13 @@ async function hasAcolhimentoContract(
 }
 
 async function escalateToSonnet(
-  supabase: ReturnType<typeof createClient>,
-  conversationId: string,
-  messageId: string,
-  churchId: string,
-  inboundText: string,
+  supabase:               ReturnType<typeof createClient>,
+  conversationId:         string,
+  messageId:              string,
+  churchId:               string,
+  inboundText:            string,
+  personId:               string | null,
+  classification:         HaikuClassification | null,
   haiku_response_fallback?: string | null,
 ): Promise<void> {
   // R-PREMIUM-GUARD: verifica contrato antes de chamar agent-acolhimento
@@ -353,6 +355,20 @@ async function escalateToSonnet(
     return
   }
 
+  // Fix A: buscar últimas 10 mensagens para contexto pastoral no Sonnet
+  const { data: historyRows } = await supabase
+    .from('conversation_messages')
+    .select('direction, sender_type, content, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: false })
+    .limit(10)
+  const conversationHistory = (historyRows ?? []).reverse().map(m => ({
+    direction:   m.direction   as string,
+    sender_type: m.sender_type as string,
+    content:     m.content     as string,
+    created_at:  m.created_at  as string,
+  }))
+
   const url = `${SUPABASE_URL}/functions/v1/agent-acolhimento`
   fetch(url, {
     method:  'POST',
@@ -361,13 +377,22 @@ async function escalateToSonnet(
       'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
     },
     body: JSON.stringify({
-      conversation_id: conversationId,
-      message_id:      messageId,
-      church_id:       churchId,
-      inbound_text:    inboundText,
-      trigger_type:    'inbound_message',
+      conversation_id:      conversationId,
+      message_id:           messageId,
+      church_id:            churchId,
+      inbound_text:         inboundText,
+      trigger_type:         'inbound_message',
+      person_id:            personId ?? undefined,
+      haiku_classification: classification ? {
+        category:   classification.category,
+        sentiment:  classification.sentiment,
+        intent:     classification.intent,
+        confidence: classification.confidence,
+        reasoning:  classification.reasoning,
+      } : undefined,
+      conversation_history: conversationHistory,
     }),
-    signal: AbortSignal.timeout(3_000),
+    signal: AbortSignal.timeout(5_000),
   }).catch(err => console.error(`[${AGENT_SLUG}] escalateToSonnet error:`, err?.message))
 }
 
@@ -405,7 +430,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Invalid JSON' }, 400)
   }
 
-  const { conversation_id, message_id, church_id, ownership, inbound_text } = body
+  const { conversation_id, message_id, church_id, ownership, inbound_text, person_id } = body
 
   if (!conversation_id || !message_id || !church_id || !inbound_text) {
     return json({ error: 'Missing required fields: conversation_id, message_id, church_id, inbound_text' }, 400)
@@ -470,7 +495,7 @@ Deno.serve(async (req: Request) => {
       totalUsage     = result.usage
     } catch (err) {
       console.error(`[${AGENT_SLUG}] classifyMessage threw:`, err)
-      await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text)
+      await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text, person_id, null)
       logStatus = 'error'
       logError  = String(err)
       return json({ ok: true, routed: 'sonnet_fallback', error: 'classification_failed' })
@@ -524,7 +549,7 @@ Deno.serve(async (req: Request) => {
 
     // 4b. Escalate para Sonnet (R-PREMIUM-GUARD v5 inside escalateToSonnet)
     if (escalate_to_sonnet || sentiment === 'distressed') {
-      await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text)
+      await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text, person_id, classification)
       console.log(`[${AGENT_SLUG}] routed=sonnet (escalate=${escalate_to_sonnet} distressed=${sentiment === 'distressed'})`)
       return json({ ok: true, routed: 'sonnet', classification })
     }
@@ -537,7 +562,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Fallback (R-PREMIUM-GUARD v5 inside escalateToSonnet)
-    await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text)
+    await escalateToSonnet(supabase, conversation_id, message_id, church_id, inbound_text, person_id, classification)
     console.log(`[${AGENT_SLUG}] routed=sonnet_fallback (haiku_response null without escalate flag)`)
     return json({ ok: true, routed: 'sonnet_fallback', classification })
 
