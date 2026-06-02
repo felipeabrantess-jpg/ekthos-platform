@@ -658,12 +658,227 @@ async function runStep(
         })
         .eq('id', sessionId)
 
+      // ── A7 bridge: wizard horários → church_agent_config.service_schedule ──
+      // Lê horarios_culto salvo no Step 2 do wizard (church_pastoral_profile)
+      // e popula service_schedule em todos os agentes configurados para esta igreja.
+      await bridgeServiceSchedule(supabase, churchId)
+
       // church.status atualizado no loop principal após todos os steps
       break
     }
 
     default:
       break
+  }
+}
+
+// ── A7: Bridge wizard horários → church_agent_config.service_schedule ─────────
+//
+// Chamado no Step 20 (finalização) do onboarding-engineer.
+// Lê church_pastoral_profile.horarios_culto (texto livre do wizard Step 2),
+// converte para o formato canônico de service_schedule e faz UPSERT em
+// church_agent_config para TODOS os agentes já configurados para a igreja.
+//
+// Formato canônico resultante:
+// {
+//   "timezone":    "America/Sao_Paulo",
+//   "send_window": { "start": "08:00", "end": "21:00" },
+//   "cultos": [
+//     { "dia": "domingo", "horario": "09:00" },
+//     { "dia": "quarta",  "horario": "19:30" }
+//   ]
+// }
+//
+// Garantias:
+//   - Não sobrescreve outros campos de church_agent_config (merge via jsonb_set)
+//   - Falha silenciosa: não bloqueia onboarding se parser falhar
+//   - Idempotente: UPSERT com onConflict church_id,agent_slug
+// ──────────────────────────────────────────────────────────────────────────────
+
+// Mapa de variações de dia em português → forma canônica
+const DIA_MAP: Record<string, string> = {
+  'domingo':    'domingo',
+  'dom':        'domingo',
+  'segunda':    'segunda',
+  'segunda-feira': 'segunda',
+  'seg':        'segunda',
+  'terca':      'terca',
+  'terça':      'terca',
+  'terca-feira': 'terca',
+  'terça-feira': 'terca',
+  'ter':        'terca',
+  'quarta':     'quarta',
+  'quarta-feira': 'quarta',
+  'qua':        'quarta',
+  'quinta':     'quinta',
+  'quinta-feira': 'quinta',
+  'qui':        'quinta',
+  'sexta':      'sexta',
+  'sexta-feira': 'sexta',
+  'sex':        'sexta',
+  'sabado':     'sabado',
+  'sábado':     'sabado',
+  'sab':        'sabado',
+}
+
+// Converte "9h", "9h30", "19:30", "19h30" → "HH:MM"
+function normalizeHorario(raw: string): string | null {
+  const s = raw.trim().toLowerCase()
+  // Formato HH:MM
+  const colonMatch = s.match(/^(\d{1,2}):(\d{2})$/)
+  if (colonMatch) {
+    const h = String(colonMatch[1]).padStart(2, '0')
+    const m = colonMatch[2]
+    return `${h}:${m}`
+  }
+  // Formato Xh ou XhYY
+  const hMatch = s.match(/^(\d{1,2})h(\d{0,2})$/)
+  if (hMatch) {
+    const h = String(hMatch[1]).padStart(2, '0')
+    const m = hMatch[2] ? hMatch[2].padStart(2, '0') : '00'
+    return `${h}:${m}`
+  }
+  return null
+}
+
+// Normaliza nome de dia (strip accents + lowercase)
+function normalizeDia(raw: string): string {
+  return raw.trim().toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[-\s]+/g, '-')
+}
+
+// Parser principal: texto livre → array de { dia, horario }
+// Ex: "Domingo 9h e 19h, Quarta 19h30" →
+//     [{ dia: "domingo", horario: "09:00" }, { dia: "domingo", horario: "19:00" }, { dia: "quarta", horario: "19:30" }]
+function parseHorariosCulto(raw: string): Array<{ dia: string; horario: string }> {
+  if (!raw?.trim()) return []
+
+  const cultos: Array<{ dia: string; horario: string }> = []
+  // Divide por vírgula ou ponto-e-vírgula para separar blocos de dia
+  const blocos = raw.split(/[,;]/)
+
+  for (const bloco of blocos) {
+    const trimmed = bloco.trim()
+    if (!trimmed) continue
+
+    // Tokens do bloco
+    const tokens = trimmed.split(/\s+/)
+
+    let diaCanon: string | null = null
+    const horariosDeste: string[] = []
+
+    for (const token of tokens) {
+      const tokenNorm = normalizeDia(token)
+
+      // Tenta identificar como dia da semana
+      if (DIA_MAP[tokenNorm]) {
+        diaCanon = DIA_MAP[tokenNorm]
+        continue
+      }
+
+      // Tenta identificar como horário (pode ter "e" conectando múltiplos horários)
+      if (token.toLowerCase() === 'e') continue
+
+      const horNorm = normalizeHorario(token)
+      if (horNorm) {
+        horariosDeste.push(horNorm)
+      }
+    }
+
+    // Se encontrou dia e horários, gera entradas
+    if (diaCanon && horariosDeste.length > 0) {
+      for (const h of horariosDeste) {
+        cultos.push({ dia: diaCanon, horario: h })
+      }
+    } else if (diaCanon && horariosDeste.length === 0) {
+      // Dia sem horário explícito — ignora (dados incompletos)
+      console.warn(`[a7-bridge] dia "${diaCanon}" sem horário no bloco: "${bloco}"`)
+    }
+  }
+
+  return cultos
+}
+
+// Bridge principal: lê pastoral_profile → UPSERT church_agent_config
+async function bridgeServiceSchedule(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabaseClient: any,
+  churchId: string,
+): Promise<void> {
+  try {
+    // 1. Lê horarios_culto do perfil pastoral
+    const { data: profile, error: profileErr } = await supabaseClient
+      .from('church_pastoral_profile')
+      .select('horarios_culto')
+      .eq('church_id', churchId)
+      .maybeSingle()
+
+    if (profileErr) {
+      console.warn(`[a7-bridge] Erro ao ler church_pastoral_profile: ${profileErr.message}`)
+      return
+    }
+
+    const horariosCultoRaw: string | null = profile?.horarios_culto ?? null
+
+    // 2. Monta o service_schedule canônico
+    const cultos = horariosCultoRaw ? parseHorariosCulto(horariosCultoRaw) : []
+
+    const serviceSchedule = {
+      timezone:    'America/Sao_Paulo',
+      send_window: { start: '08:00', end: '21:00' },
+      cultos,
+    }
+
+    // 3. Busca todos os agent_slugs já configurados para esta igreja
+    const { data: agentConfigs, error: configsErr } = await supabaseClient
+      .from('church_agent_config')
+      .select('agent_slug')
+      .eq('church_id', churchId)
+
+    if (configsErr) {
+      console.warn(`[a7-bridge] Erro ao buscar church_agent_config: ${configsErr.message}`)
+      return
+    }
+
+    const agentSlugs: string[] = (agentConfigs ?? []).map((r: { agent_slug: string }) => r.agent_slug)
+
+    if (agentSlugs.length === 0) {
+      // Nenhum agente configurado ainda — bridge não tem onde gravar, ok
+      console.log(`[a7-bridge] church ${churchId}: nenhum agente configurado, bridge pulado`)
+      return
+    }
+
+    // 4. UPSERT service_schedule para cada agente (não sobrescreve outros campos)
+    let successCount = 0
+    let failCount    = 0
+
+    for (const agentSlug of agentSlugs) {
+      const { error: upsertErr } = await supabaseClient
+        .from('church_agent_config')
+        .update({
+          service_schedule: serviceSchedule,
+          updated_at:       new Date().toISOString(),
+        })
+        .eq('church_id', churchId)
+        .eq('agent_slug', agentSlug)
+
+      if (upsertErr) {
+        console.warn(`[a7-bridge] Falha no update para ${agentSlug}: ${upsertErr.message}`)
+        failCount++
+      } else {
+        successCount++
+      }
+    }
+
+    console.log(
+      `[a7-bridge] church ${churchId}: service_schedule aplicado — ` +
+      `${successCount} agentes OK, ${failCount} falhas. ` +
+      `cultos: ${JSON.stringify(cultos)}`,
+    )
+  } catch (err: unknown) {
+    // Falha silenciosa — não deve bloquear o onboarding
+    console.error(`[a7-bridge] Erro inesperado (non-fatal): ${(err as { message?: string }).message ?? err}`)
   }
 }
 
