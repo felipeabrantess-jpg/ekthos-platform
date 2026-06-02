@@ -142,11 +142,13 @@ Deno.serve(async (req) => {
     .from('conversation_messages')
     .insert({
       conversation_id,
-      direction:   'outbound',
-      actor_type:  'human',
-      actor_id:    user.id,
-      body:        trimmedBody,
-      status:      'pending',
+      church_id:    churchId,
+      direction:    'outbound',
+      sender_type:  'human',
+      sender_id:    user.id,
+      content:      trimmedBody,
+      content_type: 'text',
+      status:       'pending',
     })
     .select('id')
     .single()
@@ -160,15 +162,16 @@ Deno.serve(async (req) => {
   const { error: qErr } = await sbAdmin
     .from('channel_dispatch_queue')
     .insert({
-      message_id:   msg.id,
-      channel_id:   conv.channel_id,
-      church_id:    churchId,
-      to_phone:     conv.contact_phone,
-      body:         trimmedBody,
-      channel_type: channel.provider ?? 'zapi',
-      status:       'pending',
-      scheduled_at: new Date().toISOString(),
-      attempt:      0,
+      message_id:      msg.id,
+      conversation_id,
+      channel_id:      conv.channel_id,
+      church_id:       churchId,
+      to_phone:        conv.contact_phone,
+      content:         trimmedBody,
+      channel_type:    channel.provider ?? 'zapi',
+      status:          'pending',
+      scheduled_at:    new Date().toISOString(),
+      attempt:         0,
     })
 
   if (qErr) {
@@ -195,6 +198,8 @@ Deno.serve(async (req) => {
       actor_id:        user.id,
       actor_name:      actorName,
       message_preview: trimmedBody.slice(0, 80),
+      // Fix D: message_id para rastreabilidade
+      metadata:        { message_id: msg.id },
     })
   } catch (err) {
     console.warn('[conversation-send-message] event log failed (non-fatal):', err)

@@ -204,7 +204,8 @@ const TOOLS_PROATIVO = AGENT_TOOLS.filter(t =>
 
 const TOOLS_INBOUND = AGENT_TOOLS.filter(t =>
   ['read_person', 'read_acolhimento_journey', 'update_acolhimento_journey',
-   'enqueue_message', 'update_pipeline_stage'].includes(t.name)
+   'enqueue_message', 'update_pipeline_stage',
+   'create_pastor_task'].includes(t.name)  // Fix C: escalada pastoral com handoff
 )
 
 // ─────────────────────────────────────────────────────────────
@@ -418,6 +419,78 @@ async function runToolLoop(
 // PROCESSAR UMA JOURNEY (modo proativo)  (v19 — logAgentExecution)
 // ─────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────
+// FIX B — FORCE CRM UPDATE
+// Garante rastro no CRM após execução do agente, mesmo que o LLM
+// não tenha chamado nenhuma tool de escrita.
+// Idempotente e best-effort (não quebra fluxo se falhar).
+// ─────────────────────────────────────────────────────────────
+
+async function forceCRMUpdate(
+  churchId:  string,
+  personId:  string | null | undefined,
+  entityId:  string,   // journeyId ou conversationId
+  trigger:   string,
+): Promise<void> {
+  if (!personId) return
+
+  try {
+    // 1. Atualizar last_contact_at
+    await supabaseAdmin
+      .from('people')
+      .update({ last_contact_at: new Date().toISOString() })
+      .eq('id', personId)
+      .eq('church_id', churchId)
+
+    // 2. Se sem estágio de pipeline, mover para o 1º estágio (Visitante)
+    const { data: person } = await supabaseAdmin
+      .from('people')
+      .select('pipeline_stage_id')
+      .eq('id', personId)
+      .eq('church_id', churchId)
+      .maybeSingle()
+
+    if (!person?.pipeline_stage_id) {
+      const { data: firstStage } = await supabaseAdmin
+        .from('pipeline_stages')
+        .select('id')
+        .eq('church_id', churchId)
+        .order('order_index', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+
+      if (firstStage?.id) {
+        await supabaseAdmin
+          .from('people')
+          .update({ pipeline_stage_id: firstStage.id })
+          .eq('id', personId)
+          .eq('church_id', churchId)
+      }
+    }
+
+    // 3. Registrar person_event de touchpoint pastoral
+    await supabaseAdmin
+      .from('person_events')
+      .insert({
+        id:         crypto.randomUUID(),
+        church_id:  churchId,
+        person_id:  personId,
+        event_type: 'agent_touchpoint',
+        data: {
+          entity_id: entityId,
+          trigger,
+          agent:     AGENT_SLUG,
+          ts:        new Date().toISOString(),
+        },
+        created_at: new Date().toISOString(),
+      })
+
+    console.log(`[agent-acolhimento] forceCRMUpdate ok person=${personId} trigger=${trigger}`)
+  } catch (err) {
+    console.warn('[agent-acolhimento] forceCRMUpdate falhou (não crítico):', err)
+  }
+}
+
 async function processJourney(
   journeyId:   string,
   churchId:    string,
@@ -550,6 +623,9 @@ Seja conciso, pastoral e humano.
         .eq('church_id', churchId)
     }
 
+    // Fix B: garantir rastro no CRM independente das tools chamadas pelo LLM
+    await forceCRMUpdate(churchId, personId, journeyId, triggerType)
+
     // Debitar créditos (best-effort)
     try {
       await supabaseAdmin.rpc('debit_agent_credits', {
@@ -612,10 +688,11 @@ Seja conciso, pastoral e humano.
 // ─────────────────────────────────────────────────────────────
 
 async function processInbound(
-  conversationId: string,
-  _messageId:     string,
-  churchId:       string,
-  inboundText:    string,
+  conversationId:      string,
+  _messageId:          string,
+  churchId:            string,
+  inboundText:         string,
+  haikuClassification: Record<string, unknown> | null = null,
 ): Promise<{ ok: boolean; result?: string; error?: string }> {
 
   const t0 = Date.now()
@@ -757,7 +834,11 @@ Church ID: ${churchId}
 
 == HISTÓRICO DA CONVERSA ==
 ${historyStr || '(Sem mensagens anteriores)'}
-
+${haikuClassification ? `
+== ANÁLISE HAIKU (classificação automática) ==
+Categoria: ${haikuClassification.category} | Sentimento: ${haikuClassification.sentiment} | Intenção: ${haikuClassification.intent}
+Confiança: ${haikuClassification.confidence} | Raciocínio: ${haikuClassification.reasoning}
+${haikuClassification.sentiment === 'distressed' ? '⚠️  ATENÇÃO: Pessoa em sofrimento — responder com máximo cuidado pastoral. Nunca genérico. Escalada create_pastor_task se crise confirmada.' : ''}` : ''}
 == NOVA MENSAGEM RECEBIDA ==
 ${inboundText}
 
@@ -781,6 +862,9 @@ Responda como a equipe pastoral da igreja — com calor, sem pressão, sem revel
       TOOLS_INBOUND,
       churchId,
     )
+
+    // Fix B: garantir rastro no CRM independente das tools chamadas pelo LLM
+    await forceCRMUpdate(churchId, conv.person_id, conversationId, 'inbound_message')
 
     // v21: Debitar créditos — inbound_reply (best-effort)
     try {
@@ -922,10 +1006,12 @@ Deno.serve(async (req: Request) => {
 
   // ── MODO INBOUND (chamado pelo conversation-router) ───────
   if (triggerType === 'inbound_message') {
-    const conversationId = body.conversation_id as string
-    const messageId      = body.message_id      as string
-    const churchId       = body.church_id       as string
-    const inboundText    = body.inbound_text    as string
+    const conversationId      = body.conversation_id      as string
+    const messageId           = body.message_id           as string
+    const churchId            = body.church_id            as string
+    const inboundText         = body.inbound_text         as string
+    // Fix A: contexto enriquecido pelo Haiku (pode ser undefined em fallbacks)
+    const haikuClassification = (body.haiku_classification as Record<string, unknown> | undefined) ?? null
 
     if (!conversationId || !churchId || !inboundText) {
       return json({
@@ -934,7 +1020,7 @@ Deno.serve(async (req: Request) => {
       }, 400)
     }
 
-    const result = await processInbound(conversationId, messageId, churchId, inboundText)
+    const result = await processInbound(conversationId, messageId, churchId, inboundText, haikuClassification)
     return json(result)
   }
 
