@@ -62,8 +62,10 @@ const AgentsList            = lazy(() => import('@/pages/agents/AgentsList'))
 const AgentDetail           = lazy(() => import('@/pages/agents/AgentDetail'))
 const AgentChat             = lazy(() => import('@/pages/agents/AgentChat'))
 const AgentConfig           = lazy(() => import('@/pages/agents/AgentConfig'))
-const AcolhimentoDashboard  = lazy(() => import('@/pages/agents/AcolhimentoDashboard'))
-const ModuleDetail          = lazy(() => import('@/pages/modules/ModuleDetail'))
+const AcolhimentoDashboard   = lazy(() => import('@/pages/agents/AcolhimentoDashboard'))
+const ReengajamentoDashboard = lazy(() => import('@/pages/agents/ReengajamentoDashboard'))
+const ApprovalQueue          = lazy(() => import('@/pages/agents/ApprovalQueue'))
+const ModuleDetail           = lazy(() => import('@/pages/modules/ModuleDetail'))
 
 // MEGA-ONDA B — Consumo + Recargas
 const ConsumePage  = lazy(() => import('@/pages/consumo'))
@@ -356,7 +358,9 @@ export default function App() {
             <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
 
             {/* ── MEGA-ONDA B: Dashboards de agentes ── */}
-            <Route path="agentes/agent-acolhimento/dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AcolhimentoDashboard /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/agent-acolhimento/dashboard"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AcolhimentoDashboard /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/agent-reengajamento/dashboard"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ReengajamentoDashboard /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/:slug/aprovacao"                element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ApprovalQueue /></Suspense></ErrorBoundary>} />
 
             {/* ── MEGA-ONDA B: Consumo + Recargas ── */}
             <Route path="consumo"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConsumePage /></Suspense></ErrorBoundary>} />

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, AlertTriangle, Settings2 } from 'lucide-react'
+import { X, AlertTriangle, Settings2, ArrowUpDown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
 import Spinner from '@/components/ui/Spinner'
@@ -30,20 +30,29 @@ function slaStatus(enteredAt: string | undefined, slaHours: number | null | unde
   return 'ok'
 }
 
+function slaBadgeLabel(enteredAt: string | undefined, slaHours: number | null | undefined): string | null {
+  if (!slaHours || !enteredAt) return null
+  const days = Math.floor(hoursElapsed(enteredAt) / 24)
+  const slaDays = Math.round(slaHours / 24)
+  return `${days}d / ${slaDays}d`
+}
+
 // ──────────────────────────────────────────────────────────────
 // PersonCard
 // ──────────────────────────────────────────────────────────────
 
 interface PersonCardProps {
   person: PersonWithStage
+  stageSlhours: number | null | undefined
   onDragStart: (personId: string, fromStageId: string) => void
   onClick: (person: PersonWithStage) => void
 }
 
-function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
+function PersonCard({ person, stageSlhours, onDragStart, onClick }: PersonCardProps) {
   const pipeline = person.person_pipeline?.[0]
   const lastActivity = pipeline?.last_activity_at
-  const status = slaStatus(pipeline?.entered_at ?? undefined, pipeline?.pipeline_stages?.sla_hours)
+  const status = slaStatus(pipeline?.entered_at ?? undefined, stageSlhours)
+  const badgeLabel = slaBadgeLabel(pipeline?.entered_at ?? undefined, stageSlhours)
 
   return (
     <div
@@ -54,23 +63,28 @@ function PersonCard({ person, onDragStart, onClick }: PersonCardProps) {
         }
       }}
       onClick={() => onClick(person)}
-      className="bg-bg-primary rounded-xl border border-border-default p-3 shadow-sm cursor-grab active:cursor-grabbing hover:bg-white hover:shadow-md transition-all select-none"
+      className="bg-white rounded-2xl border border-black/[0.06] shadow-sm p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-all select-none"
     >
-      <div className="flex items-start justify-between gap-1">
-        <p className="text-sm font-medium text-ekthos-black truncate">{person.name ?? '—'}</p>
-        {status === 'breach' && (
-          <span className="shrink-0 text-xs font-semibold text-white bg-red-500 rounded-full px-1.5 py-0.5 leading-none">
-            SLA
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium text-ekthos-black truncate leading-snug">{person.name ?? '—'}</p>
+        {status === 'breach' && badgeLabel && (
+          <span className="shrink-0 bg-[#FDE8E0] text-[#e13500] text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+            {badgeLabel}
           </span>
         )}
-        {status === 'warning' && (
-          <span className="shrink-0 text-xs font-semibold text-white bg-amber-400 rounded-full px-1.5 py-0.5 leading-none">
-            SLA
+        {status === 'warning' && badgeLabel && (
+          <span className="shrink-0 bg-[#FFF8E6] text-[#b45309] text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+            {badgeLabel}
+          </span>
+        )}
+        {status === 'ok' && badgeLabel && (
+          <span className="shrink-0 bg-[#E8F5E9] text-[#2D7A4F] text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+            {badgeLabel}
           </span>
         )}
       </div>
       {person.phone && (
-        <p className="text-xs text-ekthos-black/50 mt-0.5">{person.phone}</p>
+        <p className="text-xs text-ekthos-black/50 mt-0.5 truncate">{person.phone}</p>
       )}
       {lastActivity && (
         <p className="text-xs text-ekthos-black/40 mt-1">{daysAgo(lastActivity)}</p>
@@ -160,16 +174,20 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
 // KanbanColumn
 // ──────────────────────────────────────────────────────────────
 
+type SortOrder = 'newest' | 'oldest'
+
 interface KanbanColumnProps {
   stage: PipelineStage
   people: PersonWithStage[]
+  totalCount: number
   onDragStart: (personId: string, fromStageId: string) => void
   onDrop: (toStageId: string) => void
   onCardClick: (person: PersonWithStage) => void
 }
 
-function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: KanbanColumnProps) {
+function KanbanColumn({ stage, people, totalCount, onDragStart, onDrop, onCardClick }: KanbanColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [sortOrder, setSortOrder] = useState<SortOrder>('newest')
   const dragCounter = useRef(0)
 
   // Count cards with active SLA breach for column header alert
@@ -177,6 +195,13 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
     const pipeline = p.person_pipeline?.[0]
     return slaStatus(pipeline?.entered_at ?? undefined, stage.sla_hours) === 'breach'
   }).length
+
+  // Sort people by entered_at
+  const sortedPeople = [...people].sort((a, b) => {
+    const aDate = new Date(a.person_pipeline?.[0]?.entered_at ?? 0).getTime()
+    const bDate = new Date(b.person_pipeline?.[0]?.entered_at ?? 0).getTime()
+    return sortOrder === 'oldest' ? aDate - bDate : bDate - aDate
+  })
 
   function handleDragOver(e: React.DragEvent) {
     e.preventDefault()
@@ -215,7 +240,7 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="text-sm font-semibold text-ekthos-black truncate">{stage.name}</h3>
           {stage.sla_hours && (
-            <span className="text-xs text-ekthos-black/40 shrink-0">{stage.sla_hours}h</span>
+            <span className="text-xs text-ekthos-black/40 shrink-0">{Math.round(stage.sla_hours / 24)}d SLA</span>
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -225,22 +250,30 @@ function KanbanColumn({ stage, people, onDragStart, onDrop, onCardClick }: Kanba
             </span>
           )}
           <span className="text-xs font-medium text-ekthos-black/60 bg-bg-hover rounded-full px-2 py-0.5">
-            {people.length}
+            {totalCount}
           </span>
+          <button
+            onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')}
+            className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 transition-colors"
+            title={sortOrder === 'newest' ? 'Mais recentes primeiro' : 'Mais antigos primeiro'}
+          >
+            <ArrowUpDown size={12} />
+          </button>
         </div>
       </div>
 
       {/* Cards */}
       <div className="flex flex-col gap-2 p-2 min-h-[120px] flex-1">
-        {people.length === 0 ? (
+        {sortedPeople.length === 0 ? (
           <p className="text-xs text-ekthos-black/40 text-center pt-4 px-2">
             Nenhuma pessoa nesta etapa
           </p>
         ) : (
-          people.map((person) => (
+          sortedPeople.map((person) => (
             <PersonCard
               key={person.id}
               person={person}
+              stageSlhours={stage.sla_hours}
               onDragStart={onDragStart}
               onClick={onCardClick}
             />
@@ -402,6 +435,7 @@ export default function Pipeline() {
             <KanbanColumn
               stage={displayedStages.find(s => s.id === effectiveStageId)!}
               people={displayedBoard[effectiveStageId] ?? []}
+              totalCount={(displayedBoard[effectiveStageId] ?? []).length}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
               onCardClick={setSelectedPerson}
@@ -418,6 +452,7 @@ export default function Pipeline() {
               key={stage.id}
               stage={stage}
               people={displayedBoard[stage.id] ?? []}
+              totalCount={(displayedBoard[stage.id] ?? []).length}
               onDragStart={handleDragStart}
               onDrop={handleDrop}
               onCardClick={setSelectedPerson}
