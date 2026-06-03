@@ -377,7 +377,8 @@ export async function executeTool(
         .from('people')
         .select(
           'id, first_name, last_name, phone, email, person_stage, pipeline_stage_id, ' +
-          'observacoes_pastorais, last_attendance_at, created_at'
+          'observacoes_pastorais, last_attendance_at, created_at, ' +
+          'baptized, in_discipleship, has_cell, conversion_date'
         )
         .eq('id', input.person_id as string)
         .eq('church_id', churchId)
@@ -881,7 +882,61 @@ export async function executeTool(
             status: 'pending',
           })
       } catch (notifErr) {
-        console.warn('[agent-tools] create_pastor_task notificação falhou (não crítico):', notifErr)
+        console.warn('[agent-tools] create_pastor_task internal_notifications falhou (não crítico):', notifErr)
+      }
+
+      // 5. admin_tasks — visível na UI do pastor (Fix 4)
+      try {
+        const { error: adminTaskErr } = await supabaseAdmin
+          .from('admin_tasks')
+          .insert({
+            church_id:   churchId,
+            title:       `📋 ${title}`,
+            description: `${description}\n\n[Criado pelo agente ${agentSlug} | conv: ${conversation_id}]`,
+            status:      'open',
+            priority:    'urgent',
+          })
+        if (adminTaskErr) {
+          console.warn('[agent-tools] create_pastor_task admin_tasks ERRO:', adminTaskErr.message)
+        } else {
+          console.log(`[agent-tools] create_pastor_task admin_tasks ok church=${churchId}`)
+        }
+      } catch (e) {
+        console.warn('[agent-tools] create_pastor_task admin_tasks exceção:', e)
+      }
+
+      // 6. notifications (sino da UI) — para todos os admins da igreja (Fix 4)
+      try {
+        const { data: adminUsers, error: rolesErr } = await supabaseAdmin
+          .from('user_roles')
+          .select('user_id')
+          .eq('church_id', churchId)
+          .limit(5)
+
+        if (rolesErr) {
+          console.warn('[agent-tools] create_pastor_task user_roles ERRO:', rolesErr.message)
+        } else if (adminUsers && adminUsers.length > 0) {
+          const notifRows = adminUsers.map((u: { user_id: string }) => ({
+            church_id: churchId,
+            user_id:   u.user_id,
+            title:     `📋 Tarefa pastoral: ${title}`,
+            body:      description,
+            type:      'alert',
+            person_id: resolvedPersonId ?? null,
+            read:      false,
+            link:      `/conversations?id=${conversation_id}`,
+          }))
+          const { error: notifErr } = await supabaseAdmin
+            .from('notifications')
+            .insert(notifRows)
+          if (notifErr) {
+            console.warn('[agent-tools] create_pastor_task notifications ERRO:', notifErr.message)
+          } else {
+            console.log(`[agent-tools] create_pastor_task notifications ok: ${notifRows.length} usuários notificados`)
+          }
+        }
+      } catch (e) {
+        console.warn('[agent-tools] create_pastor_task notifications exceção:', e)
       }
 
       console.log(`[agent-tools] create_pastor_task: task=${taskId} conv=${conversation_id} ownership→human`)
