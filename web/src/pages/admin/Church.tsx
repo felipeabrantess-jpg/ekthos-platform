@@ -25,10 +25,16 @@ interface ChurchDetail {
   created_at:        string
   timezone:          string
   // Assinatura
-  plan_slug:         string | null
-  subscription_status: string | null
-  current_period_end:  string | null
-  mrr:               number
+  plan_slug:               string | null
+  subscription_status:     string | null
+  current_period_end:      string | null
+  trial_end:               string | null
+  billing_origin:          string | null
+  effective_price_cents:   number | null
+  discount_cents:          number
+  internal_notes:          string | null
+  subscription_created_at: string | null
+  mrr:                     number
   // Operação
   members_count:     number
   cells_count:       number
@@ -788,14 +794,50 @@ function TabAssinatura({ data }: { data: ChurchDetail }) {
   const PLAN_NAMES: Record<string, string> = {
     chamado: 'Chamado', missao: 'Missão', avivamento: 'Avivamento',
   }
+  const BILLING_ORIGIN_LABEL: Record<string, string> = {
+    cockpit_manual: 'Manual (Cockpit)',
+    stripe:         'Stripe',
+    trial:          'Trial',
+  }
+  // [NÓ D FIX] Quando trialing sem Stripe, current_period_end é null;
+  // usar trial_end como data de referência.
+  const isTrialing = data.subscription_status === 'trialing'
+  const renovacaoDate = isTrialing
+    ? data.trial_end
+    : data.current_period_end
+  const renovacaoLabel = isTrialing ? 'Trial até' : 'Renovação'
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">Plano e Assinatura</h3>
         <InfoRow label="Plano" value={PLAN_NAMES[data.plan_slug ?? ''] ?? data.plan_slug ?? '—'} />
-        <InfoRow label="Status" value={data.subscription_status ?? '—'} />
-        <InfoRow label="Renovação" value={relDate(data.current_period_end)} />
+        <InfoRow
+          label="Status"
+          value={
+            <span className={[
+              'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold',
+              data.subscription_status === 'active'   ? 'bg-green-100 text-green-700' :
+              data.subscription_status === 'trialing' ? 'bg-blue-100 text-blue-700'  :
+              data.subscription_status === 'past_due' ? 'bg-orange-100 text-orange-700' :
+              'bg-gray-100 text-gray-600',
+            ].join(' ')}>
+              {data.subscription_status ?? '—'}
+            </span>
+          }
+        />
+        <InfoRow label={renovacaoLabel} value={relDate(renovacaoDate)} />
+        <InfoRow label="Origem" value={BILLING_ORIGIN_LABEL[data.billing_origin ?? ''] ?? data.billing_origin ?? '—'} />
         <InfoRow label="MRR" value={<span className="font-mono-ekthos font-bold" style={{ color: 'var(--color-primary)' }}>{fmt(data.mrr)}</span>} />
+        {data.discount_cents > 0 && (
+          <InfoRow label="Desconto" value={<span className="text-green-600 font-medium">−{fmt(data.discount_cents / 100)}</span>} />
+        )}
+        {data.internal_notes && (
+          <div className="mt-3 pt-3 border-t border-black/5">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Notas internas</p>
+            <p className="text-xs text-gray-600 whitespace-pre-wrap">{data.internal_notes}</p>
+          </div>
+        )}
       </div>
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 mb-3">Usuários ({data.users.length})</h3>
@@ -1544,6 +1586,8 @@ const EMPTY_DETAIL: ChurchDetail = {
   id: '', name: '', logo_url: null, city: null, state: null,
   status: 'onboarding', created_at: '', timezone: 'America/Sao_Paulo',
   plan_slug: null, subscription_status: null, current_period_end: null, mrr: 0,
+  trial_end: null, billing_origin: null, effective_price_cents: null, discount_cents: 0,
+  internal_notes: null, subscription_created_at: null,
   members_count: 0, cells_count: 0, ministries_count: 0, pipeline_stages: 0,
   health_score: null, health_components: {},
   users: [], agents: [], logs: [],

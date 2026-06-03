@@ -9,7 +9,7 @@
 //        coming_soon → toggle desabilitado, badge "Em breve"
 // ============================================================
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
@@ -53,6 +53,11 @@ interface ModulosToggleProps {
 export default function ModulosToggle({ churchId, enabledModules, onChanged }: ModulosToggleProps) {
   const [local, setLocal] = useState<Record<string, boolean>>(enabledModules ?? {})
   const [loading, setLoading] = useState<string | null>(null) // key do módulo em loading
+
+  // [NÓ B FIX] Sync estado local quando prop mudar (ex: após reload do EF)
+  useEffect(() => {
+    setLocal(enabledModules ?? {})
+  }, [enabledModules])
   const [error, setError]   = useState<string | null>(null)
 
   async function toggle(key: string, currentValue: boolean) {
