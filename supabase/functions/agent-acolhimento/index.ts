@@ -66,7 +66,7 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const anthropic  = new Anthropic({ apiKey: ANTHROPIC_API_KEY })
 const AGENT_SLUG = 'agent-acolhimento'
-const MODEL      = 'claude-haiku-4-5-20251001'
+const MODEL      = 'claude-sonnet-4-6'
 const MAX_TOKENS = 2048
 const BATCH_SIZE = 10
 
@@ -436,40 +436,56 @@ async function forceCRMUpdate(
 
   try {
     // 1. Atualizar last_contact_at
-    await supabaseAdmin
+    const { error: contactErr } = await supabaseAdmin
       .from('people')
       .update({ last_contact_at: new Date().toISOString() })
       .eq('id', personId)
       .eq('church_id', churchId)
+    if (contactErr) {
+      console.error('[agent-acolhimento] forceCRMUpdate last_contact_at ERRO:', contactErr.message, contactErr.code)
+    }
 
     // 2. Se sem estágio de pipeline, mover para o 1º estágio (Visitante)
-    const { data: person } = await supabaseAdmin
+    const { data: person, error: personErr } = await supabaseAdmin
       .from('people')
       .select('pipeline_stage_id')
       .eq('id', personId)
       .eq('church_id', churchId)
       .maybeSingle()
+    if (personErr) {
+      console.error('[agent-acolhimento] forceCRMUpdate select person ERRO:', personErr.message)
+    }
 
     if (!person?.pipeline_stage_id) {
-      const { data: firstStage } = await supabaseAdmin
+      const { data: firstStage, error: stageErr } = await supabaseAdmin
         .from('pipeline_stages')
         .select('id')
         .eq('church_id', churchId)
         .order('order_index', { ascending: true })
         .limit(1)
         .maybeSingle()
+      if (stageErr) {
+        console.error('[agent-acolhimento] forceCRMUpdate pipeline_stages ERRO:', stageErr.message)
+      }
 
       if (firstStage?.id) {
-        await supabaseAdmin
+        const { error: stageUpdateErr } = await supabaseAdmin
           .from('people')
           .update({ pipeline_stage_id: firstStage.id })
           .eq('id', personId)
           .eq('church_id', churchId)
+        if (stageUpdateErr) {
+          console.error('[agent-acolhimento] forceCRMUpdate pipeline_stage update ERRO:', stageUpdateErr.message)
+        } else {
+          console.log(`[agent-acolhimento] forceCRMUpdate pipeline→Visitante person=${personId} stage=${firstStage.id}`)
+        }
+      } else {
+        console.warn(`[agent-acolhimento] forceCRMUpdate nenhum pipeline_stage encontrado church=${churchId}`)
       }
     }
 
     // 3. Registrar person_event de touchpoint pastoral
-    await supabaseAdmin
+    const { error: eventErr } = await supabaseAdmin
       .from('person_events')
       .insert({
         id:         crypto.randomUUID(),
@@ -484,10 +500,13 @@ async function forceCRMUpdate(
         },
         created_at: new Date().toISOString(),
       })
+    if (eventErr) {
+      console.error('[agent-acolhimento] forceCRMUpdate person_events ERRO:', eventErr.message, eventErr.code)
+    }
 
-    console.log(`[agent-acolhimento] forceCRMUpdate ok person=${personId} trigger=${trigger}`)
+    console.log(`[agent-acolhimento] forceCRMUpdate ok person=${personId} trigger=${trigger} contactErr=${!!contactErr} eventErr=${!!eventErr}`)
   } catch (err) {
-    console.warn('[agent-acolhimento] forceCRMUpdate falhou (não crítico):', err)
+    console.warn('[agent-acolhimento] forceCRMUpdate exceção inesperada (não crítico):', err)
   }
 }
 
