@@ -154,7 +154,7 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
             </div>
           )}
 
-          {person.tags.length > 0 && (
+          {(person.tags ?? []).length > 0 && (
             <div className="flex gap-2">
               <span className="text-ekthos-black/40 w-20 shrink-0">Tags</span>
               <div className="flex flex-wrap gap-1">

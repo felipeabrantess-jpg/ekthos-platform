@@ -4,6 +4,7 @@ import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
 import AppHeader from './AppHeader'
+import ErrorBoundary from './ErrorBoundary'
 import { useChurch } from '@/hooks/useChurch'
 import { NotificationsProvider } from '@/features/notifications/context/NotificationsContext'
 import { supabase } from '@/lib/supabase'
@@ -142,7 +143,11 @@ export default function Layout() {
           {/* Conteúdo — pt-14 mobile (clear do MobileHeader fixo), pt-0 desktop */}
           <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: 'var(--bg-primary)' }}>
             <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
-              <Outlet />
+              {/* key={location.key} garante que o ErrorBoundary remonta em toda navegação,
+                  resetando hasError e evitando que um crash em /pipeline persista em /pessoas etc. */}
+              <ErrorBoundary key={location.key}>
+                <Outlet />
+              </ErrorBoundary>
             </div>
           </main>
         </div>
