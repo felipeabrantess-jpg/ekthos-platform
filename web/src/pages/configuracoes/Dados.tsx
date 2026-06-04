@@ -2,12 +2,12 @@
  * Dados.tsx — /configuracoes/dados
  *
  * Formulário de dados básicos da Igreja:
- * nome, telefone, email público, endereço, cidade, estado, CEP.
+ * nome, telefone, email público, endereço, cidade, estado.
  *
- * Campos que a tabela `churches` aceita: name, phone, email,
- * address, city, state, zip_code.
- * Campos ausentes na tabela (CNPJ, site) ficam apenas como UI placeholder
- * até a migration correspondente.
+ * Campos reais na tabela `churches`:
+ *   name, main_phone, main_email, address_full, city, state
+ *
+ * CEP (zip_code) não existe na tabela — mantido como estado local de UI apenas.
  */
 
 import { useState, useEffect } from 'react'
@@ -19,14 +19,14 @@ import { useChurch } from '@/hooks/useChurch'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 
+/** Campos que realmente existem na tabela churches */
 interface ChurchDados {
-  name:     string
-  phone:    string
-  email:    string
-  address:  string
-  city:     string
-  state:    string
-  zip_code: string
+  name:         string
+  main_phone:   string
+  main_email:   string
+  address_full: string
+  city:         string
+  state:        string
 }
 
 const ESTADOS_BR = [
@@ -40,27 +40,29 @@ export function Dados() {
   const queryClient = useQueryClient()
 
   const [form, setForm] = useState<ChurchDados>({
-    name:     '',
-    phone:    '',
-    email:    '',
-    address:  '',
-    city:     '',
-    state:    '',
-    zip_code: '',
+    name:         '',
+    main_phone:   '',
+    main_email:   '',
+    address_full: '',
+    city:         '',
+    state:        '',
   })
+
+  // CEP — somente UI, não enviado ao Supabase (coluna não existe)
+  const [zipCodeUi, setZipCodeUi] = useState('')
   const [saved, setSaved] = useState(false)
 
   // Sincronizar quando dados carregam
   useEffect(() => {
     if (church) {
+      const c = church as unknown as Record<string, string | undefined>
       setForm({
-        name:     (church as unknown as { name?: string }).name     ?? '',
-        phone:    (church as unknown as { phone?: string }).phone   ?? '',
-        email:    (church as unknown as { email?: string }).email   ?? '',
-        address:  (church as unknown as { address?: string }).address  ?? '',
-        city:     (church as unknown as { city?: string }).city    ?? '',
-        state:    (church as unknown as { state?: string }).state   ?? '',
-        zip_code: (church as unknown as { zip_code?: string }).zip_code ?? '',
+        name:         c.name         ?? '',
+        main_phone:   c.main_phone   ?? '',
+        main_email:   c.main_email   ?? '',
+        address_full: c.address_full ?? '',
+        city:         c.city         ?? '',
+        state:        c.state        ?? '',
       })
     }
   }, [church])
@@ -118,8 +120,8 @@ export function Dados() {
           <div>
             <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Telefone</label>
             <Input
-              value={form.phone}
-              onChange={e => handleChange('phone', e.target.value)}
+              value={form.main_phone}
+              onChange={e => handleChange('main_phone', e.target.value)}
               placeholder="(11) 98765-4321"
             />
           </div>
@@ -127,8 +129,8 @@ export function Dados() {
             <label className="block text-sm font-medium text-ekthos-black/70 mb-1">E-mail público</label>
             <Input
               type="email"
-              value={form.email}
-              onChange={e => handleChange('email', e.target.value)}
+              value={form.main_email}
+              onChange={e => handleChange('main_email', e.target.value)}
               placeholder="contato@suaigreja.com"
             />
           </div>
@@ -137,8 +139,8 @@ export function Dados() {
         <div>
           <label className="block text-sm font-medium text-ekthos-black/70 mb-1">Endereço</label>
           <Input
-            value={form.address}
-            onChange={e => handleChange('address', e.target.value)}
+            value={form.address_full}
+            onChange={e => handleChange('address_full', e.target.value)}
             placeholder="Rua das Flores, 123"
           />
         </div>
@@ -147,8 +149,8 @@ export function Dados() {
           <div className="col-span-1">
             <label className="block text-sm font-medium text-ekthos-black/70 mb-1">CEP</label>
             <Input
-              value={form.zip_code}
-              onChange={e => handleChange('zip_code', e.target.value)}
+              value={zipCodeUi}
+              onChange={e => setZipCodeUi(e.target.value)}
               placeholder="00000-000"
             />
           </div>

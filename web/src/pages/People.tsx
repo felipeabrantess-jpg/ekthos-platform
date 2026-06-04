@@ -4,9 +4,9 @@
  * Tabs:
  *  - Visão geral    → lista completa (default)
  *  - Aniversários   → pessoas com aniversário no mês atual
- *  - Novos          → stage: visitante | interesse-grupo
+ *  - Novos          → stage: visitante
  *  - Líderes        → stage: lider
- *  - Em Risco       → stage: inativo
+ *  - Em Risco       → stage: frequentador
  */
 
 import { useState, Component, type ReactNode } from 'react'
@@ -87,12 +87,11 @@ function filterByStage(people: PersonWithStage[], slugs: string[]): PersonWithSt
   })
 }
 
-/** Filtra aniversariantes do mês atual via campo birthday (se disponível) */
+/** Filtra aniversariantes do mês atual via campo birth_date */
 function filterBirthdayThisMonth(people: PersonWithStage[]): PersonWithStage[] {
   const now = new Date()
   return people.filter(p => {
-    // Acesso seguro ao campo birthday (pode não existir no tipo base)
-    const bday = (p as unknown as { birthday?: string | null }).birthday
+    const bday = p.birth_date
     if (!bday) return false
     const d = new Date(bday + 'T00:00:00')
     return d.getMonth() === now.getMonth()
@@ -102,9 +101,9 @@ function filterBirthdayThisMonth(people: PersonWithStage[]): PersonWithStage[] {
 function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithStage[] {
   switch (tab) {
     case 'aniversarios': return filterBirthdayThisMonth(people)
-    case 'novos':        return filterByStage(people, ['visitante', 'interesse-grupo'])
+    case 'novos':        return filterByStage(people, ['visitante'])
     case 'lideres':      return filterByStage(people, ['lider'])
-    case 'em-risco':     return filterByStage(people, ['inativo'])
+    case 'em-risco':     return filterByStage(people, ['frequentador'])
     default:             return people
   }
 }
