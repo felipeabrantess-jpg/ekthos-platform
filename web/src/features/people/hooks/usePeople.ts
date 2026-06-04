@@ -2,12 +2,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { PersonWithStage, Person } from '@/lib/types/joins'
 
+export const PEOPLE_PAGE_SIZE = 50
+
 interface PeopleFilters {
   search?: string
   stageSlug?: string
   tag?: string
   optout?: boolean
   celulaId?: string
+  /** 0-indexed page (para a tab "Visão Geral"). Use pageSize=-1 para buscar tudo (tabs filtradas). */
+  page?: number
+  /** Tamanho da página. Default: PEOPLE_PAGE_SIZE. Passar 500 para buscar tudo nas tabs filtradas. */
+  pageSize?: number
 }
 
 // Lista pessoas com stage atual
@@ -15,6 +21,11 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
   return useQuery({
     queryKey: ['people', churchId, filters],
     queryFn: async (): Promise<PersonWithStage[]> => {
+      const page     = filters.page     ?? 0
+      const pageSize = filters.pageSize ?? PEOPLE_PAGE_SIZE
+      const from     = page * pageSize
+      const to       = from + pageSize - 1
+
       let query = supabase
         .from('people')
         .select(`
@@ -28,7 +39,7 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         .eq('church_id', churchId)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
-        .limit(100)
+        .range(from, to)
 
       if (filters.search) {
         query = query.or(

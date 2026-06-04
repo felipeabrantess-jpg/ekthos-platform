@@ -49,8 +49,8 @@ function ProgressBar({ value }: { value: number }) {
 
 export function Billing() {
   const {
-    subscription, plan, isTrial, maxUsers, maxAgentSlots,
-    activeAgentSlugs, includedAgents, extraAgents,
+    subscription, plan, isTrial, hasActiveTrial, effectiveTrialEnd,
+    maxUsers, maxAgentSlots, activeAgentSlugs, includedAgents, extraAgents,
   } = usePlan()
   const [isUpgrading, setIsUpgrading] = useState(false)
   const [upgradeError, setUpgradeError] = useState<string | null>(null)
@@ -77,7 +77,7 @@ export function Billing() {
     },
   })
 
-  const daysLeft = subscription?.trial_end ? trialDaysLeft(subscription.trial_end) : 0
+  const daysLeft = effectiveTrialEnd ? trialDaysLeft(effectiveTrialEnd) : 0
   const statusConfig = STATUS_CONFIG[subscription?.status ?? 'incomplete'] ?? STATUS_CONFIG.incomplete
   const eligibleActive = activeAgentSlugs.length
 
@@ -172,7 +172,7 @@ export function Billing() {
               </p>
             )}
           </div>
-          {isTrial && (
+          {hasActiveTrial && (
             <div className="text-right">
               <p className="text-sm font-medium text-amber-600">{daysLeft} dias restantes</p>
               <p className="text-xs text-gray-400">no período de teste</p>

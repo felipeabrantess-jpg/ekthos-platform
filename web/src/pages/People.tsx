@@ -10,8 +10,8 @@
  */
 
 import { useState, Component, type ReactNode } from 'react'
-import { Pencil, Trash2, Gift, QrCode } from 'lucide-react'
-import { usePeople, useDeletePerson } from '@/features/people/hooks/usePeople'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight } from 'lucide-react'
+import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
@@ -108,15 +108,56 @@ function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithSt
   }
 }
 
+// ── ConfirmDeleteModal (A2 — substitui window.confirm) ───────────────────────
+
+interface ConfirmDeleteModalProps {
+  person: Person | null
+  onConfirm: () => void
+  onCancel: () => void
+  isDeleting: boolean
+}
+
+function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting }: ConfirmDeleteModalProps) {
+  if (!person) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+        <h3 className="text-base font-semibold text-text-primary">Remover pessoa</h3>
+        <p className="text-sm text-text-secondary">
+          Deseja remover <strong>{person.name ?? 'esta pessoa'}</strong>? A ação pode ser revertida pelo suporte.
+        </p>
+        <div className="flex gap-2 justify-end pt-1">
+          <button
+            onClick={onCancel}
+            disabled={isDeleting}
+            className="px-4 py-2 rounded-xl text-sm font-medium border border-border-default text-text-primary hover:bg-bg-hover transition-colors disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+          >
+            {isDeleting ? 'Removendo...' : 'Remover'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── PersonCard — mobile view ──────────────────────────────────────────────────
 
 interface PersonCardMobileProps {
   person: PersonWithStage
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
+  onDelete: (p: Person) => void   // A3: adicionado
 }
 
-function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
+function PersonCardMobile({ person, onView, onEdit, onDelete }: PersonCardMobileProps) {
   const stage = person.person_pipeline?.[0]?.pipeline_stages
 
   return (
@@ -148,13 +189,22 @@ function PersonCardMobile({ person, onView, onEdit }: PersonCardMobileProps) {
           {stage && (
             <Badge label={stage.name} variant={stageToBadgeVariant(stage.slug)} />
           )}
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit(person) }}
-            className="p-2 rounded-lg text-text-tertiary active:text-primary-text active:bg-bg-hover transition-all"
-            title="Editar"
-          >
-            <Pencil size={15} strokeWidth={1.75} />
-          </button>
+          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => onEdit(person)}
+              className="p-2 rounded-lg text-text-tertiary active:text-primary-text active:bg-bg-hover transition-all"
+              title="Editar"
+            >
+              <Pencil size={15} strokeWidth={1.75} />
+            </button>
+            <button
+              onClick={() => onDelete(person)}
+              className="p-2 rounded-lg text-text-tertiary active:text-red-600 active:bg-red-50 transition-all"
+              title="Remover"
+            >
+              <Trash2 size={15} strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -239,13 +289,22 @@ export default function People() {
   const { churchId } = useAuth()
   const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
   const [search, setSearch]         = useState('')
+  const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
   const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
   const [deletingId, setDeletingId]         = useState<string | null>(null)
+  const [personToDelete, setPersonToDelete] = useState<Person | null>(null) // A2: modal
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
 
-  const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', { search })
+  // A1: tabs filtradas carregam tudo (client-side); geral pagina no servidor
+  const isFilteredTab = activeTab !== 'geral'
+  const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', {
+    search,
+    page:     isFilteredTab ? 0 : currentPage,
+    pageSize: isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
+  })
+  const { data: totalCount } = usePeopleCount(churchId ?? '')
   const deletePerson = useDeletePerson()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
@@ -254,18 +313,26 @@ export default function People() {
   function handleEdit(person: Person)           { setEditingPerson(person); setModalOpen(true) }
   function handleNewPerson()                    { setEditingPerson(null); setModalOpen(true) }
 
-  async function handleDelete(person: Person) {
-    if (!confirm(`Remover ${person.name ?? 'esta pessoa'}? Esta ação pode ser revertida.`)) return
-    setDeletingId(person.id)
+  // A2: abre modal em vez de window.confirm
+  function handleDelete(person: Person) { setPersonToDelete(person) }
+
+  async function confirmDelete() {
+    if (!personToDelete) return
+    setDeletingId(personToDelete.id)
     try {
-      await deletePerson.mutateAsync({ id: person.id, churchId: churchId! })
+      await deletePerson.mutateAsync({ id: personToDelete.id, churchId: churchId! })
     } finally {
       setDeletingId(null)
+      setPersonToDelete(null)
     }
   }
 
   const allPeople     = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
   const filteredPeople = applyTabFilter(activeTab, allPeople)
+
+  // A1: paginação só na tab geral
+  const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
+  const totalPages     = Math.ceil((totalCount ?? 0) / PEOPLE_PAGE_SIZE)
 
   // Mensagens de estado vazio por aba
   const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
@@ -283,7 +350,11 @@ export default function People() {
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
           <p className="text-xs md:text-sm text-text-secondary mt-1">
-            {people ? `${allPeople.length} cadastradas` : 'Carregando...'}
+            {people
+              ? activeTab === 'geral' && !search
+                ? `${totalCount ?? allPeople.length} cadastradas`
+                : `${filteredPeople.length} encontradas`
+              : 'Carregando...'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -305,7 +376,7 @@ export default function People() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch('') }}
+            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
@@ -333,7 +404,7 @@ export default function People() {
           <Input
             placeholder="Buscar por nome, telefone ou e-mail..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(0) }}
             className="w-full md:max-w-sm"
           />
         </div>
@@ -364,6 +435,7 @@ export default function People() {
                 person={person}
                 onView={handleView}
                 onEdit={handleEdit}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -399,6 +471,33 @@ export default function People() {
         </>
       )}
 
+      {/* ── A1: Paginação (só tab Geral, sem busca ativa) ────── */}
+      {showPagination && (
+        <div className="flex items-center justify-between py-2 px-1">
+          <p className="text-xs text-text-tertiary">
+            Página {currentPage + 1} de {totalPages} · {totalCount} pessoas
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+              disabled={currentPage === 0}
+              className="p-1.5 rounded-lg text-text-secondary hover:bg-bg-hover disabled:opacity-30 transition-colors"
+              title="Página anterior"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={currentPage >= totalPages - 1}
+              className="p-1.5 rounded-lg text-text-secondary hover:bg-bg-hover disabled:opacity-30 transition-colors"
+              title="Próxima página"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── FAB mobile: adicionar pessoa ─────────────────────── */}
       <button
         onClick={handleNewPerson}
@@ -431,6 +530,14 @@ export default function People() {
         open={qrModalOpen}
         onOpenChange={setQrModalOpen}
         churchId={churchId}
+      />
+
+      {/* A2: Modal de confirmação de exclusão (substitui window.confirm) */}
+      <ConfirmDeleteModal
+        person={personToDelete}
+        onConfirm={() => { void confirmDelete() }}
+        onCancel={() => setPersonToDelete(null)}
+        isDeleting={deletingId !== null}
       />
     </div>
   )
