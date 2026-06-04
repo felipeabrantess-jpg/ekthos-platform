@@ -14,6 +14,7 @@ import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
+import PersonSelect from '@/components/ui/PersonSelect'
 
 function getInitials(name: string | null): string {
   if (!name) return '?'
@@ -38,6 +39,44 @@ function avatarColor(name: string | null): string {
   if (!name) return AVATAR_COLORS[0]
   const idx = name.charCodeAt(0) % AVATAR_COLORS.length
   return AVATAR_COLORS[idx]
+}
+
+// ─── Modal de confirmação de remoção (substitui window.confirm) ────────────
+interface ConfirmRemoveModalProps {
+  member: CabinetMemberWithPerson | null
+  onConfirm: () => void
+  onCancel: () => void
+  isRemoving: boolean
+}
+
+function ConfirmRemoveModal({ member, onConfirm, onCancel, isRemoving }: ConfirmRemoveModalProps) {
+  if (!member) return null
+  const name = member.people?.name ?? 'este membro'
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
+        <h3 className="text-base font-semibold text-gray-900">Remover membro</h3>
+        <p className="text-sm text-gray-600">
+          Tem certeza que deseja remover <strong>{name}</strong> do gabinete?
+        </p>
+        <div className="flex gap-3 justify-end pt-2">
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isRemoving}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={onConfirm}
+            disabled={isRemoving}
+            loading={isRemoving}
+          >
+            {isRemoving ? 'Removendo...' : 'Remover'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 interface MemberCardProps {
@@ -178,16 +217,12 @@ function MemberModal({ open, onClose, churchId, editing, nextOrderIndex }: Membe
     <Modal open={open} onClose={onClose} title={editing ? 'Editar Membro' : 'Adicionar ao Gabinete'}>
       <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
         {!editing && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ID da Pessoa (person_id) *</label>
-            <Input
-              value={form.personId}
-              onChange={(e) => setForm((p) => ({ ...p, personId: e.target.value }))}
-              placeholder="UUID da pessoa cadastrada"
-              required
-            />
-            <p className="text-xs text-gray-400 mt-1">Cole o ID da pessoa da seção Pessoas</p>
-          </div>
+          <PersonSelect
+            label="Pessoa *"
+            value={form.personId}
+            onChange={(id) => setForm((p) => ({ ...p, personId: id ?? '' }))}
+            placeholder="Buscar pelo nome..."
+          />
         )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Cargo / Função *</label>
@@ -239,6 +274,8 @@ export default function Gabinete() {
   const { churchId } = useAuth()
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<CabinetMemberWithPerson | null>(null)
+  const [personToRemove, setPersonToRemove] = useState<CabinetMemberWithPerson | null>(null)
+  const [removing, setRemoving] = useState(false)
   const removeMember = useRemoveCabinetMember()
   const updateMember = useUpdateCabinetMember()
 
@@ -251,9 +288,23 @@ export default function Gabinete() {
     setModalOpen(true)
   }
 
-  async function handleRemove(m: CabinetMemberWithPerson) {
-    if (!confirm(`Remover ${m.people?.name ?? 'este membro'} do gabinete?`)) return
-    await removeMember.mutateAsync({ id: m.id, churchId: churchId! })
+  function handleRemove(m: CabinetMemberWithPerson) {
+    setPersonToRemove(m)
+  }
+
+  async function confirmRemove() {
+    if (!personToRemove) return
+    setRemoving(true)
+    try {
+      await removeMember.mutateAsync({ id: personToRemove.id, churchId: churchId! })
+    } finally {
+      setRemoving(false)
+      setPersonToRemove(null)
+    }
+  }
+
+  function cancelRemove() {
+    setPersonToRemove(null)
   }
 
   async function handleMoveUp(m: CabinetMemberWithPerson) {
@@ -326,7 +377,7 @@ export default function Gabinete() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal de adição/edição */}
       {modalOpen && (
         <MemberModal
           open={modalOpen}
@@ -336,6 +387,14 @@ export default function Gabinete() {
           nextOrderIndex={nextOrderIndex}
         />
       )}
+
+      {/* Modal de confirmação de remoção */}
+      <ConfirmRemoveModal
+        member={personToRemove}
+        onConfirm={() => { void confirmRemove() }}
+        onCancel={cancelRemove}
+        isRemoving={removing}
+      />
     </div>
   )
 }

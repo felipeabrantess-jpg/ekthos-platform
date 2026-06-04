@@ -27,7 +27,7 @@ export interface Subscription {
   id: string
   plan_slug: string
   status: string
-  trial_end: string
+  trial_end: string | null
   cancel_at_period_end: boolean
   extra_users: number
   extra_agents: number
@@ -36,6 +36,14 @@ export interface Subscription {
   stripe_customer_id: string | null
   stripe_subscription_id: string | null
   plan: Plan | null
+}
+
+export interface AgentGrant {
+  id: string
+  agent_slug: string
+  grant_type: string
+  ends_at: string | null
+  revoked_at: string | null
 }
 
 export function usePlan() {
@@ -82,9 +90,35 @@ export function usePlan() {
     },
   })
 
+  // A5: busca agent_grants ativos — fallback para trial_end quando subscription não traz o campo
+  const { data: agentGrants = [] } = useQuery({
+    queryKey: ['agent_grants', churchId],
+    enabled: !!churchId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agent_grants')
+        .select('id, agent_slug, grant_type, ends_at, revoked_at')
+        .eq('church_id', churchId!)
+        .is('revoked_at', null)
+        .or('ends_at.is.null,ends_at.gt.' + new Date().toISOString())
+      if (error) throw error
+      return (data ?? []) as AgentGrant[]
+    },
+  })
+
   const planSlug = subscription?.plan_slug ?? 'chamado'
   const isTrial = subscription?.status === 'trialing'
   const isActive = subscription?.status === 'active' || isTrial
+
+  // A5: trial_end efectivo — prioriza subscription.trial_end; fallback: ends_at mais distante dos grants de trial
+  const grantTrialEnd = agentGrants
+    .filter(g => g.grant_type === 'trial' && g.ends_at)
+    .map(g => g.ends_at as string)
+    .sort()
+    .at(-1) ?? null
+  const effectiveTrialEnd = subscription?.trial_end ?? grantTrialEnd
+  // Igreja está em trial se status=trialing OU se tem grant ativo de tipo trial
+  const hasActiveTrial = isTrial || agentGrants.some(g => g.grant_type === 'trial')
   const includedAgents = subscription?.plan?.included_agents ?? 0
   const extraAgents = subscription?.extra_agents ?? 0
   const maxAgentSlots = includedAgents + extraAgents
@@ -120,6 +154,9 @@ export function usePlan() {
     isLoading: subLoading,
     isTrial,
     isActive,
+    agentGrants,
+    hasActiveTrial,
+    effectiveTrialEnd,
     allAgents,
     freeAgents,
     alwaysPaidAgents,
