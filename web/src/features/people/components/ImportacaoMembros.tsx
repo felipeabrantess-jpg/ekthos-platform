@@ -6,15 +6,21 @@
  * Decisões de design (Felipe aprovadas):
  *  - source = 'import_xlsx', is_bulk_import = true   → suprime boas-vindas
  *  - last_contact_at = NOW() - 21d                    → entra na régua de reengajamento
- *  - Dedup por phone + email (deleted_at IS NULL)     → ignora duplicatas ativas
+ *  - Dedup por TELEFONE APENAS (deleted_at IS NULL)   → e-mail não identifica pessoa
  *  - Inserts diretos via supabase.from('people')      → nunca chama dispatch-person-event
  *  - Batch de 50 + fallback row-by-row em erro de lote
+ *
+ * Bugs corrigidos (2026-06-05):
+ *  - B1: e-mail sozinho não mais causa isDuplicate (telefone é identificador)
+ *  - B2: dedup intra-planilha por telefone (mesmo número duas vezes no arquivo)
+ *  - B3: telefones 7-9 dígitos (sem DDD / fixos incompletos) → phoneWarning, não erro fatal
+ *  - B4: normalizeName strip do artefato ´ / Â´ do Eclésia
  */
 
 import { useState, useCallback, useRef } from 'react'
 import {
   Upload, FileSpreadsheet, X, ChevronRight, Check,
-  AlertCircle, Loader2, Info,
+  AlertCircle, Loader2, Info, AlertTriangle,
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
@@ -47,6 +53,7 @@ interface ParsedRow {
   raw:            string[]
   name:           string
   phone:          string | null
+  phoneWarning:   string | null   // B3: telefone incompleto/sem DDD
   email:          string | null
   birth_date:     string | null
   marital_status: string | null
@@ -55,8 +62,9 @@ interface ParsedRow {
   state:          string | null
   baptism_date:   string | null
   calling:        string | null
-  rowError:       string | null
-  isDuplicate:    boolean
+  rowError:       string | null   // erro fatal — não importável
+  isDuplicate:    boolean         // duplicata confirmada — ignorar
+  dupReason:      string | null   // motivo: telefone no banco / telefone na planilha
 }
 
 interface ImportResult {
@@ -68,21 +76,31 @@ interface ImportResult {
 
 // ── Normalização ───────────────────────────────────────────────────────────────
 
-function normalizePhone(raw: string): string | null {
-  if (!raw?.trim()) return null
+// B3 fix: retorna { phone, warning } em vez de string|null
+// Telefones 7-9 dígitos → phoneWarning (incompleto, sem DDD); não bloqueia importação
+function normalizePhone(raw: string): { phone: string | null; warning: string | null } {
+  if (!raw?.trim()) return { phone: null, warning: null }
   const digits = raw.replace(/\D/g, '')
-  if (digits.length === 0) return null
-  if (digits.length === 11) return `+55${digits}`           // 021 9XXXX-XXXX
-  if (digits.length === 10) return `+55${digits}`           // 021 XXXX-XXXX
-  if (digits.length >= 12 && digits.startsWith('55')) return `+${digits}`
-  return raw.trim() // keep as-is se não reconhecido
+  if (digits.length === 0) return { phone: null, warning: null }
+  // +55 + 11 dígitos (DDD + 9-digit mobile) ou +55 + 10 dígitos (DDD + fixo)
+  if (digits.length >= 12 && digits.startsWith('55')) return { phone: `+${digits}`, warning: null }
+  if (digits.length === 11) return { phone: `+55${digits}`, warning: null }   // DDD + 9-digit
+  if (digits.length === 10) return { phone: `+55${digits}`, warning: null }   // DDD + fixo 8-digit
+  // 7-9 dígitos: provavelmente sem DDD ou fixo incompleto → phoneWarning, sem bloquear
+  if (digits.length >= 7 && digits.length <= 9) {
+    return {
+      phone: null,
+      warning: `Telefone incompleto (${digits.length} dígitos, sem DDD?): "${raw.trim()}"`,
+    }
+  }
+  // Menos de 7 ou formato irreconhecível → descarta silenciosamente
+  return { phone: null, warning: null }
 }
 
 function normalizeDate(raw: string | number | null | undefined): string | null {
   if (raw === null || raw === undefined || raw === '') return null
   // Excel número serial
   if (typeof raw === 'number' && raw > 0) {
-    // Epoch Excel: 1 = 1900-01-01, com bug do ano 1900 (offset 2)
     const d = new Date(Date.UTC(1899, 11, 30) + raw * 86400000)
     if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
     return null
@@ -94,7 +112,6 @@ function normalizeDate(raw: string | number | null | undefined): string | null {
   if (dmY) return `${dmY[3]}-${dmY[2].padStart(2, '0')}-${dmY[1].padStart(2, '0')}`
   // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
-  // Fallback
   const d = new Date(str)
   if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
   return null
@@ -106,8 +123,13 @@ function normalizeEmail(raw: string): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? t : null
 }
 
+// B4 fix: remove artefato ´ (U+00B4) e Â´ (double-encoded UTF-8 lido como Latin-1) do Eclésia
 function normalizeName(raw: string): string {
-  return String(raw ?? '').trim().replace(/\s+/g, ' ')
+  let s = String(raw ?? '').trim()
+  // Strip artefatos de encoding do export Eclésia: ´FELIPE → FELIPE, Â´FELIPE → FELIPE
+  s = s.replace(/^(Â´|´)+/, '').trim()
+  s = s.replace(/\s+/g, ' ')
+  return s
 }
 
 // ── Auto-sugestão de mapeamento ────────────────────────────────────────────────
@@ -218,16 +240,19 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         ? (row[mapping[key] as number] ?? '')
         : ''
 
-    // Parse de cada linha
+    // Fase 1: parse de cada linha (B3 + B4 aplicados)
     const processed: ParsedRow[] = rawRows.map(row => {
       const rawName = get(row, 'name')
-      const name    = normalizeName(rawName)
-      const rowError  = !name ? 'Nome obrigatório' : null
+      const name    = normalizeName(rawName)   // B4: strip ´ artefato Eclésia
+      const rowError = !name ? 'Nome obrigatório' : null
+
+      const { phone, warning: phoneWarning } = normalizePhone(get(row, 'phone'))   // B3
 
       return {
         raw:            row,
         name,
-        phone:          normalizePhone(get(row, 'phone')),
+        phone,
+        phoneWarning:   rowError ? null : phoneWarning,  // só mostra aviso em linhas válidas
         email:          normalizeEmail(get(row, 'email')),
         birth_date:     normalizeDate(get(row, 'birth_date')),
         marital_status: get(row, 'marital_status') || null,
@@ -237,49 +262,62 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         baptism_date:   normalizeDate(get(row, 'baptism_date')),
         calling:        get(row, 'calling')        || null,
         rowError,
-        isDuplicate: false,
+        isDuplicate:    false,
+        dupReason:      null,
       }
     })
 
-    // Dedup: coleta phones/emails e consulta DB
-    const phones = [...new Set(processed.filter(r => r.phone && !r.rowError).map(r => r.phone!))]
-    const emails = [...new Set(processed.filter(r => r.email && !r.rowError).map(r => r.email!))]
+    // Fase 2: dedup INTRA-PLANILHA por telefone (B2)
+    // Mesmo telefone aparecendo 2x no arquivo → segunda ocorrência é duplicata interna
+    const seenPhonesInFile = new Set<string>()
+    const afterIntraDup: ParsedRow[] = processed.map(row => {
+      if (row.rowError || !row.phone) return row
+      if (seenPhonesInFile.has(row.phone)) {
+        return {
+          ...row,
+          isDuplicate: true,
+          dupReason:   `Telefone repetido na planilha: ${row.phone}`,
+        }
+      }
+      seenPhonesInFile.add(row.phone)
+      return row
+    })
+
+    // Fase 3: dedup contra banco — APENAS TELEFONE (B1 fix: e-mail removido do dedup)
+    // Fundamento: e-mail é compartilhado entre familiares no Eclésia; telefone identifica a pessoa.
+    // E-mail sem correspondência de telefone NÃO é evidência de duplicata.
+    const phonesToCheck = [
+      ...new Set(
+        afterIntraDup
+          .filter(r => r.phone && !r.rowError && !r.isDuplicate)
+          .map(r => r.phone!)
+      ),
+    ]
 
     const existingPhones = new Set<string>()
-    const existingEmails = new Set<string>()
-
-    if (phones.length > 0) {
-      // Checa em lotes de 100 para não estourar URL
-      for (let i = 0; i < phones.length; i += 100) {
+    if (phonesToCheck.length > 0) {
+      for (let i = 0; i < phonesToCheck.length; i += 100) {
         const { data } = await supabase
           .from('people')
           .select('phone')
           .eq('church_id', churchId)
           .is('deleted_at', null)
-          .in('phone', phones.slice(i, i + 100))
+          .in('phone', phonesToCheck.slice(i, i + 100))
         ;(data ?? []).forEach(p => { if (p.phone) existingPhones.add(p.phone) })
       }
     }
 
-    if (emails.length > 0) {
-      for (let i = 0; i < emails.length; i += 100) {
-        const { data } = await supabase
-          .from('people')
-          .select('email')
-          .eq('church_id', churchId)
-          .is('deleted_at', null)
-          .in('email', emails.slice(i, i + 100))
-        ;(data ?? []).forEach(p => { if (p.email) existingEmails.add(p.email) })
+    const final: ParsedRow[] = afterIntraDup.map(row => {
+      if (row.rowError || row.isDuplicate) return row
+      if (row.phone && existingPhones.has(row.phone)) {
+        return {
+          ...row,
+          isDuplicate: true,
+          dupReason:   `Telefone já cadastrado: ${row.phone}`,
+        }
       }
-    }
-
-    const final = processed.map(row => ({
-      ...row,
-      isDuplicate: !row.rowError && (
-        (!!row.phone && existingPhones.has(row.phone)) ||
-        (!!row.email && existingEmails.has(row.email))
-      ),
-    }))
+      return row
+    })
 
     setParsedRows(final)
     setIsProcessing(false)
@@ -358,9 +396,10 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
 
   if (!open) return null
 
-  const validRows  = parsedRows.filter(r => !r.rowError && !r.isDuplicate)
-  const errorCount = parsedRows.filter(r => !!r.rowError).length
-  const dupCount   = parsedRows.filter(r => r.isDuplicate).length
+  const validRows      = parsedRows.filter(r => !r.rowError && !r.isDuplicate)
+  const errorCount     = parsedRows.filter(r => !!r.rowError).length
+  const dupCount       = parsedRows.filter(r => r.isDuplicate).length
+  const phoneWarnCount = parsedRows.filter(r => !r.rowError && !r.isDuplicate && !!r.phoneWarning).length
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -376,7 +415,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             <p className="text-xs text-[#8A8A8A] mt-0.5">
               {step === 'upload'    && 'Importe membros de planilha Excel ou CSV (Eclésia, Arena, etc.)'}
               {step === 'mapping'   && `${rawRows.length} linhas detectadas — mapeie as colunas`}
-              {step === 'preview'   && `Preview: ${validRows.length} prontas, ${dupCount} duplicadas, ${errorCount} com erro`}
+              {step === 'preview'   && `Preview: ${validRows.length} prontas, ${dupCount} duplicadas, ${errorCount} com erro${phoneWarnCount > 0 ? `, ${phoneWarnCount} sem DDD` : ''}`}
               {step === 'importing' && 'Importando... aguarde'}
               {step === 'done'      && 'Importação concluída'}
             </p>
@@ -437,7 +476,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                 <p>• A primeira linha deve ser o cabeçalho (Nome, Telefone, E-mail…)</p>
                 <p>• Membros importados <strong>não recebem mensagem de boas-vindas</strong></p>
                 <p>• Entram na régua de reengajamento de forma gradual (máx. 50/dia)</p>
-                <p>• Duplicatas por telefone ou e-mail são ignoradas automaticamente</p>
+                <p>• Duplicatas por <strong>telefone</strong> são ignoradas automaticamente</p>
               </div>
             </div>
           )}
@@ -487,11 +526,17 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
           {step === 'preview' && !isProcessing && (
             <div className="space-y-4">
               {/* Cards de contagem */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className={`grid gap-3 ${phoneWarnCount > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 <div className="bg-green-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-green-700">{validRows.length}</p>
                   <p className="text-xs text-green-600 mt-0.5">Prontas</p>
                 </div>
+                {phoneWarnCount > 0 && (
+                  <div className="bg-orange-50 rounded-xl p-3 text-center">
+                    <p className="text-2xl font-bold text-orange-600">{phoneWarnCount}</p>
+                    <p className="text-xs text-orange-500 mt-0.5">Sem DDD</p>
+                  </div>
+                )}
                 <div className="bg-yellow-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-yellow-700">{dupCount}</p>
                   <p className="text-xs text-yellow-600 mt-0.5">Duplicatas (ignorar)</p>
@@ -524,6 +569,44 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                         <span className="font-medium text-[#161616] truncate min-w-0">{row.name}</span>
                         {row.phone && <span className="text-[#8A8A8A] text-xs shrink-0">{row.phone}</span>}
                         {row.email && <span className="text-[#8A8A8A] text-xs truncate min-w-0">{row.email}</span>}
+                        {row.phoneWarning && (
+                          <span className="text-orange-500 text-xs ml-auto shrink-0 flex items-center gap-1">
+                            <AlertTriangle size={11} /> sem DDD
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Aviso de telefones sem DDD (B3) */}
+              {phoneWarnCount > 0 && (
+                <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-xl p-3">
+                  <AlertTriangle size={16} className="text-orange-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-orange-700">
+                      {phoneWarnCount} pessoa(s) com telefone incompleto (sem DDD)
+                    </p>
+                    <p className="text-xs text-orange-600 mt-0.5">
+                      Essas pessoas serão importadas <strong>sem telefone</strong>. Você poderá preencher o número manualmente depois.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Amostra de duplicatas */}
+              {dupCount > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-yellow-600 uppercase tracking-wide mb-2">
+                    Duplicatas por telefone (primeiras {Math.min(5, dupCount)})
+                  </p>
+                  <div className="space-y-1.5">
+                    {parsedRows.filter(r => r.isDuplicate).slice(0, 5).map((row, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-yellow-50 rounded-lg px-3 py-2 text-sm">
+                        <AlertCircle size={13} className="text-yellow-600 shrink-0" />
+                        <span className="text-[#161616] truncate min-w-0">{row.name}</span>
+                        <span className="text-yellow-600 text-xs ml-auto shrink-0">{row.dupReason ?? 'Duplicata'}</span>
                       </div>
                     ))}
                   </div>
