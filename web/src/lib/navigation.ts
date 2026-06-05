@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   MessageSquare,
   ClipboardList,  // ← novo: para Relatórios de escalas
+  Megaphone,      // ← Campanha Blast
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,      moduleKey: 'gabinete'    },
   { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,           moduleKey: 'financeiro'  },
   { path: '/conversas',  label: 'Conversas',   Icon: MessageSquare,    moduleKey: null           },
+  { path: '/campanha',   label: 'Campanha',    Icon: Megaphone,        moduleKey: null           },
 ]
 
 // ── Itens do BRAÇO Volunteer Pro ──────────────────────────────────────────────
