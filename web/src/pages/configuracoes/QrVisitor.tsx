@@ -106,6 +106,7 @@ export function QrVisitor() {
         .from('people')
         .select('id', { count: 'exact', head: true })
         .eq('church_id', churchId!)
+        .is('deleted_at', null)
         .eq('source', 'qr_code')
         .gte('first_visit_date', startOfMonth.toISOString().split('T')[0])
 
@@ -122,6 +123,7 @@ export function QrVisitor() {
         .from('people')
         .select('id', { count: 'exact', head: true })
         .eq('church_id', churchId!)
+        .is('deleted_at', null)
         .eq('source', 'qr_code')
       return count ?? 0
     },

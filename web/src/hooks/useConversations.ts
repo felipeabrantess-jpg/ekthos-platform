@@ -83,6 +83,7 @@ export function useConversations(
           .from('people')
           .select('id')
           .eq('church_id', churchId)
+          .is('deleted_at', null)
           .or(
             `first_name.ilike.%${searchTrimmed}%,last_name.ilike.%${searchTrimmed}%`
           )
