@@ -186,13 +186,18 @@ export function useDeletePerson() {
 
   return useMutation({
     mutationFn: async ({ id, churchId }: { id: string; churchId: string }) => {
-      const { error } = await supabase
+      // .select('id') forces Supabase to return affected rows — without it,
+      // the API returns {data:null, error:null} even when RLS silently blocks
+      // the UPDATE (0 rows affected), making it indistinguishable from success.
+      const { data, error } = await supabase
         .from('people')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .update({ deleted_at: new Date().toISOString() } as any)
         .eq('id', id)
         .eq('church_id', churchId)
+        .select('id')
       if (error) throw new Error(error.message)
+      if (!data || data.length === 0) throw new Error('Não foi possível excluir. Verifique suas permissões e tente novamente.')
     },
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['people', churchId] })

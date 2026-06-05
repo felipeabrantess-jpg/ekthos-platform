@@ -84,7 +84,7 @@ export default function PersonSelect({
     setIsOpen(true)
     setNoLeadersAtAll(false)
 
-    let q = supabase.from('people').select('id, name, email').limit(8)
+    let q = supabase.from('people').select('id, name, email').is('deleted_at', null).limit(8)
     if (query.length > 0) {
       q = q.ilike('name', `%${query}%`)
     }
