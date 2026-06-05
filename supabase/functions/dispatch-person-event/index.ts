@@ -1,8 +1,12 @@
 // ============================================================
-// Edge Function: dispatch-person-event  v34
+// Edge Function: dispatch-person-event  v35
 // Sistema genérico de eventos de pessoa — Frente B (extensível).
 //
 // Changelog:
+//   v35 (2026-06-04) — WhatsApp instantâneo: invoca agent-acolhimento
+//                      diretamente após D3 guard passar (fire-and-forget).
+//                      next_touchpoint_at agora é NOW() (era NOW+2h).
+//                      Autorizado por Felipe em 2026-06-04.
 //   v34 (2026-05-29) — R-PREMIUM-GUARD: verifica contratação ativa
 //                      de agent-acolhimento (agent_grants OU
 //                      subscription_agents) antes de criar journey.
@@ -209,6 +213,25 @@ Deno.serve(async (req: Request) => {
           }).catch(e => console.warn('[dispatch-person-event] send-welcome-email falhou:', e))
           console.log(`[dispatch-person-event] Email boas-vindas disparado para ${person.email}`)
         }
+
+        // ── 1e. WhatsApp boas-vindas — invocar agent-acolhimento imediatamente (v35) ──
+        // Fire-and-forget com timeout 30s — agente é pesado (Claude + Z-API).
+        // channel-dispatcher (*/1 * * * *) entrega em até 1 min após enfileiramento.
+        const journeyId = (d3LockResult as { id: string }).id
+        fetch(`${SUPABASE_URL}/functions/v1/agent-acolhimento`, {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            Authorization:   `Bearer ${SERVICE_ROLE_KEY}`,
+          },
+          body:   JSON.stringify({
+            trigger:    'journey',
+            journey_id: journeyId,
+            church_id:  churchId,
+          }),
+          signal: AbortSignal.timeout(30_000),
+        }).catch(e => console.warn('[dispatch-person-event] agent-acolhimento falhou (não crítico):', (e as Error).message))
+        console.log(`[dispatch-person-event] agent-acolhimento invocado para journey ${journeyId}`)
       }
     }
 
@@ -371,8 +394,8 @@ async function createAcolhimentoJourney(
   personId:  string
 ): Promise<void> {
   try {
-    // D+0: enviar 2h após o cadastro (não imediatamente)
-    const twoHoursFromNow = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+    // D+0: instantâneo — agent-acolhimento é invocado diretamente (v35)
+    const now = new Date().toISOString()
 
     const { error } = await sb
       .from('acolhimento_journey')
@@ -380,7 +403,7 @@ async function createAcolhimentoJourney(
         church_id:          churchId,
         person_id:          personId,
         current_touchpoint: 'D+0',
-        next_touchpoint_at: twoHoursFromNow,
+        next_touchpoint_at: now,
         status:             'pending'
       })
 
@@ -432,7 +455,6 @@ async function notifyAdmins(
 
     for (const admin of admins) {
       const { error: notifErr } = await sb
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('notifications' as any)
         .insert({
           church_id:       churchId,
@@ -456,21 +478,12 @@ async function notifyAdmins(
     }
 
     console.log(`[dispatch-person-event] Notificacoes processadas para ${admins.length} admin(s)`)
-
-    /*
-     * TODO Frente N v3 (proximas versoes):
-     * - Notificacao quando person_stage muda pra 'novo_convertido'
-     * - Notificacao quando pessoa entra em etapa do pipeline
-     * - Notificacao automatica diaria para visitantes 24h+ sem consolidacao
-     * - Notificacao para pedidos de modulo (Volunteer Pro etc)
-     */
   } catch (err: unknown) {
     console.error(
       '[dispatch-person-event] notifyAdmins failed:',
       err instanceof Error ? (err.stack ?? err.message) : String(err),
       { person_id: person.id, church_id: churchId }
     )
-    // NÃO relança — não bloqueia request principal
   }
 }
 
