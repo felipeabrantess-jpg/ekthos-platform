@@ -56,6 +56,7 @@ const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
 const EventsList       = lazy(() => import('@/pages/events/EventsList'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
+const CampanhaBlast     = lazy(() => import('@/pages/campanha/CampanhaBlast'))
 
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList            = lazy(() => import('@/pages/agents/AgentsList'))
@@ -340,6 +341,9 @@ export default function App() {
             </Route>
             {/* Aliases D2 — backward compat por 1 release → redirect para /volunteer/* */}
             {/* REMOVER na próxima release após todas as igrejas migrarem bookmarks */}
+
+            {/* ── Campanha Blast ── */}
+            <Route path="campanha" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CampanhaBlast /></Suspense></ErrorBoundary>} />
 
             {/* ── Sprint 3C: Central de Conversas ── */}
             <Route path="conversas"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
