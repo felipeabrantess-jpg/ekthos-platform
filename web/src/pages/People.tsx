@@ -10,11 +10,13 @@
  */
 
 import { useState, Component, type ReactNode } from 'react'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
+import { ImportacaoMembros } from '@/features/people/components/ImportacaoMembros'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -293,11 +295,13 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
 
 export default function People() {
   const { churchId } = useAuth()
+  const queryClient  = useQueryClient()
   const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
   const [search, setSearch]         = useState('')
   const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
   const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
   const [deletingId, setDeletingId]         = useState<string | null>(null)
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null) // A2: modal
@@ -375,6 +379,14 @@ export default function People() {
           >
             <QrCode size={15} strokeWidth={1.75} />
             <span className="hidden sm:inline">QR de Entrada</span>
+          </button>
+          {/* Importar planilha — só desktop */}
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
+          >
+            <Upload size={15} strokeWidth={1.75} />
+            Importar
           </button>
           {/* Nova Pessoa — só desktop */}
           <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
@@ -549,6 +561,16 @@ export default function People() {
         onCancel={() => { setPersonToDelete(null); setDeleteError(null) }}
         isDeleting={deletingId !== null}
         error={deleteError}
+      />
+
+      {/* Importação de membros por planilha */}
+      <ImportacaoMembros
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={(_count) => {
+          void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+          void queryClient.invalidateQueries({ queryKey: ['people-count', churchId] })
+        }}
       />
     </div>
   )
