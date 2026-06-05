@@ -15,6 +15,8 @@
  *  - B2: dedup intra-planilha por telefone (mesmo número duas vezes no arquivo)
  *  - B3: telefones 7-9 dígitos (sem DDD / fixos incompletos) → phoneWarning, não erro fatal
  *  - B4: normalizeName strip do artefato ´ / Â´ do Eclésia
+ *  - B5: normalizeDate trata serial Excel como string (handleFile stringifica tudo) +
+ *        validação de ano (1900–hoje) — impede "+022840-01-01" → erro Postgres
  */
 
 import { useState, useCallback, useRef } from 'react'
@@ -56,11 +58,12 @@ interface ParsedRow {
   phoneWarning:   string | null   // B3: telefone incompleto/sem DDD
   email:          string | null
   birth_date:     string | null
+  baptism_date:   string | null
+  dateWarning:    string | null   // B5: data com valor mas não parseável → null + aviso
   marital_status: string | null
   neighborhood:   string | null
   city:           string | null
   state:          string | null
-  baptism_date:   string | null
   calling:        string | null
   rowError:       string | null   // erro fatal — não importável
   isDuplicate:    boolean         // duplicata confirmada — ignorar
@@ -97,23 +100,57 @@ function normalizePhone(raw: string): { phone: string | null; warning: string | 
   return { phone: null, warning: null }
 }
 
+// B5 fix: normalizeDate com suporte a serial Excel chegando como STRING
+// Causa raiz: handleFile L212 stringifica todas as células antes de armazenar em rawRows,
+// tornando o branch "typeof raw === 'number'" dead code.
+// Seriais chegam como "22840" (string) → new Date("22840") → ano 22840 → "+022840-01-01"
+// → Postgres rejeita com "time zone displacement out of range".
+// Fix: detectar string numérica pura (4-6 dígitos) → tratar como serial Excel.
+// Validação de ano (1900–hoje) impede datas absurdas em qualquer formato.
 function normalizeDate(raw: string | number | null | undefined): string | null {
   if (raw === null || raw === undefined || raw === '') return null
-  // Excel número serial
-  if (typeof raw === 'number' && raw > 0) {
-    const d = new Date(Date.UTC(1899, 11, 30) + raw * 86400000)
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
-    return null
+  const CURRENT_YEAR = new Date().getFullYear()
+
+  // Helper: serial Excel → YYYY-MM-DD com validação de ano
+  const fromSerial = (n: number): string | null => {
+    const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000)
+    if (isNaN(d.getTime())) return null
+    const y = d.getUTCFullYear()
+    return (y >= 1900 && y <= CURRENT_YEAR) ? d.toISOString().split('T')[0] : null
   }
+
+  // Serial como número real (raro — só se célula não passar pela stringificação)
+  if (typeof raw === 'number' && raw > 0) return fromSerial(raw)
+
   const str = String(raw).trim()
   if (!str) return null
+
+  // B5: serial Excel como string — 4 a 6 dígitos sem separador
+  // Exemplo: "22840" → 1962-06-05 | "18202" → 1949-10-11
+  // Regex não bate em "YYYY-MM-DD" (10 chars com hífens) nem "DD/MM/YYYY" (10 chars com barras)
+  if (/^\d{4,6}$/.test(str)) return fromSerial(parseInt(str, 10))
+
   // DD/MM/YYYY ou DD-MM-YYYY
   const dmY = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/)
-  if (dmY) return `${dmY[3]}-${dmY[2].padStart(2, '0')}-${dmY[1].padStart(2, '0')}`
+  if (dmY) {
+    const y = parseInt(dmY[3], 10)
+    if (y < 1900 || y > CURRENT_YEAR) return null
+    return `${dmY[3]}-${dmY[2].padStart(2, '0')}-${dmY[1].padStart(2, '0')}`
+  }
+
   // YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const y = parseInt(str.split('-')[0], 10)
+    return (y >= 1900 && y <= CURRENT_YEAR) ? str : null
+  }
+
+  // Fallback genérico — com validação de ano (impede "22840" → ano 22840 pela rota antiga)
   const d = new Date(str)
-  if (!isNaN(d.getTime())) return d.toISOString().split('T')[0]
+  if (!isNaN(d.getTime())) {
+    const y = d.getUTCFullYear()
+    return (y >= 1900 && y <= CURRENT_YEAR) ? d.toISOString().split('T')[0] : null
+  }
+
   return null
 }
 
@@ -240,7 +277,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         ? (row[mapping[key] as number] ?? '')
         : ''
 
-    // Fase 1: parse de cada linha (B3 + B4 aplicados)
+    // Fase 1: parse de cada linha (B3 + B4 + B5 aplicados)
     const processed: ParsedRow[] = rawRows.map(row => {
       const rawName = get(row, 'name')
       const name    = normalizeName(rawName)   // B4: strip ´ artefato Eclésia
@@ -248,18 +285,30 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
 
       const { phone, warning: phoneWarning } = normalizePhone(get(row, 'phone'))   // B3
 
+      // B5: detecta data com valor mas que não parseou → dateWarning (pessoa entra sem data)
+      const rawBd       = get(row, 'birth_date')
+      const rawBap      = get(row, 'baptism_date')
+      const birth_date  = normalizeDate(rawBd)
+      const baptism_date = normalizeDate(rawBap)
+      const dateWarnings = [
+        rawBd.trim()  && !birth_date  ? `Nascimento ilegível: "${rawBd.trim().slice(0, 25)}"` : null,
+        rawBap.trim() && !baptism_date ? `Batismo ilegível: "${rawBap.trim().slice(0, 25)}"` : null,
+      ].filter(Boolean)
+      const dateWarning = dateWarnings.length > 0 ? dateWarnings.join(' | ') : null
+
       return {
         raw:            row,
         name,
         phone,
         phoneWarning:   rowError ? null : phoneWarning,  // só mostra aviso em linhas válidas
         email:          normalizeEmail(get(row, 'email')),
-        birth_date:     normalizeDate(get(row, 'birth_date')),
+        birth_date,
+        baptism_date,
+        dateWarning:    rowError ? null : dateWarning,   // só mostra aviso em linhas válidas
         marital_status: get(row, 'marital_status') || null,
         neighborhood:   get(row, 'neighborhood')   || null,
         city:           get(row, 'city')           || null,
         state:          get(row, 'state')          || null,
-        baptism_date:   normalizeDate(get(row, 'baptism_date')),
         calling:        get(row, 'calling')        || null,
         rowError,
         isDuplicate:    false,
@@ -400,6 +449,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
   const errorCount     = parsedRows.filter(r => !!r.rowError).length
   const dupCount       = parsedRows.filter(r => r.isDuplicate).length
   const phoneWarnCount = parsedRows.filter(r => !r.rowError && !r.isDuplicate && !!r.phoneWarning).length
+  const dateWarnCount  = parsedRows.filter(r => !r.rowError && !r.isDuplicate && !!r.dateWarning).length
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -415,7 +465,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             <p className="text-xs text-[#8A8A8A] mt-0.5">
               {step === 'upload'    && 'Importe membros de planilha Excel ou CSV (Eclésia, Arena, etc.)'}
               {step === 'mapping'   && `${rawRows.length} linhas detectadas — mapeie as colunas`}
-              {step === 'preview'   && `Preview: ${validRows.length} prontas, ${dupCount} duplicadas, ${errorCount} com erro${phoneWarnCount > 0 ? `, ${phoneWarnCount} sem DDD` : ''}`}
+              {step === 'preview'   && `Preview: ${validRows.length} prontas, ${dupCount} duplicadas, ${errorCount} com erro${phoneWarnCount > 0 ? `, ${phoneWarnCount} sem DDD` : ''}${dateWarnCount > 0 ? `, ${dateWarnCount} sem data` : ''}`}
               {step === 'importing' && 'Importando... aguarde'}
               {step === 'done'      && 'Importação concluída'}
             </p>
@@ -526,26 +576,38 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
           {step === 'preview' && !isProcessing && (
             <div className="space-y-4">
               {/* Cards de contagem */}
-              <div className={`grid gap-3 ${phoneWarnCount > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                <div className="bg-green-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-green-700">{validRows.length}</p>
-                  <p className="text-xs text-green-600 mt-0.5">Prontas</p>
-                </div>
-                {phoneWarnCount > 0 && (
-                  <div className="bg-orange-50 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-orange-600">{phoneWarnCount}</p>
-                    <p className="text-xs text-orange-500 mt-0.5">Sem DDD</p>
+              {(() => {
+                const extraCols = (phoneWarnCount > 0 ? 1 : 0) + (dateWarnCount > 0 ? 1 : 0)
+                const cols = 3 + extraCols
+                return (
+                  <div className={`grid gap-3 grid-cols-${cols}`} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+                    <div className="bg-green-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-green-700">{validRows.length}</p>
+                      <p className="text-xs text-green-600 mt-0.5">Prontas</p>
+                    </div>
+                    {phoneWarnCount > 0 && (
+                      <div className="bg-orange-50 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-orange-600">{phoneWarnCount}</p>
+                        <p className="text-xs text-orange-500 mt-0.5">Sem DDD</p>
+                      </div>
+                    )}
+                    {dateWarnCount > 0 && (
+                      <div className="bg-orange-50 rounded-xl p-3 text-center">
+                        <p className="text-2xl font-bold text-orange-600">{dateWarnCount}</p>
+                        <p className="text-xs text-orange-500 mt-0.5">Sem data</p>
+                      </div>
+                    )}
+                    <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-yellow-700">{dupCount}</p>
+                      <p className="text-xs text-yellow-600 mt-0.5">Duplicatas (ignorar)</p>
+                    </div>
+                    <div className="bg-red-50 rounded-xl p-3 text-center">
+                      <p className="text-2xl font-bold text-[#e13500]">{errorCount}</p>
+                      <p className="text-xs text-[#e13500] mt-0.5">Com erro (ignorar)</p>
+                    </div>
                   </div>
-                )}
-                <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-yellow-700">{dupCount}</p>
-                  <p className="text-xs text-yellow-600 mt-0.5">Duplicatas (ignorar)</p>
-                </div>
-                <div className="bg-red-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-[#e13500]">{errorCount}</p>
-                  <p className="text-xs text-[#e13500] mt-0.5">Com erro (ignorar)</p>
-                </div>
-              </div>
+                )
+              })()}
 
               {validRows.length === 0 && (
                 <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
@@ -590,6 +652,21 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                     </p>
                     <p className="text-xs text-orange-600 mt-0.5">
                       Essas pessoas serão importadas <strong>sem telefone</strong>. Você poderá preencher o número manualmente depois.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Aviso de datas inválidas (B5) */}
+              {dateWarnCount > 0 && (
+                <div className="flex items-start gap-2 bg-orange-50 border border-orange-200 rounded-xl p-3">
+                  <AlertTriangle size={16} className="text-orange-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-orange-700">
+                      {dateWarnCount} pessoa(s) com data de nascimento/batismo não reconhecida
+                    </p>
+                    <p className="text-xs text-orange-600 mt-0.5">
+                      Essas pessoas serão importadas <strong>sem a data</strong>. Você poderá preencher manualmente depois.
                     </p>
                   </div>
                 </div>
