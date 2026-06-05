@@ -115,9 +115,10 @@ interface ConfirmDeleteModalProps {
   onConfirm: () => void
   onCancel: () => void
   isDeleting: boolean
+  error?: string | null
 }
 
-function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting }: ConfirmDeleteModalProps) {
+function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting, error }: ConfirmDeleteModalProps) {
   if (!person) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -127,6 +128,11 @@ function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting }: Confirm
         <p className="text-sm text-text-secondary">
           Deseja remover <strong>{person.name ?? 'esta pessoa'}</strong>? A ação pode ser revertida pelo suporte.
         </p>
+        {error && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2 justify-end pt-1">
           <button
             onClick={onCancel}
@@ -295,6 +301,7 @@ export default function People() {
   const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
   const [deletingId, setDeletingId]         = useState<string | null>(null)
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null) // A2: modal
+  const [deleteError, setDeleteError]       = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
 
   // A1: tabs filtradas carregam tudo (client-side); geral pagina no servidor
@@ -314,16 +321,19 @@ export default function People() {
   function handleNewPerson()                    { setEditingPerson(null); setModalOpen(true) }
 
   // A2: abre modal em vez de window.confirm
-  function handleDelete(person: Person) { setPersonToDelete(person) }
+  function handleDelete(person: Person) { setPersonToDelete(person); setDeleteError(null) }
 
   async function confirmDelete() {
     if (!personToDelete) return
     setDeletingId(personToDelete.id)
+    setDeleteError(null)
     try {
       await deletePerson.mutateAsync({ id: personToDelete.id, churchId: churchId! })
+      setPersonToDelete(null) // fecha modal SOMENTE em caso de sucesso
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir. Tente novamente.')
     } finally {
       setDeletingId(null)
-      setPersonToDelete(null)
     }
   }
 
@@ -536,8 +546,9 @@ export default function People() {
       <ConfirmDeleteModal
         person={personToDelete}
         onConfirm={() => { void confirmDelete() }}
-        onCancel={() => setPersonToDelete(null)}
+        onCancel={() => { setPersonToDelete(null); setDeleteError(null) }}
         isDeleting={deletingId !== null}
+        error={deleteError}
       />
     </div>
   )
