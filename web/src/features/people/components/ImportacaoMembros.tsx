@@ -116,12 +116,15 @@ interface ParsedRow {
   isDuplicate:        boolean
   dupReason:          string | null
   warnings:           string[]
+  isDiscarded:        boolean   // sem telefone E sem email → não inserir (critério de contato mínimo)
+  isWeakContact:      boolean   // sem telefone MAS com email → tag 'contato-fraco'
 }
 
 interface ImportResult {
   batchId:     string
   inserted:    number
   duplicates:  number
+  discarded:   number          // sem telefone E sem email — descartados silenciosamente
   errorRows:   { name: string; reason: string }[]
   warningRows: { name: string; msgs: string[] }[]
   colMap:      Record<string, number>
@@ -380,12 +383,20 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             street: null, street_number: null, address_complement: null,
             neighborhood: null, city: null, state: null, instagram_handle: null,
             calling: null, rowError: 'Nome obrigatório', isDuplicate: false,
-            dupReason: null, warnings: [],
+            dupReason: null, warnings: [], isDiscarded: false, isWeakContact: false,
           }
         }
 
         const { phone, warning: phoneWarning } = normalizePhone(get(row, 'phone'))   // B3
         const { phone: phSec }                 = normalizePhone(get(row, 'phone_secondary'))
+        const email                            = normalizeEmail(get(row, 'email'))
+
+        // Critério de contato mínimo (decisão Felipe 2026-06-05):
+        //   • tem telefone → entra normalmente
+        //   • sem telefone MAS com email → entra com tag 'contato-fraco'
+        //   • sem telefone E sem email → descartado (não inserir)
+        const isDiscarded  = !phone && !email
+        const isWeakContact = !phone && !!email
 
         // B5: parse de todas as datas + coleta de warnings por data ilegível
         const DATE_FIELDS: [string, string][] = [
@@ -412,7 +423,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         return {
           raw: row, name,
           phone,              phone_secondary:    phSec,
-          phoneWarning,       email:              normalizeEmail(get(row, 'email')),
+          phoneWarning,       email,
           birth_date:         parsedDates.birth_date       ?? null,
           baptism_date:       parsedDates.baptism_date     ?? null,
           wedding_date:       parsedDates.wedding_date     ?? null,
@@ -431,6 +442,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
           instagram_handle:   normalizeText(get(row, 'instagram_handle')),
           calling:            normalizeText(get(row, 'calling')),
           rowError: null, isDuplicate: false, dupReason: null, warnings,
+          isDiscarded, isWeakContact,
         }
       })
 
@@ -468,7 +480,8 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
       })
 
       // 6. Insert em massa com import_batch_id
-      const toInsert = deduped.filter(r => !r.rowError && !r.isDuplicate)
+      // Critério de contato mínimo: isDiscarded → não entra na base (contado mas não nomeado no resultado)
+      const toInsert = deduped.filter(r => !r.rowError && !r.isDuplicate && !r.isDiscarded)
       setProcLabel(`Importando ${toInsert.length} ${toInsert.length === 1 ? 'pessoa' : 'pessoas'}…`)
 
       const batchId       = crypto.randomUUID()
@@ -486,7 +499,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             is_bulk_import:  true,        // suprime boas-vindas
             last_contact_at: lastContactAt,  // entra régua reengajamento gradual
             optout:          false,
-            tags:            [],
+            tags:            row.isWeakContact ? ['contato-fraco'] : [],  // sem telefone, só email
             import_batch_id: batchId,     // permite desfazer lote
           }
           if (row.phone)              obj.phone              = row.phone
@@ -537,6 +550,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         batchId,
         inserted,
         duplicates:  deduped.filter(r => r.isDuplicate).length,
+        discarded:   deduped.filter(r => r.isDiscarded).length,  // sem telefone E sem email
         errorRows,
         warningRows,
         colMap,
@@ -611,7 +625,12 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             <p className="text-xs text-[#8A8A8A] mt-0.5">
               {step === 'idle'       && 'Detecta colunas de qualquer planilha automaticamente'}
               {step === 'processing' && procLabel}
-              {step === 'done'       && result && `${result.inserted} importadas · ${result.duplicates} duplicadas · ${result.warningRows.length} avisos`}
+              {step === 'done'       && result && [
+                `${result.inserted} importadas`,
+                `${result.duplicates} duplicadas`,
+                result.discarded > 0 ? `${result.discarded} descartadas` : null,
+                `${result.warningRows.length} avisos`,
+              ].filter(Boolean).join(' · ')}
               {step === 'undoing'    && 'Desfazendo lote…'}
               {step === 'undone'     && 'Lote desfeito com sucesso'}
             </p>
@@ -670,6 +689,8 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                 <p>• Membros importados <strong>não recebem boas-vindas</strong></p>
                 <p>• Entram no reengajamento gradual (máx. 50 msg/dia — sem risco de spam)</p>
                 <p>• Duplicatas por <strong>telefone</strong> são ignoradas automaticamente</p>
+                <p>• Sem telefone <em>e</em> sem e-mail → linha descartada (sem canal de contato)</p>
+                <p>• Só e-mail (sem telefone) → importado com marcador <em>contato fraco</em></p>
                 <p>• Importação <strong>reversível</strong> — desfaça o lote inteiro com 1 clique</p>
               </div>
             </div>
@@ -690,15 +711,21 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             <div className="space-y-4">
 
               {/* Métricas */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className={`grid gap-3 ${result.discarded > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
                 <div className="bg-green-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-green-700">{result.inserted}</p>
                   <p className="text-xs text-green-600 mt-0.5">Importadas</p>
                 </div>
                 <div className="bg-yellow-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-yellow-700">{result.duplicates}</p>
-                  <p className="text-xs text-yellow-600 mt-0.5">Duplicadas (ignoradas)</p>
+                  <p className="text-xs text-yellow-600 mt-0.5">Duplicadas</p>
                 </div>
+                {result.discarded > 0 && (
+                  <div className="bg-gray-100 rounded-xl p-3 text-center">
+                    <p className="text-2xl font-bold text-gray-500">{result.discarded}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Sem contato</p>
+                  </div>
+                )}
                 <div className={`rounded-xl p-3 text-center ${result.warningRows.length > 0 ? 'bg-orange-50' : 'bg-[#f9eedc]'}`}>
                   <p className={`text-2xl font-bold ${result.warningRows.length > 0 ? 'text-orange-600' : 'text-[#8A8A8A]'}`}>
                     {result.warningRows.length}
@@ -708,6 +735,17 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                   </p>
                 </div>
               </div>
+
+              {/* Info descartados — apenas count, sem nomes (critério de contato mínimo) */}
+              {result.discarded > 0 && (
+                <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3">
+                  <Info size={14} className="text-gray-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-gray-500">
+                    <strong>{result.discarded}</strong> linha{result.discarded === 1 ? '' : 's'} descartada{result.discarded === 1 ? '' : 's'} por não ter telefone nem e-mail.
+                    Não é possível entrar em contato sem pelo menos um canal — essas pessoas não foram importadas.
+                  </p>
+                </div>
+              )}
 
               {/* Sem inserções */}
               {result.inserted === 0 && (
