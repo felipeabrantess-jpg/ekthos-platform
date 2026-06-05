@@ -193,7 +193,7 @@ function Composer({ conversationId, disabled }: ComposerProps) {
       <div className="flex items-center gap-3 px-4 py-3 bg-[#f9eedc] rounded-xl border border-[#EDE0CC]">
         <Lock size={15} className="text-[#8A8A8A] shrink-0" />
         <p className="text-xs text-[#8A8A8A] flex-1">
-          Clique em <strong className="text-[#161616]">Assumir</strong> para responder manualmente.
+          Clique em <strong className="text-[#161616]">Assumir</strong> no painel à direita para responder manualmente.
         </p>
         <Bot size={15} className="text-blue-400 shrink-0" />
       </div>
