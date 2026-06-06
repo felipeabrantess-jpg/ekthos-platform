@@ -37,12 +37,12 @@ function PersonRow({ person }: { person: ConsolidationPerson }) {
     <div className={`bg-white rounded-2xl border p-4 flex gap-3 items-start ${person.at_risk ? 'border-red-200' : 'border-black/10'}`}>
       {/* Avatar */}
       <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-brand-600 font-semibold text-sm shrink-0">
-        {person.name.charAt(0).toUpperCase()}
+        {(person.name ?? '?').charAt(0).toUpperCase()}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-ekthos-black text-sm truncate">{person.name}</p>
+          <p className="font-semibold text-ekthos-black text-sm truncate">{person.name ?? '(sem nome)'}</p>
           {person.at_risk && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 shrink-0">
               <AlertTriangle className="w-3 h-3" />
@@ -100,6 +100,8 @@ export default function Consolidation() {
         .eq('church_id', churchId!)
         // C2: OR entre os 3 campos para incluir visitantes QR Code (sem conversion_date)
         .or(`conversion_date.gte.${dateStr},first_visit_date.gte.${dateStr},created_at.gte.${dateStr}`)
+        .is('deleted_at', null)
+        .not('name', 'is', null)
         .order('conversion_date', { ascending: false, nullsFirst: false })
 
       return (data ?? []).map(p => {
@@ -122,7 +124,7 @@ export default function Consolidation() {
   const filtered = people
     .filter(p => filter === 'all' || p.at_risk)
     .filter(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
       (p.email ?? '').toLowerCase().includes(search.toLowerCase())
     )
 

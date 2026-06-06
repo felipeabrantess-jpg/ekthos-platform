@@ -82,17 +82,21 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
   const { data: searchResults = [], isFetching } = useQuery({
     queryKey: ['people_search_leaders', churchId, personSearch],
     queryFn: async () => {
-      if (personSearch.trim().length < 2) return []
-      const { data } = await supabase
+      // BUG-2 fix: sem guard de 2 chars — retorna até 8 pessoas ao abrir,
+      // filtra por nome quando digitado
+      let q = supabase
         .from('people')
         .select('id, name, email')
         .eq('church_id', churchId)
-        .ilike('name', `%${personSearch}%`)
         .is('deleted_at', null)
         .limit(8)
+      if (personSearch.trim().length > 0) {
+        q = q.ilike('name', `%${personSearch}%`)
+      }
+      const { data } = await q
       return (data ?? []) as PersonResult[]
     },
-    enabled: personSearch.trim().length >= 2,
+    enabled: !selectedPerson,
   })
 
   const { data: groups = [] } = useQuery({
@@ -118,6 +122,11 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
         .update({ [field]: selectedPerson.id })
         .eq('id', groupId)
       if (err) throw new Error(err.message)
+      // Sync: marcar is_leader=true para manter consistência com PersonSelect
+      await supabase
+        .from('people')
+        .update({ is_leader: true })
+        .eq('id', selectedPerson.id)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['leaders', churchId] })
@@ -152,7 +161,7 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
             <div className="relative">
               <Input placeholder="Buscar por nome..." value={personSearch}
                 onChange={e => setPersonSearch(e.target.value)} />
-              {personSearch.length >= 2 && (
+              {!selectedPerson && (isFetching || searchResults.length > 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-black/10 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
                   {isFetching ? (
                     <div className="flex justify-center py-3"><Spinner size="sm" /></div>
