@@ -122,7 +122,7 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
         .update({ [field]: selectedPerson.id })
         .eq('id', groupId)
       if (err) throw new Error(err.message)
-      // Sync: marcar is_leader=true para manter consistência com PersonSelect
+      // Manter is_leader=true como dado histórico (PersonSelect não filtra mais por este campo)
       await supabase
         .from('people')
         .update({ is_leader: true })
