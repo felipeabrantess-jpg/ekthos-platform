@@ -115,7 +115,6 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
             value={form.leader_id || null}
             onChange={(id) => handleChange('leader_id', id ?? '')}
             placeholder="Buscar líder pelo nome..."
-            onlyLeaders={true}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">

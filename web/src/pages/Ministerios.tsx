@@ -171,7 +171,6 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
             value={form.leaderPersonId || null}
             onChange={(id) => handleChange('leaderPersonId', id ?? '')}
             placeholder="Buscar líder pelo nome..."
-            onlyLeaders={true}
           />
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}

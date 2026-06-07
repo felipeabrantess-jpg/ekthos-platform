@@ -17,8 +17,6 @@ interface PersonSelectProps {
   label?: string
   error?: string
   hint?: string
-  /** Quando true: filtra is_leader=true. Estado vazio sem value mostra mensagem orientativa. */
-  onlyLeaders?: boolean
 }
 
 export default function PersonSelect({
@@ -30,15 +28,12 @@ export default function PersonSelect({
   label,
   error,
   hint,
-  onlyLeaders = false,
 }: PersonSelectProps) {
   const [inputText, setInputText] = useState('')
   const [results, setResults] = useState<Person[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null)
-  // true quando onlyLeaders=true + zero líderes + sem value atual
-  const [noLeadersAtAll, setNoLeadersAtAll] = useState(false)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -78,48 +73,26 @@ export default function PersonSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // FIX: sem guard de 2 chars — query vazia retorna primeiras 8 pessoas (lista ao focar)
+  // Sem guard de 2 chars — query vazia retorna primeiras 8 pessoas (lista ao focar)
   const search = useCallback(async (query: string) => {
     setIsLoading(true)
     setIsOpen(true)
-    setNoLeadersAtAll(false)
 
     let q = supabase.from('people').select('id, name, email').is('deleted_at', null).limit(8)
     if (query.length > 0) {
       q = q.ilike('name', `%${query}%`)
     }
-    if (onlyLeaders) {
-      q = q.eq('is_leader', true)
-    }
 
     const { data, error: queryError } = await q
     if (queryError) console.error('[PersonSelect] query error:', queryError.message)
 
-    let fetched = (data as Person[]) ?? []
-
-    // Backward-compat: se há value atual mas ele foi filtrado (não é líder),
-    // busca essa pessoa por ID e prepend — o form não quebra.
-    if (onlyLeaders && value && !fetched.find((p) => p.id === value)) {
-      const { data: fallback } = await supabase
-        .from('people')
-        .select('id, name, email')
-        .eq('id', value)
-        .single()
-      if (fallback) {
-        fetched = [fallback as Person, ...fetched]
-      }
-    }
-
-    // Estado vazio: onlyLeaders + zero resultados + sem value atual
-    if (onlyLeaders && fetched.length === 0 && !value) {
-      setNoLeadersAtAll(true)
-    }
+    const fetched = (data as Person[]) ?? []
 
     setResults(fetched)
     setIsLoading(false)
-  }, [onlyLeaders, value])
+  }, [])
 
-  // FIX: ao focar, buscar imediatamente (sem debounce) para mostrar lista instantânea
+  // Ao focar, buscar imediatamente (sem debounce) para mostrar lista instantânea
   function handleFocus() {
     if (selectedPerson) return // já tem seleção, não reabrir
     search(inputText)
@@ -144,7 +117,6 @@ export default function PersonSelect({
     setInputText(person.name)
     setIsOpen(false)
     setResults([])
-    setNoLeadersAtAll(false)
     onChange(person.id, person)
   }
 
@@ -153,7 +125,6 @@ export default function PersonSelect({
     setInputText('')
     setResults([])
     setIsOpen(false)
-    setNoLeadersAtAll(false)
     onChange(null)
   }
 
@@ -163,8 +134,7 @@ export default function PersonSelect({
     }
   }
 
-  // FIX: não exige mais inputText.length >= 2 para mostrar dropdown
-  const showDropdown = isOpen && (isLoading || results.length > 0 || noLeadersAtAll)
+  const showDropdown = isOpen && (isLoading || results.length > 0)
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -211,14 +181,6 @@ export default function PersonSelect({
         <div className="absolute z-50 w-full mt-1 bg-white rounded-2xl border border-black/10 shadow-lg overflow-hidden">
           {isLoading ? (
             <div className="px-3 py-3 text-sm text-gray-400 font-medium">Buscando...</div>
-          ) : noLeadersAtAll ? (
-            /* Estado vazio — onlyLeaders + zero líderes + sem value atual */
-            <div className="px-3 py-3 text-sm text-gray-500">
-              <p className="font-medium">Nenhum líder cadastrado.</p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Marque uma pessoa como líder no cadastro dela para aparecer aqui.
-              </p>
-            </div>
           ) : results.length === 0 ? (
             <div className="px-3 py-3 text-sm text-gray-400">Nenhuma pessoa encontrada.</div>
           ) : (
