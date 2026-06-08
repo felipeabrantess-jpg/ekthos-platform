@@ -46,6 +46,7 @@ const TABS: { id: CelulasTab; label: string }[] = [
 interface GroupFormData {
   name: string
   leader_id: string
+  co_leader_id: string
   description: string
   meeting_day: string
   meeting_time: string
@@ -54,7 +55,7 @@ interface GroupFormData {
 }
 
 const emptyGroupForm: GroupFormData = {
-  name: '', leader_id: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '',
+  name: '', leader_id: '', co_leader_id: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '',
 }
 
 interface GroupModalProps {
@@ -69,7 +70,7 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
   const updateGroup = useUpdateGroup()
   const [form, setForm] = useState<GroupFormData>(
     editing
-      ? { name: editing.name, leader_id: (editing as any).leader_id ?? '', description: editing.description ?? '', meeting_day: editing.meeting_day ?? '', meeting_time: editing.meeting_time ?? '', location: editing.location ?? '', notes: editing.notes ?? '' }
+      ? { name: editing.name, leader_id: (editing as any).leader_id ?? '', co_leader_id: (editing as any).co_leader_id ?? '', description: editing.description ?? '', meeting_day: editing.meeting_day ?? '', meeting_time: editing.meeting_time ?? '', location: editing.location ?? '', notes: editing.notes ?? '' }
       : emptyGroupForm
   )
   const [submitting, setSubmitting] = useState(false)
@@ -86,9 +87,9 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
     setError(null)
     try {
       if (editing) {
-        await updateGroup.mutateAsync({ id: editing.id, church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || null, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
+        await updateGroup.mutateAsync({ id: editing.id, church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || null, co_leader_id: form.co_leader_id || null, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
       } else {
-        await createGroup.mutateAsync({ church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || undefined, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
+        await createGroup.mutateAsync({ church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || undefined, co_leader_id: form.co_leader_id || undefined, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
       }
       onClose()
     } catch (err) {
@@ -115,6 +116,14 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
             value={form.leader_id || null}
             onChange={(id) => handleChange('leader_id', id ?? '')}
             placeholder="Buscar líder pelo nome..."
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Co-líder</label>
+          <PersonSelect
+            value={form.co_leader_id || null}
+            onChange={(id) => handleChange('co_leader_id', id ?? '')}
+            placeholder="Buscar co-líder pelo nome..."
           />
         </div>
         <div className="grid grid-cols-2 gap-3">

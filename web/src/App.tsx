@@ -50,6 +50,7 @@ const Celulas        = lazy(() => import('@/pages/Celulas'))
 const Aniversarios   = lazy(() => import('@/pages/Aniversarios'))
 const Agents         = lazy(() => import('@/pages/Agents').then(m => ({ default: m.Agents })))
 const Leaders        = lazy(() => import('@/pages/people/Leaders'))
+const LeaderDetail   = lazy(() => import('@/pages/people/LeaderDetail'))
 const Consolidation  = lazy(() => import('@/pages/people/Consolidation'))
 const VolunteersPage = lazy(() => import('@/pages/people/Volunteers'))
 const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
@@ -320,6 +321,7 @@ export default function App() {
 
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
