@@ -24,9 +24,8 @@ import {
   CalendarDays,
   ShieldCheck,
   MessageSquare,
-  ClipboardList,  // ← Relatórios de escalas
+  ClipboardList,  // ← novo: para Relatórios de escalas
   Megaphone,      // ← Campanha Blast
-  Tag,            // ← Flags de pessoas (PR 1/4)
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -54,10 +53,9 @@ export interface ModuleAddon {
 //   - Escalas      → BRAÇO Volunteer Pro (VOLUNTEER_PRO_NAV)
 
 export const IGREJA_NAV: NavItem[] = [
-  { path: '/dashboard',     label: 'Painel',       Icon: LayoutDashboard, moduleKey: null      },
-  { path: '/pessoas',       label: 'Pessoas',      Icon: Users,           moduleKey: 'pessoas' },
-  { path: '/lideres',       label: 'Líderes',      Icon: Users2,          moduleKey: 'pessoas' },
-  { path: '/pessoas/flags', label: 'Flags',        Icon: Tag,             moduleKey: 'pessoas' },
+  { path: '/dashboard',   label: 'Painel',      Icon: LayoutDashboard, moduleKey: null          },
+  { path: '/pessoas',     label: 'Pessoas',     Icon: Users,           moduleKey: 'pessoas'     },
+  { path: '/lideres',      label: 'Líderes',     Icon: Users2,          moduleKey: 'pessoas'     },
   { path: '/consolidacao', label: 'Consolidação', Icon: Heart,          moduleKey: 'pipeline'    },
   { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,        moduleKey: 'pipeline'    },
   { path: '/celulas',     label: 'Células',     Icon: Network,          moduleKey: 'celulas'     },

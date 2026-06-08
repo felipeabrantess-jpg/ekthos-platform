@@ -53,7 +53,6 @@ const Leaders        = lazy(() => import('@/pages/people/Leaders'))
 const LeaderDetail   = lazy(() => import('@/pages/people/LeaderDetail'))
 const Consolidation  = lazy(() => import('@/pages/people/Consolidation'))
 const VolunteersPage = lazy(() => import('@/pages/people/Volunteers'))
-const FlagsManager   = lazy(() => import('@/pages/people/FlagsManager'))
 const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
 const EventsList       = lazy(() => import('@/pages/events/EventsList'))
@@ -323,7 +322,6 @@ export default function App() {
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="pessoas/flags"  element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><FlagsManager /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
