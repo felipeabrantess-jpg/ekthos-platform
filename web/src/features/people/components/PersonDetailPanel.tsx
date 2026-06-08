@@ -19,7 +19,6 @@ import {
   useCreateVolunteer,
   type PersonVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
-import PersonTagsSection from '@/features/tags/components/PersonTagsSection'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -676,12 +675,7 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
             )}
           </InfoCard>
 
-          {/* 8. Flags */}
-          {churchId && (
-            <PersonTagsSection personId={person.id} churchId={churchId} />
-          )}
-
-          {/* 9. Voluntariado */}
+          {/* 8. Voluntariado */}
           {churchId && (
             <VoluntariadoSection
               personId={person.id}
