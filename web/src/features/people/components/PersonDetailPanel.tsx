@@ -27,7 +27,12 @@ import {
 
 function formatDate(d: string | null | undefined): string {
   if (!d) return '—'
-  return new Intl.DateTimeFormat('pt-BR').format(new Date(d + 'T00:00:00'))
+  // Date-only strings (YYYY-MM-DD) need T00:00:00 to avoid timezone shift.
+  // Full timestamps already have time component — parse directly.
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(d.trim())
+  const date = isDateOnly ? new Date(d + 'T00:00:00') : new Date(d)
+  if (isNaN(date.getTime())) return '—'
+  return new Intl.DateTimeFormat('pt-BR').format(date)
 }
 
 function formatPhone(p: string | null | undefined): string {
