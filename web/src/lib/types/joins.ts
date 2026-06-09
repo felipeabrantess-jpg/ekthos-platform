@@ -126,11 +126,13 @@ export type Interaction        = Row<'interactions'>
 /** people + current pipeline stage via person_pipeline + flags via person_tags */
 export interface PersonWithStage extends Person {
   person_pipeline: Array<{
-    stage_id: string
+    stage_id:         string
     last_activity_at: string | null
-    entered_at?: string | null
-    pipeline_stages: Pick<PipelineStage, 'id' | 'name' | 'slug' | 'order_index'> & {
+    entered_at?:      string | null
+    pipeline_stages:  Pick<PipelineStage, 'id' | 'name' | 'slug' | 'order_index'> & {
       sla_hours?: number | null
+      /** Cor hex da etapa, ex: '#e13500'. Usada pelo PipelineStageSelector. */
+      color?: string | null
     } | null
   }>
   /** Flags configuráveis atribuídas a esta pessoa (via person_tags JOIN tags) */

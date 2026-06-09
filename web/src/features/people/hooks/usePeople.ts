@@ -33,7 +33,8 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
           person_pipeline (
             stage_id,
             last_activity_at,
-            pipeline_stages ( id, name, slug, order_index )
+            entered_at,
+            pipeline_stages ( id, name, slug, order_index, color )
           ),
           person_tags (
             tag_id,

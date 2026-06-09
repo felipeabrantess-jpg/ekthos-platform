@@ -7,7 +7,9 @@ import { useCreatePerson, useUpdatePerson } from '../hooks/usePeople'
 import { useGroups } from '@/features/celulas/hooks/useGroups'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
-import type { Person, AppRoleDB } from '@/lib/types/joins'
+import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
+import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
+import type { Person, AppRoleDB, PipelineStage } from '@/lib/types/joins'
 
 // ──────────────────────────────────────────────────────────────────────
 // Tipos
@@ -54,6 +56,8 @@ interface FormState {
   observacoes_pastorais: string
   // Liderança
   is_leader: boolean
+  // Pipeline
+  stage_id: string
 }
 
 const EMPTY_FORM: FormState = {
@@ -65,9 +69,10 @@ const EMPTY_FORM: FormState = {
   is_dizimista: '',
   observacoes_pastorais: '',
   is_leader: false,
+  stage_id: '',
 }
 
-// Converte Person → FormState para edição
+// Converte Person (ou PersonWithStage) → FormState para edição
 function personToForm(p: Person): FormState {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const any = p as any
@@ -90,6 +95,8 @@ function personToForm(p: Person): FormState {
     is_dizimista:         any.is_dizimista == null ? '' : String(any.is_dizimista),
     observacoes_pastorais: any.observacoes_pastorais ?? '',
     is_leader:            any.is_leader ?? false,
+    // Etapa: lê de person_pipeline[0] se disponível (PersonWithStage)
+    stage_id:             (any.person_pipeline?.[0]?.stage_id) ?? '',
   }
 }
 
@@ -125,7 +132,9 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const isEdit = Boolean(person)
   const createPerson = useCreatePerson()
   const updatePerson = useUpdatePerson()
+  const updatePipelineStage = useUpdatePersonPipelineStage()
   const { data: groups = [] } = useGroups(churchId)
+  const { data: pipelineStages = [] } = usePipelineStages(churchId)
 
   const [activeTab, setActiveTab] = useState<TabId>('pessoal')
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
@@ -207,8 +216,16 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     try {
       if (isEdit && person) {
         await updatePerson.mutateAsync({ id: person.id, church_id: churchId, ...payload })
+        // Atualiza etapa se selecionada
+        if (form.stage_id) {
+          await updatePipelineStage.mutateAsync({ personId: person.id, stageId: form.stage_id, churchId })
+        }
       } else {
-        await createPerson.mutateAsync({ church_id: churchId, source: 'manual', ...payload, name: form.name.trim() })
+        const created = await createPerson.mutateAsync({ church_id: churchId, source: 'manual', ...payload, name: form.name.trim() })
+        // Associa etapa ao criar nova pessoa
+        if (form.stage_id && created?.id) {
+          await updatePipelineStage.mutateAsync({ personId: created.id, stageId: form.stage_id, churchId })
+        }
       }
       onClose()
     } catch (err) {
@@ -318,6 +335,24 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
         {activeTab === 'eclesiastico' && (
           <div className="space-y-3 pt-1">
             <SectionTitle>Vínculo com a Igreja</SectionTitle>
+
+            {/* Etapa do discipulado */}
+            {pipelineStages.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1.5">Etapa do discipulado</label>
+                <select
+                  value={form.stage_id}
+                  onChange={(e) => set('stage_id', e.target.value)}
+                  className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+                >
+                  <option value="">Sem etapa definida</option>
+                  {(pipelineStages as (PipelineStage & { color?: string | null })[]).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <FieldRow>
               <Select
                 label="Célula"

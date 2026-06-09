@@ -113,8 +113,10 @@ export function useMovePersonToStage() {
         .insert({ church_id: churchId, person_id: personId, from_stage_id: existing?.stage_id ?? null, to_stage_id: newStageId, moved_at: now })
     },
     onSuccess: (_data, { churchId }) => {
-      void queryClient.invalidateQueries({ queryKey: ['pipeline-board', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['pipeline-board',  churchId] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', churchId] })
+      // Sincronização bidirecional: atualiza a lista /pessoas também
+      void queryClient.invalidateQueries({ queryKey: ['people',          churchId] })
     },
   })
 }

@@ -12,6 +12,7 @@ import type { PersonWithStage } from '@/lib/types/joins'
 import { useAuth } from '@/hooks/useAuth'
 import { useTags } from '@/features/people/hooks/useTags'
 import { TagBadgesCell } from './TagBadgesCell'
+import { PipelineStageSelector } from '@/features/pipeline/components/PipelineStageSelector'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import {
@@ -38,17 +39,6 @@ function daysAgo(iso: string | null | undefined): number | null {
   if (!iso) return null
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
 }
-
-// ── Stage progression ─────────────────────────────────────────────────────────
-
-const STAGES: { key: string; label: string }[] = [
-  { key: 'visitante',    label: 'Visitante' },
-  { key: 'contato',      label: 'Contato' },
-  { key: 'frequentador', label: 'Frequentador' },
-  { key: 'consolidado',  label: 'Consolidado' },
-  { key: 'discipulo',    label: 'Discípulo' },
-  { key: 'lider',        label: 'Líder' },
-]
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -397,9 +387,6 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
     .map((w: string) => w[0].toUpperCase())
     .join('')
 
-  const currentStageKey = person.person_stage ?? 'visitante'
-  const currentStageIndex = STAGES.findIndex((s) => s.key === currentStageKey)
-
   const RELATIONSHIP_LABELS: Record<string, string> = {
     visitante:    'Visitante',
     frequentador: 'Frequentador',
@@ -481,27 +468,12 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
                   {CHURCH_ROLE_LABELS[p.church_role] ?? p.church_role}
                 </p>
               )}
-              {/* Stage pills */}
-              <div className="flex flex-wrap gap-1 mt-2">
-                {STAGES.map((stage, idx) => {
-                  const isActive = idx === currentStageIndex
-                  const isPast   = idx < currentStageIndex
-                  return (
-                    <span
-                      key={stage.key}
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all ${
-                        isActive
-                          ? 'bg-brand-600 text-white'
-                          : isPast
-                          ? 'bg-brand-50 text-brand-600'
-                          : 'bg-cream-dark text-ekthos-black/30'
-                      }`}
-                    >
-                      {stage.label}
-                    </span>
-                  )
-                })}
-              </div>
+              {/* Etapa do pipeline — seletor inline (fonte única: person_pipeline.stage_id) */}
+              {churchId && (
+                <div className="mt-2">
+                  <PipelineStageSelector person={person} churchId={churchId} />
+                </div>
+              )}
             </div>
           </div>
 

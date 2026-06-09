@@ -1,8 +1,9 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, AlertTriangle, Settings2, ArrowUpDown } from 'lucide-react'
+import { X, AlertTriangle, Settings2, ArrowUpDown, ListChecks } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
+import { PipelineStagesModal } from '@/features/pipeline/components/PipelineStagesModal'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 import type { PersonWithStage, PipelineStage } from '@/lib/types/joins'
@@ -335,6 +336,7 @@ export default function Pipeline() {
   const [dragging, setDragging] = useState<{ personId: string; fromStageId: string } | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
   const [mobileActiveStageId, setMobileActiveStageId] = useState<string | null>(null)
+  const [editStagesOpen, setEditStagesOpen] = useState(false)
 
   const { data: stages, isLoading: stagesLoading, isError: stagesError, refetch: refetchStages } = usePipelineStages(churchId ?? '')
   const { data: board, isLoading: boardLoading, isError: boardError, refetch: refetchBoard } = usePipelineBoard(churchId ?? '')
@@ -403,13 +405,23 @@ export default function Pipeline() {
           <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Caminho de discipulado</h1>
           <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa</p>
         </div>
-        <button
-          onClick={() => navigate('/configuracoes/discipulado')}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-primary hover:text-primary-text bg-white transition-colors shrink-0"
-        >
-          <Settings2 className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Configurar</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setEditStagesOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-primary hover:text-primary-text bg-white transition-colors"
+            aria-label="Editar etapas do discipulado"
+          >
+            <ListChecks className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Editar etapas</span>
+          </button>
+          <button
+            onClick={() => navigate('/configuracoes/discipulado')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-500 border border-black/10 hover:border-primary hover:text-primary-text bg-white transition-colors"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Configurar</span>
+          </button>
+        </div>
       </div>
 
       {/* SLA alert banner */}
@@ -479,6 +491,11 @@ export default function Pipeline() {
           person={selectedPerson}
           onClose={() => setSelectedPerson(null)}
         />
+      )}
+
+      {/* Modal editar etapas */}
+      {editStagesOpen && (
+        <PipelineStagesModal onClose={() => setEditStagesOpen(false)} />
       )}
     </div>
   )
