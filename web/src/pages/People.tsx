@@ -10,21 +10,23 @@
  */
 
 import { useState, Component, type ReactNode } from 'react'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
+import { useTags } from '@/features/people/hooks/useTags'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
 import { ImportacaoMembros } from '@/features/people/components/ImportacaoMembros'
+import { TagBadgesCell } from '@/features/people/components/TagBadgesCell'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import { StageSelector } from '@/features/people/components/StageSelector'
-import type { Person, PersonWithStage } from '@/lib/types/joins'
+import type { Person, PersonWithStage, Tag } from '@/lib/types/joins'
 
 // ── Error Boundary para PersonDetailPanel ────────────────────────────────────
 class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -146,12 +148,13 @@ function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting, error }: 
 
 interface PersonCardMobileProps {
   person: PersonWithStage
+  allTags: Tag[]
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
-  onDelete: (p: Person) => void   // A3: adicionado
+  onDelete: (p: Person) => void
 }
 
-function PersonCardMobile({ person, onView, onEdit, onDelete }: PersonCardMobileProps) {
+function PersonCardMobile({ person, allTags, onView, onEdit, onDelete }: PersonCardMobileProps) {
   return (
     <div
       className="bg-white rounded-2xl border border-border-default p-4 shadow-sm active:bg-bg-primary transition-colors cursor-pointer"
@@ -179,7 +182,7 @@ function PersonCardMobile({ person, onView, onEdit, onDelete }: PersonCardMobile
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <div onClick={(e) => e.stopPropagation()}>
-            <StageSelector person={person} />
+            <TagBadgesCell person={person} allTags={allTags} />
           </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <button
@@ -207,12 +210,13 @@ function PersonCardMobile({ person, onView, onEdit, onDelete }: PersonCardMobile
 
 interface PersonRowProps {
   person: PersonWithStage
+  allTags: Tag[]
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
   onDelete: (p: Person) => void
 }
 
-function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
+function PersonRow({ person, allTags, onView, onEdit, onDelete }: PersonRowProps) {
   return (
     <tr
       className="hover:bg-bg-hover transition-colors cursor-pointer"
@@ -230,19 +234,7 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
         {formatPhone(person.phone)}
       </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <StageSelector person={person} />
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-1">
-          {(person.tags ?? []).slice(0, 3).map((tag) => (
-            <span key={tag} className="text-xs bg-bg-hover text-primary-text rounded-full px-2 py-0.5 font-medium">
-              {tag}
-            </span>
-          ))}
-          {(person.tags ?? []).length > 3 && (
-            <span className="text-xs text-text-tertiary">+{(person.tags ?? []).length - 3}</span>
-          )}
-        </div>
+        <TagBadgesCell person={person} allTags={allTags} />
       </td>
       <td className="px-4 py-3 text-sm text-text-secondary">
         {formatDate(person.created_at)}
@@ -273,9 +265,12 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
 
 export default function People() {
   const { churchId } = useAuth()
-  const queryClient  = useQueryClient()
+  const navigate      = useNavigate()
+  const queryClient   = useQueryClient()
   const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
   const [search, setSearch]         = useState('')
+  const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
+  const [tagDropOpen, setTagDropOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -294,6 +289,7 @@ export default function People() {
     pageSize: isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
   })
   const { data: totalCount } = usePeopleCount(churchId ?? '')
+  const { data: allTags = [] } = useTags(churchId ?? '')
   const deletePerson = useDeletePerson()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
@@ -319,8 +315,14 @@ export default function People() {
     }
   }
 
-  const allPeople     = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
-  const filteredPeople = applyTabFilter(activeTab, allPeople)
+  const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
+  const tabFiltered = applyTabFilter(activeTab, allPeople)
+  // Filtro por tag (client-side — person_tags já vem no payload)
+  const filteredPeople = tagFilter
+    ? tabFiltered.filter((p) =>
+        (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
+      )
+    : tabFiltered
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
@@ -386,11 +388,14 @@ export default function People() {
             {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
             {tab.label}
             {people && tab.id !== 'geral' && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                activeTab === tab.id
-                  ? 'bg-bg-hover text-primary-text'
-                  : 'bg-bg-hover text-text-tertiary'
-              }`}>
+              <span
+                className={`px-1.5 py-0.5 rounded-full font-semibold ${
+                  activeTab === tab.id
+                    ? 'bg-bg-hover text-primary-text'
+                    : 'bg-bg-hover text-text-tertiary'
+                }`}
+                style={{ fontSize: '10px' }}
+              >
                 {applyTabFilter(tab.id, allPeople).length}
               </span>
             )}
@@ -398,15 +403,76 @@ export default function People() {
         ))}
       </div>
 
-      {/* Busca full-width em mobile */}
+      {/* Busca + Filtros */}
       {activeTab === 'geral' && (
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2">
           <Input
             placeholder="Buscar por nome, telefone ou e-mail..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(0) }}
             className="w-full md:max-w-sm"
           />
+
+          {/* Filtro por tag (só aparece se há flags criadas) */}
+          {allTags.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setTagDropOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+              >
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: tagFilter
+                      ? (allTags.find((t) => t.id === tagFilter)?.color ?? '#6B7280')
+                      : '#d1d5db',
+                  }}
+                />
+                {tagFilter
+                  ? allTags.find((t) => t.id === tagFilter)?.name
+                  : 'Todos os tipos'}
+                <ChevronDown size={12} className={`transition-transform ${tagDropOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {tagDropOpen && (
+                <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '160px' }}>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => { setTagFilter(''); setTagDropOpen(false); setCurrentPage(0) }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${!tagFilter ? 'font-semibold text-text-primary bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
+                    >
+                      Todos os tipos
+                    </button>
+                  </li>
+                  {allTags.map((tag) => (
+                    <li key={tag.id}>
+                      <button
+                        type="button"
+                        onClick={() => { setTagFilter(tag.id); setTagDropOpen(false); setCurrentPage(0) }}
+                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${tagFilter === tag.id ? 'font-semibold bg-bg-hover' : 'hover:bg-bg-hover'}`}
+                      >
+                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
+                        <span className="flex-1">{tag.name}</span>
+                        {tagFilter === tag.id && <span className="text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
+                      </button>
+                    </li>
+                  ))}
+                  <li className="border-t border-border-default mt-1 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => { setTagDropOpen(false); navigate('/pessoas/flags') }}
+                      className="w-full text-left px-3 py-2 text-xs text-text-tertiary hover:text-text-secondary flex items-center gap-1.5 transition-colors"
+                    >
+                      <Settings2 size={11} />
+                      Gerenciar tipos
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -433,6 +499,7 @@ export default function People() {
               <PersonCardMobile
                 key={person.id}
                 person={person}
+                allTags={allTags}
                 onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -448,8 +515,7 @@ export default function People() {
                   <tr className="bg-bg-hover border-b border-border-default">
                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Stage</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tags</th>
+                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
                   </tr>
@@ -459,6 +525,7 @@ export default function People() {
                     <PersonRow
                       key={person.id}
                       person={person}
+                      allTags={allTags}
                       onView={handleView}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
