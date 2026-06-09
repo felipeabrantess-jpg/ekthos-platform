@@ -83,25 +83,6 @@ export type StepStatus =
   | 'failed'
   | 'skipped'
 
-// ── Tag / Flag types (flags configuráveis por igreja) ─────────────────────────
-
-/** Linha completa da tabela `tags` */
-export interface Tag {
-  id: string
-  church_id: string
-  name: string
-  color: string       // hex, ex: '#6B7280'
-  sort_order: number
-  icon: string | null
-  created_at: string
-}
-
-/** Linha de `person_tags` com join em `tags` (retornado pelo usePeople) */
-export interface PersonTagRow {
-  tag_id: string
-  tags: Pick<Tag, 'id' | 'name' | 'color' | 'sort_order'> | null
-}
-
 // ── Base row types (direct table aliases) ────────────────────────────────────
 
 export type Person             = Row<'people'>
@@ -123,7 +104,7 @@ export type Interaction        = Row<'interactions'>
 
 // ── Join interfaces (DB query results with relations) ─────────────────────────
 
-/** people + current pipeline stage via person_pipeline + flags via person_tags */
+/** people + current pipeline stage via person_pipeline */
 export interface PersonWithStage extends Person {
   person_pipeline: Array<{
     stage_id: string
@@ -133,8 +114,6 @@ export interface PersonWithStage extends Person {
       sla_hours?: number | null
     } | null
   }>
-  /** Flags configuráveis atribuídas a esta pessoa (via person_tags JOIN tags) */
-  person_tags?: PersonTagRow[]
 }
 
 /** groups (cells) with member count + leader info */
