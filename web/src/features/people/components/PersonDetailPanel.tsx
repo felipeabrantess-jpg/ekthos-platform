@@ -10,8 +10,6 @@ import { useState } from 'react'
 import { X, Pencil, Phone, Mail, Link, MapPin, Calendar, Church, HandHeart, Plus, Trash2 } from 'lucide-react'
 import type { PersonWithStage } from '@/lib/types/joins'
 import { useAuth } from '@/hooks/useAuth'
-import { useTags } from '@/features/people/hooks/useTags'
-import { TagBadgesCell } from './TagBadgesCell'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import {
@@ -383,7 +381,6 @@ interface PersonDetailPanelProps {
 
 export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDetailPanelProps) {
   const { churchId } = useAuth()
-  const { data: allTags = [] } = useTags(churchId ?? '')
 
   if (!person) return null
 
@@ -523,18 +520,6 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
 
         {/* ── BODY ───────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto sidebar-scroll px-6 py-5 space-y-3">
-
-          {/* 0. Tipos de Pessoa (flags configuráveis) */}
-          <div className="bg-white rounded-2xl border border-cream-dark/50 overflow-hidden">
-            <div className="px-5 py-3 border-b border-cream-dark/40 bg-cream-dark/20 flex items-center justify-between">
-              <h3 className="font-display text-sm font-semibold text-ekthos-black">Tipos de Pessoa</h3>
-            </div>
-            <div className="px-5 py-3">
-              {person && (
-                <TagBadgesCell person={person} allTags={allTags} />
-              )}
-            </div>
-          </div>
 
           {/* 1. Dados Pessoais */}
           <InfoCard title="Dados Pessoais">
