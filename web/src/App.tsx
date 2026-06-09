@@ -40,6 +40,7 @@ const PaymentPending        = lazy(() => import('@/pages/PaymentPending'))
 // CRM
 const Dashboard   = lazy(() => import('@/pages/Dashboard'))
 const People      = lazy(() => import('@/pages/People'))
+const PeopleFlags = lazy(() => import('@/pages/PeopleFlags'))
 const Pipeline    = lazy(() => import('@/pages/Pipeline'))
 const Ministerios = lazy(() => import('@/pages/Ministerios'))
 const Escalas     = lazy(() => import('@/pages/Escalas'))
@@ -320,6 +321,7 @@ export default function App() {
             <Route path="inscricoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmConstrucao name="Inscrições" previstoPara="2º semestre 2026" features={['Formulários de inscrição para eventos', 'Controle de vagas e lista de espera', 'Integração com Agenda']} /></Suspense></ErrorBoundary>} />
 
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="pessoas/flags"  element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><PeopleFlags /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
