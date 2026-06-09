@@ -34,6 +34,10 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
             stage_id,
             last_activity_at,
             pipeline_stages ( id, name, slug, order_index )
+          ),
+          person_tags (
+            tag_id,
+            tags ( id, name, color, sort_order )
           )
         `)
         .eq('church_id', churchId)
@@ -59,7 +63,7 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
       const { data, error } = await query
 
       if (error) throw new Error(error.message)
-      return (data ?? []) as PersonWithStage[]
+      return (data ?? []) as unknown as PersonWithStage[]
     },
     enabled: Boolean(churchId),
   })
