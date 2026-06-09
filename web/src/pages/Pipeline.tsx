@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { X, AlertTriangle, Settings2, ArrowUpDown, ListChecks } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -109,7 +110,7 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
   const slaHours = pipeline?.pipeline_stages?.sla_hours
   const elapsed = pipeline?.entered_at ? hoursElapsed(pipeline.entered_at) : null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30" />
       <div
@@ -167,7 +168,8 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
