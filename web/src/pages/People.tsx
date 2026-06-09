@@ -23,7 +23,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
-import Badge from '@/components/ui/Badge'
+import { StageSelector } from '@/features/people/components/StageSelector'
 import type { Person, PersonWithStage } from '@/lib/types/joins'
 
 // ── Error Boundary para PersonDetailPanel ────────────────────────────────────
@@ -40,8 +40,6 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   }
 }
 
-type BadgeVariant = 'blue' | 'green' | 'yellow' | 'gray' | 'red' | 'purple'
-
 type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'lideres' | 'em-risco'
 
 const TABS: { id: PeopleTab; label: string }[] = [
@@ -53,18 +51,6 @@ const TABS: { id: PeopleTab; label: string }[] = [
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-
-function stageToBadgeVariant(slug: string): BadgeVariant {
-  const map: Record<string, BadgeVariant> = {
-    visitante:         'yellow',
-    'interesse-grupo': 'blue',
-    'em-acompanhamento': 'purple',
-    membro:            'green',
-    lider:             'green',
-    inativo:           'gray',
-  }
-  return map[slug] ?? 'gray'
-}
 
 function formatPhone(phone: string | null) {
   if (!phone) return '—'
@@ -166,8 +152,6 @@ interface PersonCardMobileProps {
 }
 
 function PersonCardMobile({ person, onView, onEdit, onDelete }: PersonCardMobileProps) {
-  const stage = person.person_pipeline?.[0]?.pipeline_stages
-
   return (
     <div
       className="bg-white rounded-2xl border border-border-default p-4 shadow-sm active:bg-bg-primary transition-colors cursor-pointer"
@@ -194,9 +178,9 @@ function PersonCardMobile({ person, onView, onEdit, onDelete }: PersonCardMobile
         </div>
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          {stage && (
-            <Badge label={stage.name} variant={stageToBadgeVariant(stage.slug)} />
-          )}
+          <div onClick={(e) => e.stopPropagation()}>
+            <StageSelector person={person} />
+          </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => onEdit(person)}
@@ -229,8 +213,6 @@ interface PersonRowProps {
 }
 
 function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
-  const stage = person.person_pipeline?.[0]?.pipeline_stages
-
   return (
     <tr
       className="hover:bg-bg-hover transition-colors cursor-pointer"
@@ -247,12 +229,8 @@ function PersonRow({ person, onView, onEdit, onDelete }: PersonRowProps) {
       <td className="px-4 py-3 text-sm text-text-secondary">
         {formatPhone(person.phone)}
       </td>
-      <td className="px-4 py-3">
-        {stage ? (
-          <Badge label={stage.name} variant={stageToBadgeVariant(stage.slug)} />
-        ) : (
-          <span className="text-xs text-text-tertiary">Sem stage</span>
-        )}
+      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+        <StageSelector person={person} />
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
