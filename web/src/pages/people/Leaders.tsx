@@ -10,6 +10,7 @@ import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import PersonSelect from '@/components/ui/PersonSelect'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 // Cada papel guarda a origem (refId = id da célula/ministério) e o tipo (kind),
@@ -167,6 +168,7 @@ function EditLeaderModal({ leader, churchId, onClose }: { leader: Leader; church
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full md:max-w-lg md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -229,6 +231,7 @@ function EditLeaderModal({ leader, churchId, onClose }: { leader: Leader; church
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -255,6 +258,7 @@ function RemoveLeaderModal({ leader, churchId, onClose }: { leader: Leader; chur
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full space-y-4">
@@ -277,6 +281,7 @@ function RemoveLeaderModal({ leader, churchId, onClose }: { leader: Leader; chur
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -352,6 +357,7 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
   })
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
@@ -432,6 +438,7 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

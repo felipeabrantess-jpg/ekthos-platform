@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Tag, Edit2, Loader, CheckCircle, XCircle, Gift, ChevronRight, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Types ───────────────────────────────────────────────────
 
@@ -227,6 +228,7 @@ function PlanModal({ plan, onClose, onSaved }: PlanModalProps) {
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         {/* Header */}
@@ -316,6 +318,7 @@ function PlanModal({ plan, onClose, onSaved }: PlanModalProps) {
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -359,6 +362,7 @@ function AddonModal({ addon, onClose, onSaved }: AddonModalProps) {
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
         <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
@@ -421,6 +425,7 @@ function AddonModal({ addon, onClose, onSaved }: AddonModalProps) {
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -683,6 +688,7 @@ function AgentModal({ agent, onClose, onSaved }: AgentModalProps) {
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         {/* Header */}
@@ -765,6 +771,7 @@ function AgentModal({ agent, onClose, onSaved }: AgentModalProps) {
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

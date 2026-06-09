@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface Lead {
   id:                string
@@ -244,6 +245,7 @@ export default function AdminLeads() {
 
       {/* Painel de detalhe (slide-over) */}
       {selected && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex" onClick={e => { if (e.target === e.currentTarget) setSelected(null) }}>
           {/* Overlay */}
           <div className="flex-1" style={{ background: 'rgba(0,0,0,0.35)' }} onClick={() => setSelected(null)} />
@@ -392,6 +394,7 @@ export default function AdminLeads() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

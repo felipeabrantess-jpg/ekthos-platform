@@ -13,6 +13,7 @@ import {
   GripVertical, Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronUp,
   AlertTriangle, CheckCircle2, Loader2,
 } from 'lucide-react'
+import ModalPortal from '@/components/ui/ModalPortal'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
@@ -634,6 +635,7 @@ export function DiscipleshipSettings() {
 
       {/* ── Confirmation dialog ────────────────────────────────────────────── */}
       {confirmTemplate && (
+        <ModalPortal>
         <>
           <div className="fixed inset-0 z-30 bg-black/30" onClick={() => setConfirmTemplate(null)} />
           <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
@@ -671,6 +673,7 @@ export function DiscipleshipSettings() {
             </div>
           </div>
         </>
+        </ModalPortal>
       )}
     </div>
   )

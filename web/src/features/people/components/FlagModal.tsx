@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useCreateTag, useUpdateTag } from '../hooks/useTags'
 import type { Tag } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // Paleta de 8 cores canônicas (design-system flags)
 const COLOR_PALETTE: { hex: string; label: string }[] = [
@@ -68,6 +69,7 @@ export function FlagModal({ churchId, editTag, onClose }: FlagModalProps) {
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
@@ -168,5 +170,6 @@ export function FlagModal({ churchId, editTag, onClose }: FlagModalProps) {
         </form>
       </div>
     </div>
+    </ModalPortal>
   )
 }

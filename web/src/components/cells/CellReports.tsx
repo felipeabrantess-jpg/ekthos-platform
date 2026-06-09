@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
 import CellReportForm, { type CellReport } from './CellReportForm'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface CellReportsProps {
   groupId: string
@@ -193,6 +194,7 @@ export default function CellReports({ groupId }: CellReportsProps) {
 
       {/* Delete confirmation */}
       {deletingId && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingId(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
@@ -213,6 +215,7 @@ export default function CellReports({ groupId }: CellReportsProps) {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Form modal */}

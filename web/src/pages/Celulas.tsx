@@ -31,6 +31,7 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import PersonSelect from '@/components/ui/PersonSelect'
 import type { Group, CellMeeting } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 type CelulasTab = 'geral' | 'lista' | 'relatorios'
 
@@ -207,6 +208,7 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-40 flex">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
       <div className="relative ml-auto w-full max-w-md bg-white h-full shadow-xl flex flex-col overflow-hidden">
@@ -285,6 +287,7 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -535,6 +538,7 @@ export default function Celulas() {
 
       {/* Delete confirmation modal */}
       {deletingGroup && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingGroup(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
@@ -560,6 +564,7 @@ export default function Celulas() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

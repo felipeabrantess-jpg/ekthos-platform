@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { HandHeart, Search, X, Plus, Trash2, Pencil } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import ModalPortal from '@/components/ui/ModalPortal'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -93,6 +94,7 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
@@ -192,6 +194,7 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -261,6 +264,7 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -373,6 +377,7 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -642,6 +647,7 @@ export default function Volunteers() {
 
       {/* Confirm remove */}
       {removingVolunteer && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setRemovingVolunteer(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
@@ -672,6 +678,7 @@ export default function Volunteers() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

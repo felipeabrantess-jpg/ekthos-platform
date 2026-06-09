@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 
@@ -252,6 +253,7 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
     const codeForMsg  = created.promo_code ?? created.id
     const msg = `Olá! Temos uma condição especial pra você começar no Ekthos.\n\nAcesse o link abaixo e use o cupom *${codeForMsg}* no campo de código promocional:\n\n${linkChamado}`
     return (
+      <ModalPortal>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full space-y-5">
           <div className="flex items-center gap-3">
@@ -313,10 +315,12 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
           <Toast key={copyToast.key} msg={copyToast.msg} type={copyToast.type} onClose={() => setCopyToast(null)} />
         )}
       </div>
+      </ModalPortal>
     )
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-black/8">
@@ -426,6 +430,7 @@ function ModalNovoCupom({ onClose, onCreated }: ModalNovoCupomProps) {
         </form>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -475,6 +480,7 @@ function CouponDetailModal({
   const coupon = data?.coupon
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-black/8">
@@ -595,6 +601,7 @@ function CouponDetailModal({
         ) : null}
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

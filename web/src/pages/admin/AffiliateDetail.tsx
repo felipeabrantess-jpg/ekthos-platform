@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 
@@ -141,6 +142,7 @@ function NewCouponModal({ affiliateId, affiliateName, onClose, onCreated }: {
   const showCommDuration = commKind === 'percent_recurring'
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
         <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
@@ -252,6 +254,7 @@ function NewCouponModal({ affiliateId, affiliateName, onClose, onCreated }: {
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

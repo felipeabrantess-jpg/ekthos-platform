@@ -22,6 +22,7 @@ import {
   useCreateVolunteer,
   type PersonVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -168,6 +169,7 @@ function AddMinistryModal({ personId, churchId, onClose }: AddMinistryModalProps
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm space-y-4">
@@ -226,6 +228,7 @@ function AddMinistryModal({ personId, churchId, onClose }: AddMinistryModalProps
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 
@@ -332,6 +335,7 @@ function VoluntariadoSection({ personId, churchId, isVolunteer }: VoluntariadoSe
 
       {/* Confirm remove all */}
       {confirmRemoveAll && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmRemoveAll(false)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-5 w-full max-w-sm space-y-4">
@@ -355,6 +359,7 @@ function VoluntariadoSection({ personId, churchId, isVolunteer }: VoluntariadoSe
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {addOpen && (
@@ -434,6 +439,7 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-40 flex justify-end">
       {/* Overlay */}
       <div
@@ -681,5 +687,6 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }

@@ -22,6 +22,7 @@ import {
   type CreateEventInput,
 } from '@/features/agenda/hooks/useEvents'
 import type { EventType } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface EventFormProps {
   open: boolean
@@ -234,6 +235,7 @@ export default function EventForm({ open, onClose, editEvent }: EventFormProps) 
   if (!open) return null
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full md:max-w-2xl md:rounded-2xl rounded-t-2xl shadow-xl max-h-[92vh] overflow-y-auto">
@@ -524,5 +526,6 @@ export default function EventForm({ open, onClose, editEvent }: EventFormProps) 
         </form>
       </div>
     </div>
+    </ModalPortal>
   )
 }

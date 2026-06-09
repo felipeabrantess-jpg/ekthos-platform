@@ -15,6 +15,7 @@ import { ChevronDown, Loader2 } from 'lucide-react'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
 import type { PersonWithStage, PipelineStage } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface PipelineStageSelectorProps {
   person:   PersonWithStage
@@ -72,6 +73,7 @@ export function PipelineStageSelector({ person, churchId }: PipelineStageSelecto
       </button>
 
       {open && (
+        <ModalPortal>
         <>
           {/* Click-away */}
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
@@ -109,6 +111,7 @@ export function PipelineStageSelector({ person, churchId }: PipelineStageSelecto
             )}
           </div>
         </>
+        </ModalPortal>
       )}
     </div>
   )

@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useUpdatePersonTags } from '../hooks/useUpdatePersonTags'
 import type { PersonWithStage, Tag } from '@/lib/types/joins'
 import { TagPill } from './TagBadgesCell'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface TagEditModalProps {
   person: PersonWithStage
@@ -65,6 +66,7 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
   })()
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -179,5 +181,6 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
         )}
       </div>
     </div>
+    </ModalPortal>
   )
 }
