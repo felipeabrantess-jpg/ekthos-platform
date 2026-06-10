@@ -301,14 +301,11 @@ interface AgentesSubProps {
   activeAgentSlugs: string[]
   planSlug: string
   planLoading: boolean
-  onboardingComplete: boolean
 }
 
-function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug: _planSlug, planLoading, onboardingComplete }: AgentesSubProps) {
-  // Seção 1: internos — sempre incluídos no plano; agent-onboarding some após setup completo
-  const internosContent = onboardingComplete
-    ? INTERNAL_AGENTS.filter(a => a.slug !== 'agent-onboarding')
-    : INTERNAL_AGENTS
+function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug: _planSlug, planLoading }: AgentesSubProps) {
+  // Seção 1: 4 internos — sempre incluídos no plano, sempre visíveis como "Ativos"
+  const internosContent = INTERNAL_AGENTS
   // Seção 2: 3 premium pastorais — sempre visíveis como "Contratar avulso"
   const premiumContent  = PREMIUM_AGENTS
 
@@ -587,8 +584,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
           {activeCategory === 'igreja'  && <IgrejaSubPanel role={role} enabledModules={enabledModules} />}
           {activeCategory === 'agentes' && (
             <AgentesSubPanel allAgents={allAgents} hasAgent={hasAgent}
-              activeAgentSlugs={activeAgentSlugs} planSlug={planSlug} planLoading={planLoading}
-              onboardingComplete={church?.onboarding_step === 'completed'} />
+              activeAgentSlugs={activeAgentSlugs} planSlug={planSlug} planLoading={planLoading} />
           )}
           {activeCategory === 'modulos' && <ModulosSubPanel />}
           {activeCategory === 'config'  && <ConfigSubPanel />}
