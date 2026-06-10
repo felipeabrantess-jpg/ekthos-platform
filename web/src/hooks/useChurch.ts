@@ -36,6 +36,7 @@ export interface ChurchBranding {
   primary_color:   string
   secondary_color: string
   enabled_modules: EnabledModules
+  onboarding_step: string | null
 }
 
 export function useChurch() {
@@ -47,14 +48,15 @@ export function useChurch() {
       if (!churchId) return null
       const { data, error } = await supabase
         .from('churches')
-        .select('id, name, logo_url, primary_color, secondary_color, enabled_modules')
+        .select('id, name, logo_url, primary_color, secondary_color, enabled_modules, onboarding_step')
         .eq('id', churchId)
         .single()
       if (error) throw error
 
       return {
-        ...(data as Omit<ChurchBranding, 'enabled_modules'>),
+        ...(data as Omit<ChurchBranding, 'enabled_modules' | 'onboarding_step'>),
         enabled_modules: (data.enabled_modules as EnabledModules | null) ?? DEFAULT_MODULES,
+        onboarding_step: (data as { onboarding_step: string | null }).onboarding_step ?? null,
       }
     },
     enabled: !!churchId,
