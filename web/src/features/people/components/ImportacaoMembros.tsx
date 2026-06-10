@@ -1,34 +1,26 @@
 /**
- * ImportacaoMembros v2 — Auto-detecção · Import direto · Lote reversível
+ * ImportacaoMembros v3 — Detecção fuzzy multi-igreja
  *
- * Fluxo: Upload → auto-detect colunas → normaliza → dedup → grava → resultado + desfazer
+ * Arquitetura v3 (2026-06-10, Felipe CEO):
+ *  - DETECTION_KEYWORDS: busca CONTÉM (não match exato) → reconhece qualquer CRM
+ *  - Requer nome + telefone por linha — sem ambos → descarta silenciosamente
+ *  - Coluna desconhecida → ignorada silenciosamente (sem aviso, sem modal)
  *
- * Decisões de design (Felipe aprovadas):
- *  - Reconhece colunas de qualquer CRM por sinônimos PT-BR (sem mapeamento manual)
- *  - Importa direto sem tela de preview / confirmação
- *  - import_batch_id UUID em cada pessoa → desfazer lote inteiro com 1 clique
- *  - source = 'import_xlsx', is_bulk_import = true  → suprime boas-vindas (agent-acolhimento)
- *  - last_contact_at = NOW() - 21d                   → entra na régua de reengajamento gradual
- *  - Dedup por TELEFONE APENAS (B1): e-mail familiar não identifica pessoa
- *  - CELULAR tem prioridade sobre TELEFONE na detecção
- *
- * Bugs mantidos (B1-B5 — 2026-06-05):
- *  - B1: e-mail sozinho não causa isDuplicate (telefone é identificador)
- *  - B2: dedup intra-planilha por telefone (mesmo nº duas vezes no arquivo)
- *  - B3: telefones 7-9 dígitos (sem DDD) → phoneWarning, pessoa entra sem telefone
- *  - B4: normalizeName strip do artefato ´/Â´ (export Eclésia)
+ * Validações mantidas:
+ *  - B2: dedup intra-planilha por telefone
+ *  - B3: telefones sem DDD (7-9 dígitos) → warning, pessoa entra sem telefone → descartada
+ *  - B4: normalizeName remove artefato ´/Â´ (export Eclésia)
  *  - B5: serial Excel como string ("22840") → normalizeDate correto
- *       (impede "+022840-01-01" → erro Postgres "time zone displacement out of range")
  *
- * Campos detectados automaticamente (20+):
- *  nome · celular · telefone 2 (RECADO) · e-mail
- *  nascimento · batismo · casamento · decisão · cadastro
- *  estado civil · instagram · chamado
- *  CEP · CPF · endereço · número · complemento · bairro · cidade · UF
+ * Nota arquitetural:
+ *  - 'cel' removido de phone (colide com coluna 'Célula' em CRMs de igrejas)
+ *  - 'convers' removido de conversion_date (colide com coluna 'Conversa')
+ *  - marital_status vem antes de state no array (evita 'estado civil' cair em 'estado')
+ *  - phone_secondary adicionado com 'recado' (campo existe no schema, não estava na spec)
  *
- * Desfazer lote:
- *  UPDATE people SET deleted_at = NOW()
- *  WHERE import_batch_id = $batchId AND church_id = $churchId AND deleted_at IS NULL
+ * import_batch_id → desfazer lote inteiro com 1 clique
+ * source = 'import_xlsx', is_bulk_import = true → suprime boas-vindas
+ * last_contact_at = NOW() - 21d → entra régua reengajamento gradual
  */
 
 import { useState, useCallback, useRef } from 'react'
@@ -45,34 +37,32 @@ import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Constants ────────────────────────────────────────────────────────────────────
 
-// Synonyms ordered by specificity (most specific first avoids false positives).
-// Each entry: [fieldKey, normalizedSynonyms[]] — all values already pre-normalized.
-// phone_fallback is used only when no 'phone' (celular/whatsapp) column is found.
-const FIELD_SYNONYMS: [string, string[]][] = [
-  ['name',               ['nome completo', 'nome do membro', 'membro', 'nome']],
-  ['phone',              ['whatsapp', 'celular', 'cel']],          // prioridade sobre TELEFONE
-  ['phone_fallback',     ['telefone', 'fone', 'tel', 'contato']],
-  ['phone_secondary',    ['recado', 'tel recado', 'fone recado']],
-  ['email',              ['e mail pessoal', 'email pessoal', 'e mail', 'email']],
-  ['birth_date',         ['data nasc', 'dt nasc', 'dt nascimento', 'data nascimento', 'aniversario', 'nascimento']],
-  ['marital_status',     ['estado civil', 'estadocivil', 'civil']],
-  ['zip_code',           ['cep', 'cod postal', 'codigo postal']],
-  ['cpf',                ['cpf', 'documento', 'doc']],
-  ['street',             ['endereco', 'logradouro', 'rua']],
+// Keywords ordered by specificity — first match wins.
+// IMPORTANT: marital_status must come before state ('estado civil' > 'estado').
+// Detection: normalized.includes(keyword) — partial match, case-insensitive, no accents.
+const DETECTION_KEYWORDS: [string, string[]][] = [
+  ['name',               ['nome', 'completo']],
+  ['phone',              ['celular', 'telefone', 'whatsapp', 'fone']],   // 'cel' removed: conflicts with 'celula'
+  ['phone_secondary',    ['recado', 'tel 2', 'telefone 2']],
+  ['email',              ['email', 'e mail', 'mail']],
+  ['birth_date',         ['nascimento', 'nasc', 'aniversari', 'birth']],
+  ['baptism_date',       ['batismo', 'baptism', 'batizad']],
+  ['wedding_date',       ['casamento', 'matrimonio', 'wedding']],
+  ['conversion_date',    ['decisao', 'conversao']],                       // 'convers' removed: conflicts with 'conversa'
+  ['membership_date',    ['cadastro', 'registro', 'membership']],
+  ['marital_status',     ['estado civil', 'civil', 'casad', 'marital']], // BEFORE state
+  ['cpf',                ['cpf']],
+  ['zip_code',           ['cep', 'zip']],
+  ['street',             ['endereco', 'logradouro', 'rua', 'street']],
   ['street_number',      ['numero', 'num']],
-  ['address_complement', ['complemento', 'comp', 'apto']],
+  ['address_complement', ['complemento', 'compl']],
   ['neighborhood',       ['bairro']],
-  ['city',               ['cidade', 'municipio']],
-  ['state',              ['uf', 'estado', 'sigla']],
-  ['instagram_handle',   ['instagram pessoal', 'instagram', 'insta']],
-  ['calling',            ['chamado', 'dons', 'vocacao', 'ministerio']],
-  ['baptism_date',       ['data batismo', 'dt batismo', 'batismo']],
-  ['wedding_date',       ['data casamento', 'casamento', 'matrimonio']],
-  ['conversion_date',    ['d decisao', 'data decisao', 'decisao', 'dt decisao']],
-  ['membership_date',    ['data cadastro', 'dt cadastro', 'cadastro']],
+  ['city',               ['cidade', 'city']],
+  ['state',              ['uf', 'estado', 'state']],                     // AFTER marital_status
+  ['instagram_handle',   ['instagram', 'insta']],
+  ['calling',            ['chamado', 'vocacao', 'calling']],
 ]
 
-// Labels usados no relatório de avisos e no resumo de mapeamento
 const FIELD_LABELS: Record<string, string> = {
   name: 'Nome', phone: 'Celular', phone_secondary: 'Tel. 2', email: 'E-mail',
   birth_date: 'Nascimento', baptism_date: 'Batismo', wedding_date: 'Casamento',
@@ -117,19 +107,16 @@ interface ParsedRow {
   isDuplicate:        boolean
   dupReason:          string | null
   warnings:           string[]
-  isDiscarded:        boolean   // sem telefone E sem email → não inserir (critério de contato mínimo)
-  isWeakContact:      boolean   // sem telefone MAS com email → tag 'contato-fraco'
+  isDiscarded:        boolean  // sem nome OU sem telefone
 }
 
 interface ImportResult {
   batchId:     string
   inserted:    number
   duplicates:  number
-  discarded:   number          // sem telefone E sem email — descartados silenciosamente
+  discarded:   number
   errorRows:   { name: string; reason: string }[]
   warningRows: { name: string; msgs: string[] }[]
-  colMap:      Record<string, number>
-  colHeaders:  string[]
 }
 
 interface ImportacaoMembrosProps {
@@ -140,7 +127,6 @@ interface ImportacaoMembrosProps {
 
 // ── Normalization helpers ─────────────────────────────────────────────────────────
 
-// Normaliza nome de coluna: remove acentos, lowercase, não-alfanum → espaço
 function normalizeColName(name: string): string {
   return name
     .toLowerCase()
@@ -151,7 +137,7 @@ function normalizeColName(name: string): string {
     .trim()
 }
 
-// B3: telefones 7-9 dígitos → warning, pessoa entra sem telefone
+// B3: telefones 7-9 dígitos → warning, pessoa descartada (sem telefone válido)
 function normalizePhone(raw: string): { phone: string | null; warning: string | null } {
   if (!raw?.trim()) return { phone: null, warning: null }
   const digits = raw.replace(/\D/g, '')
@@ -165,7 +151,6 @@ function normalizePhone(raw: string): { phone: string | null; warning: string | 
 }
 
 // B5: serial Excel como string ("22840") + DD/MM/AAAA + YYYY-MM-DD + fallback
-// Validação de ano (1900–hoje) impede "+022840-01-01" → erro Postgres
 function normalizeDate(raw: string | number | null | undefined): string | null {
   if (raw === null || raw === undefined || raw === '') return null
   const CURRENT_YEAR = new Date().getFullYear()
@@ -177,16 +162,13 @@ function normalizeDate(raw: string | number | null | undefined): string | null {
     return (y >= 1900 && y <= CURRENT_YEAR) ? d.toISOString().split('T')[0] : null
   }
 
-  // Serial como número real (raro — caso xlsx.js não stringifique)
   if (typeof raw === 'number' && raw > 0) return fromSerial(raw)
 
   const str = String(raw).trim()
   if (!str) return null
 
-  // B5: serial Excel como string — 4 a 6 dígitos sem separador
   if (/^\d{4,6}$/.test(str)) return fromSerial(parseInt(str, 10))
 
-  // DD/MM/AAAA ou DD-MM-AAAA
   const dmY = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/)
   if (dmY) {
     const y = parseInt(dmY[3], 10)
@@ -194,13 +176,11 @@ function normalizeDate(raw: string | number | null | undefined): string | null {
     return `${dmY[3]}-${dmY[2].padStart(2, '0')}-${dmY[1].padStart(2, '0')}`
   }
 
-  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
     const y = parseInt(str.split('-')[0], 10)
     return (y >= 1900 && y <= CURRENT_YEAR) ? str : null
   }
 
-  // Fallback genérico com validação de ano
   const d = new Date(str)
   if (!isNaN(d.getTime())) {
     const y = d.getUTCFullYear()
@@ -224,7 +204,6 @@ function normalizeName(raw: string): string {
   return s
 }
 
-// Filtra placeholders "NÃO INFORMADO" do Eclésia, passa outros valores como estão
 function normalizeMaritalStatus(raw: string): string | null {
   if (!raw?.trim()) return null
   const t = raw.trim()
@@ -232,7 +211,6 @@ function normalizeMaritalStatus(raw: string): string | null {
   return t
 }
 
-// CEP: garante 8 dígitos com zero à esquerda (ex: 01310100 SP)
 function normalizeCep(raw: string): string | null {
   if (!raw?.trim()) return null
   const digits = raw.replace(/\D/g, '')
@@ -245,62 +223,33 @@ function normalizeText(raw: string): string | null {
   return t || null
 }
 
-// ── Column auto-detection ─────────────────────────────────────────────────────────
+// ── Column auto-detection (fuzzy) ────────────────────────────────────────────────
 
-// Valida conteúdo da coluna para desempate quando nome é ambíguo
-function contentMatchesField(field: string, vals: string[]): boolean {
-  const nonEmpty = vals.filter(Boolean)
-  if (!nonEmpty.length) return true // coluna vazia: aceita pelo nome
-  switch (field) {
-    case 'phone':
-    case 'phone_fallback':
-    case 'phone_secondary':
-      return nonEmpty.some(v => /\d{7,}/.test(v.replace(/\D/g, '')))
-    case 'email':
-      return nonEmpty.some(v => v.includes('@'))
-    case 'birth_date':
-    case 'baptism_date':
-    case 'wedding_date':
-    case 'conversion_date':
-    case 'membership_date': {
-      const isDateLike = (v: string) =>
-        /^\d{4,6}$/.test(v) ||
-        /\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}/.test(v) ||
-        /^\d{4}-\d{2}-\d{2}$/.test(v)
-      return nonEmpty.some(isDateLike)
-    }
-    case 'name':
-      return nonEmpty.some(v => /[a-zA-ZÀ-ÿ]{2,}/.test(v))
-    default:
-      return true
+// Single header → field key or null (unknown column → ignored silently)
+function detectColumn(header: string): string | null {
+  const normalized = normalizeColName(header)
+  for (const [field, keywords] of DETECTION_KEYWORDS) {
+    if (keywords.some(kw => normalized.includes(kw))) return field
   }
+  return null
 }
 
-// Detecta quais colunas do arquivo mapeiam para quais campos do Ekthos
-function detectColumns(headers: string[], sampleRows: string[][]): Record<string, number> {
-  const normHeaders = headers.map(normalizeColName)
+// All headers → map of fieldKey → column index (first-match-wins per field)
+function detectColumns(headers: string[]): Record<string, number> {
   const colMap: Record<string, number> = {}
   const used = new Set<number>()
 
-  for (const [field, synonyms] of FIELD_SYNONYMS) {
-    for (const syn of synonyms) {
-      const idx = normHeaders.findIndex((h, i) => !used.has(i) && h === syn)
-      if (idx >= 0) {
-        const sample = sampleRows.slice(0, 5).map(r => r[idx] ?? '')
-        if (contentMatchesField(field, sample)) {
-          colMap[field] = idx
-          used.add(idx)
-          break
-        }
-      }
+  for (const [field, keywords] of DETECTION_KEYWORDS) {
+    const idx = headers.findIndex((h, i) => {
+      if (used.has(i)) return false
+      const normalized = normalizeColName(h)
+      return keywords.some(kw => normalized.includes(kw))
+    })
+    if (idx >= 0) {
+      colMap[field] = idx
+      used.add(idx)
     }
   }
-
-  // phone_fallback (TELEFONE) → phone se nenhum celular/whatsapp encontrado
-  if (!('phone' in colMap) && 'phone_fallback' in colMap) {
-    colMap.phone = colMap.phone_fallback
-  }
-  delete colMap.phone_fallback
 
   return colMap
 }
@@ -355,51 +304,43 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         return
       }
 
-      // 2. Auto-detecção de colunas
+      // 2. Auto-detecção fuzzy de colunas — coluna desconhecida ignorada silenciosamente
       setProcLabel('Detectando colunas…')
-      const colMap = detectColumns(headers, rawRows.slice(0, 5))
+      const colMap = detectColumns(headers)
 
-      if (!('name' in colMap)) {
-        setFileError(
-          'Coluna de nome não encontrada. Verifique se o arquivo tem NOME, MEMBRO ou "NOME COMPLETO".'
-        )
-        setStep('idle')
-        return
-      }
+      console.debug('[ImportacaoMembros] colMap:', Object.fromEntries(
+        Object.entries(colMap).map(([k, i]) => [k, headers[i]])
+      ))
 
       // Helper: lê valor da coluna por field key
       const get = (row: string[], key: string): string =>
         colMap[key] !== undefined ? (row[colMap[key]] ?? '') : ''
 
-      // 3. Normalização de cada linha (B3 + B4 + B5 aplicados)
+      // 3. Normalização de cada linha
       const processed: ParsedRow[] = rawRows.map(row => {
-        const name = normalizeName(get(row, 'name')) // B4
+        const name = normalizeName(get(row, 'name'))  // B4
+
+        const { phone, warning: phoneWarning } = normalizePhone(get(row, 'phone'))  // B3
+        const { phone: phSec }                 = normalizePhone(get(row, 'phone_secondary'))
+        const email                            = normalizeEmail(get(row, 'email'))
+
+        // v3: requer nome + telefone — sem ambos → descarta silenciosamente
+        const isDiscarded = !name || !phone
 
         if (!name) {
           return {
-            raw: row, name: get(row, 'name'), phone: null, phone_secondary: null,
+            raw: row, name: '', phone: null, phone_secondary: null,
             phoneWarning: null, email: null, birth_date: null, baptism_date: null,
             wedding_date: null, conversion_date: null, membership_date: null,
             dateWarning: null, marital_status: null, zip_code: null, cpf: null,
             street: null, street_number: null, address_complement: null,
             neighborhood: null, city: null, state: null, instagram_handle: null,
-            calling: null, rowError: 'Nome obrigatório', isDuplicate: false,
-            dupReason: null, warnings: [], isDiscarded: false, isWeakContact: false,
+            calling: null, rowError: null, isDuplicate: false,
+            dupReason: null, warnings: [], isDiscarded: true,
           }
         }
 
-        const { phone, warning: phoneWarning } = normalizePhone(get(row, 'phone'))   // B3
-        const { phone: phSec }                 = normalizePhone(get(row, 'phone_secondary'))
-        const email                            = normalizeEmail(get(row, 'email'))
-
-        // Critério de contato mínimo (decisão Felipe 2026-06-05):
-        //   • tem telefone → entra normalmente
-        //   • sem telefone MAS com email → entra com tag 'contato-fraco'
-        //   • sem telefone E sem email → descartado (não inserir)
-        const isDiscarded  = !phone && !email
-        const isWeakContact = !phone && !!email
-
-        // B5: parse de todas as datas + coleta de warnings por data ilegível
+        // B5: parse de todas as datas
         const DATE_FIELDS: [string, string][] = [
           ['birth_date',      get(row, 'birth_date')],
           ['baptism_date',    get(row, 'baptism_date')],
@@ -442,25 +383,24 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
           state:              normalizeText(get(row, 'state')),
           instagram_handle:   normalizeText(get(row, 'instagram_handle')),
           calling:            normalizeText(get(row, 'calling')),
-          rowError: null, isDuplicate: false, dupReason: null, warnings,
-          isDiscarded, isWeakContact,
+          rowError: null, isDuplicate: false, dupReason: null, warnings, isDiscarded,
         }
       })
 
       // 4. B2: dedup intra-planilha por telefone
       const seenPhones = new Set<string>()
       const afterIntra: ParsedRow[] = processed.map(row => {
-        if (row.rowError || !row.phone) return row
+        if (row.isDiscarded || !row.phone) return row
         if (seenPhones.has(row.phone))
           return { ...row, isDuplicate: true, dupReason: `Telefone repetido na planilha: ${row.phone}` }
         seenPhones.add(row.phone)
         return row
       })
 
-      // 5. B1: dedup contra banco — só telefone
+      // 5. Dedup contra banco — por telefone
       setProcLabel('Verificando duplicatas…')
       const phonesToCheck = [...new Set(
-        afterIntra.filter(r => r.phone && !r.rowError && !r.isDuplicate).map(r => r.phone!),
+        afterIntra.filter(r => r.phone && !r.isDiscarded && !r.isDuplicate).map(r => r.phone!),
       )]
       const existingPhones = new Set<string>()
       for (let i = 0; i < phonesToCheck.length; i += 100) {
@@ -474,14 +414,13 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
       }
 
       const deduped: ParsedRow[] = afterIntra.map(row => {
-        if (row.rowError || row.isDuplicate) return row
+        if (row.isDiscarded || row.isDuplicate) return row
         if (row.phone && existingPhones.has(row.phone))
           return { ...row, isDuplicate: true, dupReason: `Telefone já cadastrado: ${row.phone}` }
         return row
       })
 
-      // 6. Insert em massa com import_batch_id
-      // Critério de contato mínimo: isDiscarded → não entra na base (contado mas não nomeado no resultado)
+      // 6. Insert em massa
       const toInsert = deduped.filter(r => !r.rowError && !r.isDuplicate && !r.isDiscarded)
       setProcLabel(`Importando ${toInsert.length} ${toInsert.length === 1 ? 'pessoa' : 'pessoas'}…`)
 
@@ -492,16 +431,15 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
 
       for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
         const batch = toInsert.slice(i, i + BATCH_SIZE).map(row => {
-          // Constrói objeto apenas com campos não-nulos para evitar sobrescrever defaults
           const obj: Record<string, unknown> = {
             church_id:       churchId,
             name:            row.name,
             source:          'import_xlsx',
-            is_bulk_import:  true,        // suprime boas-vindas
-            last_contact_at: lastContactAt,  // entra régua reengajamento gradual
+            is_bulk_import:  true,
+            last_contact_at: lastContactAt,
             optout:          false,
-            tags:            row.isWeakContact ? ['contato-fraco'] : [],  // sem telefone, só email
-            import_batch_id: batchId,     // permite desfazer lote
+            tags:            [],
+            import_batch_id: batchId,
           }
           if (row.phone)              obj.phone              = row.phone
           if (row.phone_secondary)    obj.phone_secondary    = row.phone_secondary
@@ -531,7 +469,6 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
           .select('id')
 
         if (batchErr) {
-          // Fallback linha-a-linha: preserva o máximo do lote
           for (const row of batch) {
             const { error: rowErr } = await supabase.from('people').insert(row)
             if (rowErr) errorRows.push({ name: String(row.name), reason: rowErr.message })
@@ -542,20 +479,18 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         }
       }
 
-      // 7. Monta resultado
+      // 7. Resultado
       const warningRows = deduped
-        .filter(r => !r.rowError && !r.isDuplicate && r.warnings.length > 0)
+        .filter(r => !r.rowError && !r.isDuplicate && !r.isDiscarded && r.warnings.length > 0)
         .map(r => ({ name: r.name, msgs: r.warnings }))
 
       setResult({
         batchId,
         inserted,
-        duplicates:  deduped.filter(r => r.isDuplicate).length,
-        discarded:   deduped.filter(r => r.isDiscarded).length,  // sem telefone E sem email
+        duplicates: deduped.filter(r => r.isDuplicate).length,
+        discarded:  deduped.filter(r => r.isDiscarded).length,
         errorRows,
         warningRows,
-        colMap,
-        colHeaders:  headers,
       })
       setStep('done')
       if (inserted > 0) onSuccess(inserted)
@@ -605,13 +540,6 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
 
   if (!open) return null
 
-  // Resumo do mapeamento detectado para exibição no resultado
-  const detectedSummary = result
-    ? Object.entries(result.colMap)
-        .map(([k, idx]) => `${result.colHeaders[idx] ?? `col${idx}`} → ${FIELD_LABELS[k] ?? k}`)
-        .join(' · ')
-    : ''
-
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -625,14 +553,9 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
               Importar Membros
             </h2>
             <p className="text-xs text-[#8A8A8A] mt-0.5">
-              {step === 'idle'       && 'Detecta colunas de qualquer planilha automaticamente'}
+              {step === 'idle'       && 'Sobe qualquer planilha — o sistema detecta as colunas automaticamente'}
               {step === 'processing' && procLabel}
-              {step === 'done'       && result && [
-                `${result.inserted} importadas`,
-                `${result.duplicates} duplicadas`,
-                result.discarded > 0 ? `${result.discarded} descartadas` : null,
-                `${result.warningRows.length} avisos`,
-              ].filter(Boolean).join(' · ')}
+              {step === 'done'       && result && `Importação concluída`}
               {step === 'undoing'    && 'Desfazendo lote…'}
               {step === 'undone'     && 'Lote desfeito com sucesso'}
             </p>
@@ -686,13 +609,12 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                   <Info size={14} className="text-[#e13500]" />
                   Informações importantes
                 </p>
-                <p>• A primeira linha deve ser o cabeçalho (NOME, CELULAR, E-MAIL…)</p>
-                <p>• Colunas detectadas automaticamente — Eclésia, Arena, qualquer CRM</p>
+                <p>• A primeira linha deve ser o cabeçalho (NOME, CELULAR, DATA DE NASCIMENTO…)</p>
+                <p>• Colunas detectadas automaticamente — Eclésia, Arena, qualquer sistema</p>
+                <p>• Precisa de nome <strong>e</strong> telefone por linha para importar</p>
                 <p>• Membros importados <strong>não recebem boas-vindas</strong></p>
                 <p>• Entram no reengajamento gradual (máx. 50 msg/dia — sem risco de spam)</p>
                 <p>• Duplicatas por <strong>telefone</strong> são ignoradas automaticamente</p>
-                <p>• Sem telefone <em>e</em> sem e-mail → linha descartada (sem canal de contato)</p>
-                <p>• Só e-mail (sem telefone) → importado com marcador <em>contato fraco</em></p>
                 <p>• Importação <strong>reversível</strong> — desfaça o lote inteiro com 1 clique</p>
               </div>
             </div>
@@ -712,64 +634,28 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
           {step === 'done' && result && (
             <div className="space-y-4">
 
-              {/* Métricas */}
-              <div className={`grid gap-3 ${result.discarded > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
-                <div className="bg-green-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-green-700">{result.inserted}</p>
-                  <p className="text-xs text-green-600 mt-0.5">Importadas</p>
-                </div>
-                <div className="bg-yellow-50 rounded-xl p-3 text-center">
-                  <p className="text-2xl font-bold text-yellow-700">{result.duplicates}</p>
-                  <p className="text-xs text-yellow-600 mt-0.5">Duplicadas</p>
-                </div>
-                {result.discarded > 0 && (
-                  <div className="bg-gray-100 rounded-xl p-3 text-center">
-                    <p className="text-2xl font-bold text-gray-500">{result.discarded}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Sem contato</p>
-                  </div>
-                )}
-                <div className={`rounded-xl p-3 text-center ${result.warningRows.length > 0 ? 'bg-orange-50' : 'bg-[#f9eedc]'}`}>
-                  <p className={`text-2xl font-bold ${result.warningRows.length > 0 ? 'text-orange-600' : 'text-[#8A8A8A]'}`}>
-                    {result.warningRows.length}
-                  </p>
-                  <p className={`text-xs mt-0.5 ${result.warningRows.length > 0 ? 'text-orange-500' : 'text-[#8A8A8A]'}`}>
-                    Avisos
-                  </p>
-                </div>
+              {/* Resumo principal */}
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <p className="text-lg font-bold text-green-700">{result.inserted} pessoas adicionadas</p>
+                <p className="text-sm text-green-600 mt-0.5">
+                  {[
+                    result.duplicates > 0 ? `${result.duplicates} duplicadas e ignoradas` : null,
+                    result.discarded > 0  ? `${result.discarded} descartadas por falta de nome ou telefone` : null,
+                  ].filter(Boolean).join(' · ') || 'Sem duplicatas nem descartes'}
+                </p>
               </div>
-
-              {/* Info descartados — apenas count, sem nomes (critério de contato mínimo) */}
-              {result.discarded > 0 && (
-                <div className="flex items-start gap-2 bg-gray-50 border border-gray-200 rounded-xl p-3">
-                  <Info size={14} className="text-gray-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-gray-500">
-                    <strong>{result.discarded}</strong> linha{result.discarded === 1 ? '' : 's'} descartada{result.discarded === 1 ? '' : 's'} por não ter telefone nem e-mail.
-                    Não é possível entrar em contato sem pelo menos um canal — essas pessoas não foram importadas.
-                  </p>
-                </div>
-              )}
 
               {/* Sem inserções */}
               {result.inserted === 0 && (
                 <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
                   <AlertCircle size={16} className="text-yellow-600 shrink-0" />
                   <p className="text-sm text-yellow-700">
-                    Nenhuma pessoa nova importada. Verifique se já não estão cadastradas ou se a coluna NOME foi detectada.
+                    Nenhuma pessoa importada. Verifique se o arquivo tem colunas de nome e telefone.
                   </p>
                 </div>
               )}
 
-              {/* Mapeamento detectado */}
-              {detectedSummary && (
-                <div className="bg-[#f9eedc] rounded-xl px-4 py-3">
-                  <p className="text-xs font-semibold text-[#8A8A8A] uppercase tracking-wide mb-1.5">
-                    Mapeamento automático detectado
-                  </p>
-                  <p className="text-xs text-[#5A5A5A] leading-relaxed break-words">{detectedSummary}</p>
-                </div>
-              )}
-
-              {/* Avisos por pessoa */}
+              {/* Avisos de dados incompletos (datas ilegíveis, telefones sem DDD) */}
               {result.warningRows.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">
@@ -818,7 +704,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                 </p>
               </div>
 
-              {/* Botão desfazer lote */}
+              {/* Desfazer lote */}
               {result.inserted > 0 && (
                 <button
                   onClick={() => { void undoBatch() }}
@@ -831,7 +717,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
             </div>
           )}
 
-          {/* UNDONE — Confirmação desfazer */}
+          {/* UNDONE */}
           {step === 'undone' && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-14 h-14 rounded-full bg-[#f9eedc] flex items-center justify-center">
@@ -840,7 +726,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
               <p className="text-lg font-semibold text-[#161616]">Lote desfeito</p>
               <p className="text-sm text-[#8A8A8A] text-center max-w-xs">
                 {undoneCount} {undoneCount === 1 ? 'pessoa removida' : 'pessoas removidas'} da base.
-                A operação é reversível — os registros têm <code className="text-xs">deleted_at</code> preenchido, não foram apagados.
+                Os registros têm <code className="text-xs">deleted_at</code> preenchido, não foram apagados.
               </p>
             </div>
           )}
