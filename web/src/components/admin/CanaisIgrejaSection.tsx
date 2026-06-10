@@ -22,6 +22,7 @@ import {
   type ChurchChannel,
   type UpsertChannelParams,
 } from '@/hooks/useChurchChannels'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -411,6 +412,7 @@ export default function CanaisIgrejaSection({
 
       {/* ── Modal formulário ─────────────────────────────────────────────── */}
       {showModal && (
+        <ModalPortal>
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={() => setShowModal(false)}
@@ -642,6 +644,7 @@ export default function CanaisIgrejaSection({
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   )

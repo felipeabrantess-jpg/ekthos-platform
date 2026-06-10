@@ -19,6 +19,7 @@ import {
   type ChurchEventFull,
 } from '@/features/agenda/hooks/useEvents'
 import EventForm from '@/pages/events/EventForm'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
   culto: 'Culto', celula: 'Célula', reuniao: 'Reunião', retiro: 'Retiro',
@@ -214,6 +215,7 @@ export default function EventsList() {
 
       {/* Delete confirmation modal */}
       {deletingEvent && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingEvent(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
@@ -250,6 +252,7 @@ export default function EventsList() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

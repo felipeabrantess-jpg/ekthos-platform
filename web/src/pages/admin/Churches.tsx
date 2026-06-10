@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Filter, Eye, MoreVertical, Building2, Plus, Loader, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Tipos ──────────────────────────────────────────────────
 
@@ -471,6 +472,7 @@ export default function AdminChurches() {
 
       {/* Modal: Nova Igreja */}
       {showModal && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           {/* Overlay */}
           <div
@@ -587,6 +589,7 @@ export default function AdminChurches() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

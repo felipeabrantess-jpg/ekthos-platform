@@ -13,6 +13,7 @@ import { useState, Component, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import { useTags } from '@/features/people/hooks/useTags'
 import PersonModal from '@/features/people/components/PersonModal'
@@ -111,6 +112,7 @@ interface ConfirmDeleteModalProps {
 function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting, error }: ConfirmDeleteModalProps) {
   if (!person) return null
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
@@ -141,6 +143,7 @@ function ConfirmDeleteModal({ person, onConfirm, onCancel, isDeleting, error }: 
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

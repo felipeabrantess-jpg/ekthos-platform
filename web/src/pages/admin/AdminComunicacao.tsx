@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MessageSquare, ChevronRight, X, ExternalLink, RefreshCw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -158,6 +159,7 @@ function MessageDrawer({
     : null
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex">
       {/* Overlay */}
       <div className="flex-1 bg-black/40" onClick={onClose} />
@@ -270,6 +272,7 @@ function MessageDrawer({
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

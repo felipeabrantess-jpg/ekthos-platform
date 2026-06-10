@@ -15,6 +15,7 @@ import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import PersonSelect from '@/components/ui/PersonSelect'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 function getInitials(name: string | null): string {
   if (!name) return '?'
@@ -53,6 +54,7 @@ function ConfirmRemoveModal({ member, onConfirm, onCancel, isRemoving }: Confirm
   if (!member) return null
   const name = member.people?.name ?? 'este membro'
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
@@ -76,6 +78,7 @@ function ConfirmRemoveModal({ member, onConfirm, onCancel, isRemoving }: Confirm
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

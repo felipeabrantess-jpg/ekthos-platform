@@ -17,6 +17,7 @@ import {
   useDeletePipelineStage,
 } from '@/features/pipeline/hooks/usePipelineStagesCrud'
 import type { PipelineStage } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Paleta canônica de cores para etapas ──────────────────────────────────────
 
@@ -133,6 +134,7 @@ export function PipelineStagesModal({ onClose }: PipelineStagesModalProps) {
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
@@ -310,5 +312,6 @@ export function PipelineStagesModal({ onClose }: PipelineStagesModalProps) {
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }

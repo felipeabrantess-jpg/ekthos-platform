@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from 'react'
 import { Sparkles, Save, Loader2, Check, AlertCircle, Clock, RotateCcw } from 'lucide-react'
+import ModalPortal from '@/components/ui/ModalPortal'
 import {
   useChurchAgentConfig,
   useUpsertChurchAgentConfig,
@@ -219,6 +220,7 @@ export default function PromptCustomizadoSection({
 
       {/* Modal de confirmação de reset */}
       {showResetModal && (
+        <ModalPortal>
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
           onClick={() => setShowResetModal(false)}
@@ -250,6 +252,7 @@ export default function PromptCustomizadoSection({
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   )

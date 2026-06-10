@@ -17,6 +17,7 @@ import { X, Copy, Check, Download, ExternalLink } from 'lucide-react'
 import QRCode from 'qrcode'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Constantes ───────────────────────────────────────────────
 
@@ -149,6 +150,7 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
   const url = qrData ? visitorUrl(qrData.slug) : ''
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
@@ -262,5 +264,6 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }

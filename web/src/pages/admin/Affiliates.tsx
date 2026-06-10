@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 
@@ -110,6 +111,7 @@ function NewAffiliateModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const fi = 'w-full border border-black/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-red-200 focus:border-red-400 transition'
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
@@ -169,6 +171,7 @@ function NewAffiliateModal({ onClose, onCreated }: { onClose: () => void; onCrea
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }
 

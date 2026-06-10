@@ -41,6 +41,7 @@ import Papa from 'papaparse'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── Constants ────────────────────────────────────────────────────────────────────
 
@@ -612,6 +613,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
     : ''
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
 
@@ -860,5 +862,6 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
 
       </div>
     </div>
+    </ModalPortal>
   )
 }

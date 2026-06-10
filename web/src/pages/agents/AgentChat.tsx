@@ -26,6 +26,7 @@ import { loadAgentMessages, type ChatMessage } from '@/lib/agent-chat-client'
 import { AgentChatInterface } from '@/components/agents/AgentChatInterface'
 import { AgentChatHistory, type ChatSession } from '@/components/agents/AgentChatHistory'
 import Spinner from '@/components/ui/Spinner'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 // ── AgentChat ──────────────────────────────────────────────────────────────────
 
@@ -243,6 +244,7 @@ export default function AgentChat() {
 
       {/* Drawer histórico — mobile overlay */}
       {showHistory && (
+        <ModalPortal>
         <>
           <div
             className="fixed inset-0 z-30 bg-black/40 md:hidden"
@@ -260,6 +262,7 @@ export default function AgentChat() {
             />
           </div>
         </>
+        </ModalPortal>
       )}
 
       {/* Chat principal */}

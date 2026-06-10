@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { useCancelOccurrence, type EventOccurrence } from '@/features/agenda/hooks/useEvents'
 import type { ChurchEventFull } from '@/features/agenda/hooks/useEvents'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface EventDetailModalProps {
   occurrence: EventOccurrence | null
@@ -64,6 +65,7 @@ export default function EventDetailModal({ occurrence, onClose, onEdit }: EventD
   }
 
   return (
+    <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl">
@@ -203,5 +205,6 @@ export default function EventDetailModal({ occurrence, onClose, onEdit }: EventD
         </div>
       </div>
     </div>
+    </ModalPortal>
   )
 }

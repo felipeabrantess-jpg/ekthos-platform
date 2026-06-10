@@ -23,6 +23,7 @@ import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import type { ScheduleWithAssignments, ScheduleStatus } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 type BadgeVariant = 'gray' | 'blue' | 'green' | 'red'
 
@@ -261,6 +262,7 @@ function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }:
 
       {/* Modal de confirmação de sobrecarga — sem window.confirm (armadilha #1) */}
       {overloadModal.open && (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
             <h3 className="font-semibold text-lg text-[#161616] mb-2">Voluntário Sobrecarregado</h3>
@@ -281,6 +283,7 @@ function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }:
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </>
   )
@@ -498,6 +501,7 @@ export default function Escalas() {
 
       {/* Modal de Confirmação (armadilha #1 — sem window.confirm) */}
       {confirmModal.open && (
+        <ModalPortal>
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
             <h3 className="font-semibold text-lg text-[#161616] mb-2">{confirmModal.title}</h3>
@@ -518,6 +522,7 @@ export default function Escalas() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

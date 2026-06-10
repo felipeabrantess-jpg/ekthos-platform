@@ -15,6 +15,7 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import PersonSelect from '@/components/ui/PersonSelect'
 import type { MinistryWithLeader } from '@/lib/types/joins'
+import ModalPortal from '@/components/ui/ModalPortal'
 
 interface MinistryFormData {
   name: string
@@ -265,6 +266,7 @@ export default function Ministerios() {
 
       {/* Delete confirmation modal */}
       {deletingMinistry && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDeletingMinistry(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
@@ -290,6 +292,7 @@ export default function Ministerios() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )

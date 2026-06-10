@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTags, useDeleteTag, useTagUsageCounts } from '@/features/people/hooks/useTags'
 import { FlagModal } from '@/features/people/components/FlagModal'
 import { TagPill } from '@/features/people/components/TagBadgesCell'
+import ModalPortal from '@/components/ui/ModalPortal'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 import type { Tag } from '@/lib/types/joins'
@@ -168,6 +169,7 @@ export default function PeopleFlags() {
 
       {/* Modal confirmar exclusão */}
       {confirmDeleteTag && (
+        <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmDeleteTag(null)} />
           <div className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4">
@@ -203,6 +205,7 @@ export default function PeopleFlags() {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   )
