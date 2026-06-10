@@ -15,6 +15,7 @@
 import { Link } from 'react-router-dom'
 import { ChevronRight, CheckCircle2 } from 'lucide-react'
 import { INTERNAL_AGENTS, PREMIUM_AGENTS, type AgentContent } from '@/lib/agents-content'
+import { useChurch } from '@/hooks/useChurch'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,11 @@ function Section({
 // ── Página principal ──────────────────────────────────────────────────────────
 
 export default function AgentsList() {
+  const { data: church } = useChurch()
+  const visibleInternals = church?.onboarding_step === 'completed'
+    ? INTERNAL_AGENTS.filter(a => a.slug !== 'agent-onboarding')
+    : INTERNAL_AGENTS
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -113,13 +119,13 @@ export default function AgentsList() {
         </p>
       </div>
 
-      {/* 1. Incluídos no plano — 4 internos */}
+      {/* 1. Incluídos no plano — internos */}
       <Section
         title="Incluídos no seu plano"
         subtitle="Esses agentes operam automaticamente, sem custo adicional."
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {INTERNAL_AGENTS.map(c => (
+          {visibleInternals.map(c => (
             <InternalAgentCard key={c.slug} content={c} />
           ))}
         </div>
