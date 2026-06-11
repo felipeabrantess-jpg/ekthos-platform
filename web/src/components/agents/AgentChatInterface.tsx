@@ -205,11 +205,11 @@ export function AgentChatInterface({
         className="flex items-center gap-3 px-4 h-14 shrink-0"
         style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
       >
-        {/* Botão voltar (mobile) */}
+        {/* Botão voltar */}
         {onBack && (
           <button
             onClick={onBack}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors md:hidden"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
           >
             <ArrowLeft size={18} strokeWidth={2} />
           </button>
