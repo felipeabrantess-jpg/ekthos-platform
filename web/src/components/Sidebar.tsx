@@ -16,9 +16,10 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutGrid, Bot, Package, Settings, LogOut,
-  CheckCircle2, Lock, ChevronRight,
+  CheckCircle2, Lock, ChevronRight, MessageSquare,
 } from 'lucide-react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
+import { useAgentDrawer } from '@/contexts/AgentDrawerContext'
 import ThemeToggle from '@/components/ThemeToggle'
 import { ROUTE_PERMISSIONS, ROLE_LABELS } from '@/hooks/useRole'
 import { usePlan } from '@/hooks/usePlan'
@@ -55,9 +56,11 @@ interface RailProps {
   churchName?: string
   onLogout: () => void
   userInitial?: string
+  onOpenDrawer: () => void
+  drawerOpen: boolean
 }
 
-function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, userInitial }: RailProps) {
+function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, userInitial, onOpenDrawer, drawerOpen }: RailProps) {
   return (
     <div
       className="flex flex-col h-full shrink-0"
@@ -133,8 +136,47 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, us
         })}
       </nav>
 
-      {/* Rodapé: avatar + logout */}
+      {/* Rodapé: chat pastoral + avatar + logout */}
       <div className="flex flex-col items-center gap-2 pb-3 border-t border-white/[0.04] pt-3">
+        {/* Botão Assistente Pastoral */}
+        <div className="relative group">
+          <button
+            onClick={onOpenDrawer}
+            className="flex items-center justify-center rounded-xl transition-all"
+            style={{
+              width: 40, height: 40,
+              background: drawerOpen ? 'var(--bg-hover)' : 'transparent',
+              color: drawerOpen ? 'var(--color-primary)' : 'var(--text-secondary)',
+            }}
+            title="Assistente Pastoral"
+            onMouseEnter={e => {
+              if (!drawerOpen) {
+                e.currentTarget.style.background = 'var(--bg-hover)'
+                e.currentTarget.style.color = 'var(--text-primary)'
+              }
+            }}
+            onMouseLeave={e => {
+              if (!drawerOpen) {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = 'var(--text-secondary)'
+              }
+            }}
+          >
+            <MessageSquare size={18} strokeWidth={1.75} />
+          </button>
+          <div
+            className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-primary)',
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            Assistente Pastoral
+          </div>
+        </div>
+
         <div
           className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
           style={{ background: 'var(--church-primary, #e13500)', color: '#fff' }}
@@ -497,6 +539,7 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
   const location = useLocation()
   const { allAgents, activeAgentSlugs, hasAgent, isLoading: planLoading, planSlug } = usePlan()
   const { data: church } = useChurch()
+  const { isOpen: drawerOpen, toggle: toggleDrawer } = useAgentDrawer()
 
   const enabledModules = church?.enabled_modules ?? DEFAULT_MODULES
 
@@ -545,6 +588,8 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
         churchName={church?.name ?? undefined}
         onLogout={handleLogout}
         userInitial={userInitial}
+        onOpenDrawer={toggleDrawer}
+        drawerOpen={drawerOpen}
       />
 
       {/* Sub-painel 240px */}

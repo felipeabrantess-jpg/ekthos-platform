@@ -14,6 +14,11 @@ import { supabase } from '@/lib/supabase'
 
 const EF_BASE = import.meta.env.VITE_SUPABASE_URL as string
 
+// agent-acolhimento (motor WhatsApp autônomo, não SSE) → agent-acolhimento-chat (SSE para cockpit)
+const SLUG_REMAP: Record<string, string> = {
+  'agent-acolhimento': 'agent-acolhimento-chat',
+}
+
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 export interface ChatMessage {
@@ -57,7 +62,8 @@ export async function openAgentStream(
   }
 
   try {
-    const response = await fetch(`${EF_BASE}/functions/v1/${agentSlug}`, {
+    const effectiveSlug = SLUG_REMAP[agentSlug] ?? agentSlug
+    const response = await fetch(`${EF_BASE}/functions/v1/${effectiveSlug}`, {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',

@@ -6,6 +6,8 @@ import MobileHeader from './MobileHeader'
 import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
 import { NotificationsProvider } from '@/features/notifications/context/NotificationsContext'
+import { AgentDrawerProvider } from '@/contexts/AgentDrawerContext'
+import { AgentDrawer } from '@/components/agents/AgentDrawer'
 import { supabase } from '@/lib/supabase'
 
 interface ImpersonatingState {
@@ -123,30 +125,35 @@ export default function Layout() {
 
   return (
     <NotificationsProvider>
-      {/* flex ROW: sidebar esquerda | coluna de conteúdo direita */}
-      <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
-        <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
+      <AgentDrawerProvider>
+        {/* flex ROW: sidebar esquerda | coluna de conteúdo direita */}
+        <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+          <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
 
-        {/* Coluna de conteúdo: topbar + main */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Mobile: header fixo (hamburger + nome da igreja + sino) */}
-          <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
+          {/* Coluna de conteúdo: topbar + main */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Mobile: header fixo (hamburger + nome da igreja + sino) */}
+            <MobileHeader onMenuClick={() => setSidebarOpen(true)} />
 
-          {impersonating && (
-            <ImpersonateBanner state={impersonating} onExit={() => void exitImpersonate()} exitLoading={exitLoading} exitError={exitError} />
-          )}
+            {impersonating && (
+              <ImpersonateBanner state={impersonating} onExit={() => void exitImpersonate()} exitLoading={exitLoading} exitError={exitError} />
+            )}
 
-          {/* Desktop: topbar (sino + avatar) — ACIMA do main, fora do overflow-y-auto */}
-          <AppHeader />
+            {/* Desktop: topbar (sino + avatar) — ACIMA do main, fora do overflow-y-auto */}
+            <AppHeader />
 
-          {/* Conteúdo — pt-14 mobile (clear do MobileHeader fixo), pt-0 desktop */}
-          <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: 'var(--bg-primary)' }}>
-            <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
-              <Outlet />
-            </div>
-          </main>
+            {/* Conteúdo — pt-14 mobile (clear do MobileHeader fixo), pt-0 desktop */}
+            <main className="flex-1 overflow-y-auto pt-14 md:pt-0" style={{ background: 'var(--bg-primary)' }}>
+              <div className="max-w-7xl mx-auto px-4 md:px-6 py-5 md:py-8 page-content">
+                <Outlet />
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
+
+        {/* Drawer flutuante do Assistente Pastoral — fora do scroll */}
+        <AgentDrawer />
+      </AgentDrawerProvider>
     </NotificationsProvider>
   )
 }
