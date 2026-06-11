@@ -23,6 +23,7 @@ import {
   type PersonVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
 import ModalPortal from '@/components/ui/ModalPortal'
+import { useAppointments } from '@/features/gabinete/hooks/useAppointments'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -121,6 +122,33 @@ function PresenceBadge({ lastAt }: { lastAt: string | null | undefined }) {
     <span className="text-xs px-2 py-0.5 rounded-full bg-brand-50 text-brand-700 font-semibold">
       há {days}d — Em risco
     </span>
+  )
+}
+
+// ── Histórico de Atendimentos Pastorais ──────────────────────────────────────
+
+function PastoralAppointmentsHistory({ personId, churchId }: { personId: string; churchId: string }) {
+  const { data: appts = [], isLoading } = useAppointments(churchId, personId)
+  if (isLoading || appts.length === 0) return null
+  return (
+    <InfoCard title="Histórico de Atendimentos">
+      {appts.map(appt => (
+        <div key={appt.id} className="flex items-start justify-between gap-3 py-2 first:pt-1 last:pb-1">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-ekthos-black truncate">{appt.appointment_type}</p>
+            <p className="text-[11px] text-ekthos-black/40 mt-0.5">{formatDate(appt.scheduled_at)}</p>
+          </div>
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+            appt.status === 'realizado'  ? 'bg-success-bg text-success' :
+            appt.status === 'confirmado' ? 'bg-blue-50 text-blue-600' :
+            appt.status === 'cancelado'  ? 'bg-red-50 text-red-500' :
+            'bg-warning-bg text-warning'
+          }`}>
+            {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
+          </span>
+        </div>
+      ))}
+    </InfoCard>
   )
 }
 
@@ -680,6 +708,11 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
               churchId={churchId}
               isVolunteer={!!(p.is_volunteer)}
             />
+          )}
+
+          {/* 9. Histórico de Atendimentos Pastorais */}
+          {churchId && (
+            <PastoralAppointmentsHistory personId={person.id} churchId={churchId} />
           )}
 
           {/* Espaço no fundo */}
