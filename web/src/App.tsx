@@ -46,7 +46,8 @@ const Ministerios = lazy(() => import('@/pages/Ministerios'))
 const Escalas     = lazy(() => import('@/pages/Escalas'))
 const Financeiro  = lazy(() => import('@/pages/Financeiro'))
 const Agenda      = lazy(() => import('@/pages/Agenda'))
-const Gabinete    = lazy(() => import('@/pages/Gabinete'))
+const Gabinete             = lazy(() => import('@/pages/Gabinete'))
+const GabineteAgendamentos = lazy(() => import('@/pages/GabineteAgendamentos'))
 const Celulas        = lazy(() => import('@/pages/Celulas'))
 const Aniversarios   = lazy(() => import('@/pages/Aniversarios'))
 const Agents         = lazy(() => import('@/pages/Agents').then(m => ({ default: m.Agents })))
@@ -335,6 +336,7 @@ export default function App() {
             <Route path="escalas"     element={<ErrorBoundary><RoleRoute path="escalas"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><Escalas /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="gabinete/agendamentos" element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabineteAgendamentos /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
             {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}

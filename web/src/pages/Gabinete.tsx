@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { NavLink } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import {
   useGabinete,
@@ -273,6 +274,29 @@ function MemberModal({ open, onClose, churchId, editing, nextOrderIndex }: Membe
   )
 }
 
+function GabineteTabBar() {
+  const base     = 'px-4 py-2 text-sm font-medium rounded-lg transition-colors'
+  const active   = 'bg-white shadow-sm text-ekthos-black'
+  const inactive = 'text-ekthos-black/50 hover:text-ekthos-black'
+  return (
+    <div className="flex gap-1 p-1 bg-cream-dark/30 rounded-xl w-fit">
+      <NavLink
+        to="/gabinete"
+        end
+        className={({ isActive }) => `${base} ${isActive ? active : inactive}`}
+      >
+        Equipe
+      </NavLink>
+      <NavLink
+        to="/gabinete/agendamentos"
+        className={({ isActive }) => `${base} ${isActive ? active : inactive}`}
+      >
+        Agendamentos
+      </NavLink>
+    </div>
+  )
+}
+
 export default function Gabinete() {
   const { churchId } = useAuth()
   const [modalOpen, setModalOpen] = useState(false)
@@ -340,12 +364,15 @@ export default function Gabinete() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gabinete Pastoral</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {members ? `${members.length} membro${members.length !== 1 ? 's' : ''}` : 'Carregando...'}
-          </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Gabinete Pastoral</h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {members ? `${members.length} membro${members.length !== 1 ? 's' : ''}` : 'Carregando...'}
+            </p>
+          </div>
+          <GabineteTabBar />
         </div>
         <Button onClick={() => { setEditing(null); setModalOpen(true) }}>+ Adicionar Membro</Button>
       </div>
