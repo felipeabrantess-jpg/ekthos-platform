@@ -19,6 +19,11 @@ const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
 // Frente B — landing pública de visitantes via QR Code
 const VisitorLanding = lazy(() => import('@/pages/VisitorLanding'))
 
+// PWA Público IGV — Fase 0 (path-based, sem auth, sem Layout CRM)
+const IgvPage           = lazy(() => import('@/pages/IgvPage'))
+const IgvAboutPage      = lazy(() => import('@/pages/IgvAboutPage'))
+const IgvSejaMembroPage = lazy(() => import('@/pages/IgvSejaMembroPage'))
+
 // LGPD — Políticas públicas
 const Privacy = lazy(() => import('@/pages/Privacy'))
 const Terms   = lazy(() => import('@/pages/Terms'))
@@ -243,6 +248,11 @@ export default function App() {
               </ErrorBoundary>
             }
           />
+
+          {/* ── PWA Público IGV — Fase 0 (path-based, sem auth, sem Layout CRM) ── */}
+          <Route path="/igv" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvPage /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/sobre" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAboutPage /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/seja-membro" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvSejaMembroPage /></Suspense></ErrorBoundary>} />
 
           {/* ── LGPD — Políticas públicas ── */}
           <Route path="/privacy" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Privacy /></Suspense></ErrorBoundary>} />
