@@ -1,30 +1,42 @@
 /**
- * IgvPage — /igv  (Redesign v2)
- * PWA público da Igreja Gerando Vencedores.
- * Hero com foto da fachada, DM Sans, logos oficiais de redes sociais, banner iOS PWA.
+ * IgvPage — /igv  (v3 ajustes)
+ * Ajuste 1: foto da fachada inteira (img contain, fundo marrom IGV).
+ * Ajuste 2: 11 botões (6 ativos + 5 "em breve" com toast).
+ * Ajuste 3: botão "Instalar App" visível (Android prompt + instrução iOS).
  * LGPD R8: zero SELECT em people. INSERT only via visitor-capture EF.
  */
 
-import { useState, useEffect } from 'react'
-import { Link }                from 'react-router-dom'
-import { ChevronRight, Users, BookOpen } from 'lucide-react'
+import { useState, useEffect, useRef }          from 'react'
+import { Link }                                  from 'react-router-dom'
+import {
+  ChevronRight, Users, BookOpen, MessageCircle,
+  Share2, Calendar, Book, Building2,
+  CalendarCheck, Heart, Smartphone,
+} from 'lucide-react'
 import { IGV } from '@/lib/igv-public-data'
+
+// ── Tipo PWA (não existe no lib.dom padrão) ────────────────────────
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
 
 // ── Logos oficiais de redes sociais ────────────────────────────────
 
-function WhatsAppLogo() {
+function WhatsAppLogo({ size = 22 }: { size?: number }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="#25D366" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#25D366" aria-hidden="true">
       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
     </svg>
   )
 }
 
-function InstagramLogo() {
+function InstagramLogo({ size = 22 }: { size?: number }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       <defs>
-        <linearGradient id="ig-grad-main" x1="0%" y1="100%" x2="100%" y2="0%">
+        <linearGradient id="ig-grad-v3" x1="0%" y1="100%" x2="100%" y2="0%">
           <stop offset="0%"   stopColor="#f09433" />
           <stop offset="25%"  stopColor="#e6683c" />
           <stop offset="50%"  stopColor="#dc2743" />
@@ -32,14 +44,14 @@ function InstagramLogo() {
           <stop offset="100%" stopColor="#bc1888" />
         </linearGradient>
       </defs>
-      <path fill="url(#ig-grad-main)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+      <path fill="url(#ig-grad-v3)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
     </svg>
   )
 }
 
-function YouTubeLogo() {
+function YouTubeLogo({ size = 22 }: { size?: number }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
       <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
     </svg>
   )
@@ -64,27 +76,159 @@ function LogoPlaceholder() {
   )
 }
 
-// ── Hook: detecta iOS Safari para banner de instalação ─────────────
+// ── Hooks de instalação PWA ─────────────────────────────────────────
 
-function useIOSInstallBanner() {
-  const [visible, setVisible] = useState(false)
-  const [dismissed, setDismissed] = useState(false)
+function useInstallPrompt() {
+  const promptRef = useRef<BeforeInstallPromptEvent | null>(null)
+  const [canInstall, setCanInstall] = useState(false)
+  const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
-    const ua = navigator.userAgent
-    const isIOS = /iPad|iPhone|iPod/.test(ua)
-    const isWebKit = /WebKit/.test(ua) && !/CriOS|FxiOS|OPiOS/.test(ua)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-    if (isIOS && isWebKit && !isStandalone) setVisible(true)
+    setIsInstalled(window.matchMedia('(display-mode: standalone)').matches)
+    const handler = (e: Event) => {
+      e.preventDefault()
+      promptRef.current = e as BeforeInstallPromptEvent
+      setCanInstall(true)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => {
+      setCanInstall(false)
+      setIsInstalled(true)
+    })
+    return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  return { visible: visible && !dismissed, dismiss: () => setDismissed(true) }
+  const install = async () => {
+    if (!promptRef.current) return
+    await promptRef.current.prompt()
+    const { outcome } = await promptRef.current.userChoice
+    if (outcome === 'accepted') {
+      setCanInstall(false)
+      setIsInstalled(true)
+    }
+    promptRef.current = null
+  }
+
+  return { canInstall, isInstalled, install }
+}
+
+function useIsIOSSafari() {
+  const [isIOS, setIsIOS] = useState(false)
+  useEffect(() => {
+    const ua = navigator.userAgent
+    const ios = /iPad|iPhone|iPod/.test(ua)
+    const webkit = /WebKit/.test(ua) && !/CriOS|FxiOS|OPiOS/.test(ua)
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+    setIsIOS(ios && webkit && !standalone)
+  }, [])
+  return isIOS
+}
+
+// ── Card de ação compacto (grid 2x2) ──────────────────────────────
+
+function ActionCard({
+  label,
+  onClick,
+  children,
+}: {
+  label: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center justify-center bg-white rounded-2xl border border-black/[0.05] shadow-sm p-3 h-[76px] gap-1.5 active:bg-gray-50/80 transition-colors"
+    >
+      {children}
+      <span className="text-[0.72rem] font-medium text-gray-700 leading-tight">{label}</span>
+    </button>
+  )
+}
+
+// ── Card "Em breve" ─────────────────────────────────────────────────
+
+function ComingSoonCard({
+  label,
+  icon: Icon,
+  onClick,
+  wide = false,
+}: {
+  label: string
+  icon: React.ElementType
+  onClick: () => void
+  wide?: boolean
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex ${wide ? 'flex-row gap-2.5 px-4 justify-center h-[52px]' : 'flex-col items-center justify-center h-[76px] gap-1.5'} bg-white rounded-2xl border border-black/[0.05] shadow-sm p-3 active:bg-gray-50/60 transition-colors`}
+    >
+      <span className="absolute top-1.5 right-2 text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 leading-tight">
+        Em breve
+      </span>
+      <Icon size={wide ? 18 : 20} strokeWidth={1.75} className="text-gray-300 shrink-0" />
+      <span className={`${wide ? 'text-[0.8rem]' : 'text-[0.72rem]'} font-medium text-gray-400 leading-tight`}>{label}</span>
+    </button>
+  )
 }
 
 // ── Componente principal ───────────────────────────────────────────
 
 export default function IgvPage() {
-  const { visible: showBanner, dismiss } = useIOSInstallBanner()
+  const { canInstall, isInstalled, install } = useInstallPrompt()
+  const isIOS = useIsIOSSafari()
+
+  const [toast, setToast]                     = useState<string | null>(null)
+  const [showIOSModal, setShowIOSModal]       = useState(false)
+  const [showBanner, setShowBanner]           = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
+
+  useEffect(() => {
+    if (isIOS && !isInstalled) setShowBanner(true)
+  }, [isIOS, isInstalled])
+
+  // ── Helpers ──────────────────────────────────────────────────────
+
+  function triggerToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2500)
+  }
+
+  function showComingSoon() {
+    triggerToast('Essa funcionalidade chega em breve! 🙌')
+  }
+
+  function openLink(url: string) {
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  async function handleShare() {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: IGV.name,
+          text: 'Conheça a Igreja Gerando Vencedores em Niterói!',
+          url: window.location.href,
+        })
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href)
+        triggerToast('Link copiado! 📋')
+      }
+    } catch {
+      // usuário cancelou
+    }
+  }
+
+  function handleInstallClick() {
+    if (canInstall) {
+      install()
+    } else if (isIOS) {
+      setShowIOSModal(true)
+    }
+  }
+
+  const showInstallButton = !isInstalled && (canInstall || isIOS)
 
   return (
     <div
@@ -92,50 +236,66 @@ export default function IgvPage() {
       style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
     >
 
-      {/* ── Hero: foto da fachada ── */}
-      <section
-        className="relative flex flex-col justify-end overflow-hidden"
-        style={{
-          minHeight: '68vh',
-          backgroundImage: `url(${IGV.coverUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 25%',
-        }}
-      >
-        {/* Overlay gradiente — leve no topo, pesado na base para legibilidade */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(to bottom, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.20) 50%, rgba(0,0,0,0.82) 100%)',
-          }}
-        />
+      {/* ── Hero: foto da fachada INTEIRA ── */}
+      {/* bg-[#1C0A04] = marrom muito escuro, harmônico com a fachada */}
+      <section className="bg-[#1C0A04] w-full">
+        <div className="relative max-w-[480px] mx-auto">
 
-        {/* Conteúdo sobreposto */}
-        <div className="relative z-10 px-5 pb-8 max-w-[480px]">
-          <LogoPlaceholder />
-          <h1
-            className="mt-4 text-[1.85rem] font-bold text-white leading-tight tracking-tight"
-            style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
-          >
-            {IGV.name}
-          </h1>
-          <p className="mt-1 text-white/75 text-[0.875rem] font-medium">{IGV.pastor}</p>
-          <p className="mt-0.5 text-white/50 text-[0.75rem]">{IGV.address}</p>
+          {/* Foto inteira — object-contain para mostrar 100% da imagem */}
+          <img
+            src={IGV.coverUrl}
+            alt="Fachada da Igreja Gerando Vencedores"
+            className="w-full h-auto block"
+            style={{ display: 'block' }}
+            loading="eager"
+          />
+
+          {/* Overlay gradiente na base para legibilidade do texto */}
+          <div
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 right-0"
+            style={{
+              height: '55%',
+              background:
+                'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 40%, transparent 100%)',
+            }}
+          />
+
+          {/* Conteúdo sobreposto — logo + nome + endereço + botão instalar */}
+          <div className="absolute bottom-0 left-0 right-0 px-5 pb-7 z-10">
+            <LogoPlaceholder />
+            <h1
+              className="mt-3 text-[1.85rem] font-bold text-white leading-tight tracking-tight"
+              style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
+            >
+              {IGV.name}
+            </h1>
+            <p className="mt-0.5 text-white/75 text-[0.875rem] font-medium">{IGV.pastor}</p>
+            <p className="mt-0.5 text-white/50 text-[0.75rem]">{IGV.address}</p>
+
+            {/* Botão Instalar App — Android dispara prompt nativo; iOS mostra instruções */}
+            {showInstallButton && (
+              <button
+                onClick={handleInstallClick}
+                className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-white/15 border border-white/30 backdrop-blur-sm text-white text-[0.8rem] font-medium active:bg-white/25 transition-colors"
+                aria-label={canInstall ? 'Instalar app no dispositivo' : 'Ver instruções para instalar no iOS'}
+              >
+                <Smartphone size={15} strokeWidth={1.75} />
+                Instalar App
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
       {/* ── Body ── */}
       <main className="flex-1 px-4 py-5 max-w-[480px] mx-auto w-full">
 
-        {/* CTA principal — Seja Membro */}
+        {/* CTAs principais */}
         <Link
           to="/igv/seja-membro"
-          className="flex items-center justify-between w-full rounded-2xl p-4 mb-3 active:scale-[0.99] transition-all"
-          style={{
-            background: `linear-gradient(135deg, ${IGV.primaryColor} 0%, ${IGV.secondaryColor} 100%)`,
-          }}
+          className="flex items-center justify-between w-full rounded-2xl p-4 mb-2.5 active:scale-[0.99] transition-all"
+          style={{ background: `linear-gradient(135deg, ${IGV.primaryColor} 0%, ${IGV.secondaryColor} 100%)` }}
         >
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
@@ -149,10 +309,9 @@ export default function IgvPage() {
           <ChevronRight size={16} strokeWidth={2.5} className="text-white/50 shrink-0" />
         </Link>
 
-        {/* Sobre Nós */}
         <Link
           to="/igv/sobre"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-4 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -169,46 +328,45 @@ export default function IgvPage() {
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
         </Link>
 
-        {/* Redes sociais */}
-        <div className="bg-white rounded-2xl border border-black/[0.05] overflow-hidden shadow-sm">
-          <div className="px-5 pt-4 pb-2">
-            <p
-              className="text-[0.65rem] font-semibold uppercase tracking-[0.14em]"
-              style={{ color: IGV.primaryColor }}
-            >
-              Nos encontre
-            </p>
-          </div>
-          <div className="divide-y divide-black/[0.04]">
-            <a
-              href={`https://wa.me/${IGV.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/80 active:bg-gray-100/60 transition-colors"
-            >
-              <WhatsAppLogo />
-              <span className="text-[0.875rem] text-gray-700 font-medium">WhatsApp</span>
-            </a>
-            <a
-              href={`https://instagram.com/${IGV.instagramHandle}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/80 active:bg-gray-100/60 transition-colors"
-            >
-              <InstagramLogo />
-              <span className="text-[0.875rem] text-gray-700 font-medium">@{IGV.instagramHandle}</span>
-            </a>
-            <a
-              href={IGV.youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/80 active:bg-gray-100/60 transition-colors"
-            >
-              <YouTubeLogo />
-              <span className="text-[0.875rem] text-gray-700 font-medium">YouTube</span>
-            </a>
-          </div>
+        {/* Label seção conecte-se */}
+        <p
+          className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] mb-2.5"
+          style={{ color: IGV.primaryColor }}
+        >
+          Conecte-se
+        </p>
+
+        {/* Grid 2×2 — 4 ações de contato/redes */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4">
+          <ActionCard label="WhatsApp" onClick={() => openLink(`https://wa.me/${IGV.whatsapp}`)}>
+            <WhatsAppLogo size={24} />
+          </ActionCard>
+          <ActionCard label={`@${IGV.instagramHandle}`} onClick={() => openLink(`https://instagram.com/${IGV.instagramHandle}`)}>
+            <InstagramLogo size={24} />
+          </ActionCard>
+          <ActionCard label="YouTube" onClick={() => openLink(IGV.youtubeUrl)}>
+            <YouTubeLogo size={24} />
+          </ActionCard>
+          <ActionCard label="Compartilhar" onClick={handleShare}>
+            <Share2 size={22} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+          </ActionCard>
         </div>
+
+        {/* Label seção em breve */}
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-2.5">
+          Em breve
+        </p>
+
+        {/* Grid 2×2 — 4 features futuras */}
+        <div className="grid grid-cols-2 gap-2.5 mb-2.5">
+          <ComingSoonCard label="Gabinetes"    icon={Building2}    onClick={showComingSoon} />
+          <ComingSoonCard label="Agenda"       icon={Calendar}     onClick={showComingSoon} />
+          <ComingSoonCard label="Bíblia"       icon={Book}         onClick={showComingSoon} />
+          <ComingSoonCard label="Eventos"      icon={CalendarCheck} onClick={showComingSoon} />
+        </div>
+
+        {/* Pedidos de Oração — full width */}
+        <ComingSoonCard label="Pedidos de Oração" icon={Heart} onClick={showComingSoon} wide />
       </main>
 
       {/* Footer */}
@@ -216,8 +374,8 @@ export default function IgvPage() {
         {IGV.address}
       </footer>
 
-      {/* ── Banner iOS: dica de instalação como PWA ── */}
-      {showBanner && (
+      {/* ── Banner iOS fixo (fundo, auto-detectado) ── */}
+      {showBanner && !bannerDismissed && (
         <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.07] px-4 pt-3 pb-7 flex items-start gap-3 shadow-2xl">
           <span className="text-xl mt-0.5 shrink-0" aria-hidden="true">📲</span>
           <p className="text-[0.8rem] text-gray-700 flex-1 leading-snug">
@@ -227,12 +385,69 @@ export default function IgvPage() {
             <span className="font-semibold">Adicionar à Tela de Início</span>
           </p>
           <button
-            onClick={dismiss}
+            onClick={() => setBannerDismissed(true)}
             className="text-gray-400 text-[0.8rem] font-medium shrink-0 px-1 py-0.5"
             aria-label="Fechar dica de instalação"
           >
             ✕
           </button>
+        </div>
+      )}
+
+      {/* ── Toast "em breve" / "link copiado" ── */}
+      {toast && (
+        <div className="fixed bottom-8 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <div className="bg-gray-900/95 text-white text-[0.875rem] font-medium px-5 py-3 rounded-2xl shadow-2xl">
+            {toast}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal instrução iOS install ── */}
+      {showIOSModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-end"
+          onClick={() => setShowIOSModal(false)}
+        >
+          <div
+            className="bg-white w-full rounded-t-3xl px-6 pt-5 pb-10 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto" />
+            <p
+              className="text-[1.1rem] font-bold text-gray-900"
+              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+            >
+              Adicionar à Tela Inicial
+            </p>
+            <p className="text-[0.8rem] text-gray-500 -mt-2">
+              Instale o app da IGV no seu iPhone em 3 passos:
+            </p>
+            <div className="space-y-3 text-[0.875rem] text-gray-700">
+              {[
+                ['1.', 'Toque no ícone de Compartilhar (□ com seta ↑) na barra inferior do Safari'],
+                ['2.', 'Role até encontrar "Adicionar à Tela de Início" e toque'],
+                ['3.', 'Toque em "Adicionar" no canto superior direito'],
+              ].map(([n, txt]) => (
+                <div key={n} className="flex items-start gap-3">
+                  <span
+                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.7rem] font-bold text-white"
+                    style={{ backgroundColor: IGV.primaryColor }}
+                  >
+                    {n.replace('.', '')}
+                  </span>
+                  <span className="leading-snug">{txt}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="w-full h-12 rounded-2xl text-white font-semibold text-[0.9rem] mt-2"
+              style={{ background: `linear-gradient(135deg, ${IGV.primaryColor}, ${IGV.secondaryColor})` }}
+            >
+              Entendi!
+            </button>
+          </div>
         </div>
       )}
     </div>
