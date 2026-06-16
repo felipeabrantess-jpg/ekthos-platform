@@ -1,16 +1,17 @@
 /**
- * IgvSejaMembroPage — /igv/seja-membro
- * Formulário público de cadastro de novos membros da IGV. Fase 0 PWA path-based.
+ * IgvSejaMembroPage — /igv/seja-membro  (Redesign v2)
+ * Formulário público de cadastro de novos membros da IGV.
  * POST → visitor-capture EF (slug igv-itaipu) → dispara funil de acolhimento.
- * Checkbox LGPD explícito e obrigatório (diferença de VisitorLanding: aqui o aceite é visível).
+ * Checkbox LGPD explícito e obrigatório (R8: dado visível ao titular).
  * Sem auth. Sem dados de membros. Sem sidebar do CRM.
  */
 
-import { useState }  from 'react'
-import { Link }      from 'react-router-dom'
-import { IGV }       from '@/lib/igv-public-data'
+import { useState }   from 'react'
+import { Link }       from 'react-router-dom'
+import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { IGV }        from '@/lib/igv-public-data'
 
-// ── Constantes ────────────────────────────────────────────────
+// ── Constantes ────────────────────────────────────────────────────
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const EF_BASE      = `${SUPABASE_URL}/functions/v1`
@@ -18,36 +19,18 @@ const EF_BASE      = `${SUPABASE_URL}/functions/v1`
 const PHONE_REGEX = /^\(\d{2}\)\s\d{4,5}-\d{4}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-// ── Máscara de telefone BR ─────────────────────────────────────
+// ── Máscara de telefone BR ─────────────────────────────────────────
 
 function maskPhone(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11)
   if (digits.length === 0)  return ''
   if (digits.length <= 2)   return `(${digits}`
-  if (digits.length <= 6)   return `(${digits.slice(0,2)}) ${digits.slice(2)}`
-  if (digits.length <= 10)  return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`
-  return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
+  if (digits.length <= 6)   return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  if (digits.length <= 10)  return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
-// ── Ícones ────────────────────────────────────────────────────
-
-function IconArrowLeft() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  )
-}
-
-function IconCheck() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}
-
-// ── Tipos ─────────────────────────────────────────────────────
+// ── Tipos ─────────────────────────────────────────────────────────
 
 interface FormState {
   name:            string
@@ -57,11 +40,9 @@ interface FormState {
   lgpd:            boolean
 }
 
-// ── Componente principal ───────────────────────────────────────
+// ── Componente principal ───────────────────────────────────────────
 
 export default function IgvSejaMembroPage() {
-  const primary = IGV.primaryColor
-
   const [form, setForm] = useState<FormState>({
     name:            '',
     phone:           '',
@@ -69,11 +50,9 @@ export default function IgvSejaMembroPage() {
     invited_by_name: '',
     lgpd:            false,
   })
-  const [errors,    setErrors]    = useState<Partial<Record<keyof FormState, string>>>({})
-  const [submitting,setSubmitting]= useState(false)
-  const [submitted, setSubmitted] = useState(false)
-
-  // ── Handlers ──────────────────────────────────────────────
+  const [errors,     setErrors]     = useState<Partial<Record<keyof FormState, string>>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted,  setSubmitted]  = useState(false)
 
   function handleChange(field: keyof FormState, raw: string | boolean) {
     const value = field === 'phone' && typeof raw === 'string' ? maskPhone(raw) : raw
@@ -84,13 +63,13 @@ export default function IgvSejaMembroPage() {
   function validate(): boolean {
     const errs: Partial<Record<keyof FormState, string>> = {}
     if (!form.name.trim() || form.name.trim().length < 3)
-      errs.name = 'Informe seu nome completo (mínimo 3 caracteres)'
+      errs.name  = 'Informe seu nome completo (mínimo 3 caracteres)'
     if (!PHONE_REGEX.test(form.phone))
       errs.phone = 'Telefone inválido. Ex: (21) 98765-4321'
     if (form.email && !EMAIL_REGEX.test(form.email))
       errs.email = 'Email inválido'
     if (!form.lgpd)
-      errs.lgpd = 'É necessário aceitar o uso dos dados para continuar'
+      errs.lgpd  = 'É necessário aceitar o uso dos dados para continuar'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -98,7 +77,6 @@ export default function IgvSejaMembroPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!validate() || submitting) return
-
     setSubmitting(true)
     try {
       await fetch(`${EF_BASE}/visitor-capture`, {
@@ -114,53 +92,56 @@ export default function IgvSejaMembroPage() {
       })
       setSubmitted(true)
     } catch {
-      // EF sempre retorna 200 — erro de rede raro; mostramos sucesso por UX
+      // Erro de rede raro — EF sempre retorna 200 em operação normal
       setSubmitted(true)
     } finally {
       setSubmitting(false)
     }
   }
 
-  // ── Tela de sucesso ────────────────────────────────────────
+  // ── Tela de sucesso ────────────────────────────────────────────
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-center px-4">
-        <div className="w-full max-w-[480px] mx-auto text-center">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ backgroundColor: `${primary}18`, color: primary }}
-          >
-            <IconCheck />
-          </div>
+      <div
+        className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-5"
+        style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
+      >
+        <div className="w-full max-w-[420px] text-center">
+          <CheckCircle
+            size={56}
+            strokeWidth={1.5}
+            style={{ color: IGV.primaryColor }}
+            className="mx-auto mb-5"
+          />
           <h1
-            className="text-2xl font-bold text-gray-900 mb-2"
+            className="text-[1.6rem] font-bold text-gray-900 mb-2 tracking-tight"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
-            Bem-vindo(a) à família! 🙏
+            Bem-vindo(a) à família!
           </h1>
-          <p className="text-sm text-gray-500 leading-relaxed mb-6">
+          <p className="text-[0.9rem] text-gray-500 leading-relaxed mb-7">
             Recebemos seu cadastro. Em breve alguém da{' '}
             <span className="font-medium text-gray-700">{IGV.name}</span>{' '}
-            vai entrar em contato com você pelo WhatsApp.
+            vai entrar em contato pelo WhatsApp.
           </p>
           <a
             href={`https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent(`Olá! Acabei de me cadastrar em ${IGV.name}. Gostaria de saber mais!`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90 active:opacity-80"
+            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-2xl text-white text-[0.9rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80 mb-5"
             style={{ backgroundColor: '#25D366' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
             Falar com a Igreja
           </a>
-          <div className="mt-6">
+          <div>
             <Link
               to="/igv"
-              className="text-sm font-medium transition-colors"
-              style={{ color: primary }}
+              className="text-[0.875rem] font-medium transition-colors"
+              style={{ color: IGV.primaryColor }}
             >
               ← Voltar para a página da Igreja
             </Link>
@@ -170,53 +151,48 @@ export default function IgvSejaMembroPage() {
     )
   }
 
-  // ── Formulário ─────────────────────────────────────────────
+  // ── Formulário ─────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] flex flex-col">
+    <div
+      className="min-h-screen bg-[#F9F7F4] flex flex-col"
+      style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
+    >
 
       {/* Topbar */}
-      <header className="sticky top-0 z-10 flex items-center gap-2 px-4 h-14 border-b border-black/8 bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 bg-white/92 backdrop-blur-sm border-b border-black/[0.06] px-4 h-14 flex items-center gap-3">
         <Link
           to="/igv"
-          className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-          style={{ color: primary }}
+          className="flex items-center gap-1.5 text-[0.875rem] font-medium transition-colors"
+          style={{ color: IGV.primaryColor }}
         >
-          <IconArrowLeft />
+          <ArrowLeft size={18} strokeWidth={1.75} />
           Voltar
         </Link>
-        <span className="text-gray-300 mx-1">|</span>
-        <span className="text-sm font-semibold text-gray-800">Seja Membro</span>
+        <div className="w-px h-4 bg-black/10" />
+        <span className="text-[0.875rem] font-semibold text-gray-800">Seja Membro</span>
       </header>
 
       <main className="flex-1 px-4 py-6 max-w-[480px] mx-auto w-full">
 
-        {/* Header */}
-        <div className="flex flex-col items-center mb-6">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center text-white text-lg font-bold mb-3"
-            style={{ background: `linear-gradient(160deg, ${primary} 0%, ${IGV.secondaryColor} 100%)` }}
-          >
-            IGV
-          </div>
+        {/* Header da página */}
+        <div className="text-center mb-6">
           <h1
-            className="text-xl font-bold text-gray-900 text-center"
+            className="text-[1.5rem] font-bold text-gray-900 tracking-tight"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
             Faça parte da família
           </h1>
-          <p className="text-sm text-gray-500 text-center mt-1">
-            {IGV.name}
-          </p>
+          <p className="text-[0.875rem] text-gray-500 mt-1">{IGV.name}</p>
         </div>
 
         {/* Card do formulário */}
-        <div className="bg-white rounded-2xl shadow-sm border border-black/5 p-6">
+        <div className="bg-white rounded-2xl border border-black/[0.05] shadow-sm p-5">
           <form onSubmit={e => void handleSubmit(e)} noValidate className="space-y-4">
 
             {/* Nome */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
                 Nome completo <span className="text-red-500">*</span>
               </label>
               <input
@@ -225,19 +201,21 @@ export default function IgvSejaMembroPage() {
                 placeholder="Seu nome completo"
                 value={form.name}
                 onChange={e => handleChange('name', e.target.value)}
-                className={`w-full h-12 px-4 rounded-xl border text-base bg-white focus:outline-none focus:ring-2 transition-colors ${
-                  errors.name
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-300'
-                }`}
                 style={{ fontSize: '16px' }}
+                className={`w-full h-12 px-4 rounded-xl border text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                  errors.name
+                    ? 'border-red-300 focus:ring-red-100'
+                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-400'
+                }`}
               />
-              {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-[0.75rem] text-red-500 mt-1">{errors.name}</p>
+              )}
             </div>
 
             {/* WhatsApp */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
                 WhatsApp / Telefone <span className="text-red-500">*</span>
               </label>
               <input
@@ -247,20 +225,23 @@ export default function IgvSejaMembroPage() {
                 placeholder="(21) 98765-4321"
                 value={form.phone}
                 onChange={e => handleChange('phone', e.target.value)}
-                className={`w-full h-12 px-4 rounded-xl border text-base bg-white focus:outline-none focus:ring-2 transition-colors ${
-                  errors.phone
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-300'
-                }`}
                 style={{ fontSize: '16px' }}
+                className={`w-full h-12 px-4 rounded-xl border text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                  errors.phone
+                    ? 'border-red-300 focus:ring-red-100'
+                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-400'
+                }`}
               />
-              {errors.phone && <p className="text-xs text-red-500 mt-1">{errors.phone}</p>}
+              {errors.phone && (
+                <p className="text-[0.75rem] text-red-500 mt-1">{errors.phone}</p>
+              )}
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-gray-400 font-normal">(opcional)</span>
+              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
+                Email{' '}
+                <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <input
                 type="email"
@@ -268,20 +249,23 @@ export default function IgvSejaMembroPage() {
                 placeholder="seu@email.com"
                 value={form.email}
                 onChange={e => handleChange('email', e.target.value)}
-                className={`w-full h-12 px-4 rounded-xl border text-base bg-white focus:outline-none focus:ring-2 transition-colors ${
-                  errors.email
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-300'
-                }`}
                 style={{ fontSize: '16px' }}
+                className={`w-full h-12 px-4 rounded-xl border text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                  errors.email
+                    ? 'border-red-300 focus:ring-red-100'
+                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-400'
+                }`}
               />
-              {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-[0.75rem] text-red-500 mt-1">{errors.email}</p>
+              )}
             </div>
 
             {/* Quem convidou */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Quem te convidou? <span className="text-gray-400 font-normal">(opcional)</span>
+              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
+                Quem te convidou?{' '}
+                <span className="text-gray-400 font-normal">(opcional)</span>
               </label>
               <input
                 type="text"
@@ -289,13 +273,17 @@ export default function IgvSejaMembroPage() {
                 placeholder="Nome de quem te trouxe"
                 value={form.invited_by_name}
                 onChange={e => handleChange('invited_by_name', e.target.value)}
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 text-base bg-white focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-300 transition-colors"
                 style={{ fontSize: '16px' }}
+                className="w-full h-12 px-4 rounded-xl border border-gray-200 text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400 transition-colors"
               />
             </div>
 
-            {/* Checkbox LGPD — explícito e obrigatório (R8: LGPD visível) */}
-            <div className={`rounded-xl border p-3 ${errors.lgpd ? 'border-red-200 bg-red-50' : 'border-gray-100 bg-gray-50'}`}>
+            {/* Checkbox LGPD — R8: aceite explícito e visível */}
+            <div
+              className={`rounded-xl border p-3.5 ${
+                errors.lgpd ? 'border-red-200 bg-red-50/60' : 'border-gray-100 bg-gray-50'
+              }`}
+            >
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -303,29 +291,34 @@ export default function IgvSejaMembroPage() {
                   onChange={e => handleChange('lgpd', e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded shrink-0 accent-amber-600"
                 />
-                <span className="text-xs text-gray-600 leading-relaxed">
-                  Concordo que a <strong>{IGV.name}</strong> utilize meus dados (nome, telefone e email) para fins de contato pastoral e acompanhamento espiritual, conforme a{' '}
+                <span className="text-[0.75rem] text-gray-600 leading-relaxed">
+                  Concordo que a <strong>{IGV.name}</strong> utilize meus dados (nome, telefone e email)
+                  para fins de contato pastoral, conforme a{' '}
                   <a
                     href="/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"
-                    style={{ color: primary }}
+                    style={{ color: IGV.primaryColor }}
                   >
                     Política de Privacidade
                   </a>
-                  . Os dados não serão compartilhados com terceiros. (LGPD art. 7º, I)
+                  . Dados não serão compartilhados com terceiros. (LGPD art. 7º, I)
                 </span>
               </label>
-              {errors.lgpd && <p className="text-xs text-red-500 mt-2 pl-7">{errors.lgpd}</p>}
+              {errors.lgpd && (
+                <p className="text-[0.75rem] text-red-500 mt-2 pl-7">{errors.lgpd}</p>
+              )}
             </div>
 
-            {/* Botão */}
+            {/* Botão submit */}
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 rounded-xl text-white font-semibold text-base transition-opacity disabled:opacity-60 mt-1"
-              style={{ background: `linear-gradient(90deg, ${primary} 0%, ${IGV.secondaryColor} 100%)` }}
+              className="w-full h-12 rounded-xl text-white font-semibold text-[0.9rem] transition-opacity disabled:opacity-60"
+              style={{
+                background: `linear-gradient(90deg, ${IGV.primaryColor} 0%, ${IGV.secondaryColor} 100%)`,
+              }}
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -339,7 +332,7 @@ export default function IgvSejaMembroPage() {
           </form>
         </div>
 
-        <p className="text-xs text-gray-400 text-center mt-4 px-2 leading-relaxed">
+        <p className="text-[0.72rem] text-gray-400 text-center mt-4 px-2 leading-relaxed">
           Seus dados são protegidos pela LGPD e usados somente pela {IGV.name}.
         </p>
       </main>
