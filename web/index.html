@@ -28,7 +28,7 @@
     <script type="module" src="/src/main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator && location.pathname.startsWith('/igv')) {
-        navigator.serviceWorker.register('/sw.js', { scope: '/igv/' }).catch(() => {})
+        navigator.serviceWorker.register('/sw.js', { scope: '/igv' }).catch(() => {})
       }
     </script>
   </body>
