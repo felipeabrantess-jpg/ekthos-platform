@@ -1,17 +1,17 @@
 /**
- * IgvPage — /igv  (v3 ajustes)
- * Ajuste 1: foto da fachada inteira (img contain, fundo marrom IGV).
- * Ajuste 2: 11 botões (6 ativos + 5 "em breve" com toast).
- * Ajuste 3: botão "Instalar App" visível (Android prompt + instrução iOS).
+ * IgvPage — /igv  (v4 iOS UX)
+ * v3: foto inteira, 11 botões, install Android.
+ * v4: logo oficial hero, meta tags Apple, modal iOS visual (SVG Compartilhar +
+ *     seta + detecção in-app browser), fix apple-touch-icon.
  * LGPD R8: zero SELECT em people. INSERT only via visitor-capture EF.
  */
 
 import { useState, useEffect, useRef }          from 'react'
 import { Link }                                  from 'react-router-dom'
 import {
-  ChevronRight, Users, BookOpen, MessageCircle,
+  ChevronRight, Users, BookOpen,
   Share2, Calendar, Book, Building2,
-  CalendarCheck, Heart, Smartphone,
+  CalendarCheck, Heart, Smartphone, Copy,
 } from 'lucide-react'
 import { IGV } from '@/lib/igv-public-data'
 
@@ -36,7 +36,7 @@ function InstagramLogo({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       <defs>
-        <linearGradient id="ig-grad-v3" x1="0%" y1="100%" x2="100%" y2="0%">
+        <linearGradient id="ig-grad-v4" x1="0%" y1="100%" x2="100%" y2="0%">
           <stop offset="0%"   stopColor="#f09433" />
           <stop offset="25%"  stopColor="#e6683c" />
           <stop offset="50%"  stopColor="#dc2743" />
@@ -44,7 +44,7 @@ function InstagramLogo({ size = 22 }: { size?: number }) {
           <stop offset="100%" stopColor="#bc1888" />
         </linearGradient>
       </defs>
-      <path fill="url(#ig-grad-v3)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+      <path fill="url(#ig-grad-v4)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
     </svg>
   )
 }
@@ -53,6 +53,29 @@ function YouTubeLogo({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="#FF0000" aria-hidden="true">
       <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  )
+}
+
+// ── SVG do ícone Compartilhar nativo do Safari ─────────────────────
+// Réplica fiel: caixa com seta para cima, igual ao botão no Safari iOS
+
+function SafariShareIcon({ size = 28 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+      <polyline points="16 6 12 2 8 6" />
+      <line x1="12" y1="2" x2="12" y2="15" />
     </svg>
   )
 }
@@ -96,13 +119,27 @@ function useInstallPrompt() {
 function useIsIOSSafari() {
   const [isIOS, setIsIOS] = useState(false)
   useEffect(() => {
-    const ua = navigator.userAgent
-    const ios = /iPad|iPhone|iPod/.test(ua)
-    const webkit = /WebKit/.test(ua) && !/CriOS|FxiOS|OPiOS/.test(ua)
+    const ua         = navigator.userAgent
+    const ios        = /iPad|iPhone|iPod/.test(ua)
+    const webkit     = /WebKit/.test(ua) && !/CriOS|FxiOS|OPiOS/.test(ua)
     const standalone = window.matchMedia('(display-mode: standalone)').matches
     setIsIOS(ios && webkit && !standalone)
   }, [])
   return isIOS
+}
+
+// Detecta in-app browsers que bloqueiam "Adicionar à Tela de Início":
+// Instagram, Facebook, WhatsApp, Chrome iOS, TikTok, etc.
+function useIsInAppBrowser() {
+  const [isInApp, setIsInApp] = useState(false)
+  useEffect(() => {
+    const ua = navigator.userAgent
+    const inApp =
+      /Instagram|FBAV|FBAN|WhatsApp|Musical\.ly|Snapchat|TikTok|Twitter\//.test(ua) ||
+      (/CriOS/.test(ua) && /iPhone|iPad/.test(ua)) // Chrome iOS
+    setIsInApp(inApp)
+  }, [])
+  return isInApp
 }
 
 // ── Card de ação compacto (grid 2x2) ──────────────────────────────
@@ -158,24 +195,42 @@ function ComingSoonCard({
 
 export default function IgvPage() {
   const { canInstall, isInstalled, install } = useInstallPrompt()
-  const isIOS = useIsIOSSafari()
+  const isIOS      = useIsIOSSafari()
+  const isInApp    = useIsInAppBrowser()
 
-  const [toast, setToast]                     = useState<string | null>(null)
-  const [showIOSModal, setShowIOSModal]       = useState(false)
-  const [showBanner, setShowBanner]           = useState(false)
+  const [toast,           setToast]           = useState<string | null>(null)
+  const [showIOSModal,    setShowIOSModal]     = useState(false)
+  const [showBanner,      setShowBanner]       = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [linkCopied,      setLinkCopied]      = useState(false)
 
   useEffect(() => {
     if (isIOS && !isInstalled) setShowBanner(true)
   }, [isIOS, isInstalled])
 
-  // Apple touch icon específico para a PWA da IGV (sobrescreve o ícone global do app)
+  // Apple touch icon específico IGV (sobrescreve fallback global do app)
   useEffect(() => {
-    const link = document.createElement('link')
-    link.rel  = 'apple-touch-icon'
-    link.href = '/icons/igv-apple-touch-icon.png'
+    const link  = document.createElement('link')
+    link.rel    = 'apple-touch-icon'
+    link.href   = '/icons/igv-apple-touch-icon.png'
     document.head.appendChild(link)
     return () => { document.head.removeChild(link) }
+  }, [])
+
+  // Meta tags Apple obrigatórias para PWA standalone no iOS
+  useEffect(() => {
+    const metas: HTMLMetaElement[] = []
+    const add = (name: string, content: string) => {
+      const m     = document.createElement('meta')
+      m.name      = name
+      m.content   = content
+      document.head.appendChild(m)
+      metas.push(m)
+    }
+    add('apple-mobile-web-app-capable',          'yes')
+    add('apple-mobile-web-app-status-bar-style', 'black-translucent')
+    add('apple-mobile-web-app-title',            'IGV')
+    return () => metas.forEach(m => document.head.removeChild(m))
   }, [])
 
   // ── Helpers ──────────────────────────────────────────────────────
@@ -198,8 +253,8 @@ export default function IgvPage() {
       if (navigator.share) {
         await navigator.share({
           title: IGV.name,
-          text: 'Conheça a Igreja Gerando Vencedores em Niterói!',
-          url: window.location.href,
+          text:  'Conheça a Igreja Gerando Vencedores em Niterói!',
+          url:   window.location.href,
         })
       } else if (navigator.clipboard) {
         await navigator.clipboard.writeText(window.location.href)
@@ -207,6 +262,16 @@ export default function IgvPage() {
       }
     } catch {
       // usuário cancelou
+    }
+  }
+
+  async function copyCurrentUrl() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      triggerToast('Link copiado! 📋')
     }
   }
 
@@ -227,31 +292,25 @@ export default function IgvPage() {
     >
 
       {/* ── Hero: foto da fachada INTEIRA ── */}
-      {/* bg-[#1C0A04] = marrom muito escuro, harmônico com a fachada */}
       <section className="bg-[#1C0A04] w-full">
         <div className="relative max-w-[480px] mx-auto">
 
-          {/* Foto inteira — object-contain para mostrar 100% da imagem */}
           <img
             src={IGV.coverUrl}
             alt="Fachada da Igreja Gerando Vencedores"
             className="w-full h-auto block"
-            style={{ display: 'block' }}
             loading="eager"
           />
 
-          {/* Overlay gradiente na base para legibilidade do texto */}
           <div
             aria-hidden="true"
             className="absolute bottom-0 left-0 right-0"
             style={{
               height: '55%',
-              background:
-                'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 40%, transparent 100%)',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 40%, transparent 100%)',
             }}
           />
 
-          {/* Conteúdo sobreposto — logo + nome + endereço + botão instalar */}
           <div className="absolute bottom-0 left-0 right-0 px-5 pb-7 z-10">
             <img
               src={IGV.logoUrl}
@@ -267,7 +326,6 @@ export default function IgvPage() {
             <p className="mt-0.5 text-white/75 text-[0.875rem] font-medium">{IGV.pastor}</p>
             <p className="mt-0.5 text-white/50 text-[0.75rem]">{IGV.address}</p>
 
-            {/* Botão Instalar App — Android dispara prompt nativo; iOS mostra instruções */}
             {showInstallButton && (
               <button
                 onClick={handleInstallClick}
@@ -285,7 +343,6 @@ export default function IgvPage() {
       {/* ── Body ── */}
       <main className="flex-1 px-4 py-5 max-w-[480px] mx-auto w-full">
 
-        {/* CTAs principais */}
         <Link
           to="/igv/seja-membro"
           className="flex items-center justify-between w-full rounded-2xl p-4 mb-2.5 active:scale-[0.99] transition-all"
@@ -322,7 +379,6 @@ export default function IgvPage() {
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
         </Link>
 
-        {/* Label seção conecte-se */}
         <p
           className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] mb-2.5"
           style={{ color: IGV.primaryColor }}
@@ -330,7 +386,6 @@ export default function IgvPage() {
           Conecte-se
         </p>
 
-        {/* Grid 2×2 — 4 ações de contato/redes */}
         <div className="grid grid-cols-2 gap-2.5 mb-4">
           <ActionCard label="WhatsApp" onClick={() => openLink(`https://wa.me/${IGV.whatsapp}`)}>
             <WhatsAppLogo size={24} />
@@ -346,49 +401,52 @@ export default function IgvPage() {
           </ActionCard>
         </div>
 
-        {/* Label seção em breve */}
         <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-2.5">
           Em breve
         </p>
 
-        {/* Grid 2×2 — 4 features futuras */}
         <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-          <ComingSoonCard label="Gabinetes"    icon={Building2}    onClick={showComingSoon} />
-          <ComingSoonCard label="Agenda"       icon={Calendar}     onClick={showComingSoon} />
-          <ComingSoonCard label="Bíblia"       icon={Book}         onClick={showComingSoon} />
+          <ComingSoonCard label="Gabinetes"    icon={Building2}     onClick={showComingSoon} />
+          <ComingSoonCard label="Agenda"       icon={Calendar}      onClick={showComingSoon} />
+          <ComingSoonCard label="Bíblia"       icon={Book}          onClick={showComingSoon} />
           <ComingSoonCard label="Eventos"      icon={CalendarCheck} onClick={showComingSoon} />
         </div>
 
-        {/* Pedidos de Oração — full width */}
         <ComingSoonCard label="Pedidos de Oração" icon={Heart} onClick={showComingSoon} wide />
       </main>
 
-      {/* Footer */}
       <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400">
         {IGV.address}
       </footer>
 
-      {/* ── Banner iOS fixo (fundo, auto-detectado) ── */}
+      {/* ── Banner iOS fixo ── */}
       {showBanner && !bannerDismissed && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.07] px-4 pt-3 pb-7 flex items-start gap-3 shadow-2xl">
-          <span className="text-xl mt-0.5 shrink-0" aria-hidden="true">📲</span>
-          <p className="text-[0.8rem] text-gray-700 flex-1 leading-snug">
-            Adicione à tela inicial: toque em{' '}
-            <span className="font-semibold">Compartilhar</span>
-            {' '}→{' '}
-            <span className="font-semibold">Adicionar à Tela de Início</span>
-          </p>
-          <button
-            onClick={() => setBannerDismissed(true)}
-            className="text-gray-400 text-[0.8rem] font-medium shrink-0 px-1 py-0.5"
-            aria-label="Fechar dica de instalação"
-          >
-            ✕
-          </button>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.07] px-4 pt-3 pb-7 shadow-2xl">
+          <div className="flex items-start gap-3">
+            <div
+              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
+              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
+            >
+              <SafariShareIcon size={18} />
+            </div>
+            <p className="text-[0.8rem] text-gray-700 flex-1 leading-snug">
+              {isInApp
+                ? 'Abra no Safari para instalar: toque em ··· → Abrir no Safari'
+                : <>Instalar app: <strong>Compartilhar</strong> {' '}→{' '} <strong>Adicionar à Tela de Início</strong></>
+              }
+            </p>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="text-gray-400 text-[0.8rem] shrink-0 px-1"
+              aria-label="Fechar"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
-      {/* ── Toast "em breve" / "link copiado" ── */}
+      {/* ── Toast ── */}
       {toast && (
         <div className="fixed bottom-8 left-4 right-4 z-50 flex justify-center pointer-events-none">
           <div className="bg-gray-900/95 text-white text-[0.875rem] font-medium px-5 py-3 rounded-2xl shadow-2xl">
@@ -397,50 +455,121 @@ export default function IgvPage() {
         </div>
       )}
 
-      {/* ── Modal instrução iOS install ── */}
+      {/* ── Modal iOS install — visual melhorado ── */}
       {showIOSModal && (
         <div
           className="fixed inset-0 z-50 bg-black/50 flex items-end"
           onClick={() => setShowIOSModal(false)}
         >
           <div
-            className="bg-white w-full rounded-t-3xl px-6 pt-5 pb-10 space-y-4"
+            className="bg-white w-full rounded-t-3xl px-6 pt-5 pb-10"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto" />
-            <p
-              className="text-[1.1rem] font-bold text-gray-900"
-              style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-            >
-              Adicionar à Tela Inicial
-            </p>
-            <p className="text-[0.8rem] text-gray-500 -mt-2">
-              Instale o app da IGV no seu iPhone em 3 passos:
-            </p>
-            <div className="space-y-3 text-[0.875rem] text-gray-700">
-              {[
-                ['1.', 'Toque no ícone de Compartilhar (□ com seta ↑) na barra inferior do Safari'],
-                ['2.', 'Role até encontrar "Adicionar à Tela de Início" e toque'],
-                ['3.', 'Toque em "Adicionar" no canto superior direito'],
-              ].map(([n, txt]) => (
-                <div key={n} className="flex items-start gap-3">
-                  <span
-                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.7rem] font-bold text-white"
-                    style={{ backgroundColor: IGV.primaryColor }}
-                  >
-                    {n.replace('.', '')}
-                  </span>
-                  <span className="leading-snug">{txt}</span>
+            {/* Drag handle */}
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+
+            {isInApp ? (
+              /* ── Versão in-app browser ── */
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl" aria-hidden="true">⚠️</span>
+                  <p className="text-[1.05rem] font-bold text-gray-900">Navegador embutido</p>
                 </div>
-              ))}
-            </div>
-            <button
-              onClick={() => setShowIOSModal(false)}
-              className="w-full h-12 rounded-2xl text-white font-semibold text-[0.9rem] mt-2"
-              style={{ background: `linear-gradient(135deg, ${IGV.primaryColor}, ${IGV.secondaryColor})` }}
-            >
-              Entendi!
-            </button>
+                <p className="text-[0.85rem] text-gray-600 leading-relaxed">
+                  Você está no navegador do WhatsApp, Instagram ou similar.
+                  Esses apps <strong>não têm</strong> a opção de instalar.
+                </p>
+                <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 space-y-2">
+                  <p className="text-[0.8rem] font-semibold text-amber-800">Para instalar:</p>
+                  <div className="flex items-start gap-2 text-[0.8rem] text-amber-700">
+                    <span className="font-bold shrink-0">1.</span>
+                    <span>Copie o link abaixo</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[0.8rem] text-amber-700">
+                    <span className="font-bold shrink-0">2.</span>
+                    <span>Abra o <strong>Safari</strong> e cole na barra de endereço</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-[0.8rem] text-amber-700">
+                    <span className="font-bold shrink-0">3.</span>
+                    <span>Siga a instrução de instalação</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => void copyCurrentUrl()}
+                  className="w-full h-12 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 text-[0.875rem] font-semibold transition-colors"
+                  style={{
+                    borderColor: linkCopied ? '#22c55e' : IGV.primaryColor,
+                    color:       linkCopied ? '#22c55e' : IGV.primaryColor,
+                  }}
+                >
+                  <Copy size={16} strokeWidth={2} />
+                  {linkCopied ? 'Link copiado! ✓' : 'Copiar link'}
+                </button>
+                <button
+                  onClick={() => setShowIOSModal(false)}
+                  className="w-full h-11 rounded-2xl text-gray-500 text-[0.875rem] font-medium"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : (
+              /* ── Versão Safari normal ── */
+              <div className="space-y-4">
+                <p
+                  className="text-[1.1rem] font-bold text-gray-900"
+                  style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
+                >
+                  Adicionar à Tela Inicial
+                </p>
+
+                {/* Visual: ícone Compartilhar destacado + seta */}
+                <div className="flex flex-col items-center py-3 gap-2">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md"
+                    style={{ backgroundColor: IGV.primaryColor, color: '#fff' }}
+                  >
+                    <SafariShareIcon size={30} />
+                  </div>
+                  <p className="text-[0.72rem] text-gray-500 font-medium">
+                    Botão <strong>Compartilhar</strong> na barra do Safari
+                  </p>
+                  {/* Seta bounce apontando para baixo (onde a barra do Safari fica) */}
+                  <div className="text-2xl animate-bounce" style={{ color: IGV.primaryColor }} aria-hidden="true">
+                    ↓
+                  </div>
+                  <p className="text-[0.68rem] text-gray-400">
+                    (barra inferior do Safari)
+                  </p>
+                </div>
+
+                {/* Passos */}
+                <div className="space-y-3">
+                  {[
+                    'Toque em Compartilhar na barra inferior do Safari',
+                    'Role a lista e toque em "Adicionar à Tela de Início"',
+                    'Toque em "Adicionar" no canto superior direito',
+                  ].map((txt, i) => (
+                    <div key={i} className="flex items-start gap-3 text-[0.875rem] text-gray-700">
+                      <span
+                        className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.7rem] font-bold text-white"
+                        style={{ backgroundColor: IGV.primaryColor }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="leading-snug pt-0.5">{txt}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowIOSModal(false)}
+                  className="w-full h-12 rounded-2xl text-white font-semibold text-[0.9rem] mt-2"
+                  style={{ background: `linear-gradient(135deg, ${IGV.primaryColor}, ${IGV.secondaryColor})` }}
+                >
+                  Entendi!
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
