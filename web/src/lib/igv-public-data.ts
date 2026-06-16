@@ -14,8 +14,10 @@ export const IGV = {
   youtubeUrl:      'https://www.youtube.com/@igrejagerandovencedores',
   primaryColor:    '#D97706',
   secondaryColor:  '#78350F',
-  // Foto da fachada — Redesign v2. Substituir por logo oficial quando disponível.
+  // Foto da fachada (hero background)
   coverUrl: 'https://mlqjywqnchilvgkbvicd.supabase.co/storage/v1/object/public/church-logos/igv-fachada-hero.jpg',
+  // Logo oficial IGV — símbolo "G" geométrico branco sobre fundo âmbar (v3)
+  logoUrl: 'https://mlqjywqnchilvgkbvicd.supabase.co/storage/v1/object/public/church-logos/igv-logo.jpg',
 
   missao:
     'Existimos para Gerar Vencedores através do Amor de Deus, formando pessoas curadas, restauradas e cheias do Espírito Santo.',

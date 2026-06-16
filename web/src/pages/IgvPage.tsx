@@ -57,25 +57,6 @@ function YouTubeLogo({ size = 22 }: { size?: number }) {
   )
 }
 
-// ── Logo placeholder elegante ───────────────────────────────────────
-
-function LogoPlaceholder() {
-  return (
-    <div
-      className="w-[76px] h-[76px] rounded-2xl border-2 border-white/50 bg-white/10 backdrop-blur-md flex items-center justify-center shadow-xl"
-      title="Logo da igreja — em breve"
-      aria-hidden="true"
-    >
-      <span
-        className="text-white/90 text-[2rem] font-bold select-none leading-none"
-        style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-      >
-        G
-      </span>
-    </div>
-  )
-}
-
 // ── Hooks de instalação PWA ─────────────────────────────────────────
 
 function useInstallPrompt() {
@@ -188,6 +169,15 @@ export default function IgvPage() {
     if (isIOS && !isInstalled) setShowBanner(true)
   }, [isIOS, isInstalled])
 
+  // Apple touch icon específico para a PWA da IGV (sobrescreve o ícone global do app)
+  useEffect(() => {
+    const link = document.createElement('link')
+    link.rel  = 'apple-touch-icon'
+    link.href = '/icons/igv-apple-touch-icon.png'
+    document.head.appendChild(link)
+    return () => { document.head.removeChild(link) }
+  }, [])
+
   // ── Helpers ──────────────────────────────────────────────────────
 
   function triggerToast(msg: string) {
@@ -263,7 +253,11 @@ export default function IgvPage() {
 
           {/* Conteúdo sobreposto — logo + nome + endereço + botão instalar */}
           <div className="absolute bottom-0 left-0 right-0 px-5 pb-7 z-10">
-            <LogoPlaceholder />
+            <img
+              src={IGV.logoUrl}
+              alt="Logo Igreja Gerando Vencedores"
+              className="w-[76px] h-[76px] rounded-2xl shadow-xl object-cover"
+            />
             <h1
               className="mt-3 text-[1.85rem] font-bold text-white leading-tight tracking-tight"
               style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
