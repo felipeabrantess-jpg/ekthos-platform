@@ -2253,6 +2253,77 @@ export type Database = {
           },
         ]
       }
+      church_courses: {
+        Row: {
+          active: boolean
+          church_id: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          enrolled_count: number
+          id: string
+          image_url: string | null
+          instructor: string | null
+          is_public: boolean
+          location: string | null
+          max_capacity: number | null
+          prerequisites: string | null
+          price: number | null
+          schedule_text: string | null
+          start_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          church_id: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          enrolled_count?: number
+          id?: string
+          image_url?: string | null
+          instructor?: string | null
+          is_public?: boolean
+          location?: string | null
+          max_capacity?: number | null
+          prerequisites?: string | null
+          price?: number | null
+          schedule_text?: string | null
+          start_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          church_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          enrolled_count?: number
+          id?: string
+          image_url?: string | null
+          instructor?: string | null
+          is_public?: boolean
+          location?: string | null
+          max_capacity?: number | null
+          prerequisites?: string | null
+          price?: number | null
+          schedule_text?: string | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_courses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_events: {
         Row: {
           active: boolean
@@ -3657,6 +3728,61 @@ export type Database = {
             columns: ["affiliate_id"]
             isOneToOne: false
             referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_enrollments: {
+        Row: {
+          church_id: string
+          course_id: string
+          email: string | null
+          enrolled_at: string
+          id: string
+          name: string
+          person_id: string | null
+          phone: string
+        }
+        Insert: {
+          church_id: string
+          course_id: string
+          email?: string | null
+          enrolled_at?: string
+          id?: string
+          name: string
+          person_id?: string | null
+          phone: string
+        }
+        Update: {
+          church_id?: string
+          course_id?: string
+          email?: string | null
+          enrolled_at?: string
+          id?: string
+          name?: string
+          person_id?: string | null
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "church_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
