@@ -381,7 +381,7 @@ export default function IgvPage() {
 
         <Link
           to="/igv/biblia"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-4 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-2.5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -393,6 +393,25 @@ export default function IgvPage() {
             <div>
               <p className="font-semibold text-gray-900 text-[0.9rem]">Bíblia Sagrada</p>
               <p className="text-gray-400 text-[0.75rem] mt-0.5">66 livros — Almeida</p>
+            </div>
+          </div>
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+        </Link>
+
+        <Link
+          to="/igv/agenda"
+          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-4 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
+            >
+              <Calendar size={18} strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-[0.9rem]">Agenda</p>
+              <p className="text-gray-400 text-[0.75rem] mt-0.5">Cultos e próximos eventos</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
@@ -426,7 +445,6 @@ export default function IgvPage() {
 
         <div className="grid grid-cols-2 gap-2.5 mb-2.5">
           <ComingSoonCard label="Gabinetes" icon={Building2}     onClick={showComingSoon} />
-          <ComingSoonCard label="Agenda"    icon={Calendar}      onClick={showComingSoon} />
           <ComingSoonCard label="Eventos"   icon={CalendarCheck} onClick={showComingSoon} />
         </div>
 
