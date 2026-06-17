@@ -24,8 +24,9 @@ import {
   CalendarDays,
   ShieldCheck,
   MessageSquare,
-  ClipboardList,  // ← novo: para Relatórios de escalas
-  Megaphone,      // ← Campanha Blast
+  ClipboardList,
+  Megaphone,
+  GraduationCap,
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/ministerios', label: 'Ministérios', Icon: Building2,        moduleKey: 'ministerios' },
   { path: '/agenda',      label: 'Calendário',  Icon: Calendar,         moduleKey: 'agenda'      },
   { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,     moduleKey: 'agenda'      },
+  { path: '/cursos',     label: 'Cursos',      Icon: GraduationCap,    moduleKey: 'agenda'      },
   { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,      moduleKey: 'gabinete'    },
   { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,           moduleKey: 'financeiro'  },
   { path: '/conversas',  label: 'Conversas',   Icon: MessageSquare,    moduleKey: null           },
