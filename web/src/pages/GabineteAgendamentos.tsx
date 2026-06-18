@@ -57,6 +57,12 @@ function GabineteTabBar() {
       >
         Agendamentos
       </NavLink>
+      <NavLink
+        to="/gabinete/pastores"
+        className={({ isActive }) => `${base} ${isActive ? active : inactive}`}
+      >
+        Pastores
+      </NavLink>
     </div>
   )
 }
