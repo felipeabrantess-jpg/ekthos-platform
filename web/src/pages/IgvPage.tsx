@@ -467,7 +467,24 @@ export default function IgvPage() {
           <ComingSoonCard label="Eventos"   icon={CalendarCheck} onClick={showComingSoon} />
         </div>
 
-        <ComingSoonCard label="Pedidos de Oração" icon={Heart} onClick={showComingSoon} wide />
+        <Link
+          to="/igv/oracao"
+          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
+            >
+              <Heart size={18} strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 text-[0.9rem]">Pedidos de Oração</p>
+              <p className="text-gray-400 text-[0.75rem] mt-0.5">Compartilhe com nossa equipe pastoral</p>
+            </div>
+          </div>
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+        </Link>
       </main>
 
       <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400">

@@ -2324,6 +2324,60 @@ export type Database = {
           },
         ]
       }
+      prayer_requests: {
+        Row: {
+          church_id:    string
+          created_at:   string
+          id:           string
+          is_test:      boolean
+          name:         string
+          person_id:    string | null
+          phone:        string
+          request_text: string
+          status:       string
+          updated_at:   string
+        }
+        Insert: {
+          church_id:    string
+          created_at?:  string
+          id?:          string
+          is_test?:     boolean
+          name:         string
+          person_id?:   string | null
+          phone:        string
+          request_text: string
+          status?:      string
+          updated_at?:  string
+        }
+        Update: {
+          church_id?:   string
+          created_at?:  string
+          id?:          string
+          is_test?:     boolean
+          name?:        string
+          person_id?:   string | null
+          phone?:       string
+          request_text?: string
+          status?:      string
+          updated_at?:  string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_requests_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_events: {
         Row: {
           active: boolean
