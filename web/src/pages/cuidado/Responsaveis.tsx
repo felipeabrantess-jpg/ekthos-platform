@@ -171,13 +171,26 @@ interface RowProps {
   linkBase: string
 }
 
-function CopyLinkButton({ url }: { url: string }) {
+function CopyLinkButton({ url, disabled }: { url: string; disabled?: boolean }) {
   const [copied, setCopied] = useState(false)
   function copy() {
+    if (disabled) return
     void navigator.clipboard.writeText(url).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     })
+  }
+  if (disabled) {
+    return (
+      <span
+        className="flex items-center gap-1 rounded px-2 py-1 text-xs"
+        style={{ background: 'var(--bg-hover)', color: 'var(--text-tertiary)', cursor: 'not-allowed', opacity: 0.5 }}
+        title="Ative o responsável para usar o link"
+      >
+        <Copy size={12} />
+        Copiar link
+      </span>
+    )
   }
   return (
     <button
@@ -255,7 +268,7 @@ function ResponsavelRow({ resp, churchId, linkBase }: RowProps) {
           {resp.region ?? '—'}
         </td>
         <td className="py-3 px-4">
-          <CopyLinkButton url={privateUrl} />
+          <CopyLinkButton url={privateUrl} disabled={!resp.is_active} />
         </td>
         <td className="py-3 px-4">
           <span
