@@ -75,6 +75,13 @@ const GabinetePastores    = lazy(() => import('@/pages/GabinetePastores'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 const CampanhaBlast     = lazy(() => import('@/pages/campanha/CampanhaBlast'))
 
+// Distribuição de Cuidado — Fase 1
+const CuidadoResponsaveis = lazy(() => import('@/pages/cuidado/Responsaveis'))
+const CuidadoDistribuir   = lazy(() => import('@/pages/cuidado/Distribuir'))
+const CuidadoPainel       = lazy(() => import('@/pages/cuidado/Painel'))
+const CuidadoDuplicados   = lazy(() => import('@/pages/cuidado/Duplicados'))
+const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
+
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList            = lazy(() => import('@/pages/agents/AgentsList'))
 const AgentDetail           = lazy(() => import('@/pages/agents/AgentDetail'))
@@ -258,6 +265,18 @@ export default function App() {
             }
           />
 
+          {/* ── Cuidado Pastoral — link privado do responsável (sem auth, sem Layout CRM) ── */}
+          <Route
+            path="/cuidado/:token"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<FullScreenSpinner />}>
+                  <CuidadoLink />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
+
           {/* ── PWA Público IGV — Fase 0 (path-based, sem auth, sem Layout CRM) ── */}
           <Route path="/igv" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvPage /></Suspense></ErrorBoundary>} />
           <Route path="/igv/sobre" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAboutPage /></Suspense></ErrorBoundary>} />
@@ -365,6 +384,13 @@ export default function App() {
             <Route path="gabinete/agendamentos" element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabineteAgendamentos /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete/pedidos"      element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePedidosPWA /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete/pastores"     element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePastores /></Suspense></RoleRoute></ErrorBoundary>} />
+
+            {/* ── Distribuição de Cuidado — Fase 1 ── */}
+            <Route path="cuidado" element={<Navigate to="/cuidado/responsaveis" replace />} />
+            <Route path="cuidado/responsaveis" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoResponsaveis /></Suspense></ErrorBoundary>} />
+            <Route path="cuidado/distribuir"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDistribuir /></Suspense></ErrorBoundary>} />
+            <Route path="cuidado/painel"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoPainel /></Suspense></ErrorBoundary>} />
+            <Route path="cuidado/duplicados"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDuplicados /></Suspense></ErrorBoundary>} />
 
             {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
             {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}
