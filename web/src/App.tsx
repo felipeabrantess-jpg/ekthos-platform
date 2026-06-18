@@ -67,8 +67,10 @@ const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
 const EventsList       = lazy(() => import('@/pages/events/EventsList'))
 const CursosPage       = lazy(() => import('@/pages/CursosPage'))
-const IgvOracao        = lazy(() => import('@/pages/IgvOracao'))
-const OracaoPage       = lazy(() => import('@/pages/OracaoPage'))
+const IgvOracao           = lazy(() => import('@/pages/IgvOracao'))
+const OracaoPage          = lazy(() => import('@/pages/OracaoPage'))
+const IgvGabinete         = lazy(() => import('@/pages/IgvGabinete'))
+const GabinetePedidosPWA  = lazy(() => import('@/pages/GabinetePedidosPWA'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 const CampanhaBlast     = lazy(() => import('@/pages/campanha/CampanhaBlast'))
 
@@ -262,7 +264,8 @@ export default function App() {
           <Route path="/igv/biblia"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvBiblia /></Suspense></ErrorBoundary>} />
           <Route path="/igv/agenda"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAgenda /></Suspense></ErrorBoundary>} />
           <Route path="/igv/cursos"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/oracao" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/oracao"   element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/gabinete" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvGabinete /></Suspense></ErrorBoundary>} />
 
           {/* ── LGPD — Políticas públicas ── */}
           <Route path="/privacy" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Privacy /></Suspense></ErrorBoundary>} />
@@ -359,6 +362,7 @@ export default function App() {
             <Route path="financeiro"  element={<ErrorBoundary><RoleRoute path="financeiro"><Suspense fallback={<PageLoader />}><Financeiro /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete/agendamentos" element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabineteAgendamentos /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="gabinete/pedidos"      element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePedidosPWA /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
             {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}
