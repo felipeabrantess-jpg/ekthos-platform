@@ -1,3 +1,14 @@
+/**
+ * igv-cabinet-request v2 — Gabinete Pastoral PWA (público, sem JWT)
+ * GET  ?action=pastors             → pastores ativos IGV
+ * GET  ?action=slots&pastor_id=X  → slots disponíveis de um pastor
+ * POST                             → solicitar agendamento (slot_id opcional)
+ *
+ * Anti-double-booking v2: UPDATE cabinet_slots SET appointment_id=X
+ *   WHERE id=slot AND appointment_id IS NULL
+ *   Se 0 linhas retornadas → 409 (corrida perdida).
+ * LGPD: theme/notes nunca em logs. Apenas códigos de erro.
+ */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -46,10 +57,11 @@ Deno.serve(async (req: Request) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  const url = new URL(req.url);
+  const url    = new URL(req.url);
+  const action = url.searchParams.get("action") ?? "";
 
   // ── GET ?action=pastors ── lista pastores ativos da IGV ──────────────────
-  if (req.method === "GET" && url.searchParams.get("action") === "pastors") {
+  if (req.method === "GET" && action === "pastors") {
     const { data, error } = await supabase
       .from("pastoral_cabinet")
       .select("id, role, bio, photo_url, people(name)")
@@ -64,14 +76,47 @@ Deno.serve(async (req: Request) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const pastors = (data ?? []).map((m: any) => ({
-      id:       m.id,
-      name:     m.people?.name ?? null,
-      role:     m.role,
-      bio:      m.bio ?? null,
+      id:        m.id,
+      name:      m.people?.name ?? null,
+      role:      m.role,
+      bio:       m.bio ?? null,
       photo_url: m.photo_url ?? null,
     }));
 
     return json({ pastors }, 200, cors);
+  }
+
+  // ── GET ?action=slots&pastor_id=X ── slots disponíveis de um pastor ──────
+  if (req.method === "GET" && action === "slots") {
+    const pastorId = url.searchParams.get("pastor_id");
+    if (!pastorId) return json({ error: "pastor_id obrigatório." }, 400, cors);
+
+    // Valida pastor pertence à IGV e está ativo
+    const { data: pastor } = await supabase
+      .from("pastoral_cabinet")
+      .select("id")
+      .eq("id", pastorId)
+      .eq("church_id", IGV_CHURCH_ID)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!pastor) return json({ error: "Pastor não encontrado." }, 404, cors);
+
+    const { data, error } = await supabase
+      .from("cabinet_slots")
+      .select("id, slot_datetime, duration_minutes")
+      .eq("cabinet_pastor_id", pastorId)
+      .eq("church_id", IGV_CHURCH_ID)
+      .is("appointment_id", null)
+      .gt("slot_datetime", new Date().toISOString())
+      .order("slot_datetime");
+
+    if (error) {
+      console.error("[igv-cabinet-request] slots query error:", error.code);
+      return json({ error: "Erro ao buscar horários." }, 500, cors);
+    }
+
+    return json({ slots: data ?? [] }, 200, cors);
   }
 
   // ── POST — cria pedido de agendamento ────────────────────────────────────
@@ -89,6 +134,7 @@ Deno.serve(async (req: Request) => {
     const appointment_type      = (body.appointment_type      as string | undefined)?.trim() ?? "";
     const preferred_datetime_text = (body.preferred_datetime_text as string | undefined)?.trim() ?? "";
     const cabinet_pastor_id     = (body.cabinet_pastor_id     as string | undefined)?.trim() ?? "";
+    const slot_id               = (body.slot_id               as string | undefined)?.trim() ?? "";
 
     if (!name || !phone || !theme || !appointment_type) {
       return json({ error: "Campos obrigatórios: nome, telefone, tema, tipo." }, 400, cors);
@@ -103,6 +149,32 @@ Deno.serve(async (req: Request) => {
     const phoneSan = sanitizePhone(phone);
     if (phoneSan.length < 8) {
       return json({ error: "Telefone inválido (mínimo 8 dígitos)." }, 400, cors);
+    }
+
+    // Valida pastor se fornecido
+    let resolvedPastorId: string | null = null;
+    if (cabinet_pastor_id) {
+      const { data: pastor } = await supabase
+        .from("pastoral_cabinet")
+        .select("id")
+        .eq("id", cabinet_pastor_id)
+        .eq("church_id", IGV_CHURCH_ID)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (pastor) resolvedPastorId = cabinet_pastor_id;
+    }
+
+    // Valida slot se fornecido — pré-check (rápido, não atômico)
+    if (slot_id) {
+      const { data: slot } = await supabase
+        .from("cabinet_slots")
+        .select("id, appointment_id")
+        .eq("id", slot_id)
+        .eq("church_id", IGV_CHURCH_ID)
+        .maybeSingle();
+
+      if (!slot)               return json({ error: "Horário não encontrado." }, 400, cors);
+      if (slot.appointment_id) return json({ error: "Horário indisponível. Escolha outro." }, 409, cors);
     }
 
     // ── Upsert pessoa por telefone ─────────────────────────────────────────
@@ -143,7 +215,7 @@ Deno.serve(async (req: Request) => {
       personId = newPerson.id;
     }
 
-    // ── Montar payload do agendamento ──────────────────────────────────────
+    // ── INSERT appointment ─────────────────────────────────────────────────
     // LGPD: theme NÃO vai em nenhum log
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const apptPayload: Record<string, any> = {
@@ -155,33 +227,40 @@ Deno.serve(async (req: Request) => {
       source:           "igv_pwa",
       theme,
       is_test:          false,
+      cabinet_pastor_id: resolvedPastorId,
+      slot_id:          slot_id || null,
     };
 
     if (preferred_datetime_text) {
       apptPayload.preferred_datetime_text = preferred_datetime_text.slice(0, 200);
     }
 
-    if (cabinet_pastor_id) {
-      const { data: pastor } = await supabase
-        .from("pastoral_cabinet")
-        .select("id")
-        .eq("id", cabinet_pastor_id)
-        .eq("church_id", IGV_CHURCH_ID)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (pastor) {
-        apptPayload.cabinet_pastor_id = cabinet_pastor_id;
-      }
+    const { data: appt, error: apptErr } = await supabase
+      .from("pastoral_appointments")
+      .insert(apptPayload)
+      .select("id")
+      .single();
+
+    if (apptErr || !appt) {
+      console.error("[igv-cabinet-request] appointment insert error:", apptErr?.code);
+      return json({ error: "Erro ao registrar pedido." }, 500, cors);
     }
 
-    const { error: apptErr } = await supabase
-      .from("pastoral_appointments")
-      .insert(apptPayload);
+    // ── Anti-double-booking: UPDATE condicional atômico ───────────────────
+    // UPDATE só ocorre se appointment_id ainda for NULL — Postgres serializa.
+    // Se 0 rows retornadas → outro request ganhou a corrida → rollback + 409.
+    if (slot_id) {
+      const { data: reserved } = await supabase
+        .from("cabinet_slots")
+        .update({ appointment_id: appt.id })
+        .eq("id", slot_id)
+        .is("appointment_id", null)
+        .select("id");
 
-    if (apptErr) {
-      // LGPD: apenas código de erro, sem dados sensíveis
-      console.error("[igv-cabinet-request] appointment insert error:", apptErr.code);
-      return json({ error: "Erro ao registrar pedido." }, 500, cors);
+      if (!reserved || reserved.length === 0) {
+        await supabase.from("pastoral_appointments").delete().eq("id", appt.id);
+        return json({ error: "Horário indisponível. Escolha outro." }, 409, cors);
+      }
     }
 
     return json(

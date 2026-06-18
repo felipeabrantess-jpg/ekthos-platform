@@ -71,6 +71,7 @@ const IgvOracao           = lazy(() => import('@/pages/IgvOracao'))
 const OracaoPage          = lazy(() => import('@/pages/OracaoPage'))
 const IgvGabinete         = lazy(() => import('@/pages/IgvGabinete'))
 const GabinetePedidosPWA  = lazy(() => import('@/pages/GabinetePedidosPWA'))
+const GabinetePastores    = lazy(() => import('@/pages/GabinetePastores'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 const CampanhaBlast     = lazy(() => import('@/pages/campanha/CampanhaBlast'))
 
@@ -363,6 +364,7 @@ export default function App() {
             <Route path="gabinete"    element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><Gabinete /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete/agendamentos" element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabineteAgendamentos /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete/pedidos"      element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePedidosPWA /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="gabinete/pastores"     element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePastores /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
             {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}

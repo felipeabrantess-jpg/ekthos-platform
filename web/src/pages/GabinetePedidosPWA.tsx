@@ -5,8 +5,9 @@
  */
 
 import { useState }                               from 'react'
+import { Link }                                   from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient }  from '@tanstack/react-query'
-import { Building2, CheckCircle2, UserCheck, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, UserCheck, XCircle, Users, Clock } from 'lucide-react'
 import { useAuth }                                from '@/hooks/useAuth'
 import { supabase }                               from '@/lib/supabase'
 import Spinner                                    from '@/components/ui/Spinner'
@@ -22,10 +23,12 @@ interface PWAAppointment {
   theme:                   string | null
   preferred_datetime_text: string | null
   cabinet_pastor_id:       string | null
+  slot_id:                 string | null
   status:                  AppointmentStatus
   created_at:              string
   people:   { id: string; name: string | null; phone: string | null } | null
   cabinet_pastor: { id: string; role: string; people: { name: string | null } | null } | null
+  cabinet_slot: { slot_datetime: string; duration_minutes: number } | null
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -102,12 +105,23 @@ function AppointmentCard({
             <span className="font-medium text-gray-800">{pastorName}</span>
           </div>
         )}
-        {item.preferred_datetime_text && (
+        {item.cabinet_slot?.slot_datetime ? (
+          <div className="flex items-center gap-1.5">
+            <Clock size={12} strokeWidth={2} className="text-amber-600 shrink-0" />
+            <span className="font-semibold text-amber-700">
+              {new Intl.DateTimeFormat('pt-BR', {
+                weekday: 'short', day: 'numeric', month: 'short',
+                hour: '2-digit', minute: '2-digit',
+              }).format(new Date(item.cabinet_slot.slot_datetime))}
+            </span>
+            <span className="text-gray-400">· {item.cabinet_slot.duration_minutes}min</span>
+          </div>
+        ) : item.preferred_datetime_text ? (
           <div className="flex items-center gap-1.5">
             <span className="text-gray-400">Preferência:</span>
             <span className="italic text-gray-600">{item.preferred_datetime_text}</span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Rodapé: data + ações */}
@@ -165,7 +179,7 @@ export default function GabinetePedidosPWA() {
     queryFn: async () => {
       let q = (supabase as any)
         .from('pastoral_appointments')
-        .select('id, person_id, appointment_type, theme, preferred_datetime_text, cabinet_pastor_id, status, created_at, people(id, name, phone), cabinet_pastor:pastoral_cabinet(id, role, people(name))')
+        .select('id, person_id, appointment_type, theme, preferred_datetime_text, cabinet_pastor_id, slot_id, status, created_at, people(id, name, phone), cabinet_pastor:pastoral_cabinet(id, role, people(name)), cabinet_slot:cabinet_slots(slot_datetime, duration_minutes)')
         .eq('source', 'igv_pwa')
         .order('created_at', { ascending: false })
 
@@ -225,12 +239,19 @@ export default function GabinetePedidosPWA() {
         <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
           <Building2 size={18} strokeWidth={1.75} className="text-amber-700" />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-[1.05rem] font-bold text-gray-900">Pedidos — Gabinete</h1>
           <p className="text-[0.78rem] text-gray-400 mt-0.5">
             {counts.todos} pedido{counts.todos !== 1 ? 's' : ''} recebido{counts.todos !== 1 ? 's' : ''} pelo app
           </p>
         </div>
+        <Link
+          to="/gabinete/pastores"
+          className="shrink-0 flex items-center gap-1.5 text-[0.78rem] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-xl transition-colors"
+        >
+          <Users size={14} strokeWidth={2} />
+          Pastores
+        </Link>
       </div>
 
       {/* Filtros */}
