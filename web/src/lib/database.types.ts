@@ -5410,42 +5410,64 @@ export type Database = {
       }
       pastoral_appointments: {
         Row: {
-          appointment_type: string
-          church_id: string
-          created_at: string
-          id: string
-          notes: string | null
-          pastor_id: string | null
-          person_id: string
-          scheduled_at: string
-          status: string
-          updated_at: string
+          appointment_type:         string
+          cabinet_pastor_id:        string | null
+          church_id:                string
+          created_at:               string
+          id:                       string
+          is_test:                  boolean
+          notes:                    string | null
+          pastor_id:                string | null
+          person_id:                string
+          preferred_datetime_text:  string | null
+          scheduled_at:             string
+          source:                   string
+          status:                   string
+          theme:                    string | null
+          updated_at:               string
         }
         Insert: {
-          appointment_type: string
-          church_id: string
-          created_at?: string
-          id?: string
-          notes?: string | null
-          pastor_id?: string | null
-          person_id: string
-          scheduled_at: string
-          status?: string
-          updated_at?: string
+          appointment_type:         string
+          cabinet_pastor_id?:       string | null
+          church_id:                string
+          created_at?:              string
+          id?:                      string
+          is_test?:                 boolean
+          notes?:                   string | null
+          pastor_id?:               string | null
+          person_id:                string
+          preferred_datetime_text?: string | null
+          scheduled_at:             string
+          source?:                  string
+          status?:                  string
+          theme?:                   string | null
+          updated_at?:              string
         }
         Update: {
-          appointment_type?: string
-          church_id?: string
-          created_at?: string
-          id?: string
-          notes?: string | null
-          pastor_id?: string | null
-          person_id?: string
-          scheduled_at?: string
-          status?: string
-          updated_at?: string
+          appointment_type?:        string
+          cabinet_pastor_id?:       string | null
+          church_id?:               string
+          created_at?:              string
+          id?:                      string
+          is_test?:                 boolean
+          notes?:                   string | null
+          pastor_id?:               string | null
+          person_id?:               string
+          preferred_datetime_text?: string | null
+          scheduled_at?:            string
+          source?:                  string
+          status?:                  string
+          theme?:                   string | null
+          updated_at?:              string
         }
         Relationships: [
+          {
+            foreignKeyName: "pastoral_appointments_cabinet_pastor_id_fkey"
+            columns: ["cabinet_pastor_id"]
+            isOneToOne: false
+            referencedRelation: "pastoral_cabinet"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pastoral_appointments_church_id_fkey"
             columns: ["church_id"]

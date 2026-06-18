@@ -463,7 +463,18 @@ export default function IgvPage() {
         </p>
 
         <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-          <ComingSoonCard label="Gabinetes" icon={Building2}     onClick={showComingSoon} />
+          <Link
+            to="/igv/gabinete"
+            className="flex flex-col items-center justify-center h-[76px] gap-1.5 bg-white rounded-2xl border border-black/[0.05] shadow-sm p-3 hover:shadow-md active:scale-[0.99] transition-all"
+          >
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
+            >
+              <Building2 size={18} strokeWidth={1.75} />
+            </div>
+            <p className="font-semibold text-gray-800 text-[0.75rem] leading-tight">Gabinetes</p>
+          </Link>
           <ComingSoonCard label="Eventos"   icon={CalendarCheck} onClick={showComingSoon} />
         </div>
 
