@@ -164,7 +164,7 @@ function CourseFormModal({ mode, initial, churchId, onClose, onSaved }: CourseFo
       if (mode === 'create') {
         const { error: dbErr } = await supabase
           .from('church_courses')
-          .insert(payload as any)
+          .insert({ ...payload, church_id: churchId } as any)
         if (dbErr) throw dbErr
       } else {
         const { error: dbErr } = await supabase
