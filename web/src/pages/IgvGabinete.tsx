@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link }                from 'react-router-dom'
-import { Building2, ChevronLeft } from 'lucide-react'
+import { Building2, ChevronLeft, Clock } from 'lucide-react'
 
 const IGV_COLOR       = '#D97706'
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
@@ -31,6 +31,12 @@ interface Pastor {
   photo_url: string | null
 }
 
+interface Slot {
+  id:               string
+  slot_datetime:    string
+  duration_minutes: number
+}
+
 function getInitials(name: string | null): string {
   if (!name) return '?'
   const parts = name.trim().split(' ').filter(Boolean)
@@ -39,21 +45,31 @@ function getInitials(name: string | null): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+function formatSlotShort(iso: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit',
+  }).format(new Date(iso))
+}
+
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export default function IgvGabinete() {
-  const [pastors, setPastors]             = useState<Pastor[]>([])
+  const [pastors, setPastors]               = useState<Pastor[]>([])
   const [loadingPastors, setLoadingPastors] = useState(true)
+  const [slots, setSlots]                   = useState<Slot[]>([])
+  const [loadingSlots, setLoadingSlots]     = useState(false)
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null)
 
-  const [name, setName]                   = useState('')
-  const [phone, setPhone]                 = useState('')
-  const [tema, setTema]                   = useState('')
-  const [tipo, setTipo]                   = useState('Individual')
-  const [preferred, setPreferred]         = useState('')
-  const [pastorId, setPastorId]           = useState<string | null>(null)
+  const [name, setName]         = useState('')
+  const [phone, setPhone]       = useState('')
+  const [tema, setTema]         = useState('')
+  const [tipo, setTipo]         = useState('Individual')
+  const [preferred, setPreferred] = useState('')
+  const [pastorId, setPastorId]   = useState<string | null>(null)
 
-  const [state, setState]                 = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
-  const [errMsg, setErrMsg]               = useState('')
+  const [state, setState]   = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+  const [errMsg, setErrMsg] = useState('')
 
   useEffect(() => {
     fetch(`${EF_URL}?action=pastors`)
@@ -62,6 +78,19 @@ export default function IgvGabinete() {
       .catch(() => setPastors([]))
       .finally(() => setLoadingPastors(false))
   }, [])
+
+  // Busca slots quando pastor é selecionado
+  useEffect(() => {
+    setSlots([])
+    setSelectedSlotId(null)
+    if (!pastorId) return
+    setLoadingSlots(true)
+    fetch(`${EF_URL}?action=slots&pastor_id=${pastorId}`)
+      .then(r => r.json())
+      .then((d: { slots?: Slot[] }) => setSlots(d.slots ?? []))
+      .catch(() => setSlots([]))
+      .finally(() => setLoadingSlots(false))
+  }, [pastorId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -73,12 +102,13 @@ export default function IgvGabinete() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name:                   name.trim(),
-          phone:                  phone.trim(),
-          theme:                  tema,
-          appointment_type:       tipo,
-          preferred_datetime_text: preferred.trim() || undefined,
-          cabinet_pastor_id:      pastorId ?? undefined,
+          name:                    name.trim(),
+          phone:                   phone.trim(),
+          theme:                   tema,
+          appointment_type:        tipo,
+          preferred_datetime_text: !selectedSlotId && preferred.trim() ? preferred.trim() : undefined,
+          cabinet_pastor_id:       pastorId ?? undefined,
+          slot_id:                 selectedSlotId ?? undefined,
         }),
       })
       const data = await res.json() as { success?: boolean; error?: string }
@@ -193,6 +223,56 @@ export default function IgvGabinete() {
                 </button>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Slots disponíveis (quando pastor selecionado) */}
+        {pastorId && (
+          <section>
+            <p className="text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide mb-2.5">
+              Horários disponíveis
+            </p>
+            {loadingSlots ? (
+              <p className="text-[0.82rem] text-gray-400">Buscando horários...</p>
+            ) : slots.length === 0 ? (
+              <p className="text-[0.82rem] text-gray-400">
+                Nenhum horário cadastrado. Informe sua preferência abaixo.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {slots.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSelectedSlotId(prev => prev === s.id ? null : s.id)}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-all"
+                    style={{
+                      borderColor: selectedSlotId === s.id ? IGV_COLOR : 'rgba(0,0,0,0.07)',
+                      backgroundColor: selectedSlotId === s.id ? `${IGV_COLOR}0D` : '#fff',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <Clock size={16} strokeWidth={1.8} style={{ color: selectedSlotId === s.id ? IGV_COLOR : '#9CA3AF' }} className="shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-[0.86rem] font-semibold text-gray-900 capitalize">
+                        {formatSlotShort(s.slot_datetime)}
+                      </p>
+                      <p className="text-[0.74rem] text-gray-400">{s.duration_minutes} minutos</p>
+                    </div>
+                    {selectedSlotId === s.id && (
+                      <div
+                        className="ml-auto w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: IGV_COLOR }}
+                      >
+                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                          <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
         )}
 
