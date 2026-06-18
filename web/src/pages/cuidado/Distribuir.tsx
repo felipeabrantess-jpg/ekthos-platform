@@ -22,7 +22,6 @@ interface PersonRow {
   neighborhood:   string | null
   responsible_id: string | null
   care_status:    string | null
-  responsible?:   { name: string } | null
 }
 
 interface CareResponsible {
@@ -74,13 +73,13 @@ export default function Distribuir() {
     enabled: !!churchId,
   })
 
-  // Pessoas com join de responsável
+  // Pessoas sem join (FK não declarada — lookup client-side via respMap)
   const { data: pessoas, isLoading } = useQuery({
     queryKey: ['people_for_care', churchId],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('people')
-        .select('id, name, phone, neighborhood, responsible_id, care_status, responsible:care_responsibles!responsible_id(name)')
+        .select('id, name, phone, neighborhood, responsible_id, care_status')
         .eq('church_id', churchId)
         .order('name', { ascending: true })
       if (error) throw new Error(error.message)
@@ -88,6 +87,8 @@ export default function Distribuir() {
     },
     enabled: !!churchId,
   })
+
+  const respMap = new Map((responsaveis ?? []).map(r => [r.id, r.name]))
 
   // Filtros
   const filtered = (pessoas ?? []).filter(p => {
@@ -310,7 +311,9 @@ export default function Distribuir() {
                         {p.neighborhood ?? '—'}
                       </td>
                       <td className="px-4 py-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                        {(p.responsible as any)?.name ?? <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
+                        {p.responsible_id && respMap.get(p.responsible_id)
+                          ? respMap.get(p.responsible_id)
+                          : <span style={{ color: 'var(--text-tertiary)' }}>—</span>}
                       </td>
                       <td className="px-4 py-3">
                         {p.care_status ? (
