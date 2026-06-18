@@ -67,6 +67,8 @@ const RelatorioEscalas = lazy(() => import('@/pages/escalas/RelatorioEscalas'))
 const EmConstrucao   = lazy(() => import('@/pages/placeholders/EmConstrucao'))
 const EventsList       = lazy(() => import('@/pages/events/EventsList'))
 const CursosPage       = lazy(() => import('@/pages/CursosPage'))
+const IgvOracao        = lazy(() => import('@/pages/IgvOracao'))
+const OracaoPage       = lazy(() => import('@/pages/OracaoPage'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 const CampanhaBlast     = lazy(() => import('@/pages/campanha/CampanhaBlast'))
 
@@ -259,7 +261,8 @@ export default function App() {
           <Route path="/igv/seja-membro" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvSejaMembroPage /></Suspense></ErrorBoundary>} />
           <Route path="/igv/biblia"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvBiblia /></Suspense></ErrorBoundary>} />
           <Route path="/igv/agenda"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAgenda /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/cursos" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/cursos"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/oracao" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
 
           {/* ── LGPD — Políticas públicas ── */}
           <Route path="/privacy" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Privacy /></Suspense></ErrorBoundary>} />
@@ -337,6 +340,7 @@ export default function App() {
             <Route path="agenda"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
             <Route path="eventos"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EventsList /></Suspense></ErrorBoundary>} />
             <Route path="cursos"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CursosPage /></Suspense></ErrorBoundary>} />
+            <Route path="oracao"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><OracaoPage /></Suspense></ErrorBoundary>} />
             <Route path="inscricoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmConstrucao name="Inscrições" previstoPara="2º semestre 2026" features={['Formulários de inscrição para eventos', 'Controle de vagas e lista de espera', 'Integração com Agenda']} /></Suspense></ErrorBoundary>} />
 
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
