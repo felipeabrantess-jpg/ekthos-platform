@@ -5,6 +5,8 @@ import {
   useDonations,
   useCreateDonation,
   useConfirmDonation,
+  useCreateCampaign,
+  useUpdateCampaign,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -72,9 +74,10 @@ function KPICard({ label, value, sub }: KPICardProps) {
 interface CampaignProgressProps {
   campaign: FinancialCampaign
   raised: number
+  onEdit?: (campaign: FinancialCampaign) => void
 }
 
-function CampaignProgress({ campaign, raised }: CampaignProgressProps) {
+function CampaignProgress({ campaign, raised, onEdit }: CampaignProgressProps) {
   const goal = campaign.goal_amount ?? 0
   const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0
 
@@ -82,7 +85,18 @@ function CampaignProgress({ campaign, raised }: CampaignProgressProps) {
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-gray-800">{campaign.name}</span>
-        <span className="text-gray-500">{BRL.format(raised)} / {goal > 0 ? BRL.format(goal) : '∞'}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-500">{BRL.format(raised)} / {goal > 0 ? BRL.format(goal) : '∞'}</span>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={() => onEdit(campaign)}
+              className="text-xs text-gray-400 hover:text-primary transition-colors"
+            >
+              Editar
+            </button>
+          )}
+        </div>
       </div>
       <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
         <div
@@ -286,9 +300,137 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: Create
   )
 }
 
+interface CampaignModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  campaign?: FinancialCampaign | null
+}
+
+function CampaignModal({ open, onClose, churchId, campaign }: CampaignModalProps) {
+  const createCampaign = useCreateCampaign()
+  const updateCampaign = useUpdateCampaign()
+  const isEdit = Boolean(campaign)
+
+  const [form, setForm] = useState({
+    name: campaign?.name ?? '',
+    goal_amount: campaign?.goal_amount != null ? String(campaign.goal_amount) : '',
+    description: campaign?.description ?? '',
+    start_date: campaign?.start_date ?? '',
+    end_date: campaign?.end_date ?? '',
+    is_active: campaign?.is_active ?? true,
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const goal = parseFloat(form.goal_amount.replace(',', '.'))
+    if (isNaN(goal) || goal <= 0) {
+      setError('Informe uma meta válida.')
+      return
+    }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const payload = {
+        church_id: churchId,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        goal_amount: goal,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+        is_active: form.is_active,
+      }
+      if (isEdit && campaign) {
+        await updateCampaign.mutateAsync({ id: campaign.id, ...payload })
+      } else {
+        await createCampaign.mutateAsync(payload)
+      }
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar campanha')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar Campanha' : 'Nova Campanha'}>
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+          <Input
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Ex: Reforma do Templo"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Meta (R$) *</label>
+          <Input
+            value={form.goal_amount}
+            onChange={(e) => setForm((p) => ({ ...p, goal_amount: e.target.value }))}
+            placeholder="0,00"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+          <Input
+            value={form.description}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            placeholder="Descrição opcional..."
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data Início</label>
+            <input
+              type="date"
+              value={form.start_date}
+              onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data Fim</label>
+            <input
+              type="date"
+              value={form.end_date}
+              onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="campaign_is_active"
+            checked={form.is_active}
+            onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+            className="rounded border-gray-300"
+          />
+          <label htmlFor="campaign_is_active" className="text-sm text-gray-700">Campanha ativa</label>
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={submitting || !form.name.trim() || !form.goal_amount}>
+            {submitting ? 'Salvando...' : (isEdit ? 'Salvar Alterações' : 'Criar Campanha')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 export default function Financeiro() {
   const { churchId } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
+  const [campaignModalOpen, setCampaignModalOpen] = useState(false)
+  const [editingCampaign, setEditingCampaign] = useState<FinancialCampaign | null>(null)
   const confirmDonation = useConfirmDonation()
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useFinanceiroStats(churchId ?? '')
@@ -363,7 +505,16 @@ export default function Financeiro() {
 
         {/* Campaigns */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Campanhas Ativas</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">Campanhas Ativas</h2>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => { setEditingCampaign(null); setCampaignModalOpen(true) }}
+            >
+              + Nova Campanha
+            </Button>
+          </div>
           {(stats?.campaigns ?? []).length === 0 ? (
             <p className="text-sm text-gray-400">Nenhuma campanha ativa.</p>
           ) : (
@@ -371,7 +522,12 @@ export default function Financeiro() {
               {(stats?.campaigns ?? []).map((campaign) => {
                 const raised = stats?.raisedByCampaign?.[campaign.id] ?? 0
                 return (
-                  <CampaignProgress key={campaign.id} campaign={campaign} raised={raised} />
+                  <CampaignProgress
+                    key={campaign.id}
+                    campaign={campaign}
+                    raised={raised}
+                    onEdit={(c) => { setEditingCampaign(c); setCampaignModalOpen(true) }}
+                  />
                 )
               })}
             </div>
@@ -435,13 +591,24 @@ export default function Financeiro() {
         )}
       </div>
 
-      {/* Create Modal */}
+      {/* Create Donation Modal */}
       {createOpen && (
         <CreateDonationModal
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           churchId={churchId}
           campaigns={stats?.campaigns ?? []}
+        />
+      )}
+
+      {/* Campaign Modal (create + edit) */}
+      {campaignModalOpen && (
+        <CampaignModal
+          key={editingCampaign?.id ?? 'new'}
+          open={campaignModalOpen}
+          onClose={() => { setCampaignModalOpen(false); setEditingCampaign(null) }}
+          churchId={churchId}
+          campaign={editingCampaign}
         />
       )}
     </div>
