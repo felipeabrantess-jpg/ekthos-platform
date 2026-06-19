@@ -279,3 +279,188 @@ export function useUpdateCampaign() {
     },
   })
 }
+
+// ── Financial Categories ──────────────────────────────────────────────────────
+
+export interface FinancialCategory {
+  id: string
+  church_id: string
+  name: string
+  color: string | null
+  type: 'income' | 'expense' | 'both'
+  sort_order: number
+  is_active: boolean
+  created_at: string
+}
+
+interface CategoryInput {
+  church_id: string
+  name: string
+  color?: string | null
+  type?: 'income' | 'expense' | 'both'
+  sort_order?: number
+  is_active?: boolean
+}
+
+export function useFinancialCategories(churchId: string) {
+  return useQuery({
+    queryKey: ['financial-categories', churchId],
+    queryFn: async (): Promise<FinancialCategory[]> => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('financial_categories' as any)
+        .select('*')
+        .eq('church_id', churchId)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as FinancialCategory[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+export function useCreateCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CategoryInput) => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('financial_categories' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({
+          church_id: input.church_id,
+          name: input.name,
+          color: input.color ?? null,
+          type: input.type ?? 'expense',
+          sort_order: input.sort_order ?? 0,
+          is_active: input.is_active ?? true,
+        } as any)
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['financial-categories', church_id] })
+    },
+  })
+}
+
+export function useUpdateCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, church_id, ...updates }: { id: string } & CategoryInput) => {
+      const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('financial_categories' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({
+          name: updates.name,
+          color: updates.color ?? null,
+          type: updates.type ?? 'expense',
+          sort_order: updates.sort_order ?? 0,
+          is_active: updates.is_active ?? true,
+        } as any)
+        .eq('id', id)
+        .eq('church_id', church_id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['financial-categories', church_id] })
+    },
+  })
+}
+
+// ── Bank Accounts ─────────────────────────────────────────────────────────────
+
+export interface BankAccount {
+  id: string
+  church_id: string
+  name: string
+  bank_name: string | null
+  account_type: 'conta_corrente' | 'poupanca' | 'caixa' | 'investimento'
+  initial_balance: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+interface BankAccountInput {
+  church_id: string
+  name: string
+  bank_name?: string | null
+  account_type?: 'conta_corrente' | 'poupanca' | 'caixa' | 'investimento'
+  initial_balance?: number
+  is_active?: boolean
+}
+
+export function useBankAccounts(churchId: string) {
+  return useQuery({
+    queryKey: ['bank-accounts', churchId],
+    queryFn: async (): Promise<BankAccount[]> => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('bank_accounts' as any)
+        .select('*')
+        .eq('church_id', churchId)
+        .order('created_at', { ascending: true })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as BankAccount[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+export function useCreateBankAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: BankAccountInput) => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('bank_accounts' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({
+          church_id: input.church_id,
+          name: input.name,
+          bank_name: input.bank_name ?? null,
+          account_type: input.account_type ?? 'conta_corrente',
+          initial_balance: input.initial_balance ?? 0,
+          is_active: input.is_active ?? true,
+        } as any)
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['bank-accounts', church_id] })
+    },
+  })
+}
+
+export function useUpdateBankAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, church_id, ...updates }: { id: string } & BankAccountInput) => {
+      const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('bank_accounts' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({
+          name: updates.name,
+          bank_name: updates.bank_name ?? null,
+          account_type: updates.account_type ?? 'conta_corrente',
+          initial_balance: updates.initial_balance ?? 0,
+          is_active: updates.is_active ?? true,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', id)
+        .eq('church_id', church_id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['bank-accounts', church_id] })
+    },
+  })
+}
