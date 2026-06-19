@@ -5,9 +5,11 @@ import type { Donation, DonationType, DonationStatus, FinancialCampaign, Payment
 interface FinanceiroStats {
   totalConfirmedAllTime: number
   totalThisMonth: number
+  dizimoThisMonth: number
   byType: Record<DonationType, number>
-  countByStatus: Record<DonationStatus, number>
+  countPending: number
   campaigns: FinancialCampaign[]
+  raisedByCampaign: Record<string, number>
 }
 
 export function useFinanceiroStats(churchId: string) {
@@ -17,36 +19,52 @@ export function useFinanceiroStats(churchId: string) {
       const now = new Date()
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
 
-      const [allTimeRes, thisMonthRes, allDonationsRes, campaignsRes] = await Promise.all([
+      const [allDonationsConfirmedRes, thisMonthRes, campaignsRes, campaignRaisedRes, pendingRes] = await Promise.all([
+        // Todos os confirmados all-time (para totalConfirmedAllTime e byType)
         supabase
           .from('donations')
-          .select('amount')
+          .select('amount, type')
           .eq('church_id', churchId)
           .eq('status', 'confirmed'),
+        // Confirmados do mês atual (para totalThisMonth e dizimoThisMonth)
         supabase
           .from('donations')
-          .select('amount')
+          .select('amount, type')
           .eq('church_id', churchId)
           .eq('status', 'confirmed')
           .gte('created_at', startOfMonth),
-        supabase
-          .from('donations')
-          .select('amount, type, status')
-          .eq('church_id', churchId),
+        // Campanhas ativas
         supabase
           .from('financial_campaigns')
           .select('*')
           .eq('church_id', churchId)
           .eq('is_active', true),
+        // Soma confirmada por campanha (para progresso real de campanha)
+        supabase
+          .from('donations')
+          .select('campaign_id, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'confirmed')
+          .not('campaign_id', 'is', null),
+        // Count de pendentes (para KPI Pendentes)
+        supabase
+          .from('donations')
+          .select('*', { count: 'exact', head: true })
+          .eq('church_id', churchId)
+          .eq('status', 'pending'),
       ])
 
-      if (allTimeRes.error) throw new Error(allTimeRes.error.message)
+      if (allDonationsConfirmedRes.error) throw new Error(allDonationsConfirmedRes.error.message)
       if (thisMonthRes.error) throw new Error(thisMonthRes.error.message)
-      if (allDonationsRes.error) throw new Error(allDonationsRes.error.message)
       if (campaignsRes.error) throw new Error(campaignsRes.error.message)
+      if (campaignRaisedRes.error) throw new Error(campaignRaisedRes.error.message)
+      if (pendingRes.error) throw new Error(pendingRes.error.message)
 
-      const totalConfirmedAllTime = (allTimeRes.data ?? []).reduce((sum, d) => sum + (d.amount ?? 0), 0)
+      const totalConfirmedAllTime = (allDonationsConfirmedRes.data ?? []).reduce((sum, d) => sum + (d.amount ?? 0), 0)
       const totalThisMonth = (thisMonthRes.data ?? []).reduce((sum, d) => sum + (d.amount ?? 0), 0)
+      const dizimoThisMonth = (thisMonthRes.data ?? [])
+        .filter(d => d.type === 'dizimo')
+        .reduce((sum, d) => sum + (d.amount ?? 0), 0)
 
       const byType: Record<DonationType, number> = {
         dizimo: 0,
@@ -56,29 +74,29 @@ export function useFinanceiroStats(churchId: string) {
         construcao: 0,
       }
 
-      const countByStatus: Record<DonationStatus, number> = {
-        pending: 0,
-        confirmed: 0,
-        failed: 0,
-        refunded: 0,
-        cancelled: 0,
-      }
-
-      for (const d of allDonationsRes.data ?? []) {
+      for (const d of allDonationsConfirmedRes.data ?? []) {
         if (d.type in byType) {
           byType[d.type as DonationType] += d.amount ?? 0
         }
-        if (d.status in countByStatus) {
-          countByStatus[d.status as DonationStatus] += 1
+      }
+
+      const countPending = pendingRes.count ?? 0
+
+      const raisedByCampaign: Record<string, number> = {}
+      for (const d of campaignRaisedRes.data ?? []) {
+        if (d.campaign_id) {
+          raisedByCampaign[d.campaign_id] = (raisedByCampaign[d.campaign_id] ?? 0) + (d.amount ?? 0)
         }
       }
 
       return {
         totalConfirmedAllTime,
         totalThisMonth,
+        dizimoThisMonth,
         byType,
-        countByStatus,
+        countPending,
         campaigns: campaignsRes.data ?? [],
+        raisedByCampaign,
       }
     },
     enabled: Boolean(churchId),
