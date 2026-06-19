@@ -131,9 +131,10 @@ interface CreateDonationModalProps {
   open: boolean
   onClose: () => void
   churchId: string
+  campaigns?: FinancialCampaign[]
 }
 
-function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalProps) {
+function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: CreateDonationModalProps) {
   const createDonation = useCreateDonation()
   const { data: peopleList } = usePeople(churchId, {})
   const [form, setForm] = useState({
@@ -143,6 +144,7 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
     payment_method: '' as PaymentMethod | '',
     notes: '',
     status: 'pending' as DonationStatus,
+    campaign_id: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -165,6 +167,7 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
         payment_method: (form.payment_method as PaymentMethod) || null,
         notes: form.notes.trim() || null,
         status: form.status,
+        campaign_id: form.campaign_id || null,
       })
       onClose()
     } catch (err) {
@@ -233,6 +236,7 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
               <option value="boleto">Boleto</option>
               <option value="dinheiro">Dinheiro</option>
               <option value="transferencia">Transferência</option>
+              <option value="outro">Outro</option>
             </select>
           </div>
           <div>
@@ -255,6 +259,21 @@ function CreateDonationModal({ open, onClose, churchId }: CreateDonationModalPro
             placeholder="Observações adicionais..."
           />
         </div>
+        {campaigns.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Campanha (opcional)</label>
+            <select
+              value={form.campaign_id}
+              onChange={(e) => setForm((p) => ({ ...p, campaign_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Nenhuma campanha</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" onClick={onClose}>Cancelar</Button>
@@ -326,12 +345,12 @@ export default function Financeiro() {
         />
         <KPICard
           label="Pendentes"
-          value={String(stats?.countByStatus.pending ?? 0)}
+          value={String(stats?.countPending ?? 0)}
           sub="aguardando confirmação"
         />
         <KPICard
           label="Dízimos (Mês)"
-          value={BRL.format(stats?.byType.dizimo ?? 0)}
+          value={BRL.format(stats?.dizimoThisMonth ?? 0)}
         />
       </div>
 
@@ -350,9 +369,7 @@ export default function Financeiro() {
           ) : (
             <div className="space-y-4">
               {(stats?.campaigns ?? []).map((campaign) => {
-                const raised = (donations ?? [])
-                  .filter((d) => d.campaign_id === campaign.id && d.status === 'confirmed')
-                  .reduce((sum, d) => sum + d.amount, 0)
+                const raised = stats?.raisedByCampaign?.[campaign.id] ?? 0
                 return (
                   <CampaignProgress key={campaign.id} campaign={campaign} raised={raised} />
                 )
@@ -424,6 +441,7 @@ export default function Financeiro() {
           open={createOpen}
           onClose={() => setCreateOpen(false)}
           churchId={churchId}
+          campaigns={stats?.campaigns ?? []}
         />
       )}
     </div>
