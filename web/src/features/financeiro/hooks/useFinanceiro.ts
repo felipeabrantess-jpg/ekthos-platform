@@ -215,3 +215,67 @@ export function useConfirmDonation() {
     },
   })
 }
+
+// ── Campaign mutations ────────────────────────────────────────────────────────
+
+interface CampaignInput {
+  church_id: string
+  name: string
+  description?: string | null
+  goal_amount?: number | null
+  start_date?: string | null
+  end_date?: string | null
+  is_active?: boolean
+}
+
+export function useCreateCampaign() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: CampaignInput) => {
+      const { data, error } = await supabase
+        .from('financial_campaigns')
+        .insert({
+          church_id: input.church_id,
+          name: input.name,
+          description: input.description ?? null,
+          goal_amount: input.goal_amount ?? null,
+          start_date: input.start_date ?? null,
+          end_date: input.end_date ?? null,
+          is_active: input.is_active ?? true,
+        })
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['financeiro-stats', church_id] })
+    },
+  })
+}
+
+export function useUpdateCampaign() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, church_id, ...updates }: { id: string } & CampaignInput) => {
+      const { error } = await supabase
+        .from('financial_campaigns')
+        .update({
+          name: updates.name,
+          description: updates.description ?? null,
+          goal_amount: updates.goal_amount ?? null,
+          start_date: updates.start_date ?? null,
+          end_date: updates.end_date ?? null,
+          is_active: updates.is_active ?? true,
+        })
+        .eq('id', id)
+        .eq('church_id', church_id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['financeiro-stats', church_id] })
+    },
+  })
+}
