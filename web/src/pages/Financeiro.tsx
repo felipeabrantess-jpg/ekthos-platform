@@ -7,6 +7,14 @@ import {
   useConfirmDonation,
   useCreateCampaign,
   useUpdateCampaign,
+  useFinancialCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useBankAccounts,
+  useCreateBankAccount,
+  useUpdateBankAccount,
+  type FinancialCategory,
+  type BankAccount,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -53,6 +61,25 @@ function typeLabel(type: DonationType): string {
     construcao: 'Construção',
   }
   return map[type]
+}
+
+function accountTypeLabel(type: string): string {
+  const map: Record<string, string> = {
+    conta_corrente: 'Conta Corrente',
+    poupanca: 'Poupança',
+    caixa: 'Caixa',
+    investimento: 'Investimento',
+  }
+  return map[type] ?? type
+}
+
+function categoryTypeLabel(type: string): string {
+  const map: Record<string, string> = {
+    income: 'Entrada',
+    expense: 'Saída',
+    both: 'Ambos',
+  }
+  return map[type] ?? type
 }
 
 interface KPICardProps {
@@ -300,6 +327,224 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: Create
   )
 }
 
+interface CategoryModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  category?: FinancialCategory | null
+}
+
+function CategoryModal({ open, onClose, churchId, category }: CategoryModalProps) {
+  const createCategory = useCreateCategory()
+  const updateCategory = useUpdateCategory()
+  const isEdit = Boolean(category)
+
+  const [form, setForm] = useState({
+    name: category?.name ?? '',
+    type: (category?.type ?? 'expense') as 'income' | 'expense' | 'both',
+    color: category?.color ?? '#6B7280',
+    is_active: category?.is_active ?? true,
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim()) { setError('Informe o nome.'); return }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const payload = {
+        church_id: churchId,
+        name: form.name.trim(),
+        type: form.type,
+        color: form.color || null,
+        is_active: form.is_active,
+      }
+      if (isEdit && category) {
+        await updateCategory.mutateAsync({ id: category.id, ...payload })
+      } else {
+        await createCategory.mutateAsync(payload)
+      }
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar categoria')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar Categoria' : 'Nova Categoria'}>
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+          <Input
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Ex: Manutenção"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
+            <select
+              value={form.type}
+              onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as 'income' | 'expense' | 'both' }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="expense">Saída</option>
+              <option value="income">Entrada</option>
+              <option value="both">Ambos</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cor</label>
+            <input
+              type="color"
+              value={form.color}
+              onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
+              className="w-full h-[38px] rounded-lg border border-gray-200 px-1 py-1 cursor-pointer"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="cat_is_active"
+            checked={form.is_active}
+            onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+            className="rounded border-gray-300"
+          />
+          <label htmlFor="cat_is_active" className="text-sm text-gray-700">Categoria ativa</label>
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={submitting || !form.name.trim()}>
+            {submitting ? 'Salvando...' : (isEdit ? 'Salvar Alterações' : 'Criar Categoria')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+interface BankAccountModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  account?: BankAccount | null
+}
+
+function BankAccountModal({ open, onClose, churchId, account }: BankAccountModalProps) {
+  const createBank = useCreateBankAccount()
+  const updateBank = useUpdateBankAccount()
+  const isEdit = Boolean(account)
+
+  const [form, setForm] = useState({
+    name: account?.name ?? '',
+    bank_name: account?.bank_name ?? '',
+    account_type: (account?.account_type ?? 'conta_corrente') as 'conta_corrente' | 'poupanca' | 'caixa' | 'investimento',
+    initial_balance: account?.initial_balance != null ? String(account.initial_balance) : '0',
+    is_active: account?.is_active ?? true,
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim()) { setError('Informe o nome.'); return }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const payload = {
+        church_id: churchId,
+        name: form.name.trim(),
+        bank_name: form.bank_name.trim() || null,
+        account_type: form.account_type,
+        initial_balance: parseFloat(form.initial_balance.replace(',', '.')) || 0,
+        is_active: form.is_active,
+      }
+      if (isEdit && account) {
+        await updateBank.mutateAsync({ id: account.id, ...payload })
+      } else {
+        await createBank.mutateAsync(payload)
+      }
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar conta')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar Conta' : 'Nova Conta Bancária'}>
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+          <Input
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="Ex: Conta Principal"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
+            <Input
+              value={form.bank_name}
+              onChange={(e) => setForm((p) => ({ ...p, bank_name: e.target.value }))}
+              placeholder="Ex: Bradesco"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+            <select
+              value={form.account_type}
+              onChange={(e) => setForm((p) => ({ ...p, account_type: e.target.value as typeof form.account_type }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="conta_corrente">Conta Corrente</option>
+              <option value="poupanca">Poupança</option>
+              <option value="caixa">Caixa</option>
+              <option value="investimento">Investimento</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Saldo Inicial (R$)</label>
+          <Input
+            value={form.initial_balance}
+            onChange={(e) => setForm((p) => ({ ...p, initial_balance: e.target.value }))}
+            placeholder="0,00"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="bank_is_active"
+            checked={form.is_active}
+            onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))}
+            className="rounded border-gray-300"
+          />
+          <label htmlFor="bank_is_active" className="text-sm text-gray-700">Conta ativa</label>
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={submitting || !form.name.trim()}>
+            {submitting ? 'Salvando...' : (isEdit ? 'Salvar Alterações' : 'Criar Conta')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
 interface CampaignModalProps {
   open: boolean
   onClose: () => void
@@ -431,10 +676,16 @@ export default function Financeiro() {
   const [createOpen, setCreateOpen] = useState(false)
   const [campaignModalOpen, setCampaignModalOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<FinancialCampaign | null>(null)
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<FinancialCategory | null>(null)
+  const [bankModalOpen, setBankModalOpen] = useState(false)
+  const [editingBank, setEditingBank] = useState<BankAccount | null>(null)
   const confirmDonation = useConfirmDonation()
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useFinanceiroStats(churchId ?? '')
   const { data: donations, isLoading: donationsLoading, isError: donationsError, refetch: refetchDonations } = useDonations(churchId ?? '')
+  const { data: categories } = useFinancialCategories(churchId ?? '')
+  const { data: bankAccounts } = useBankAccounts(churchId ?? '')
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -535,6 +786,87 @@ export default function Financeiro() {
         </div>
       </div>
 
+      {/* Contas & Categorias */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Contas Bancárias */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">Contas Bancárias</h2>
+            <Button size="sm" variant="secondary" onClick={() => { setEditingBank(null); setBankModalOpen(true) }}>
+              + Nova Conta
+            </Button>
+          </div>
+          {(bankAccounts ?? []).length === 0 ? (
+            <p className="text-sm text-gray-400">Nenhuma conta cadastrada.</p>
+          ) : (
+            <div className="space-y-2">
+              {(bankAccounts ?? []).map((acc) => (
+                <div key={acc.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">{acc.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {acc.bank_name ? `${acc.bank_name} · ` : ''}
+                      {accountTypeLabel(acc.account_type)}
+                      {!acc.is_active && ' · Inativa'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-500">{BRL.format(acc.initial_balance)}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setEditingBank(acc); setBankModalOpen(true) }}
+                      className="text-xs text-gray-400 hover:text-primary transition-colors"
+                    >
+                      Editar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Categorias */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-700">Categorias</h2>
+            <Button size="sm" variant="secondary" onClick={() => { setEditingCategory(null); setCategoryModalOpen(true) }}>
+              + Nova Categoria
+            </Button>
+          </div>
+          {(categories ?? []).length === 0 ? (
+            <p className="text-sm text-gray-400">Nenhuma categoria cadastrada.</p>
+          ) : (
+            <div className="space-y-2">
+              {(categories ?? []).map((cat) => (
+                <div key={cat.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: cat.color ?? '#6B7280' }}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{cat.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {categoryTypeLabel(cat.type)}
+                        {!cat.is_active && ' · Inativa'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setEditingCategory(cat); setCategoryModalOpen(true) }}
+                    className="text-xs text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Editar
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Donations Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100">
@@ -609,6 +941,28 @@ export default function Financeiro() {
           onClose={() => { setCampaignModalOpen(false); setEditingCampaign(null) }}
           churchId={churchId}
           campaign={editingCampaign}
+        />
+      )}
+
+      {/* Category Modal (create + edit) */}
+      {categoryModalOpen && (
+        <CategoryModal
+          key={editingCategory?.id ?? 'new-cat'}
+          open={categoryModalOpen}
+          onClose={() => { setCategoryModalOpen(false); setEditingCategory(null) }}
+          churchId={churchId}
+          category={editingCategory}
+        />
+      )}
+
+      {/* Bank Account Modal (create + edit) */}
+      {bankModalOpen && (
+        <BankAccountModal
+          key={editingBank?.id ?? 'new-bank'}
+          open={bankModalOpen}
+          onClose={() => { setBankModalOpen(false); setEditingBank(null) }}
+          churchId={churchId}
+          account={editingBank}
         />
       )}
     </div>
