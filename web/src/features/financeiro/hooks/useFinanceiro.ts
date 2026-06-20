@@ -612,6 +612,127 @@ export async function getSignedReceiptUrl(path: string): Promise<string> {
   return data.signedUrl
 }
 
+// ── Receivables (Contas a Receber) ────────────────────────────────────────────
+
+export interface Receivable {
+  id: string
+  church_id: string
+  description: string
+  amount: number
+  due_date: string | null
+  payer_name: string | null
+  person_id: string | null
+  status: 'a_receber' | 'recebido'
+  received_date: string | null
+  bank_account_id: string | null
+  category_id: string | null
+  receipt_path: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+interface ReceivableInput {
+  church_id: string
+  description: string
+  amount: number
+  due_date?: string | null
+  payer_name?: string | null
+  person_id?: string | null
+  status?: 'a_receber' | 'recebido'
+  received_date?: string | null
+  bank_account_id?: string | null
+  category_id?: string | null
+  receipt_path?: string | null
+  notes?: string | null
+}
+
+export function useReceivables(churchId: string) {
+  return useQuery({
+    queryKey: ['receivables', churchId],
+    queryFn: async (): Promise<Receivable[]> => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('receivables' as any)
+        .select('*')
+        .eq('church_id', churchId)
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as Receivable[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+export function useCreateReceivable() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ReceivableInput) => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('receivables' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({
+          church_id: input.church_id,
+          description: input.description,
+          amount: input.amount,
+          due_date: input.due_date ?? null,
+          payer_name: input.payer_name ?? null,
+          person_id: input.person_id ?? null,
+          status: input.status ?? 'a_receber',
+          received_date: input.received_date ?? null,
+          bank_account_id: input.bank_account_id ?? null,
+          category_id: input.category_id ?? null,
+          receipt_path: input.receipt_path ?? null,
+          notes: input.notes ?? null,
+        } as any)
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['receivables', church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['bank-account-balances', church_id] })
+    },
+  })
+}
+
+export function useUpdateReceivable() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, church_id, ...updates }: { id: string } & ReceivableInput) => {
+      const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('receivables' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({
+          description: updates.description,
+          amount: updates.amount,
+          due_date: updates.due_date ?? null,
+          payer_name: updates.payer_name ?? null,
+          person_id: updates.person_id ?? null,
+          status: updates.status ?? 'a_receber',
+          received_date: updates.received_date ?? null,
+          bank_account_id: updates.bank_account_id !== undefined ? updates.bank_account_id : undefined,
+          category_id: updates.category_id ?? null,
+          receipt_path: updates.receipt_path !== undefined ? updates.receipt_path : undefined,
+          notes: updates.notes ?? null,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', id)
+        .eq('church_id', church_id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['receivables', church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['bank-account-balances', church_id] })
+    },
+  })
+}
+
 // ── Bank Account Balances ─────────────────────────────────────────────────────
 
 export interface BankAccountBalance {
@@ -627,7 +748,7 @@ export function useBankAccountBalances(churchId: string) {
   return useQuery({
     queryKey: ['bank-account-balances', churchId],
     queryFn: async (): Promise<BankAccountBalance[]> => {
-      const [accountsRes, donationsRes, expensesRes] = await Promise.all([
+      const [accountsRes, donationsRes, expensesRes, receivablesRes] = await Promise.all([
         supabase
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           .from('bank_accounts' as any)
@@ -647,20 +768,33 @@ export function useBankAccountBalances(churchId: string) {
           .eq('church_id', churchId)
           .eq('status', 'paga')
           .not('bank_account_id', 'is', null),
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('receivables' as any)
+          .select('bank_account_id, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'recebido')
+          .not('bank_account_id', 'is', null),
       ])
 
       if (accountsRes.error) throw new Error(accountsRes.error.message)
       if (donationsRes.error) throw new Error(donationsRes.error.message)
       if (expensesRes.error) throw new Error(expensesRes.error.message)
+      if (receivablesRes.error) throw new Error(receivablesRes.error.message)
 
       const accounts = (accountsRes.data ?? []) as unknown as Array<{ id: string; name: string; initial_balance: number }>
       const donations = (donationsRes.data ?? []) as unknown as Array<{ bank_account_id: string; amount: number }>
       const expenses = (expensesRes.data ?? []) as unknown as Array<{ bank_account_id: string; amount: number }>
+      const receivables = (receivablesRes.data ?? []) as unknown as Array<{ bank_account_id: string; amount: number }>
 
       return accounts.map(acc => {
-        const entradas = donations
+        const entradasDoacoes = donations
           .filter(d => d.bank_account_id === acc.id)
           .reduce((sum, d) => sum + Number(d.amount), 0)
+        const entradasRecebidas = receivables
+          .filter(r => r.bank_account_id === acc.id)
+          .reduce((sum, r) => sum + Number(r.amount), 0)
+        const entradas = entradasDoacoes + entradasRecebidas
         const saidas = expenses
           .filter(e => e.bank_account_id === acc.id)
           .reduce((sum, e) => sum + Number(e.amount), 0)
