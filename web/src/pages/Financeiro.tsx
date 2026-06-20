@@ -17,6 +17,9 @@ import {
   useCreateExpense,
   useUpdateExpense,
   useBankAccountBalances,
+  uploadReceipt,
+  deleteReceipt,
+  getSignedReceiptUrl,
   type FinancialCategory,
   type BankAccount,
   type Expense,
@@ -386,8 +389,20 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
     status: (expense?.status ?? 'a_pagar') as 'paga' | 'a_pagar',
     payment_method: expense?.payment_method ?? '',
   })
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [removeReceipt, setRemoveReceipt] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  async function handleViewExistingReceipt() {
+    if (!expense?.receipt_path) return
+    try {
+      const url = await getSignedReceiptUrl(expense.receipt_path)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      setError('Não foi possível gerar o link do comprovante.')
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -396,6 +411,30 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
     if (!form.description.trim()) { setError('Informe a descrição.'); return }
     setSubmitting(true)
     setError(null)
+
+    // Calcula receipt_path final antes de salvar a despesa
+    let finalReceiptPath: string | null = isEdit ? (expense?.receipt_path ?? null) : null
+
+    // Remoção explícita
+    if (removeReceipt && expense?.receipt_path) {
+      try { await deleteReceipt(expense.receipt_path) } catch { /* best-effort */ }
+      finalReceiptPath = null
+    }
+
+    // Upload de novo arquivo — se falhar, NÃO salva a despesa
+    if (receiptFile) {
+      if (isEdit && expense?.receipt_path && !removeReceipt) {
+        try { await deleteReceipt(expense.receipt_path) } catch { /* best-effort */ }
+      }
+      try {
+        finalReceiptPath = await uploadReceipt(receiptFile, churchId)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro no upload do comprovante')
+        setSubmitting(false)
+        return
+      }
+    }
+
     try {
       const payload: Parameters<typeof createExpense.mutateAsync>[0] = {
         church_id: churchId,
@@ -408,6 +447,7 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
         due_date: form.due_date || null,
         status: form.status,
         payment_method: (form.payment_method as PaymentMethod) || null,
+        receipt_path: finalReceiptPath,
       }
       if (isEdit && expense) {
         await updateExpense.mutateAsync({ id: expense.id, ...payload })
@@ -532,6 +572,56 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
             </select>
           </div>
         </div>
+        {/* Comprovante (SF3) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Comprovante (opcional)</label>
+          {isEdit && expense?.receipt_path && !removeReceipt && !receiptFile && (
+            <div className="flex items-center gap-2 mb-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+              <span className="text-xs text-gray-600 flex-1">Comprovante anexado</span>
+              <button
+                type="button"
+                onClick={() => { void handleViewExistingReceipt() }}
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Ver
+              </button>
+              <button
+                type="button"
+                onClick={() => setRemoveReceipt(true)}
+                className="text-xs text-red-500 hover:text-red-600"
+              >
+                Remover
+              </button>
+            </div>
+          )}
+          {removeReceipt && (
+            <p className="text-xs text-orange-600 mb-2">
+              Comprovante será removido ao salvar.{' '}
+              <button type="button" className="underline" onClick={() => setRemoveReceipt(false)}>Desfazer</button>
+            </p>
+          )}
+          {!removeReceipt && (
+            <div>
+              <input
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null
+                  if (f && f.size > 10 * 1024 * 1024) {
+                    setError('Arquivo muito grande. Máximo 10 MB.')
+                    e.target.value = ''
+                    return
+                  }
+                  setReceiptFile(f)
+                  setError(null)
+                }}
+                className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-gray-200 file:text-xs file:font-medium file:text-gray-700 file:bg-white hover:file:bg-gray-50 file:cursor-pointer"
+              />
+              <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP ou PDF · máx 10 MB</p>
+            </div>
+          )}
+        </div>
+
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
@@ -936,6 +1026,15 @@ export default function Financeiro() {
     await confirmDonation.mutateAsync({ id, churchId: churchId! })
   }
 
+  async function handleViewReceipt(path: string) {
+    try {
+      const url = await getSignedReceiptUrl(path)
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch {
+      // silencia — usuário vê o modal de erro no máximo pelo browser
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1151,13 +1250,24 @@ export default function Financeiro() {
                         <Badge label={expenseStatusLabel(exp.status)} variant={expenseStatusBadge(exp.status)} />
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => { setEditingExpense(exp); setExpenseModalOpen(true) }}
-                          className="text-xs text-gray-400 hover:text-primary transition-colors"
-                        >
-                          Editar
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {exp.receipt_path && (
+                            <button
+                              type="button"
+                              onClick={() => { void handleViewReceipt(exp.receipt_path!) }}
+                              className="text-xs text-blue-500 hover:text-blue-700 transition-colors font-medium"
+                            >
+                              Comprovante
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => { setEditingExpense(exp); setExpenseModalOpen(true) }}
+                            className="text-xs text-gray-400 hover:text-primary transition-colors"
+                          >
+                            Editar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )

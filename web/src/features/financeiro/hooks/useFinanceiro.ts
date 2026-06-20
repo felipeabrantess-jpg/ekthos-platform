@@ -481,6 +481,7 @@ export interface Expense {
   due_date: string | null
   status: 'paga' | 'a_pagar'
   payment_method: string | null
+  receipt_path: string | null
   created_at: string
   updated_at: string
 }
@@ -496,6 +497,7 @@ interface ExpenseInput {
   due_date?: string | null
   status?: 'paga' | 'a_pagar'
   payment_method?: string | null
+  receipt_path?: string | null
 }
 
 export function useExpenses(churchId: string) {
@@ -536,6 +538,7 @@ export function useCreateExpense() {
           due_date: input.due_date ?? null,
           status: input.status ?? 'a_pagar',
           payment_method: input.payment_method ?? null,
+          receipt_path: input.receipt_path ?? null,
         } as any)
         .select()
         .single()
@@ -567,6 +570,7 @@ export function useUpdateExpense() {
           due_date: updates.due_date ?? null,
           status: updates.status ?? 'a_pagar',
           payment_method: updates.payment_method ?? null,
+          receipt_path: updates.receipt_path !== undefined ? updates.receipt_path : undefined,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', id)
@@ -578,6 +582,34 @@ export function useUpdateExpense() {
       void queryClient.invalidateQueries({ queryKey: ['bank-account-balances', church_id] })
     },
   })
+}
+
+// ── Storage: comprovantes (SF3) ───────────────────────────────────────────────
+
+const RECEIPTS_BUCKET = 'financial-receipts'
+
+export async function uploadReceipt(file: File, churchId: string): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'bin'
+  const fileId = crypto.randomUUID()
+  const path = `${churchId}/${fileId}.${ext}`
+  const { error } = await supabase.storage
+    .from(RECEIPTS_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false })
+  if (error) throw new Error(`Upload falhou: ${error.message}`)
+  return path
+}
+
+export async function deleteReceipt(path: string): Promise<void> {
+  const { error } = await supabase.storage.from(RECEIPTS_BUCKET).remove([path])
+  if (error) throw new Error(`Remoção falhou: ${error.message}`)
+}
+
+export async function getSignedReceiptUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from(RECEIPTS_BUCKET)
+    .createSignedUrl(path, 3600) // expira em 1h
+  if (error || !data?.signedUrl) throw new Error(error?.message ?? 'URL temporária não gerada')
+  return data.signedUrl
 }
 
 // ── Bank Account Balances ─────────────────────────────────────────────────────
