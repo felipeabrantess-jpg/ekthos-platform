@@ -99,12 +99,13 @@
   #dre-section,
   #dre-section * { visibility: visible; }
 
-  /* Posiciona no topo da página impressa */
+  /* Posiciona no topo e REMOVE overflow-hidden que cortava o conteúdo */
   #dre-section {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    overflow: visible !important;   /* override overflow-hidden do Tailwind — sem isso o conteúdo é cortado */
     box-shadow: none !important;
     border: none !important;
   }
