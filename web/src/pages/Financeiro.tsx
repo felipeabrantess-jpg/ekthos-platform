@@ -1,4 +1,14 @@
 import { useState } from 'react'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+} from 'recharts'
 import { useAuth } from '@/hooks/useAuth'
 import {
   useFinanceiroStats,
@@ -20,6 +30,7 @@ import {
   useCreateReceivable,
   useUpdateReceivable,
   useBankAccountBalances,
+  useFluxoCaixa,
   uploadReceipt,
   deleteReceipt,
   getSignedReceiptUrl,
@@ -28,6 +39,7 @@ import {
   type Expense,
   type Receivable,
   type BankAccountBalance,
+  type FluxoCaixaData,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -1342,6 +1354,137 @@ function CampaignModal({ open, onClose, churchId, campaign }: CampaignModalProps
   )
 }
 
+// ── Fluxo de Caixa Section ────────────────────────────────────────────────────
+
+const BRL_SHORT = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+
+interface FluxoTooltipProps {
+  active?: boolean
+  payload?: Array<{ name: string; value: number; color: string }>
+  label?: string
+}
+
+function FluxoTooltip({ active, payload, label }: FluxoTooltipProps) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl shadow-lg p-3 text-sm">
+      <p className="font-semibold text-gray-700 mb-1.5">{label}</p>
+      {payload.map(p => (
+        <p key={p.name} style={{ color: p.color }} className="font-medium">
+          {p.name}: {BRL_SHORT.format(p.value)}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function FluxoCaixaSection({ data }: { data: FluxoCaixaData }) {
+  const { mesAtual, meses, projecao } = data
+  const resultadoColor = mesAtual.resultado >= 0 ? 'text-green-600' : 'text-red-600'
+  const resultadoProjColor = projecao.resultado_projetado >= 0 ? 'text-green-600' : 'text-red-600'
+
+  return (
+    <div className="space-y-4">
+      {/* Números do mês atual */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">Fluxo de Caixa</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Mês atual · Realizado</p>
+          </div>
+          <span className="text-xs bg-blue-50 text-blue-700 font-medium px-2.5 py-1 rounded-full">
+            {mesAtual.label}
+          </span>
+        </div>
+
+        {/* Realizado */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-green-50 rounded-xl p-4 text-center">
+            <p className="text-xs font-medium text-green-700 uppercase tracking-wide mb-1">Entradas</p>
+            <p className="text-xl font-bold text-green-700">{BRL.format(mesAtual.entradas)}</p>
+            <p className="text-xs text-green-600 mt-0.5">confirmadas</p>
+          </div>
+          <div className="bg-red-50 rounded-xl p-4 text-center">
+            <p className="text-xs font-medium text-red-700 uppercase tracking-wide mb-1">Saídas</p>
+            <p className="text-xl font-bold text-red-700">{BRL.format(mesAtual.saidas)}</p>
+            <p className="text-xs text-red-600 mt-0.5">pagas</p>
+          </div>
+          <div className={`rounded-xl p-4 text-center ${mesAtual.resultado >= 0 ? 'bg-blue-50' : 'bg-orange-50'}`}>
+            <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${mesAtual.resultado >= 0 ? 'text-blue-700' : 'text-orange-700'}`}>
+              Resultado
+            </p>
+            <p className={`text-xl font-bold ${resultadoColor}`}>{BRL.format(mesAtual.resultado)}</p>
+            <p className={`text-xs mt-0.5 ${mesAtual.resultado >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+              {mesAtual.resultado >= 0 ? 'sobrou' : 'faltou'}
+            </p>
+          </div>
+        </div>
+
+        {/* Projeção — separada e claramente rotulada */}
+        <div className="border-t border-dashed border-gray-200 pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Projeção (pendentes)</span>
+            <span className="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-2 py-0.5 rounded-full font-medium">
+              Ainda não realizado
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gray-50 rounded-lg p-3 text-center border border-dashed border-green-200">
+              <p className="text-xs text-gray-500 mb-0.5">A Receber</p>
+              <p className="text-sm font-semibold text-green-600">+ {BRL.format(projecao.entradas_previstas)}</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center border border-dashed border-red-200">
+              <p className="text-xs text-gray-500 mb-0.5">A Pagar</p>
+              <p className="text-sm font-semibold text-red-600">- {BRL.format(projecao.saidas_previstas)}</p>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 text-center border border-dashed border-gray-300">
+              <p className="text-xs text-gray-500 mb-0.5">Se tudo realizar</p>
+              <p className={`text-sm font-semibold ${resultadoProjColor}`}>{BRL.format(projecao.resultado_projetado)}</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            Projeção = resultado atual + entradas previstas − saídas previstas. Não inclui itens incertos.
+          </p>
+        </div>
+      </div>
+
+      {/* Gráfico 6 meses */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-gray-700">Evolução — Últimos 6 Meses</h3>
+          <p className="text-xs text-gray-400 mt-0.5">Entradas realizadas vs Saídas realizadas · por mês</p>
+        </div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={meses} barGap={4} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: '#9CA3AF' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`}
+              tick={{ fontSize: 11, fill: '#9CA3AF' }}
+              axisLine={false}
+              tickLine={false}
+              width={52}
+            />
+            <Tooltip content={<FluxoTooltip />} />
+            <Legend
+              iconType="circle"
+              iconSize={8}
+              wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }}
+            />
+            <Bar dataKey="entradas" name="Entradas" fill="#16A34A" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="saidas" name="Saídas" fill="#DC2626" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
 export default function Financeiro() {
   const { churchId } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
@@ -1369,6 +1512,7 @@ export default function Financeiro() {
   const { data: expenses } = useExpenses(churchId ?? '')
   const { data: receivables } = useReceivables(churchId ?? '')
   const { data: balances } = useBankAccountBalances(churchId ?? '')
+  const { data: fluxo } = useFluxoCaixa(churchId ?? '')
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -1433,6 +1577,9 @@ export default function Financeiro() {
         </div>
         <Button onClick={() => setCreateOpen(true)}>+ Registrar Doação</Button>
       </div>
+
+      {/* Fluxo de Caixa — 2B */}
+      {fluxo && <FluxoCaixaSection data={fluxo} />}
 
       {/* KPI Cards — 6 cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

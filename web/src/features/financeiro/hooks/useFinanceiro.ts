@@ -811,3 +811,151 @@ export function useBankAccountBalances(churchId: string) {
     enabled: Boolean(churchId),
   })
 }
+
+// ── Fluxo de Caixa (últimos 6 meses) ─────────────────────────────────────────
+
+export interface FluxoMes {
+  mes: string          // 'YYYY-MM'
+  label: string        // 'Jun/26'
+  entradas: number     // donations confirmed + receivables recebido
+  saidas: number       // expenses paga
+  resultado: number    // entradas - saidas
+}
+
+export interface FluxoCaixaData {
+  meses: FluxoMes[]
+  mesAtual: FluxoMes
+  projecao: {
+    entradas_previstas: number   // receivables a_receber
+    saidas_previstas: number     // expenses a_pagar
+    resultado_projetado: number  // resultado + entradas_previstas - saidas_previstas (se tudo se realizar)
+  }
+}
+
+function buildMonthRange(count: number): string[] {
+  const months: string[] = []
+  const now = new Date()
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    months.push(`${y}-${m}`)
+  }
+  return months
+}
+
+function monthLabel(mes: string): string {
+  const [y, m] = mes.split('-')
+  const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+  return `${MONTHS[parseInt(m, 10) - 1]}/${y.slice(2)}`
+}
+
+export function useFluxoCaixa(churchId: string) {
+  return useQuery({
+    queryKey: ['fluxo-caixa', churchId],
+    queryFn: async (): Promise<FluxoCaixaData> => {
+      const sixMonthsAgo = (() => {
+        const d = new Date()
+        d.setMonth(d.getMonth() - 5)
+        d.setDate(1)
+        return d.toISOString().split('T')[0]
+      })()
+
+      const [donationsRes, expensesRes, receivablesRes, projecaoExpRes, projecaoRecRes] = await Promise.all([
+        // Entradas realizadas: donations confirmed nos últimos 6 meses
+        supabase
+          .from('donations')
+          .select('created_at, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'confirmed')
+          .gte('created_at', sixMonthsAgo),
+        // Saídas realizadas: expenses paga nos últimos 6 meses
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('expenses' as any)
+          .select('expense_date, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'paga')
+          .gte('expense_date', sixMonthsAgo),
+        // Entradas realizadas complementares: receivables recebido nos últimos 6 meses
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('receivables' as any)
+          .select('received_date, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'recebido')
+          .gte('received_date', sixMonthsAgo),
+        // Projeção saídas: expenses a_pagar (independe do mês)
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('expenses' as any)
+          .select('amount')
+          .eq('church_id', churchId)
+          .eq('status', 'a_pagar'),
+        // Projeção entradas: receivables a_receber (independe do mês)
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('receivables' as any)
+          .select('amount')
+          .eq('church_id', churchId)
+          .eq('status', 'a_receber'),
+      ])
+
+      if (donationsRes.error) throw new Error(donationsRes.error.message)
+      if (expensesRes.error) throw new Error(expensesRes.error.message)
+      if (receivablesRes.error) throw new Error(receivablesRes.error.message)
+      if (projecaoExpRes.error) throw new Error(projecaoExpRes.error.message)
+      if (projecaoRecRes.error) throw new Error(projecaoRecRes.error.message)
+
+      type DonRow = { created_at: string; amount: number }
+      type ExpRow = { expense_date: string; amount: number }
+      type RecRow = { received_date: string | null; amount: number }
+      type AmtRow = { amount: number }
+
+      const donations   = (donationsRes.data   ?? []) as unknown as DonRow[]
+      const expenses    = (expensesRes.data     ?? []) as unknown as ExpRow[]
+      const receivables = (receivablesRes.data  ?? []) as unknown as RecRow[]
+      const projecaoExp = (projecaoExpRes.data  ?? []) as unknown as AmtRow[]
+      const projecaoRec = (projecaoRecRes.data  ?? []) as unknown as AmtRow[]
+
+      const months = buildMonthRange(6)
+
+      const meses: FluxoMes[] = months.map(mes => {
+        const entDoacoes = donations
+          .filter(d => d.created_at.slice(0, 7) === mes)
+          .reduce((s, d) => s + Number(d.amount), 0)
+        const entRecebidos = receivables
+          .filter(r => r.received_date && r.received_date.slice(0, 7) === mes)
+          .reduce((s, r) => s + Number(r.amount), 0)
+        const entradas = entDoacoes + entRecebidos
+        const saidas = expenses
+          .filter(e => e.expense_date.slice(0, 7) === mes)
+          .reduce((s, e) => s + Number(e.amount), 0)
+        return { mes, label: monthLabel(mes), entradas, saidas, resultado: entradas - saidas }
+      })
+
+      const currentMes = new Date().toISOString().slice(0, 7)
+      const mesAtual = meses.find(m => m.mes === currentMes) ?? {
+        mes: currentMes,
+        label: monthLabel(currentMes),
+        entradas: 0,
+        saidas: 0,
+        resultado: 0,
+      }
+
+      const saidas_previstas   = projecaoExp.reduce((s, e) => s + Number(e.amount), 0)
+      const entradas_previstas = projecaoRec.reduce((s, r) => s + Number(r.amount), 0)
+
+      return {
+        meses,
+        mesAtual,
+        projecao: {
+          entradas_previstas,
+          saidas_previstas,
+          resultado_projetado: mesAtual.resultado + entradas_previstas - saidas_previstas,
+        },
+      }
+    },
+    enabled: Boolean(churchId),
+  })
+}
