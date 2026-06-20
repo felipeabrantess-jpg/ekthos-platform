@@ -91,20 +91,27 @@
 
 /* ── DRE print styles ─────────────────────────────────────────────────────── */
 @media print {
-  /* Oculta tudo exceto o DRE */
-  body > * { display: none !important; }
-  #root > * { display: none !important; }
+  /* visibility:hidden preserva o layout tree — filhos PODEM sobrepor com visibility:visible.
+     display:none não permite isso (root de filho colapsado). */
+  body * { visibility: hidden; }
+
+  /* DRE e TODOS os seus descendentes ficam visíveis */
+  #dre-section,
+  #dre-section * { visibility: visible; }
+
+  /* Posiciona no topo da página impressa */
   #dre-section {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
     box-shadow: none !important;
     border: none !important;
   }
-  /* Botões de ação e navegação */
-  .print\:hidden { display: none !important; }
-  .hidden.print\:block { display: block !important; }
-  /* Tipografia para impressão */
+
+  /* Botão imprimir: oculto mesmo dentro do DRE */
+  .print\:hidden { visibility: hidden !important; }
+
   body { font-size: 12px; color: #111; background: white; }
   @page { margin: 1.5cm; }
 }
