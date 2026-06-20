@@ -1136,3 +1136,149 @@ export function useDRE(churchId: string, startDate: string, endDate: string) {
     enabled: Boolean(churchId) && Boolean(startDate) && Boolean(endDate),
   })
 }
+
+// ── Conciliação Bancária (2D-1) ───────────────────────────────────────────────
+
+export interface ReconciliationItem {
+  id: string
+  tipo: 'entrada' | 'saida'
+  fonte: 'donation' | 'receivable' | 'expense'
+  data: string
+  descricao: string
+  valor: number
+  bank_account_id: string | null
+  reconciled: boolean
+  reconciled_at: string | null
+}
+
+export function useReconciliation(
+  churchId: string,
+  bankAccountId: string | null,
+  startDate: string,
+  endDate: string,
+) {
+  return useQuery({
+    queryKey: ['reconciliation', churchId, bankAccountId, startDate, endDate],
+    queryFn: async (): Promise<ReconciliationItem[]> => {
+      const [donRes, expRes, recRes] = await Promise.all([
+        supabase
+          .from('donations')
+          .select('id, confirmed_at, type, amount, bank_account_id, reconciled, reconciled_at')
+          .eq('church_id', churchId)
+          .eq('status', 'confirmed')
+          .gte('confirmed_at', `${startDate}T00:00:00`)
+          .lte('confirmed_at', `${endDate}T23:59:59`),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        supabase.from('expenses' as any)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .select('id, expense_date, description, amount, bank_account_id, reconciled, reconciled_at' as any)
+          .eq('church_id', churchId)
+          .eq('status', 'paga')
+          .gte('expense_date', startDate)
+          .lte('expense_date', endDate),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        supabase.from('receivables' as any)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .select('id, received_date, description, amount, bank_account_id, reconciled, reconciled_at' as any)
+          .eq('church_id', churchId)
+          .eq('status', 'recebido')
+          .not('received_date', 'is', null)
+          .gte('received_date', startDate)
+          .lte('received_date', endDate),
+      ])
+
+      if (donRes.error) throw new Error(donRes.error.message)
+      if (expRes.error) throw new Error(expRes.error.message)
+      if (recRes.error) throw new Error(recRes.error.message)
+
+      type DonRow = { id: string; confirmed_at: string | null; type: string; amount: number; bank_account_id: string | null; reconciled: boolean; reconciled_at: string | null }
+      type ExpRow = { id: string; expense_date: string; description: string; amount: number; bank_account_id: string | null; reconciled: boolean; reconciled_at: string | null }
+      type RecRow = { id: string; received_date: string | null; description: string; amount: number; bank_account_id: string | null; reconciled: boolean; reconciled_at: string | null }
+
+      const donations   = (donRes.data ?? []) as unknown as DonRow[]
+      const expenses    = (expRes.data  ?? []) as unknown as ExpRow[]
+      const receivables = (recRes.data  ?? []) as unknown as RecRow[]
+
+      const items: ReconciliationItem[] = []
+
+      for (const d of donations) {
+        if (bankAccountId && d.bank_account_id !== bankAccountId) continue
+        items.push({
+          id: d.id,
+          tipo: 'entrada',
+          fonte: 'donation',
+          data: d.confirmed_at ? d.confirmed_at.slice(0, 10) : startDate,
+          descricao: DONATION_TYPE_LABEL[d.type] ?? d.type,
+          valor: Number(d.amount),
+          bank_account_id: d.bank_account_id,
+          reconciled: d.reconciled ?? false,
+          reconciled_at: d.reconciled_at ?? null,
+        })
+      }
+
+      for (const e of expenses) {
+        if (bankAccountId && e.bank_account_id !== bankAccountId) continue
+        items.push({
+          id: e.id,
+          tipo: 'saida',
+          fonte: 'expense',
+          data: e.expense_date,
+          descricao: e.description,
+          valor: Number(e.amount),
+          bank_account_id: e.bank_account_id,
+          reconciled: e.reconciled ?? false,
+          reconciled_at: e.reconciled_at ?? null,
+        })
+      }
+
+      for (const r of receivables) {
+        if (bankAccountId && r.bank_account_id !== bankAccountId) continue
+        items.push({
+          id: r.id,
+          tipo: 'entrada',
+          fonte: 'receivable',
+          data: r.received_date ?? startDate,
+          descricao: r.description,
+          valor: Number(r.amount),
+          bank_account_id: r.bank_account_id,
+          reconciled: r.reconciled ?? false,
+          reconciled_at: r.reconciled_at ?? null,
+        })
+      }
+
+      return items.sort((a, b) => a.data.localeCompare(b.data))
+    },
+    enabled: Boolean(churchId) && Boolean(startDate) && Boolean(endDate),
+  })
+}
+
+export function useToggleReconciled() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      id,
+      fonte,
+      reconciled,
+      churchId,
+    }: {
+      id: string
+      fonte: 'donation' | 'receivable' | 'expense'
+      reconciled: boolean
+      churchId: string
+    }) => {
+      const table = fonte === 'donation' ? 'donations' : fonte === 'expense' ? 'expenses' : 'receivables'
+      const now = new Date().toISOString()
+      const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from(table as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ reconciled, reconciled_at: reconciled ? now : null } as any)
+        .eq('id', id)
+        .eq('church_id', churchId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { churchId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['reconciliation', churchId] })
+    },
+  })
+}

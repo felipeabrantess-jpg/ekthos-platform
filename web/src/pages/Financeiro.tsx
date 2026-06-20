@@ -32,6 +32,8 @@ import {
   useBankAccountBalances,
   useFluxoCaixa,
   useDRE,
+  useReconciliation,
+  useToggleReconciled,
   uploadReceipt,
   deleteReceipt,
   getSignedReceiptUrl,
@@ -42,6 +44,7 @@ import {
   type BankAccountBalance,
   type FluxoCaixaData,
   type DREData,
+  type ReconciliationItem,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -1852,6 +1855,287 @@ function FluxoCaixaSection({ data }: { data: FluxoCaixaData }) {
   )
 }
 
+// ── Conciliação Bancária Section (2D-1) ───────────────────────────────────────
+
+type ReconciliacaoFiltro = 'todos' | 'pendentes' | 'conferidos'
+
+interface ConciliacaoSectionProps {
+  churchId: string
+  bankAccounts: BankAccount[]
+}
+
+function ConciliacaoSection({ churchId, bankAccounts }: ConciliacaoSectionProps) {
+  const now = new Date()
+  const mesY = now.getFullYear()
+  const mesM = now.getMonth() + 1
+  const mesStr = `${mesY}-${String(mesM).padStart(2, '0')}`
+  const ultimoDia = new Date(mesY, mesM, 0).getDate()
+
+  const [contaSelecionada, setContaSelecionada] = useState<string | null>(
+    bankAccounts[0]?.id ?? null
+  )
+  const [modoperiodo, setModoPeriodo] = useState<'mes' | 'intervalo'>('mes')
+  const [mesSelecionado, setMesSelecionado] = useState(mesStr)
+  const [startDate, setStartDate] = useState(`${mesStr}-01`)
+  const [endDate, setEndDate] = useState(`${mesStr}-${String(ultimoDia).padStart(2, '0')}`)
+  const [dataInicio, setDataInicio] = useState(startDate)
+  const [dataFim, setDataFim] = useState(endDate)
+  const [filtro, setFiltro] = useState<ReconciliacaoFiltro>('todos')
+
+  const { data: items = [], isLoading } = useReconciliation(churchId, contaSelecionada, startDate, endDate)
+  const toggleReconciled = useToggleReconciled()
+
+  function aplicarMes(mes: string) {
+    setMesSelecionado(mes)
+    const [y, m] = mes.split('-')
+    const ultimo = new Date(parseInt(y), parseInt(m), 0).getDate()
+    setStartDate(`${mes}-01`)
+    setEndDate(`${mes}-${String(ultimo).padStart(2, '0')}`)
+  }
+
+  function aplicarIntervalo() {
+    if (dataInicio && dataFim && dataInicio <= dataFim) {
+      setStartDate(dataInicio)
+      setEndDate(dataFim)
+    }
+  }
+
+  const filteredItems = items.filter(item => {
+    if (filtro === 'pendentes') return !item.reconciled
+    if (filtro === 'conferidos') return item.reconciled
+    return true
+  })
+
+  const totalConferido = items
+    .filter(i => i.reconciled)
+    .reduce((sum, i) => sum + (i.tipo === 'entrada' ? i.valor : -i.valor), 0)
+  const totalPendente = items
+    .filter(i => !i.reconciled)
+    .reduce((sum, i) => sum + i.valor, 0)
+  const countPendentes = items.filter(i => !i.reconciled).length
+
+  async function handleToggle(item: ReconciliationItem) {
+    await toggleReconciled.mutateAsync({
+      id: item.id,
+      fonte: item.fonte,
+      reconciled: !item.reconciled,
+      churchId,
+    })
+  }
+
+  const periodoLabel = (() => {
+    const [sy, sm, sd] = startDate.split('-')
+    const [ey, em, ed] = endDate.split('-')
+    if (sy === ey && sm === em) {
+      const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+      return `${MESES[parseInt(sm, 10) - 1]}/${sy.slice(2)}`
+    }
+    return `${sd}/${sm}/${sy} – ${ed}/${em}/${ey}`
+  })()
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700">Conciliação Bancária</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Marque os lançamentos conferidos com o extrato · {periodoLabel}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Seletor de conta */}
+          <select
+            value={contaSelecionada ?? ''}
+            onChange={e => setContaSelecionada(e.target.value || null)}
+            className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Todas as contas</option>
+            {bankAccounts.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+
+          {/* Toggle modo período */}
+          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+            <button
+              type="button"
+              onClick={() => { setModoPeriodo('mes'); aplicarMes(mesSelecionado) }}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${modoperiodo === 'mes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >Mês</button>
+            <button
+              type="button"
+              onClick={() => setModoPeriodo('intervalo')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${modoperiodo === 'intervalo' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >Intervalo</button>
+          </div>
+
+          {modoperiodo === 'mes' && (
+            <input
+              type="month"
+              value={mesSelecionado}
+              onChange={e => aplicarMes(e.target.value)}
+              className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          )}
+
+          {modoperiodo === 'intervalo' && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={e => setDataInicio(e.target.value)}
+                className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <span className="text-xs text-gray-400">até</span>
+              <input
+                type="date"
+                value={dataFim}
+                onChange={e => setDataFim(e.target.value)}
+                className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={aplicarIntervalo}
+                className="px-3 py-1 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
+              >Aplicar</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Totais */}
+      <div className="px-5 py-3 border-b border-gray-100 grid grid-cols-3 gap-4 bg-gray-50/50">
+        <div>
+          <p className="text-xs text-gray-500">Saldo conferido</p>
+          <p className={`text-sm font-bold ${totalConferido >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {BRL.format(totalConferido)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">Valor pendente</p>
+          <p className="text-sm font-bold text-yellow-600">{BRL.format(totalPendente)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-gray-500">A conferir</p>
+          <p className="text-sm font-bold text-gray-700">
+            {countPendentes} lançamento{countPendentes !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </div>
+
+      {/* Filtro */}
+      <div className="px-5 py-2 border-b border-gray-100 flex gap-1">
+        {(['todos', 'pendentes', 'conferidos'] as const).map(f => (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFiltro(f)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              filtro === f
+                ? 'bg-primary text-white'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            {f === 'todos' ? 'Todos' : f === 'pendentes' ? 'Pendentes' : 'Conferidos'}
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-32">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-sm text-gray-400">
+            {filtro === 'pendentes'
+              ? 'Todos os lançamentos já foram conferidos.'
+              : filtro === 'conferidos'
+              ? 'Nenhum lançamento conferido neste período.'
+              : `Nenhum lançamento encontrado em ${periodoLabel}.`}
+          </p>
+          {filtro === 'todos' && (
+            <p className="text-xs text-gray-400 mt-1">
+              Lançamentos aparecem quando despesas são pagas, doações confirmadas ou recebimentos registrados.
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {filteredItems.map(item => (
+            <div
+              key={`${item.fonte}-${item.id}`}
+              className={`px-5 py-3 flex items-center gap-3 transition-colors ${
+                item.reconciled ? 'bg-green-50/30' : 'hover:bg-gray-50'
+              }`}
+            >
+              {/* Checkbox */}
+              <button
+                type="button"
+                onClick={() => { void handleToggle(item) }}
+                disabled={toggleReconciled.isPending}
+                className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors disabled:opacity-50 ${
+                  item.reconciled
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'border-gray-300 hover:border-green-400'
+                }`}
+              >
+                {item.reconciled && (
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Data */}
+              <span className="text-xs text-gray-400 w-14 flex-shrink-0">
+                {item.data.split('-').reverse().slice(0, 2).join('/')}
+              </span>
+
+              {/* Badge tipo */}
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                item.tipo === 'entrada'
+                  ? 'bg-green-50 text-green-700'
+                  : 'bg-red-50 text-red-700'
+              }`}>
+                {item.tipo === 'entrada' ? 'Entrada' : 'Saída'}
+              </span>
+
+              {/* Descrição */}
+              <span className={`flex-1 text-sm min-w-0 truncate ${
+                item.reconciled ? 'text-gray-400 line-through' : 'text-gray-700'
+              }`}>
+                {item.descricao}
+              </span>
+
+              {/* Sem conta (aviso) */}
+              {!item.bank_account_id && (
+                <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 px-1.5 py-0.5 rounded flex-shrink-0">
+                  Sem conta
+                </span>
+              )}
+
+              {/* Valor */}
+              <span className={`text-sm font-semibold flex-shrink-0 ${
+                item.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {item.tipo === 'entrada' ? '+' : '-'}{BRL.format(item.valor)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Rodapé */}
+      <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/30">
+        <p className="text-xs text-gray-400">
+          Marcar como conferido não altera o saldo calculado pelo sistema — é apenas uma marca informativa.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function Financeiro() {
   const { churchId } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
@@ -1965,6 +2249,12 @@ export default function Financeiro() {
         startDate={dreStart}
         endDate={dreEnd}
         onChangePeriod={(s, e) => { setDreStart(s); setDreEnd(e) }}
+      />
+
+      {/* Conciliação Bancária — 2D-1 */}
+      <ConciliacaoSection
+        churchId={churchId}
+        bankAccounts={bankAccounts ?? []}
       />
 
       {/* KPI Cards — 6 cards */}
