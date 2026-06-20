@@ -1423,6 +1423,97 @@ function DRESection({ churchId, startDate, endDate, onChangePeriod }: DRESection
   const resultadoColor = (dre?.resultado_realizado ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
   const resultadoProjColor = (dre?.resultado_projetado ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
 
+  function handlePrint() {
+    if (!dre) return
+    const f = (v: number) =>
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+    const catRows = (items: Array<{ categoria: string; total: number }>) =>
+      items
+        .map(r => `<tr><td class="cat">${r.categoria}</td><td class="val">${f(r.total)}</td></tr>`)
+        .join('')
+    const prevSection = (
+      items: Array<{ categoria: string; total: number }>,
+      total: number,
+      color: string,
+    ) =>
+      !items.length
+        ? ''
+        : `<tr class="prev-hd"><td colspan="2">Previstas</td></tr>` +
+          catRows(items) +
+          `<tr class="prev-tot"><td>Total Previsto</td><td class="val" style="color:${color}">${f(total)}</td></tr>`
+    const rc = (v: number) => (v >= 0 ? '#16a34a' : '#dc2626')
+    const rb = (v: number) => (v >= 0 ? '#f0fdf4' : '#fef2f2')
+
+    const recHtml =
+      `<tr class="sec-title"><td colspan="2" style="color:#15803d">Receitas</td></tr>` +
+      `<tr class="sub-title"><td colspan="2">Realizadas</td></tr>` +
+      (dre.receitas.realizadas.length
+        ? catRows(dre.receitas.realizadas)
+        : `<tr class="sem"><td colspan="2">Nenhuma entrada no período</td></tr>`) +
+      `<tr class="total"><td>Total Receitas Realizadas</td><td class="val" style="color:#15803d">${f(dre.receitas.total_realizado)}</td></tr>` +
+      prevSection(dre.receitas.previstas, dre.receitas.total_previsto, '#16a34a')
+
+    const despHtml =
+      `<tr class="sec-title"><td colspan="2" style="color:#b91c1c">Despesas</td></tr>` +
+      `<tr class="sub-title"><td colspan="2">Realizadas</td></tr>` +
+      (dre.despesas.realizadas.length
+        ? catRows(dre.despesas.realizadas)
+        : `<tr class="sem"><td colspan="2">Nenhuma despesa paga no período</td></tr>`) +
+      `<tr class="total"><td>Total Despesas Realizadas</td><td class="val" style="color:#b91c1c">${f(dre.despesas.total_realizado)}</td></tr>` +
+      prevSection(dre.despesas.previstas, dre.despesas.total_previsto, '#dc2626')
+
+    const css = [
+      '*,*::before,*::after{box-sizing:border-box}',
+      'body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:2cm;color:#111;font-size:12px}',
+      'h1{font-size:16px;font-weight:700;margin:0 0 2px}.sub{font-size:12px;color:#666;margin:0 0 20px}',
+      '.cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}',
+      'table{width:100%;border-collapse:collapse}',
+      '.sec-title td{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:0 0 6px}',
+      '.sub-title td{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#888;padding:2px 0 4px}',
+      'tr.cat td{padding:3px 0}td.cat{color:#555;padding-left:12px}td.val{text-align:right}',
+      'tr.total td{border-top:1px solid #ddd;padding-top:6px;font-weight:600}tr.total td.val{font-weight:700}',
+      'tr.prev-hd td{font-size:10px;text-transform:uppercase;color:#888;padding:8px 0 2px;border-top:1px dashed #ddd}',
+      'tr.prev-tot td{color:#888;font-size:11px}tr.sem td{color:#aaa;font-size:11px;padding-left:12px}',
+      '.result{display:flex;gap:16px;margin-top:20px;padding-top:16px;border-top:2px solid #ddd}',
+      '.card{flex:1;padding:14px;border-radius:8px}',
+      '.r-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#666;margin-bottom:2px}',
+      '.r-sub{font-size:10px;color:#888;margin-bottom:6px}.r-val{font-size:20px;font-weight:700}',
+      '.r-sign{font-size:10px;font-weight:600;margin-top:2px}',
+      '.badge{display:inline-block;font-size:9px;background:#fefce8;color:#a16207;border:1px solid #fef08a;border-radius:3px;padding:2px 5px;margin-bottom:5px}',
+      '@media print{@page{margin:1.5cm}body{padding:0}}',
+    ].join('')
+
+    const html =
+      `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">` +
+      `<title>DRE — ${periodoLabel}</title><style>${css}</style></head>` +
+      `<body><h1>Demonstração de Resultado — DRE</h1><p class="sub">Período: ${periodoLabel}</p>` +
+      `<div class="cols"><div><table>${recHtml}</table></div><div><table>${despHtml}</table></div></div>` +
+      `<div class="result">` +
+      `<div class="card" style="background:${rb(dre.resultado_realizado)}">` +
+      `<div class="r-lbl">Resultado Realizado</div>` +
+      `<div class="r-sub">Receitas confirmadas − despesas pagas</div>` +
+      `<div class="r-val" style="color:${rc(dre.resultado_realizado)}">${f(dre.resultado_realizado)}</div>` +
+      `<div class="r-sign" style="color:${rc(dre.resultado_realizado)}">${dre.resultado_realizado >= 0 ? 'Superávit ✓' : 'Déficit ✗'}</div>` +
+      `</div>` +
+      `<div class="card" style="background:#f9fafb;border:1px dashed #d1d5db">` +
+      `<div class="r-lbl">Resultado Projetado</div>` +
+      `<div class="r-sub">Inclui a receber + a pagar pendentes</div>` +
+      `<span class="badge">Ainda não realizado</span>` +
+      `<div class="r-val" style="color:${rc(dre.resultado_projetado)}">${f(dre.resultado_projetado)}</div>` +
+      `<div class="r-sign" style="color:${rc(dre.resultado_projetado)}">${dre.resultado_projetado >= 0 ? 'Superávit projetado' : 'Déficit projetado'}</div>` +
+      `</div></div></body></html>`
+
+    const pw = window.open('', '_blank', 'width=900,height=650')
+    if (!pw) return
+    pw.document.open()
+    pw.document.write(html)
+    pw.document.close()
+    setTimeout(() => {
+      pw.print()
+      pw.onafterprint = () => { pw.close() }
+    }, 500)
+  }
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden" id="dre-section">
       {/* Header + seletor de período */}
@@ -1483,7 +1574,7 @@ function DRESection({ churchId, startDate, endDate, onChangePeriod }: DRESection
           {/* Imprimir */}
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors print:hidden"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
