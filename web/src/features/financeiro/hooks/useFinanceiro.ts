@@ -157,6 +157,7 @@ interface CreateDonationInput {
   notes?: string | null
   status?: DonationStatus
   campaign_id?: string | null
+  bank_account_id?: string | null
 }
 
 export function useCreateDonation() {
@@ -177,6 +178,7 @@ export function useCreateDonation() {
           notes: input.notes ?? null,
           status: input.status ?? 'pending',
           campaign_id: input.campaign_id ?? null,
+          bank_account_id: input.bank_account_id ?? null,
           receipt_sent: false,
         } as any)
         .select()
@@ -462,5 +464,184 @@ export function useUpdateBankAccount() {
     onSuccess: (_data, { church_id }) => {
       void queryClient.invalidateQueries({ queryKey: ['bank-accounts', church_id] })
     },
+  })
+}
+
+// ── Expenses ──────────────────────────────────────────────────────────────────
+
+export interface Expense {
+  id: string
+  church_id: string
+  category_id: string | null
+  bank_account_id: string | null
+  amount: number
+  description: string
+  supplier: string | null
+  expense_date: string
+  due_date: string | null
+  status: 'paga' | 'a_pagar'
+  payment_method: string | null
+  created_at: string
+  updated_at: string
+}
+
+interface ExpenseInput {
+  church_id: string
+  category_id?: string | null
+  bank_account_id?: string | null
+  amount: number
+  description: string
+  supplier?: string | null
+  expense_date: string
+  due_date?: string | null
+  status?: 'paga' | 'a_pagar'
+  payment_method?: string | null
+}
+
+export function useExpenses(churchId: string) {
+  return useQuery({
+    queryKey: ['expenses', churchId],
+    queryFn: async (): Promise<Expense[]> => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('expenses' as any)
+        .select('*')
+        .eq('church_id', churchId)
+        .order('expense_date', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as Expense[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+export function useCreateExpense() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ExpenseInput) => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('expenses' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({
+          church_id: input.church_id,
+          category_id: input.category_id ?? null,
+          bank_account_id: input.bank_account_id ?? null,
+          amount: input.amount,
+          description: input.description,
+          supplier: input.supplier ?? null,
+          expense_date: input.expense_date,
+          due_date: input.due_date ?? null,
+          status: input.status ?? 'a_pagar',
+          payment_method: input.payment_method ?? null,
+        } as any)
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['expenses', church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['bank-account-balances', church_id] })
+    },
+  })
+}
+
+export function useUpdateExpense() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, church_id, ...updates }: { id: string } & ExpenseInput) => {
+      const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .from('expenses' as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({
+          category_id: updates.category_id ?? null,
+          bank_account_id: updates.bank_account_id ?? null,
+          amount: updates.amount,
+          description: updates.description,
+          supplier: updates.supplier ?? null,
+          expense_date: updates.expense_date,
+          due_date: updates.due_date ?? null,
+          status: updates.status ?? 'a_pagar',
+          payment_method: updates.payment_method ?? null,
+          updated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', id)
+        .eq('church_id', church_id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['expenses', church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['bank-account-balances', church_id] })
+    },
+  })
+}
+
+// ── Bank Account Balances ─────────────────────────────────────────────────────
+
+export interface BankAccountBalance {
+  id: string
+  name: string
+  initial_balance: number
+  entradas: number
+  saidas: number
+  saldo_atual: number
+}
+
+export function useBankAccountBalances(churchId: string) {
+  return useQuery({
+    queryKey: ['bank-account-balances', churchId],
+    queryFn: async (): Promise<BankAccountBalance[]> => {
+      const [accountsRes, donationsRes, expensesRes] = await Promise.all([
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('bank_accounts' as any)
+          .select('id, name, initial_balance')
+          .eq('church_id', churchId)
+          .eq('is_active', true),
+        supabase
+          .from('donations')
+          .select('bank_account_id, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'confirmed')
+          .not('bank_account_id', 'is', null),
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('expenses' as any)
+          .select('bank_account_id, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'paga')
+          .not('bank_account_id', 'is', null),
+      ])
+
+      if (accountsRes.error) throw new Error(accountsRes.error.message)
+      if (donationsRes.error) throw new Error(donationsRes.error.message)
+      if (expensesRes.error) throw new Error(expensesRes.error.message)
+
+      const accounts = (accountsRes.data ?? []) as unknown as Array<{ id: string; name: string; initial_balance: number }>
+      const donations = (donationsRes.data ?? []) as unknown as Array<{ bank_account_id: string; amount: number }>
+      const expenses = (expensesRes.data ?? []) as unknown as Array<{ bank_account_id: string; amount: number }>
+
+      return accounts.map(acc => {
+        const entradas = donations
+          .filter(d => d.bank_account_id === acc.id)
+          .reduce((sum, d) => sum + Number(d.amount), 0)
+        const saidas = expenses
+          .filter(e => e.bank_account_id === acc.id)
+          .reduce((sum, e) => sum + Number(e.amount), 0)
+        return {
+          id: acc.id,
+          name: acc.name,
+          initial_balance: Number(acc.initial_balance),
+          entradas,
+          saidas,
+          saldo_atual: Number(acc.initial_balance) + entradas - saidas,
+        }
+      })
+    },
+    enabled: Boolean(churchId),
   })
 }

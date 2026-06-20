@@ -13,8 +13,14 @@ import {
   useBankAccounts,
   useCreateBankAccount,
   useUpdateBankAccount,
+  useExpenses,
+  useCreateExpense,
+  useUpdateExpense,
+  useBankAccountBalances,
   type FinancialCategory,
   type BankAccount,
+  type Expense,
+  type BankAccountBalance,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -80,6 +86,14 @@ function categoryTypeLabel(type: string): string {
     both: 'Ambos',
   }
   return map[type] ?? type
+}
+
+function expenseStatusLabel(status: string): string {
+  return status === 'paga' ? 'Paga' : 'A Pagar'
+}
+
+function expenseStatusBadge(status: string): BadgeVariant {
+  return status === 'paga' ? 'green' : 'yellow'
 }
 
 interface KPICardProps {
@@ -173,9 +187,10 @@ interface CreateDonationModalProps {
   onClose: () => void
   churchId: string
   campaigns?: FinancialCampaign[]
+  bankAccounts?: BankAccount[]
 }
 
-function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: CreateDonationModalProps) {
+function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAccounts = [] }: CreateDonationModalProps) {
   const createDonation = useCreateDonation()
   const { data: peopleList } = usePeople(churchId, {})
   const [form, setForm] = useState({
@@ -186,6 +201,7 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: Create
     notes: '',
     status: 'pending' as DonationStatus,
     campaign_id: '',
+    bank_account_id: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -209,6 +225,7 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: Create
         notes: form.notes.trim() || null,
         status: form.status,
         campaign_id: form.campaign_id || null,
+        bank_account_id: form.bank_account_id || null,
       })
       onClose()
     } catch (err) {
@@ -315,11 +332,211 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [] }: Create
             </select>
           </div>
         )}
+        {bankAccounts.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Conta de Destino (opcional)</label>
+            <select
+              value={form.bank_account_id}
+              onChange={(e) => setForm((p) => ({ ...p, bank_account_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Não informado</option>
+              {bankAccounts.filter(a => a.is_active).map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" onClick={onClose}>Cancelar</Button>
           <Button type="submit" disabled={submitting || !form.amount}>
             {submitting ? 'Salvando...' : 'Registrar'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+interface ExpenseModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  expense?: Expense | null
+  categories: FinancialCategory[]
+  bankAccounts: BankAccount[]
+}
+
+function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccounts }: ExpenseModalProps) {
+  const createExpense = useCreateExpense()
+  const updateExpense = useUpdateExpense()
+  const isEdit = Boolean(expense)
+
+  const todayISO = new Date().toISOString().split('T')[0]
+
+  const [form, setForm] = useState({
+    description: expense?.description ?? '',
+    amount: expense?.amount != null ? String(expense.amount) : '',
+    supplier: expense?.supplier ?? '',
+    category_id: expense?.category_id ?? '',
+    bank_account_id: expense?.bank_account_id ?? '',
+    expense_date: expense?.expense_date ?? todayISO,
+    due_date: expense?.due_date ?? '',
+    status: (expense?.status ?? 'a_pagar') as 'paga' | 'a_pagar',
+    payment_method: expense?.payment_method ?? '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const amt = parseFloat(form.amount.replace(',', '.'))
+    if (isNaN(amt) || amt <= 0) { setError('Informe um valor válido.'); return }
+    if (!form.description.trim()) { setError('Informe a descrição.'); return }
+    setSubmitting(true)
+    setError(null)
+    try {
+      const payload: Parameters<typeof createExpense.mutateAsync>[0] = {
+        church_id: churchId,
+        description: form.description.trim(),
+        amount: amt,
+        supplier: form.supplier.trim() || null,
+        category_id: form.category_id || null,
+        bank_account_id: form.bank_account_id || null,
+        expense_date: form.expense_date,
+        due_date: form.due_date || null,
+        status: form.status,
+        payment_method: (form.payment_method as PaymentMethod) || null,
+      }
+      if (isEdit && expense) {
+        await updateExpense.mutateAsync({ id: expense.id, ...payload })
+      } else {
+        await createExpense.mutateAsync(payload)
+      }
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar despesa')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar Despesa' : 'Registrar Despesa'}>
+      <form onSubmit={(e) => { void handleSubmit(e) }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Descrição *</label>
+          <Input
+            value={form.description}
+            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            placeholder="Ex: Conta de luz"
+            required
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Valor (R$) *</label>
+            <Input
+              value={form.amount}
+              onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))}
+              placeholder="0,00"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Fornecedor</label>
+            <Input
+              value={form.supplier}
+              onChange={(e) => setForm((p) => ({ ...p, supplier: e.target.value }))}
+              placeholder="Ex: Copel"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+            <select
+              value={form.category_id}
+              onChange={(e) => setForm((p) => ({ ...p, category_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Sem categoria</option>
+              {categories.filter(c => c.is_active && c.type !== 'income').map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Conta Bancária</label>
+            <select
+              value={form.bank_account_id}
+              onChange={(e) => setForm((p) => ({ ...p, bank_account_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Sem conta</option>
+              {bankAccounts.filter(a => a.is_active).map(a => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
+            <input
+              type="date"
+              value={form.expense_date}
+              onChange={(e) => setForm((p) => ({ ...p, expense_date: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Vencimento</label>
+            <input
+              type="date"
+              value={form.due_date}
+              onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as 'paga' | 'a_pagar' }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="a_pagar">A Pagar</option>
+              <option value="paga">Paga</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
+            <select
+              value={form.payment_method}
+              onChange={(e) => setForm((p) => ({ ...p, payment_method: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Não informado</option>
+              <option value="pix">PIX</option>
+              <option value="cartao_credito">Cartão de Crédito</option>
+              <option value="cartao_debito">Cartão de Débito</option>
+              <option value="boleto">Boleto</option>
+              <option value="dinheiro">Dinheiro</option>
+              <option value="transferencia">Transferência</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={submitting || !form.description.trim() || !form.amount}>
+            {submitting ? 'Salvando...' : (isEdit ? 'Salvar Alterações' : 'Registrar Despesa')}
           </Button>
         </div>
       </form>
@@ -680,12 +897,16 @@ export default function Financeiro() {
   const [editingCategory, setEditingCategory] = useState<FinancialCategory | null>(null)
   const [bankModalOpen, setBankModalOpen] = useState(false)
   const [editingBank, setEditingBank] = useState<BankAccount | null>(null)
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const confirmDonation = useConfirmDonation()
 
   const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useFinanceiroStats(churchId ?? '')
   const { data: donations, isLoading: donationsLoading, isError: donationsError, refetch: refetchDonations } = useDonations(churchId ?? '')
   const { data: categories } = useFinancialCategories(churchId ?? '')
   const { data: bankAccounts } = useBankAccounts(churchId ?? '')
+  const { data: expenses } = useExpenses(churchId ?? '')
+  const { data: balances } = useBankAccountBalances(churchId ?? '')
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -800,28 +1021,38 @@ export default function Financeiro() {
             <p className="text-sm text-gray-400">Nenhuma conta cadastrada.</p>
           ) : (
             <div className="space-y-2">
-              {(bankAccounts ?? []).map((acc) => (
-                <div key={acc.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{acc.name}</p>
-                    <p className="text-xs text-gray-400">
-                      {acc.bank_name ? `${acc.bank_name} · ` : ''}
-                      {accountTypeLabel(acc.account_type)}
-                      {!acc.is_active && ' · Inativa'}
-                    </p>
+              {(bankAccounts ?? []).map((acc) => {
+                const bal = (balances ?? []).find((b: BankAccountBalance) => b.id === acc.id)
+                return (
+                  <div key={acc.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">{acc.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {acc.bank_name ? `${acc.bank_name} · ` : ''}
+                        {accountTypeLabel(acc.account_type)}
+                        {!acc.is_active && ' · Inativa'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {BRL.format(bal?.saldo_atual ?? acc.initial_balance)}
+                        </p>
+                        {bal && (
+                          <p className="text-xs text-gray-400">saldo atual</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setEditingBank(acc); setBankModalOpen(true) }}
+                        className="text-xs text-gray-400 hover:text-primary transition-colors"
+                      >
+                        Editar
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-500">{BRL.format(acc.initial_balance)}</span>
-                    <button
-                      type="button"
-                      onClick={() => { setEditingBank(acc); setBankModalOpen(true) }}
-                      className="text-xs text-gray-400 hover:text-primary transition-colors"
-                    >
-                      Editar
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
@@ -865,6 +1096,76 @@ export default function Financeiro() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Saídas / Despesas */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700">Saídas / Despesas</h2>
+          <Button size="sm" variant="secondary" onClick={() => { setEditingExpense(null); setExpenseModalOpen(true) }}>
+            + Registrar Despesa
+          </Button>
+        </div>
+        {(expenses ?? []).length === 0 ? (
+          <EmptyState
+            title="Nenhuma despesa registrada"
+            description="Registre a primeira despesa clicando em 'Registrar Despesa'."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Data</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Descrição</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fornecedor</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Categoria</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Conta</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Valor</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {(expenses ?? []).map((exp: Expense) => {
+                  const cat = (categories ?? []).find((c: FinancialCategory) => c.id === exp.category_id)
+                  const acc = (bankAccounts ?? []).find((a: BankAccount) => a.id === exp.bank_account_id)
+                  return (
+                    <tr key={exp.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {new Date(exp.expense_date + 'T00:00:00').toLocaleDateString('pt-BR')}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{exp.description}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{exp.supplier ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {cat ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color ?? '#6B7280' }} />
+                            {cat.name}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{acc?.name ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-red-600">- {BRL.format(exp.amount)}</td>
+                      <td className="px-4 py-3">
+                        <Badge label={expenseStatusLabel(exp.status)} variant={expenseStatusBadge(exp.status)} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => { setEditingExpense(exp); setExpenseModalOpen(true) }}
+                          className="text-xs text-gray-400 hover:text-primary transition-colors"
+                        >
+                          Editar
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Donations Table */}
@@ -930,6 +1231,7 @@ export default function Financeiro() {
           onClose={() => setCreateOpen(false)}
           churchId={churchId}
           campaigns={stats?.campaigns ?? []}
+          bankAccounts={bankAccounts ?? []}
         />
       )}
 
@@ -963,6 +1265,19 @@ export default function Financeiro() {
           onClose={() => { setBankModalOpen(false); setEditingBank(null) }}
           churchId={churchId}
           account={editingBank}
+        />
+      )}
+
+      {/* Expense Modal (create + edit) */}
+      {expenseModalOpen && (
+        <ExpenseModal
+          key={editingExpense?.id ?? 'new-expense'}
+          open={expenseModalOpen}
+          onClose={() => { setExpenseModalOpen(false); setEditingExpense(null) }}
+          churchId={churchId}
+          expense={editingExpense}
+          categories={categories ?? []}
+          bankAccounts={bankAccounts ?? []}
         />
       )}
     </div>
