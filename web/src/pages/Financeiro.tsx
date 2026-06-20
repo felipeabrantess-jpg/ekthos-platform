@@ -31,6 +31,7 @@ import {
   useUpdateReceivable,
   useBankAccountBalances,
   useFluxoCaixa,
+  useDRE,
   uploadReceipt,
   deleteReceipt,
   getSignedReceiptUrl,
@@ -40,6 +41,7 @@ import {
   type Receivable,
   type BankAccountBalance,
   type FluxoCaixaData,
+  type DREData,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -1354,6 +1356,271 @@ function CampaignModal({ open, onClose, churchId, campaign }: CampaignModalProps
   )
 }
 
+// ── DRE Section ───────────────────────────────────────────────────────────────
+
+function fmt(v: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+}
+
+function DRELinha({ label, valor, sub }: { label: string; valor: number; sub?: boolean }) {
+  return (
+    <div className={`flex justify-between items-center py-1.5 ${sub ? 'pl-4 text-sm' : 'font-medium'}`}>
+      <span className={sub ? 'text-gray-500' : 'text-gray-700'}>{label}</span>
+      <span className={sub ? 'text-gray-700' : 'font-semibold text-gray-900'}>{fmt(valor)}</span>
+    </div>
+  )
+}
+
+function DRETotalLinha({ label, valor, color }: { label: string; valor: number; color?: string }) {
+  return (
+    <div className="flex justify-between items-center py-2 border-t border-gray-200 mt-1">
+      <span className="font-semibold text-gray-800">{label}</span>
+      <span className={`text-base font-bold ${color ?? 'text-gray-900'}`}>{fmt(valor)}</span>
+    </div>
+  )
+}
+
+interface DRESectionProps {
+  churchId: string
+  startDate: string
+  endDate: string
+  onChangePeriod: (start: string, end: string) => void
+}
+
+function DRESection({ churchId, startDate, endDate, onChangePeriod }: DRESectionProps) {
+  const [modoperiodo, setModoPeriodo] = useState<'mes' | 'intervalo'>('mes')
+  const [mesSelecionado, setMesSelecionado] = useState<string>(
+    new Date().toISOString().slice(0, 7)
+  )
+  const [dataInicio, setDataInicio] = useState(startDate)
+  const [dataFim, setDataFim] = useState(endDate)
+
+  const { data: dre, isLoading } = useDRE(churchId, startDate, endDate)
+
+  function aplicarMes(mes: string) {
+    setMesSelecionado(mes)
+    const [y, m] = mes.split('-')
+    const ultimoDia = new Date(parseInt(y), parseInt(m), 0).getDate()
+    onChangePeriod(`${mes}-01`, `${mes}-${String(ultimoDia).padStart(2, '0')}`)
+  }
+
+  function aplicarIntervalo() {
+    if (dataInicio && dataFim && dataInicio <= dataFim) {
+      onChangePeriod(dataInicio, dataFim)
+    }
+  }
+
+  const periodoLabel = (() => {
+    const [sy, sm, sd] = startDate.split('-')
+    const [ey, em, ed] = endDate.split('-')
+    if (sy === ey && sm === em) {
+      const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+      return `${MESES[parseInt(sm,10)-1]}/${sy.slice(2)}`
+    }
+    return `${sd}/${sm}/${sy} – ${ed}/${em}/${ey}`
+  })()
+
+  const resultadoColor = (dre?.resultado_realizado ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
+  const resultadoProjColor = (dre?.resultado_projetado ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden" id="dre-section">
+      {/* Header + seletor de período */}
+      <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700">DRE — Demonstração de Resultado</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Receitas e despesas por categoria · {periodoLabel}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Toggle modo */}
+          <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
+            <button
+              type="button"
+              onClick={() => { setModoPeriodo('mes'); aplicarMes(mesSelecionado) }}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${modoperiodo === 'mes' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >Mês</button>
+            <button
+              type="button"
+              onClick={() => setModoPeriodo('intervalo')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${modoperiodo === 'intervalo' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >Intervalo</button>
+          </div>
+
+          {/* Seletor mês */}
+          {modoperiodo === 'mes' && (
+            <input
+              type="month"
+              value={mesSelecionado}
+              onChange={e => aplicarMes(e.target.value)}
+              className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          )}
+
+          {/* Seletor intervalo */}
+          {modoperiodo === 'intervalo' && (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={dataInicio}
+                onChange={e => setDataInicio(e.target.value)}
+                className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <span className="text-xs text-gray-400">até</span>
+              <input
+                type="date"
+                value={dataFim}
+                onChange={e => setDataFim(e.target.value)}
+                className="rounded-lg border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button
+                type="button"
+                onClick={aplicarIntervalo}
+                className="px-3 py-1 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary/90 transition-colors"
+              >Aplicar</button>
+            </div>
+          )}
+
+          {/* Imprimir */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors print:hidden"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Imprimir / PDF
+          </button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+      ) : !dre ? null : (
+        <div className="p-5 space-y-0 print:p-4">
+          {/* Cabeçalho para impressão */}
+          <div className="hidden print:block mb-6">
+            <h1 className="text-xl font-bold text-gray-900">Demonstração de Resultado — DRE</h1>
+            <p className="text-sm text-gray-500">Período: {periodoLabel}</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* ─── RECEITAS ─── */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-green-700 uppercase tracking-wide mb-2">Receitas</h3>
+
+              {/* Realizadas */}
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Realizadas</p>
+                {dre.receitas.realizadas.length === 0 ? (
+                  <p className="text-xs text-gray-400 pl-4">Nenhuma entrada no período</p>
+                ) : (
+                  dre.receitas.realizadas.map(r => (
+                    <DRELinha key={r.categoria} label={r.categoria} valor={r.total} sub />
+                  ))
+                )}
+                <DRETotalLinha
+                  label="Total Receitas Realizadas"
+                  valor={dre.receitas.total_realizado}
+                  color="text-green-600"
+                />
+              </div>
+
+              {/* Previstas */}
+              {dre.receitas.previstas.length > 0 && (
+                <div className="pt-2 border-t border-dashed border-gray-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Previstas</p>
+                    <span className="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-1.5 py-0.5 rounded-full">A Receber</span>
+                  </div>
+                  {dre.receitas.previstas.map(r => (
+                    <DRELinha key={r.categoria} label={r.categoria} valor={r.total} sub />
+                  ))}
+                  <div className="flex justify-between items-center py-1.5 pl-4 text-sm">
+                    <span className="text-gray-500">Total Previsto</span>
+                    <span className="text-green-500 font-medium">{fmt(dre.receitas.total_previsto)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ─── DESPESAS ─── */}
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-red-700 uppercase tracking-wide mb-2">Despesas</h3>
+
+              {/* Realizadas */}
+              <div className="mb-3">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Realizadas</p>
+                {dre.despesas.realizadas.length === 0 ? (
+                  <p className="text-xs text-gray-400 pl-4">Nenhuma despesa paga no período</p>
+                ) : (
+                  dre.despesas.realizadas.map(d => (
+                    <DRELinha key={d.categoria} label={d.categoria} valor={d.total} sub />
+                  ))
+                )}
+                <DRETotalLinha
+                  label="Total Despesas Realizadas"
+                  valor={dre.despesas.total_realizado}
+                  color="text-red-600"
+                />
+              </div>
+
+              {/* Previstas */}
+              {dre.despesas.previstas.length > 0 && (
+                <div className="pt-2 border-t border-dashed border-gray-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Previstas</p>
+                    <span className="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-1.5 py-0.5 rounded-full">A Pagar</span>
+                  </div>
+                  {dre.despesas.previstas.map(d => (
+                    <DRELinha key={d.categoria} label={d.categoria} valor={d.total} sub />
+                  ))}
+                  <div className="flex justify-between items-center py-1.5 pl-4 text-sm">
+                    <span className="text-gray-500">Total Previsto</span>
+                    <span className="text-red-500 font-medium">{fmt(dre.despesas.total_previsto)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ─── RESULTADO ─── */}
+          <div className="mt-6 pt-4 border-t-2 border-gray-200 space-y-3">
+            {/* Realizado */}
+            <div className={`rounded-xl px-5 py-4 flex items-center justify-between ${(dre.resultado_realizado >= 0) ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Resultado Realizado</p>
+                <p className="text-xs text-gray-400">Receitas confirmadas − despesas pagas</p>
+              </div>
+              <div className="text-right">
+                <p className={`text-2xl font-bold ${resultadoColor}`}>{fmt(dre.resultado_realizado)}</p>
+                <p className={`text-xs font-medium ${resultadoColor}`}>
+                  {dre.resultado_realizado >= 0 ? 'Superávit ✓' : 'Déficit ✗'}
+                </p>
+              </div>
+            </div>
+
+            {/* Projetado */}
+            <div className="rounded-xl px-5 py-3 flex items-center justify-between bg-gray-50 border border-dashed border-gray-300">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Resultado Projetado</p>
+                <p className="text-xs text-gray-400">Inclui a receber + a pagar pendentes</p>
+                <span className="text-xs bg-yellow-50 text-yellow-700 border border-yellow-200 px-1.5 py-0.5 rounded-full mt-1 inline-block">Ainda não realizado</span>
+              </div>
+              <div className="text-right">
+                <p className={`text-xl font-bold ${resultadoProjColor}`}>{fmt(dre.resultado_projetado)}</p>
+                <p className={`text-xs font-medium ${resultadoProjColor}`}>
+                  {dre.resultado_projetado >= 0 ? 'Superávit projetado' : 'Déficit projetado'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Fluxo de Caixa Section ────────────────────────────────────────────────────
 
 const BRL_SHORT = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
@@ -1514,6 +1781,17 @@ export default function Financeiro() {
   const { data: balances } = useBankAccountBalances(churchId ?? '')
   const { data: fluxo } = useFluxoCaixa(churchId ?? '')
 
+  // DRE período
+  const todayStr = new Date().toISOString().split('T')[0]
+  const mesAtualStr = todayStr.slice(0, 7)
+  const mesUltimoDia = new Date(
+    parseInt(mesAtualStr.split('-')[0]),
+    parseInt(mesAtualStr.split('-')[1]),
+    0
+  ).getDate()
+  const [dreStart, setDreStart] = useState(`${mesAtualStr}-01`)
+  const [dreEnd, setDreEnd] = useState(`${mesAtualStr}-${String(mesUltimoDia).padStart(2, '0')}`)
+
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
   const isLoading = statsLoading || donationsLoading
@@ -1580,6 +1858,14 @@ export default function Financeiro() {
 
       {/* Fluxo de Caixa — 2B */}
       {fluxo && <FluxoCaixaSection data={fluxo} />}
+
+      {/* DRE — 2C */}
+      <DRESection
+        churchId={churchId}
+        startDate={dreStart}
+        endDate={dreEnd}
+        onChangePeriod={(s, e) => { setDreStart(s); setDreEnd(e) }}
+      />
 
       {/* KPI Cards — 6 cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

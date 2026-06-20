@@ -959,3 +959,180 @@ export function useFluxoCaixa(churchId: string) {
     enabled: Boolean(churchId),
   })
 }
+
+// ── DRE — Demonstração de Resultado por Categoria ─────────────────────────────
+
+export interface DRECategoria {
+  categoria: string
+  total: number
+}
+
+export interface DREData {
+  receitas: {
+    realizadas: DRECategoria[]
+    previstas: DRECategoria[]
+    total_realizado: number
+    total_previsto: number
+  }
+  despesas: {
+    realizadas: DRECategoria[]
+    previstas: DRECategoria[]
+    total_realizado: number
+    total_previsto: number
+  }
+  resultado_realizado: number
+  resultado_projetado: number
+  periodo: { start: string; end: string }
+}
+
+const DONATION_TYPE_LABEL: Record<string, string> = {
+  dizimo:    'Dízimo',
+  oferta:    'Oferta',
+  campanha:  'Campanha',
+  missoes:   'Missões',
+  construcao: 'Construção',
+}
+
+function groupByKey<T>(
+  rows: T[],
+  keyFn: (r: T) => string,
+  amtFn: (r: T) => number,
+): DRECategoria[] {
+  const map = new Map<string, number>()
+  for (const r of rows) {
+    const k = keyFn(r)
+    map.set(k, (map.get(k) ?? 0) + amtFn(r))
+  }
+  return Array.from(map.entries())
+    .map(([categoria, total]) => ({ categoria, total }))
+    .sort((a, b) => b.total - a.total)
+}
+
+export function useDRE(churchId: string, startDate: string, endDate: string) {
+  return useQuery({
+    queryKey: ['dre', churchId, startDate, endDate],
+    queryFn: async (): Promise<DREData> => {
+      type DonRow = { type: string; amount: number }
+      type ExpRow = { category_id: string | null; amount: number; cat_name: string | null }
+      type RecRow = { category_id: string | null; amount: number; cat_name: string | null; received_date: string | null; due_date: string | null }
+
+      const [donRealRes, recRealRes, recPrevRes, expRealRes, expPrevRes] = await Promise.all([
+        // Receitas realizadas: donations confirmed no período
+        supabase
+          .from('donations')
+          .select('type, amount')
+          .eq('church_id', churchId)
+          .eq('status', 'confirmed')
+          .gte('created_at', startDate)
+          .lte('created_at', endDate + 'T23:59:59'),
+
+        // Receitas realizadas complementares: receivables recebido no período
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('receivables' as any)
+          .select('category_id, amount, financial_categories(name)')
+          .eq('church_id', churchId)
+          .eq('status', 'recebido')
+          .gte('received_date', startDate)
+          .lte('received_date', endDate),
+
+        // Receitas previstas: receivables a_receber (due_date no período ou sem vencimento)
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('receivables' as any)
+          .select('category_id, amount, due_date, financial_categories(name)')
+          .eq('church_id', churchId)
+          .eq('status', 'a_receber'),
+
+        // Despesas realizadas: expenses paga no período
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('expenses' as any)
+          .select('category_id, amount, financial_categories(name)')
+          .eq('church_id', churchId)
+          .eq('status', 'paga')
+          .gte('expense_date', startDate)
+          .lte('expense_date', endDate),
+
+        // Despesas previstas: expenses a_pagar (due_date no período ou sem vencimento)
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('expenses' as any)
+          .select('category_id, amount, due_date, financial_categories(name)')
+          .eq('church_id', churchId)
+          .eq('status', 'a_pagar'),
+      ])
+
+      if (donRealRes.error) throw new Error(donRealRes.error.message)
+      if (recRealRes.error) throw new Error(recRealRes.error.message)
+      if (recPrevRes.error) throw new Error(recPrevRes.error.message)
+      if (expRealRes.error) throw new Error(expRealRes.error.message)
+      if (expPrevRes.error) throw new Error(expPrevRes.error.message)
+
+      const donRows  = (donRealRes.data ?? []) as unknown as DonRow[]
+      const recReal  = (recRealRes.data ?? []) as unknown as RecRow[]
+      const recPrev  = (recPrevRes.data ?? []) as unknown as RecRow[]
+      const expReal  = (expRealRes.data ?? []) as unknown as ExpRow[]
+      const expPrev  = (expPrevRes.data ?? []) as unknown as ExpRow[]
+
+      // Receitas realizadas: donations por type + receivables por categoria
+      const receitasReal: DRECategoria[] = [
+        ...groupByKey(donRows, r => DONATION_TYPE_LABEL[r.type] ?? r.type, r => Number(r.amount)),
+        ...groupByKey(
+          recReal,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          r => (r as any).financial_categories?.name ?? 'Sem categoria',
+          r => Number(r.amount),
+        ),
+      ]
+
+      // Receitas previstas: receivables a_receber
+      const receitasPrev = groupByKey(
+        recPrev,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        r => (r as any).financial_categories?.name ?? 'Sem categoria',
+        r => Number(r.amount),
+      )
+
+      // Despesas realizadas: expenses paga por categoria
+      const despesasReal = groupByKey(
+        expReal,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        r => (r as any).financial_categories?.name ?? 'Sem categoria',
+        r => Number(r.amount),
+      )
+
+      // Despesas previstas: expenses a_pagar por categoria
+      const despesasPrev = groupByKey(
+        expPrev,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        r => (r as any).financial_categories?.name ?? 'Sem categoria',
+        r => Number(r.amount),
+      )
+
+      const totalRecReal = receitasReal.reduce((s, r) => s + r.total, 0)
+      const totalRecPrev = receitasPrev.reduce((s, r) => s + r.total, 0)
+      const totalExpReal = despesasReal.reduce((s, r) => s + r.total, 0)
+      const totalExpPrev = despesasPrev.reduce((s, r) => s + r.total, 0)
+
+      return {
+        receitas: {
+          realizadas: receitasReal,
+          previstas:  receitasPrev,
+          total_realizado: totalRecReal,
+          total_previsto:  totalRecPrev,
+        },
+        despesas: {
+          realizadas: despesasReal,
+          previstas:  despesasPrev,
+          total_realizado: totalExpReal,
+          total_previsto:  totalExpPrev,
+        },
+        resultado_realizado:  totalRecReal - totalExpReal,
+        resultado_projetado:  (totalRecReal + totalRecPrev) - (totalExpReal + totalExpPrev),
+        periodo: { start: startDate, end: endDate },
+      }
+    },
+    enabled: Boolean(churchId) && Boolean(startDate) && Boolean(endDate),
+  })
+}
