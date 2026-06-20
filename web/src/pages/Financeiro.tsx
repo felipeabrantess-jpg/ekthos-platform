@@ -1503,15 +1503,24 @@ function DRESection({ churchId, startDate, endDate, onChangePeriod }: DRESection
       `<div class="r-sign" style="color:${rc(dre.resultado_projetado)}">${dre.resultado_projetado >= 0 ? 'Superávit projetado' : 'Déficit projetado'}</div>` +
       `</div></div></body></html>`
 
-    const pw = window.open('', '_blank', 'width=900,height=650')
-    if (!pw) return
-    pw.document.open()
-    pw.document.write(html)
-    pw.document.close()
+    const iframe = document.createElement('iframe')
+    // off-screen mas renderizado — display:none impede o print
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:850px;height:600px;border:none'
+    document.body.appendChild(iframe)
+    const iDoc = iframe.contentDocument ?? iframe.contentWindow?.document
+    if (!iDoc) { document.body.removeChild(iframe); return }
+    iDoc.open()
+    iDoc.write(html)
+    iDoc.close()
+    const removeIframe = () => {
+      if (document.body.contains(iframe)) document.body.removeChild(iframe)
+    }
+    iframe.contentWindow?.focus()
     setTimeout(() => {
-      pw.print()
-      pw.onafterprint = () => { pw.close() }
-    }, 500)
+      iframe.contentWindow?.print()
+      if (iframe.contentWindow) iframe.contentWindow.onafterprint = removeIframe
+      setTimeout(removeIframe, 30000) // fallback se afterprint não disparar
+    }, 250)
   }
 
   return (
