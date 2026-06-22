@@ -22,10 +22,10 @@ const ALLOWED_ORIGINS = [
 ];
 
 const TOKEN_LEN = 64;
-const VALID_SERVICE_TYPES = ["domingo_manha", "domingo_noite", "quarta", "especial"] as const;
+const VALID_SERVICE_TYPES = ["domingo_manha", "domingo_noite", "quarta", "especial", "outro"] as const;
 const VALID_AREAS = ["kids", "recepcao", "portaria", "louvor", "intercessao"] as const;
 const REPORT_FIELDS = [
-  "service_date", "service_type", "pastor_name", "is_guest_pastor",
+  "service_date", "service_type", "service_type_other", "pastor_name", "is_guest_pastor",
   "guest_pastor_name", "worship_leader", "sermon_topic",
   "total_people", "total_visitors", "notes",
 ] as const;
@@ -108,9 +108,10 @@ function pickReportFields(raw: Record<string, unknown>) {
     if (key in raw) {
       const val = raw[key];
       // Validação mínima por campo
-      if (key === "service_type" && !VALID_SERVICE_TYPES.includes(val as ServiceType)) continue;
-      if (key === "total_people"   && val !== null && typeof val !== "number") continue;
-      if (key === "total_visitors" && val !== null && typeof val !== "number") continue;
+      if (key === "service_type"       && !VALID_SERVICE_TYPES.includes(val as ServiceType)) continue;
+      if (key === "service_type_other" && val !== null && typeof val !== "string") continue;
+      if (key === "total_people"       && val !== null && typeof val !== "number") continue;
+      if (key === "total_visitors"     && val !== null && typeof val !== "number") continue;
       result[key] = val;
     }
   }
