@@ -82,6 +82,10 @@ const CuidadoPainel       = lazy(() => import('@/pages/cuidado/Painel'))
 const CuidadoDuplicados   = lazy(() => import('@/pages/cuidado/Duplicados'))
 const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
 
+// Registro de Culto — Fatia 2 (públicas, sem auth, sem Layout CRM)
+const CultoPreencherPage = lazy(() => import('@/pages/culto/CultoPreencherPage'))
+const CultoVerPage       = lazy(() => import('@/pages/culto/CultoVerPage'))
+
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList            = lazy(() => import('@/pages/agents/AgentsList'))
 const AgentDetail           = lazy(() => import('@/pages/agents/AgentDetail'))
@@ -272,6 +276,30 @@ export default function App() {
               <ErrorBoundary>
                 <Suspense fallback={<FullScreenSpinner />}>
                   <CuidadoLink />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
+
+          {/* ── Registro de Culto — voluntário preenche (sem auth, sem Layout CRM) ── */}
+          <Route
+            path="/culto/preencher/:token"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<FullScreenSpinner />}>
+                  <CultoPreencherPage />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
+
+          {/* ── Registro de Culto — pastor visualiza (sem auth, sem Layout CRM) ── */}
+          <Route
+            path="/culto/ver/:token"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<FullScreenSpinner />}>
+                  <CultoVerPage />
                 </Suspense>
               </ErrorBoundary>
             }
