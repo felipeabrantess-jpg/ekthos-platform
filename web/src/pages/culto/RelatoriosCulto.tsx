@@ -45,20 +45,21 @@ interface Reporter {
 }
 
 interface ServiceReport {
-  id:                string
-  sede:              string
-  service_date:      string | null
-  service_type:      string
-  pastor_name:       string | null
-  is_guest_pastor:   boolean
-  guest_pastor_name: string | null
-  worship_leader:    string | null
-  sermon_topic:      string | null
-  total_people:      number | null
-  total_visitors:    number | null
-  notes:             string | null
-  view_token:        string
-  submitted_at:      string | null
+  id:                 string
+  sede:               string
+  service_date:       string | null
+  service_type:       string
+  service_type_other: string | null
+  pastor_name:        string | null
+  is_guest_pastor:    boolean
+  guest_pastor_name:  string | null
+  worship_leader:     string | null
+  sermon_topic:       string | null
+  total_people:       number | null
+  total_visitors:     number | null
+  notes:              string | null
+  view_token:         string
+  submitted_at:       string | null
   service_report_reporters: { name: string | null } | null
 }
 
@@ -338,7 +339,7 @@ export default function RelatoriosCulto() {
     queryFn:  async () => {
       let q = supabase
         .from('service_reports')
-        .select('id, sede, service_date, service_type, pastor_name, is_guest_pastor, guest_pastor_name, worship_leader, sermon_topic, total_people, total_visitors, notes, view_token, submitted_at, service_report_reporters(name)')
+        .select('id, sede, service_date, service_type, service_type_other, pastor_name, is_guest_pastor, guest_pastor_name, worship_leader, sermon_topic, total_people, total_visitors, notes, view_token, submitted_at, service_report_reporters(name)')
         .eq('church_id', churchId!)
         .eq('status', 'submitted')
         .order('service_date', { ascending: false })
@@ -533,7 +534,10 @@ export default function RelatoriosCulto() {
                                 <SedeBadge sede={r.sede} />
                               </td>
                               <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                                {SERVICE_TYPE_LABELS[r.service_type] ?? r.service_type}
+                                {r.service_type === 'outro'
+                                  ? (r.service_type_other ?? 'Outro')
+                                  : (SERVICE_TYPE_LABELS[r.service_type] ?? r.service_type)
+                                }
                               </td>
                               <td className="px-4 py-3 text-gray-700 max-w-[160px]">
                                 <span className="truncate block">

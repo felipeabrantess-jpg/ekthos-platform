@@ -35,14 +35,14 @@ import {
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL as string}/functions/v1/service-report-handler`
 
-const SERVICE_TYPES = [
+const SERVICE_TYPES_FIXED = [
   { value: 'domingo_manha', label: 'Domingo manhã'  },
   { value: 'domingo_noite', label: 'Domingo noite'  },
   { value: 'quarta',        label: 'Quarta-feira'   },
   { value: 'especial',      label: 'Culto especial' },
 ] as const
 
-type ServiceTypeValue = typeof SERVICE_TYPES[number]['value']
+type ServiceTypeValue = typeof SERVICE_TYPES_FIXED[number]['value'] | 'outro'
 
 const SEDE_LABELS: Record<string, string> = {
   itaipu:   'Itaipu',
@@ -74,16 +74,17 @@ interface AreaState {
 }
 
 interface FormState {
-  service_date:      string
-  service_type:      ServiceTypeValue
-  pastor_name:       string
-  is_guest_pastor:   boolean
-  guest_pastor_name: string
-  worship_leader:    string
-  sermon_topic:      string
-  total_people:      string
-  total_visitors:    string
-  notes:             string
+  service_date:       string
+  service_type:       ServiceTypeValue
+  service_type_other: string
+  pastor_name:        string
+  is_guest_pastor:    boolean
+  guest_pastor_name:  string
+  worship_leader:     string
+  sermon_topic:       string
+  total_people:       string
+  total_visitors:     string
+  notes:              string
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -93,16 +94,17 @@ type PageState = 'loading' | 'form' | 'success' | 'not_found' | 'error'
 
 function emptyForm(): FormState {
   return {
-    service_date:      '',
-    service_type:      'domingo_manha',
-    pastor_name:       '',
-    is_guest_pastor:   false,
-    guest_pastor_name: '',
-    worship_leader:    '',
-    sermon_topic:      '',
-    total_people:      '',
-    total_visitors:    '',
-    notes:             '',
+    service_date:       '',
+    service_type:       'domingo_manha',
+    service_type_other: '',
+    pastor_name:        '',
+    is_guest_pastor:    false,
+    guest_pastor_name:  '',
+    worship_leader:     '',
+    sermon_topic:       '',
+    total_people:       '',
+    total_visitors:     '',
+    notes:              '',
   }
 }
 
@@ -338,16 +340,17 @@ export default function CultoPreencherPage() {
         if (body.draft) {
           const d = body.draft
           setForm({
-            service_date:      (d.service_date as string)  ?? '',
-            service_type:      (d.service_type as ServiceTypeValue) ?? 'domingo_manha',
-            pastor_name:       (d.pastor_name as string)   ?? '',
-            is_guest_pastor:   (d.is_guest_pastor as boolean) ?? false,
-            guest_pastor_name: (d.guest_pastor_name as string) ?? '',
-            worship_leader:    (d.worship_leader as string) ?? '',
-            sermon_topic:      (d.sermon_topic as string)  ?? '',
-            total_people:      d.total_people != null ? String(d.total_people) : '',
-            total_visitors:    d.total_visitors != null ? String(d.total_visitors) : '',
-            notes:             (d.notes as string) ?? '',
+            service_date:       (d.service_date as string)  ?? '',
+            service_type:       (d.service_type as ServiceTypeValue) ?? 'domingo_manha',
+            service_type_other: (d.service_type_other as string) ?? '',
+            pastor_name:        (d.pastor_name as string)   ?? '',
+            is_guest_pastor:    (d.is_guest_pastor as boolean) ?? false,
+            guest_pastor_name:  (d.guest_pastor_name as string) ?? '',
+            worship_leader:     (d.worship_leader as string) ?? '',
+            sermon_topic:       (d.sermon_topic as string)  ?? '',
+            total_people:       d.total_people != null ? String(d.total_people) : '',
+            total_visitors:     d.total_visitors != null ? String(d.total_visitors) : '',
+            notes:              (d.notes as string) ?? '',
           })
         }
 
@@ -388,18 +391,19 @@ export default function CultoPreencherPage() {
               method:  'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body:    JSON.stringify({
-                fill_token:        token,
-                service_date:      nextForm.service_date      || undefined,
-                service_type:      nextForm.service_type,
-                pastor_name:       nextForm.pastor_name       || undefined,
-                is_guest_pastor:   nextForm.is_guest_pastor,
-                guest_pastor_name: nextForm.guest_pastor_name || undefined,
-                worship_leader:    nextForm.worship_leader    || undefined,
-                sermon_topic:      nextForm.sermon_topic      || undefined,
-                total_people:      nextForm.total_people ? parseInt(nextForm.total_people, 10) : undefined,
-                total_visitors:    nextForm.total_visitors ? parseInt(nextForm.total_visitors, 10) : undefined,
-                notes:             nextForm.notes             || undefined,
-                areas:             areasPayload(nextAreas),
+                fill_token:         token,
+                service_date:       nextForm.service_date      || undefined,
+                service_type:       nextForm.service_type,
+                service_type_other: nextForm.service_type === 'outro' ? (nextForm.service_type_other || null) : null,
+                pastor_name:        nextForm.pastor_name       || undefined,
+                is_guest_pastor:    nextForm.is_guest_pastor,
+                guest_pastor_name:  nextForm.guest_pastor_name || undefined,
+                worship_leader:     nextForm.worship_leader    || undefined,
+                sermon_topic:       nextForm.sermon_topic      || undefined,
+                total_people:       nextForm.total_people ? parseInt(nextForm.total_people, 10) : undefined,
+                total_visitors:     nextForm.total_visitors ? parseInt(nextForm.total_visitors, 10) : undefined,
+                notes:              nextForm.notes             || undefined,
+                areas:              areasPayload(nextAreas),
               }),
             })
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -437,18 +441,19 @@ export default function CultoPreencherPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          fill_token:        token,
-          service_date:      form.service_date,
-          service_type:      form.service_type,
-          pastor_name:       form.pastor_name       || undefined,
-          is_guest_pastor:   form.is_guest_pastor,
-          guest_pastor_name: form.guest_pastor_name || undefined,
-          worship_leader:    form.worship_leader    || undefined,
-          sermon_topic:      form.sermon_topic      || undefined,
-          total_people:      form.total_people ? parseInt(form.total_people, 10) : undefined,
-          total_visitors:    form.total_visitors ? parseInt(form.total_visitors, 10) : undefined,
-          notes:             form.notes             || undefined,
-          areas:             areasPayload(areas),
+          fill_token:         token,
+          service_date:       form.service_date,
+          service_type:       form.service_type,
+          service_type_other: form.service_type === 'outro' ? (form.service_type_other || null) : null,
+          pastor_name:        form.pastor_name       || undefined,
+          is_guest_pastor:    form.is_guest_pastor,
+          guest_pastor_name:  form.guest_pastor_name || undefined,
+          worship_leader:     form.worship_leader    || undefined,
+          sermon_topic:       form.sermon_topic      || undefined,
+          total_people:       form.total_people ? parseInt(form.total_people, 10) : undefined,
+          total_visitors:     form.total_visitors ? parseInt(form.total_visitors, 10) : undefined,
+          notes:              form.notes             || undefined,
+          areas:              areasPayload(areas),
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -588,12 +593,12 @@ export default function CultoPreencherPage() {
           {/* Tipo de culto */}
           <div className="mb-4">
             <label className="text-sm font-semibold text-gray-700 block mb-1.5">Tipo de culto</label>
-            <div className="grid grid-cols-2 gap-2">
-              {SERVICE_TYPES.map(t => (
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              {SERVICE_TYPES_FIXED.map(t => (
                 <button
                   key={t.value}
                   type="button"
-                  onClick={() => updateForm({ service_type: t.value })}
+                  onClick={() => updateForm({ service_type: t.value, service_type_other: '' })}
                   className="rounded-xl px-3 py-2.5 text-sm font-medium transition-all text-left"
                   style={{
                     background: form.service_type === t.value ? '#dbeafe' : '#f9fafb',
@@ -605,6 +610,30 @@ export default function CultoPreencherPage() {
                 </button>
               ))}
             </div>
+            {/* Opção "Outro" — linha completa */}
+            <button
+              type="button"
+              onClick={() => updateForm({ service_type: 'outro' })}
+              className="w-full rounded-xl px-3 py-2.5 text-sm font-medium transition-all text-left"
+              style={{
+                background: form.service_type === 'outro' ? '#dbeafe' : '#f9fafb',
+                color:      form.service_type === 'outro' ? '#1e40af' : '#6b7280',
+                border:     `2px solid ${form.service_type === 'outro' ? '#3b82f6' : '#e5e7eb'}`,
+              }}
+            >
+              Outro
+            </button>
+            {/* Campo de texto livre quando "Outro" está selecionado */}
+            {form.service_type === 'outro' && (
+              <input
+                type="text"
+                autoFocus
+                value={form.service_type_other}
+                onChange={e => updateForm({ service_type_other: e.target.value })}
+                placeholder="Ex: Culto de Oração, Vigília, Jovens..."
+                className="mt-2 w-full rounded-xl border border-blue-300 px-3 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            )}
           </div>
         </section>
 

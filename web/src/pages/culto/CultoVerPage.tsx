@@ -64,18 +64,19 @@ const AREA_CONFIG: Record<string, { label: string; icon: React.FC<{ size?: numbe
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 interface Report {
-  sede:              string
-  service_date:      string | null
-  service_type:      string
-  pastor_name:       string | null
-  is_guest_pastor:   boolean
-  guest_pastor_name: string | null
-  worship_leader:    string | null
-  sermon_topic:      string | null
-  total_people:      number | null
-  total_visitors:    number | null
-  notes:             string | null
-  submitted_at:      string | null
+  sede:               string
+  service_date:       string | null
+  service_type:       string
+  service_type_other: string | null
+  pastor_name:        string | null
+  is_guest_pastor:    boolean
+  guest_pastor_name:  string | null
+  worship_leader:     string | null
+  sermon_topic:       string | null
+  total_people:       number | null
+  total_visitors:     number | null
+  notes:              string | null
+  submitted_at:       string | null
 }
 
 interface AreaCount {
@@ -286,7 +287,11 @@ export default function CultoVerPage() {
             <DataRow
               icon={Church}
               label="Tipo"
-              value={SERVICE_TYPE_LABELS[report.service_type] ?? report.service_type}
+              value={
+                report.service_type === 'outro'
+                  ? (report.service_type_other ?? 'Outro')
+                  : (SERVICE_TYPE_LABELS[report.service_type] ?? report.service_type)
+              }
             />
             <DataRow
               icon={Mic2}
