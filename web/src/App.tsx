@@ -85,6 +85,8 @@ const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
 // Registro de Culto — Fatia 2 (públicas, sem auth, sem Layout CRM)
 const CultoPreencherPage = lazy(() => import('@/pages/culto/CultoPreencherPage'))
 const CultoVerPage       = lazy(() => import('@/pages/culto/CultoVerPage'))
+// Registro de Culto — Fatia 3 (CRM autenticado)
+const RelatoriosCulto    = lazy(() => import('@/pages/culto/RelatoriosCulto'))
 
 // Lote A — Agentes, Módulos, Configurações
 const AgentsList            = lazy(() => import('@/pages/agents/AgentsList'))
@@ -419,6 +421,9 @@ export default function App() {
             <Route path="cuidado/distribuir"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDistribuir /></Suspense></ErrorBoundary>} />
             <Route path="cuidado/painel"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoPainel /></Suspense></ErrorBoundary>} />
             <Route path="cuidado/duplicados"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDuplicados /></Suspense></ErrorBoundary>} />
+
+            {/* ── Registro de Culto — Fatia 3 (CRM autenticado) ── */}
+            <Route path="culto/relatorios" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><RelatoriosCulto /></Suspense></ErrorBoundary>} />
 
             {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
             {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}

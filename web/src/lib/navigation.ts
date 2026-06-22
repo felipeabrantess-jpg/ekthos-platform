@@ -67,8 +67,9 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/cursos',     label: 'Cursos',      Icon: GraduationCap,    moduleKey: 'agenda'      },
   { path: '/oracao',     label: 'Pedidos de Oração', Icon: Heart,       moduleKey: null          },
   { path: '/gabinete',    label: 'Gabinete',    Icon: ShieldCheck,      moduleKey: 'gabinete'    },
-  { path: '/cuidado',     label: 'Cuidado',     Icon: HeartHandshake,   moduleKey: null          },
-  { path: '/financeiro',  label: 'Financeiro',  Icon: Wallet,           moduleKey: 'financeiro'  },
+  { path: '/cuidado',          label: 'Cuidado',              Icon: HeartHandshake,   moduleKey: null          },
+  { path: '/culto/relatorios', label: 'Relatórios de Culto', Icon: ClipboardList,    moduleKey: null          },
+  { path: '/financeiro',       label: 'Financeiro',           Icon: Wallet,           moduleKey: 'financeiro'  },
   { path: '/conversas',  label: 'Conversas',   Icon: MessageSquare,    moduleKey: null           },
   { path: '/campanha',   label: 'Campanha',    Icon: Megaphone,        moduleKey: null           },
 ]
