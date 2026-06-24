@@ -2,7 +2,6 @@ import { useState }                    from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase }                    from '@/lib/supabase'
 import { useAuth }                     from '@/hooks/useAuth'
-import { useChurch }                   from '@/hooks/useChurch'
 import { Loader2, Plus, Pencil, Trash2, Globe, GlobeLock, ImageIcon, Briefcase } from 'lucide-react'
 function toast(opts: { title: string; description?: string; variant?: string }) {
   if (opts.variant === 'destructive') {
@@ -275,11 +274,10 @@ function EmpresarioModal({ item, onClose, churchId, userId }: ModalProps) {
 // ── Página principal ───────────────────────────────────────────────────────────
 
 export default function EmpresariosPage() {
-  const { user }               = useAuth()
-  const { church }             = useChurch()
-  const queryClient            = useQueryClient()
-  const churchId               = church?.id ?? ''
-  const userId                 = user?.id   ?? ''
+  const { user, churchId: rawChurchId } = useAuth()
+  const queryClient                     = useQueryClient()
+  const churchId                        = rawChurchId ?? ''
+  const userId                          = user?.id   ?? ''
 
   const [modalItem, setModalItem] = useState<Partial<Empresario> | null | false>(false)
   const [deleting,  setDeleting]  = useState<string | null>(null)
