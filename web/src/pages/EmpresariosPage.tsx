@@ -94,6 +94,10 @@ function EmpresarioModal({ item, onClose, churchId, userId }: ModalProps) {
       toast({ title: 'Nome é obrigatório', variant: 'destructive' })
       return
     }
+    if (!churchId) {
+      toast({ title: 'Erro: contexto da igreja não carregado. Aguarde e tente novamente.', variant: 'destructive' })
+      return
+    }
     setSaving(true)
     try {
       const payload = {
@@ -311,7 +315,7 @@ export default function EmpresariosPage() {
       const patch: any = { authorized_public }
       if (authorized_public) {
         patch.authorized_at = new Date().toISOString()
-        patch.authorized_by = userId
+        patch.authorized_by = userId || null
       } else {
         patch.authorized_at = null
         patch.authorized_by = null
