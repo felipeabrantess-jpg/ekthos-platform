@@ -1,7 +1,7 @@
 import { useState, useEffect }   from 'react'
 import { Link }                   from 'react-router-dom'
 import { ChevronLeft, Briefcase } from 'lucide-react'
-import { supabase }               from '@/integrations/supabase/client'
+import { supabase }               from '@/lib/supabase'
 import { IGV }                    from '@/lib/igv-public-data'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
