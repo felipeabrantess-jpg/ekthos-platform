@@ -4,7 +4,11 @@ import { supabase }                    from '@/lib/supabase'
 import { useAuth }                     from '@/hooks/useAuth'
 import { useChurch }                   from '@/hooks/useChurch'
 import { Loader2, Plus, Pencil, Trash2, Globe, GlobeLock, ImageIcon, Briefcase } from 'lucide-react'
-import { toast }                       from '@/hooks/use-toast'
+function toast(opts: { title: string; description?: string; variant?: string }) {
+  if (opts.variant === 'destructive') {
+    window.alert(`${opts.title}${opts.description ? ': ' + opts.description : ''}`)
+  }
+}
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
