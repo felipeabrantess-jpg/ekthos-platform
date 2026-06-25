@@ -28,6 +28,7 @@ const IgvAgenda         = lazy(() => import('@/pages/IgvAgenda'))
 const IgvCursos         = lazy(() => import('@/pages/IgvCursos'))
 const IgvEmpresarios           = lazy(() => import('@/pages/IgvEmpresarios'))
 const IgvEmpresariosCadastro   = lazy(() => import('@/pages/IgvEmpresariosCadastro'))
+const IgvCelulas               = lazy(() => import('@/pages/IgvCelulas'))
 
 // LGPD — Políticas públicas
 const Privacy = lazy(() => import('@/pages/Privacy'))
@@ -319,6 +320,7 @@ export default function App() {
           <Route path="/igv/cursos"       element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
           <Route path="/igv/empresarios"          element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresarios /></Suspense></ErrorBoundary>} />
           <Route path="/igv/empresarios/cadastrar" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresariosCadastro /></Suspense></ErrorBoundary>} />
+          <Route path="/igv/celulas"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCelulas /></Suspense></ErrorBoundary>} />
           <Route path="/igv/oracao"   element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
           <Route path="/igv/gabinete" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvGabinete /></Suspense></ErrorBoundary>} />
 
