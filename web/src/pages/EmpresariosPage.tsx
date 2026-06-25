@@ -2,7 +2,7 @@ import { useState }                    from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase }                    from '@/lib/supabase'
 import { useAuth }                     from '@/hooks/useAuth'
-import { Loader2, Plus, Pencil, Trash2, Globe, GlobeLock, ImageIcon, Briefcase } from 'lucide-react'
+import { Loader2, Plus, Pencil, Trash2, Globe, GlobeLock, ImageIcon, Briefcase, CheckCircle2, Clock, Archive } from 'lucide-react'
 function toast(opts: { title: string; description?: string; variant?: string }) {
   if (opts.variant === 'destructive') {
     window.alert(`${opts.title}${opts.description ? ': ' + opts.description : ''}`)
@@ -39,6 +39,8 @@ interface Empresario {
   site:             string | null
   email:            string | null
   foto_url:         string | null
+  nome_contato:     string | null
+  lgpd_consent:     boolean
   active:           boolean
   authorized_public: boolean
   authorized_at:    string | null
@@ -348,8 +350,43 @@ export default function EmpresariosPage() {
     },
   })
 
-  const ativos   = data?.filter(e => e.active)  ?? []
-  const inativos = data?.filter(e => !e.active)  ?? []
+  const approveItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('church_empresarios')
+        .update({
+          authorized_public: true,
+          authorized_at: new Date().toISOString(),
+          authorized_by: userId || null,
+        } as any)
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['church_empresarios'] })
+      toast({ title: 'Empresário aprovado e publicado no app' })
+    },
+    onError: (e: any) => toast({ title: 'Erro ao aprovar', description: e.message, variant: 'destructive' }),
+  })
+
+  const archiveItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('church_empresarios')
+        .update({ active: false } as any)
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['church_empresarios'] })
+      toast({ title: 'Empresário arquivado' })
+    },
+    onError: (e: any) => toast({ title: 'Erro ao arquivar', description: e.message, variant: 'destructive' }),
+  })
+
+  const pendentes = data?.filter(e => e.active && !e.authorized_public) ?? []
+  const ativos    = data?.filter(e => e.active && e.authorized_public)  ?? []
+  const inativos  = data?.filter(e => !e.active)                        ?? []
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -384,6 +421,28 @@ export default function EmpresariosPage() {
         </div>
       ) : (
         <>
+          {/* Pendentes */}
+          {pendentes.length > 0 && (
+            <>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-amber-600 mb-3 flex items-center gap-1.5">
+                <Clock size={12} />
+                Pendentes de aprovação ({pendentes.length})
+              </h2>
+              <div className="space-y-3 mb-8">
+                {pendentes.map(e => (
+                  <PendenteCard
+                    key={e.id}
+                    item={e}
+                    onAprovar={() => approveItem.mutate(e.id)}
+                    onArquivar={() => archiveItem.mutate(e.id)}
+                    aprovando={approveItem.isPending}
+                    arquivando={archiveItem.isPending}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
           {/* Ativos */}
           {ativos.length > 0 && (
             <>
@@ -448,7 +507,7 @@ export default function EmpresariosPage() {
             </>
           )}
 
-          {ativos.length === 0 && inativos.length === 0 && (
+          {pendentes.length === 0 && ativos.length === 0 && inativos.length === 0 && (
             <div className="text-center py-16 text-gray-400">
               <Briefcase size={40} className="mx-auto mb-3 opacity-30" />
               <p className="font-medium">Nenhum empresário cadastrado ainda</p>
@@ -466,6 +525,75 @@ export default function EmpresariosPage() {
           userId={userId}
         />
       )}
+    </div>
+  )
+}
+
+// ── Card de pendente ──────────────────────────────────────────────────────────
+
+interface PendenteCardProps {
+  item:       Empresario
+  onAprovar:  () => void
+  onArquivar: () => void
+  aprovando:  boolean
+  arquivando: boolean
+}
+
+function PendenteCard({ item, onAprovar, onArquivar, aprovando, arquivando }: PendenteCardProps) {
+  const initial = item.nome.charAt(0).toUpperCase()
+
+  return (
+    <div className="bg-white rounded-2xl border border-amber-200 p-4 flex gap-4 items-start">
+      {item.foto_url ? (
+        <img src={item.foto_url} alt={item.nome} className="w-12 h-12 rounded-xl object-cover border shrink-0" />
+      ) : (
+        <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+          <span className="text-amber-700 font-bold text-lg">{initial}</span>
+        </div>
+      )}
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="font-semibold text-gray-900 truncate">{item.nome}</p>
+            <p className="text-xs text-gray-400">{item.categoria}</p>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+            <Clock size={10} />
+            Pendente
+          </span>
+        </div>
+
+        {item.descricao && (
+          <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.descricao}</p>
+        )}
+
+        <div className="mt-2 space-y-0.5 text-xs text-gray-500">
+          {item.nome_contato && <p><span className="font-medium">Contato:</span> {item.nome_contato}</p>}
+          {item.telefone    && <p><span className="font-medium">Tel:</span> {item.telefone}</p>}
+          {item.email       && <p><span className="font-medium">Email:</span> {item.email}</p>}
+          {item.instagram   && <p><span className="font-medium">Instagram:</span> @{item.instagram}</p>}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <button
+            onClick={onAprovar}
+            disabled={aprovando}
+            className="text-xs px-3 py-1 rounded-lg font-medium border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 flex items-center gap-1 disabled:opacity-50"
+          >
+            {aprovando ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+            Aprovar
+          </button>
+          <button
+            onClick={onArquivar}
+            disabled={arquivando}
+            className="text-xs px-3 py-1 rounded-lg font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 flex items-center gap-1 disabled:opacity-50"
+          >
+            {arquivando ? <Loader2 size={11} className="animate-spin" /> : <Archive size={11} />}
+            Arquivar
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
