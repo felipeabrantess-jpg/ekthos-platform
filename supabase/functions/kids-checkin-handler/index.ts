@@ -509,7 +509,12 @@ async function handleRoomList(
   }
 
   if (!present?.length) {
-    return jsonResp({ total: 0, present: [], role: token_role }, 200, origin)
+    return jsonResp({
+      total:   0,
+      present: [],
+      role:    token_role,
+      ...(token_role === 'teacher' ? { room_id: token_room_id } : {}),
+    }, 200, origin)
   }
 
   // Batch: responsável primário de cada criança
@@ -568,9 +573,10 @@ async function handleRoomsMeta(
     supabase.from('churches').select('name').eq('id', church_id).single(),
     supabase
       .from('kids_rooms')
-      .select('id, name, age_range')
+      .select('id, name, age_range, sort_order')
       .eq('church_id', church_id)
       .eq('active', true)
+      .order('sort_order', { ascending: true, nullsFirst: false })
       .order('name'),
   ])
 
