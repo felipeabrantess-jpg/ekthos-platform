@@ -86,6 +86,9 @@ const CuidadoPainel       = lazy(() => import('@/pages/cuidado/Painel'))
 const CuidadoDuplicados   = lazy(() => import('@/pages/cuidado/Duplicados'))
 const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
 
+// Kids Check-in — página pública da secretária (sem auth, sem Layout CRM)
+const KidsCheckin = lazy(() => import('@/pages/kids/KidsCheckin'))
+
 // Registro de Culto — Fatia 2 (públicas, sem auth, sem Layout CRM)
 const CultoPreencherPage = lazy(() => import('@/pages/culto/CultoPreencherPage'))
 const CultoVerPage       = lazy(() => import('@/pages/culto/CultoVerPage'))
@@ -270,6 +273,18 @@ export default function App() {
               <ErrorBoundary>
                 <Suspense fallback={<FullScreenSpinner />}>
                   <VisitorLanding />
+                </Suspense>
+              </ErrorBoundary>
+            }
+          />
+
+          {/* ── Kids Check-in — secretária faz check-in via token diário (sem auth, sem Layout CRM) ── */}
+          <Route
+            path="/kids/checkin/:token"
+            element={
+              <ErrorBoundary>
+                <Suspense fallback={<FullScreenSpinner />}>
+                  <KidsCheckin />
                 </Suspense>
               </ErrorBoundary>
             }
