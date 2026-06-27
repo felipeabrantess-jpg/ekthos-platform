@@ -89,6 +89,8 @@ const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
 // Kids Check-in — páginas públicas (sem auth, sem Layout CRM)
 const KidsCheckin = lazy(() => import('@/pages/kids/KidsCheckin'))
 const KidsSala    = lazy(() => import('@/pages/kids/KidsSala'))
+// Kids Admin — painel CRM interno (ProtectedRoute + admin)
+const KidsAdmin   = lazy(() => import('@/pages/kids/KidsAdmin'))
 
 // Registro de Culto — Fatia 2 (públicas, sem auth, sem Layout CRM)
 const CultoPreencherPage = lazy(() => import('@/pages/culto/CultoPreencherPage'))
@@ -441,6 +443,8 @@ export default function App() {
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Suspense fallback={<PageLoader />}><Ministerios /></Suspense></RoleRoute></ErrorBoundary>} />
+            {/* ── Ministério Kids — painel admin (check-in/check-out, links, salas) ── */}
+            <Route path="kids" element={<ErrorBoundary><RoleRoute path="kids"><Suspense fallback={<PageLoader />}><KidsAdmin /></Suspense></RoleRoute></ErrorBoundary>} />
             {/* R-MODULE-GUARD: /voluntarios requer módulo 'volunteer-pro' ativo em enabled_modules */}
             <Route path="voluntarios" element={<ErrorBoundary><RoleRoute path="voluntarios"><ModuleRoute moduleKey="volunteer-pro"><Suspense fallback={<PageLoader />}><VolunteersPage /></Suspense></ModuleRoute></RoleRoute></ErrorBoundary>} />
             {/* R-MODULE-GUARD: /escalas requer módulo 'volunteer-pro' ativo em enabled_modules */}

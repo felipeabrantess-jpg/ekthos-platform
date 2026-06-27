@@ -29,6 +29,7 @@ import {
   Megaphone,
   GraduationCap,
   Briefcase,
+  Baby,
 } from 'lucide-react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
@@ -63,6 +64,7 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,        moduleKey: 'pipeline'    },
   { path: '/celulas',     label: 'Células',     Icon: Network,          moduleKey: 'celulas'     },
   { path: '/ministerios', label: 'Ministérios', Icon: Building2,        moduleKey: 'ministerios' },
+  { path: '/kids',        label: 'Kids',        Icon: Baby,             moduleKey: null           },
   { path: '/agenda',      label: 'Calendário',  Icon: Calendar,         moduleKey: 'agenda'      },
   { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,     moduleKey: 'agenda'      },
   { path: '/cursos',       label: 'Cursos',           Icon: GraduationCap, moduleKey: 'agenda' },
