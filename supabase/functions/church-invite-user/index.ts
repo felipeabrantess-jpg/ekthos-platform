@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: church-invite-user v14
+// Edge Function: church-invite-user v15
 // Convida um usuário para a igreja via generateLink + SMTP.
 // Também suporta trocar papel e remover acesso de usuário existente.
 //
@@ -493,12 +493,16 @@ Deno.serve(async (req: Request) => {
   )
 
   // ── Step 4: Upsert perfil ─────────────────────────────────
+  // display_name usa email como fallback quando nome não fornecido,
+  // evitando o "Usuário" genérico na tela /configuracoes/usuarios.
+  // email salvo para exibição direta no frontend.
   await supabase.from('profiles').upsert(
     {
       user_id:      newUserId,
       church_id:    churchId,
+      email:        email,
       name:         name ?? null,
-      display_name: name ?? null,
+      display_name: name ?? email,
     },
     { onConflict: 'user_id' },
   )

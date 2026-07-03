@@ -52,6 +52,7 @@ interface ProfileRow {
   name: string | null
   display_name: string | null
   avatar_url: string | null
+  email: string | null
 }
 
 export function Users() {
@@ -106,7 +107,7 @@ export function Users() {
       const userIds = users.map(u => u.user_id)
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, name, display_name, avatar_url')
+        .select('user_id, name, display_name, avatar_url, email')
         .in('user_id', userIds)
       if (error) throw error
       return (data ?? []) as ProfileRow[]
@@ -257,7 +258,7 @@ export function Users() {
         )}
         {users.map(u => {
           const profile = profileMap[u.user_id]
-          const displayName = profile?.display_name ?? profile?.name ?? 'Usuário'
+          const displayName = profile?.display_name ?? profile?.name ?? profile?.email ?? 'Usuário'
           const isSelf = u.user_id === currentUserId
           return (
             <div
