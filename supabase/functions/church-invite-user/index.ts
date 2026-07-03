@@ -1,7 +1,12 @@
 // ============================================================
-// Edge Function: church-invite-user v12
+// Edge Function: church-invite-user v13
 // Convida um usuário para a igreja via generateLink + SMTP.
 // Também suporta trocar papel e remover acesso de usuário existente.
+//
+// v13 (fix sessão herdada do admin ao abrir link de convite):
+//   - redirect_to do magiclink agora aponta para /auth/set-password
+//   - SetPassword.tsx detecta token no hash, faz signOut local e setSession
+//   - Garante isolamento: convidado nunca herda sessão de admin no mesmo browser
 //
 // v12 (fix "Falha ao gerar link de acesso" para usuário existente):
 //   - GoTrue retorna 422 email_exists ao usar type='invite' para user existente
@@ -396,7 +401,7 @@ Deno.serve(async (req: Request) => {
         body: JSON.stringify({
           type: 'magiclink',
           email,
-          options: { redirect_to: ALLOWED_ORIGIN },
+          options: { redirect_to: `${ALLOWED_ORIGIN}/auth/set-password` },
         }),
       })
 
