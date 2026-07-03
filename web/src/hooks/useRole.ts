@@ -27,6 +27,8 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/dashboard':    ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary', 'treasurer'],
   '/pessoas':      ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
   '/aniversarios': ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  '/lideres':      ['admin', 'pastor_celulas', 'supervisor'],
+  '/consolidacao': ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
   '/pipeline':     ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
   '/ministerios': ['admin', 'admin_departments'],
   '/voluntarios': ['admin', 'admin_departments'],
@@ -36,9 +38,17 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/volunteer/relatorios':  ['admin', 'admin_departments'],
   '/financeiro':  ['admin', 'treasurer'],
   '/agenda':      ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary', 'treasurer'],
+  '/eventos':     ['admin', 'admin_departments', 'secretary'],
+  '/cursos':      ['admin', 'admin_departments'],
+  '/empresarios': ['admin'],
+  '/oracao':      ['admin', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
   '/gabinete':    ['admin'],
   '/kids':        ['admin'],
   '/celulas':     ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
+  '/cuidado':     ['admin', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  '/culto/relatorios': ['admin', 'secretary'],
+  '/conversas':   ['admin', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  '/campanha':    ['admin'],
 }
 
 // Verifica se um role tem acesso a uma rota
