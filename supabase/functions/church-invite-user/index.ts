@@ -1,7 +1,12 @@
 // ============================================================
-// Edge Function: church-invite-user v10
+// Edge Function: church-invite-user v11
 // Convida um usuário para a igreja via generateLink + SMTP.
 // Também suporta trocar papel e remover acesso de usuário existente.
+//
+// v11 (fix cross-org falso-positivo):
+//   - Cross-org check usa user_roles como fonte de verdade (não app_metadata)
+//   - Igrejas de teste (is_test_church=true) não bloqueiam convite
+//   - Email em test church → convite prossegue (adiciona à nova church)
 //
 // v10 (Fatia 1+2 — perfis de acesso):
 //   - ALLOWED_ROLES expandido: treasurer, secretary, admin_departments
@@ -301,35 +306,52 @@ Deno.serve(async (req: Request) => {
     return jsonErr(`Limite de ${maxUsers} usuários atingido. Faça upgrade do plano.`, 403)
   }
 
-  // ── Verificar se email já pertence a outra organização ───
-  const usersListResp = await fetch(
-    `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
-    {
-      headers: {
-        apikey:        SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+  // ── Verificar se email já pertence a outra organização real ───
+  // Fonte de verdade: user_roles (app_metadata pode estar desatualizado).
+  // Igrejas de teste (is_test_church=true) NÃO bloqueiam convite.
+  try {
+    const usersListResp = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
+      {
+        headers: {
+          apikey:        SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
       },
-    },
-  )
-  if (usersListResp.ok) {
-    const listData = await usersListResp.json() as {
-      users?: Array<{ id: string; email?: string; app_metadata?: { church_id?: string } }>
-    }
-    const found = listData.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase(),
     )
-    if (found) {
-      const existingChurchId = found.app_metadata?.church_id
-      if (existingChurchId && existingChurchId !== churchId) {
-        console.warn(
-          `[church-invite-user] 409 cross-church: ${email} já pertence à church ${existingChurchId}, tentativa da church ${churchId}`,
+    if (usersListResp.ok) {
+      const listData = await usersListResp.json() as {
+        users?: Array<{ id: string; email?: string }>
+      }
+      const foundUser = listData.users?.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
+      )
+      if (foundUser) {
+        // Busca roles em churches DIFERENTES da atual
+        const { data: conflictRoles } = await supabase
+          .from('user_roles')
+          .select('church_id, churches(is_test_church)')
+          .eq('user_id', foundUser.id)
+          .neq('church_id', churchId)
+
+        // Bloqueia SÓ se o conflito for com uma church REAL (não de teste)
+        const hasRealConflict = conflictRoles?.some(
+          (r) => !(r.churches as { is_test_church: boolean } | null)?.is_test_church,
         )
-        return jsonErr(
-          'Este email já está vinculado a outra organização. Para transferir acesso, acione um admin Ekthos.',
-          409,
-        )
+        if (hasRealConflict) {
+          console.warn(
+            `[church-invite-user] 409 cross-church real: ${email} (${foundUser.id}) já em outra org real, tentativa da church ${churchId}`,
+          )
+          return jsonErr(
+            'Este email já está vinculado a outra organização. Para transferir acesso, acione um admin Ekthos.',
+            409,
+          )
+        }
       }
     }
+  } catch (crossOrgErr) {
+    // Falha na verificação não bloqueia o convite (fail-safe)
+    console.warn('[church-invite-user] cross-org check error (continuando):', crossOrgErr)
   }
 
   // ── Step 1: generateLink type='invite' via Admin REST ─────
