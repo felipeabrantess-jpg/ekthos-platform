@@ -1,19 +1,21 @@
 // ============================================================
-// Edge Function: church-invite-user v2
+// Edge Function: church-invite-user v10
 // Convida um usuário para a igreja via generateLink + SMTP.
+// Também suporta trocar papel e remover acesso de usuário existente.
 //
-// MUDANÇA v1 → v2 (Frente 2C — piloto):
-//   - Migrado de inviteUserByEmail para generateLink + Google SMTP
-//   - Bypassa EVE (Email Validation Extended) do Supabase
-//   - Email enviado via smtp.gmail.com:465 (denomailer — padrão canônico)
-//   - generate_link type='invite' cria o user se não existe E retorna user.id
-//   - Fallback: lookupUserByEmail caso action_link não traga user inline
+// v10 (Fatia 1+2 — perfis de acesso):
+//   - ALLOWED_ROLES expandido: treasurer, secretary, admin_departments
+//   - action='change_role': atualiza user_roles + app_metadata
+//   - action='remove': remove user_roles + limpa app_metadata
 //
 // POST /church-invite-user
 // Headers: Authorization: Bearer <supabase-jwt>
-// Body: { email: string, role: 'admin' | 'cell_leader' | 'volunteer', name?: string }
-// Returns: 201 { user_id, email, role }
-//          400/403/409/500 com { error }
+//
+// Convidar:  { email, role, name? }
+// Trocar:    { action: 'change_role', user_id, role }
+// Remover:   { action: 'remove', user_id }
+//
+// Returns: 201/200 { ... } ou 400/403/404/409/500 { error }
 //
 // verify_jwt: false — validação manual (padrão ES256)
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
@@ -37,7 +39,7 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-const ALLOWED_ROLES = ['admin', 'cell_leader', 'volunteer']
+const ALLOWED_ROLES = ['admin', 'cell_leader', 'volunteer', 'treasurer', 'secretary', 'admin_departments']
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
@@ -191,17 +193,87 @@ Deno.serve(async (req: Request) => {
   const churchId   = user.app_metadata?.church_id as string | undefined
   const callerRole = user.app_metadata?.role       as string | undefined
 
-  if (!churchId)             return jsonErr('Church not found in token', 400)
-  if (callerRole !== 'admin') return jsonErr('Apenas administradores podem convidar usuários', 403)
+  if (!churchId)              return jsonErr('Church not found in token', 400)
+  if (callerRole !== 'admin') return jsonErr('Apenas administradores podem realizar esta ação', 403)
 
   // ── Body ──────────────────────────────────────────────────
-  let body: { email?: string; role?: string; name?: string }
+  let body: { email?: string; role?: string; name?: string; action?: string; user_id?: string }
   try { body = await req.json() } catch { return jsonErr('Invalid JSON body', 400) }
 
-  const { email, role, name } = body
+  const { email, role, name, action, user_id: targetUserId } = body
+
+  // ── Action: change_role ───────────────────────────────────
+  if (action === 'change_role') {
+    if (!targetUserId || typeof targetUserId !== 'string') return jsonErr('user_id é obrigatório', 400)
+    if (!role || !ALLOWED_ROLES.includes(role))            return jsonErr(`role deve ser um de: ${ALLOWED_ROLES.join(', ')}`, 400)
+    if (targetUserId === user.id)                          return jsonErr('Não é possível alterar seu próprio papel', 400)
+
+    const { data: existing } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', targetUserId)
+      .eq('church_id', churchId)
+      .maybeSingle()
+    if (!existing) return jsonErr('Usuário não encontrado nesta organização', 404)
+
+    const { error: updateRoleErr } = await supabase
+      .from('user_roles')
+      .update({ role })
+      .eq('user_id', targetUserId)
+      .eq('church_id', churchId)
+    if (updateRoleErr) {
+      console.error('[church-invite-user] change_role user_roles error:', updateRoleErr.message)
+      return jsonErr('Erro ao atualizar papel', 500)
+    }
+
+    const { data: targetUserData } = await supabase.auth.admin.getUserById(targetUserId)
+    const mergedMeta = { ...targetUserData?.user?.app_metadata, role }
+    await supabase.auth.admin.updateUserById(targetUserId, { app_metadata: mergedMeta })
+
+    console.log(`[church-invite-user] change_role OK: ${targetUserId} → ${role} (church=${churchId})`)
+    return jsonOk({ user_id: targetUserId, role })
+  }
+
+  // ── Action: remove ────────────────────────────────────────
+  if (action === 'remove') {
+    if (!targetUserId || typeof targetUserId !== 'string') return jsonErr('user_id é obrigatório', 400)
+    if (targetUserId === user.id) return jsonErr('Não é possível remover seu próprio acesso', 400)
+
+    const { data: existing } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', targetUserId)
+      .eq('church_id', churchId)
+      .maybeSingle()
+    if (!existing) return jsonErr('Usuário não encontrado nesta organização', 404)
+
+    const { error: deleteErr } = await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', targetUserId)
+      .eq('church_id', churchId)
+    if (deleteErr) {
+      console.error('[church-invite-user] remove user_roles error:', deleteErr.message)
+      return jsonErr('Erro ao remover acesso', 500)
+    }
+
+    // Limpa app_metadata somente se church_id bater — preserva ekthos_roles e outros campos
+    const { data: targetUserData } = await supabase.auth.admin.getUserById(targetUserId)
+    if (targetUserData?.user?.app_metadata?.church_id === churchId) {
+      const meta = { ...targetUserData.user.app_metadata }
+      delete meta.church_id
+      delete meta.role
+      await supabase.auth.admin.updateUserById(targetUserId, { app_metadata: meta })
+    }
+
+    console.log(`[church-invite-user] remove OK: ${targetUserId} (church=${churchId})`)
+    return jsonOk({ user_id: targetUserId, removed: true })
+  }
+
+  // ── Fluxo de convite (action ausente) ────────────────────
   if (!email || typeof email !== 'string') return jsonErr('email é obrigatório', 400)
   if (!role || !ALLOWED_ROLES.includes(role)) {
-    return jsonErr(`role deve ser: ${ALLOWED_ROLES.join(', ')}`, 400)
+    return jsonErr(`role deve ser um de: ${ALLOWED_ROLES.join(', ')}`, 400)
   }
 
   // ── Guard: SMTP credentials necessárias ──────────────────
@@ -229,7 +301,7 @@ Deno.serve(async (req: Request) => {
     return jsonErr(`Limite de ${maxUsers} usuários atingido. Faça upgrade do plano.`, 403)
   }
 
-  // ── Verificar se email já pertence a outra organização (#28) ─
+  // ── Verificar se email já pertence a outra organização ───
   const usersListResp = await fetch(
     `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
     {
@@ -261,9 +333,6 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Step 1: generateLink type='invite' via Admin REST ─────
-  // Bypassa EVE — não dispara o mailer GoTrue.
-  // IMPORTANTE: generate_link type='invite' CRIA o usuário se não existir
-  // e retorna action_link + user.id na response.
   let actionLink: string
   let newUserId: string
 
@@ -300,11 +369,9 @@ Deno.serve(async (req: Request) => {
 
     actionLink = genData.action_link
 
-    // generate_link type='invite' retorna user.id na response
     if (genData.user?.id) {
       newUserId = genData.user.id
     } else {
-      // Fallback: busca por email caso response não traga user.id
       const lookupResp = await fetch(
         `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
         {
@@ -347,7 +414,6 @@ Deno.serve(async (req: Request) => {
   })
   if (updateErr) {
     console.error('[church-invite-user] updateUserById error:', updateErr.message)
-    // Não abortamos — link já gerado. Logar e continuar.
   }
 
   // ── Step 3: Inserir user_role ──────────────────────────────
@@ -391,9 +457,6 @@ Deno.serve(async (req: Request) => {
     await client.close()
     console.log(`[church-invite-user] SMTP OK → ${email} (role=${role}, church=${churchId})`)
   } catch (err) {
-    // SMTP falhou, mas usuário e roles já foram criados.
-    // Logar o erro — não retornar 500 para o cliente (user_id já existe).
-    // O admin pode reenviar o convite via outro mecanismo.
     console.error('[church-invite-user] SMTP exception (user criado, roles OK):', err)
   }
 
