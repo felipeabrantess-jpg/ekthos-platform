@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Check, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { defaultRoute, type AppRole } from '@/hooks/useRole'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'
 
@@ -61,24 +62,111 @@ function Criterion({ ok, label }: { ok: boolean; label: string }) {
 // ── Componente principal ─────────────────────────────────────
 
 export default function SetPassword() {
-  const navigate   = useNavigate()
-  const { user, session, loading } = useAuth()
+  const navigate = useNavigate()
+  const { user, session, role, loading } = useAuth()
+
+  // Indica que o processamento do token do hash ainda está pendente.
+  // Começa true para evitar flash de conteúdo com sessão errada (ex: admin logado).
+  const [processing, setProcessing] = useState(true)
 
   const [password,   setPassword]   = useState('')
   const [confirm,    setConfirm]    = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  // Aguarda AuthProvider resolver sessão
-  if (loading) return null
+  useEffect(() => {
+    async function processInviteToken() {
+      // Detecta token no hash da URL (invite ou magiclink).
+      // Necessário porque o SDK Supabase só processa o hash automaticamente
+      // durante a inicialização — se o admin já estava logado na mesma aba
+      // quando o link foi aberto, o hash pode não ter sido re-processado.
+      const hash = window.location.hash.substring(1)
+      const params = new URLSearchParams(hash)
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
 
-  // Sem sessão → login
+      if (accessToken && refreshToken) {
+        // Deslogar sessão existente localmente (admin pode estar logado).
+        // scope:'local' não invalida outros dispositivos nem faz chamada à API.
+        await supabase.auth.signOut({ scope: 'local' })
+        // Ativar a sessão do convidado com os tokens do link.
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        // Limpar hash da URL para evitar re-processamento ao navegar.
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+
+      setProcessing(false)
+    }
+
+    processInviteToken()
+  }, [])
+
+  // Aguarda processamento do token E resolução do AuthProvider
+  if (processing || loading) return null
+
+  // Sem sessão após processamento → link expirado ou inválido
   if (!user) return <Navigate to="/login" replace />
 
-  // Já tem senha definida (ou não veio de invite) → SmartRoot decide
   const needsSetup =
     hasOtpAmr(session?.access_token) && user.user_metadata?.password_set !== true
-  if (!needsSetup) return <Navigate to="/" replace />
+
+  // ── Usuário existente: acesso ativado via magiclink ──────────────────
+  // Já tem senha — não precisa criar. Mostra confirmação e redireciona.
+  if (!needsSetup) {
+    const dest = defaultRoute(role as AppRole | null)
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center px-4"
+        style={{ background: 'var(--bg-primary)' }}
+      >
+        <div className="w-full max-w-[480px] animate-fade-in-up">
+
+          <div className="text-center mb-8">
+            <img
+              src="/logo-ekthos-200.png"
+              alt="Ekthos Church"
+              width={52}
+              height={52}
+              className="mx-auto mb-3"
+            />
+            <p className="text-sm text-gray-500 font-body">
+              Plataforma operacional para igrejas
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-black/5 p-8 text-center">
+            <div className="flex items-center justify-center mb-4">
+              <div
+                className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ background: '#e8f5e9' }}
+              >
+                <Check size={28} style={{ color: '#16a34a' }} />
+              </div>
+            </div>
+            <h1 className="font-display text-2xl font-bold text-ekthos-black mb-2">
+              Acesso ativado!
+            </h1>
+            <p className="text-sm text-gray-500 font-body mb-8">
+              Seu acesso foi confirmado. Você pode entrar no sistema agora.
+            </p>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={() => navigate(dest, { replace: true })}
+            >
+              Entrar no sistema
+            </Button>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-6 font-body">
+            Acesso configurado pelo administrador da sua organização.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Usuário novo: criar senha ─────────────────────────────
 
   const checks   = checkPassword(password)
   const allValid = checks.length && checks.upper && checks.number
@@ -98,7 +186,7 @@ export default function SetPassword() {
 
     setSubmitting(true)
     try {
-      // 1. Define senha + marca flag em UMA chamada atômica.
+      // Define senha + marca flag em UMA chamada atômica.
       //
       // IMPORTANTE: NÃO fazer 2 chamadas separadas (updateUser({ password })
       // seguido de updateUser({ data: ... })). Em sessões OTP recém-criadas
@@ -114,11 +202,11 @@ export default function SetPassword() {
       })
       if (pwErr) throw pwErr
 
-      // 2. Força emissão de novo JWT com password_set=true no user_metadata
+      // Força emissão de novo JWT com password_set=true no user_metadata
       await supabase.auth.refreshSession()
 
-      // 4. SmartRoot decide o destino: churchId → /dashboard via StatusGuard;
-      //    sem churchId (invite manual) → /onboarding
+      // SmartRoot decide o destino: churchId → /dashboard via StatusGuard;
+      // sem churchId (invite manual) → /onboarding
       navigate('/', { replace: true })
     } catch (err: unknown) {
       setError(
