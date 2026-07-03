@@ -1,7 +1,14 @@
 // ============================================================
-// Edge Function: church-invite-user v11
+// Edge Function: church-invite-user v12
 // Convida um usuário para a igreja via generateLink + SMTP.
 // Também suporta trocar papel e remover acesso de usuário existente.
+//
+// v12 (fix "Falha ao gerar link de acesso" para usuário existente):
+//   - GoTrue retorna 422 email_exists ao usar type='invite' para user existente
+//   - Detecta usuário pré-existente em auth.users via cross-org check
+//   - Usuário existente → type='magiclink' (login direto, sem criar conta)
+//   - Usuário novo → type='invite' (cria conta + força set-password)
+//   - Email template adaptado: "Acessar o Ekthos" vs "Configurar minha senha"
 //
 // v11 (fix cross-org falso-positivo):
 //   - Cross-org check usa user_roles como fonte de verdade (não app_metadata)
@@ -65,7 +72,22 @@ function jsonOk(data: unknown, status = 200): Response {
 }
 
 // ── Template HTML de invite ───────────────────────────────────
-function buildInviteHtml(actionLink: string): string {
+// isExistingUser=true → usuário já tem conta, só foi adicionado a uma nova church
+// isExistingUser=false → usuário novo, precisa configurar senha
+function buildInviteHtml(actionLink: string, isExistingUser = false): string {
+  const headline = isExistingUser
+    ? 'Você foi adicionado ao Ekthos'
+    : 'Seu acesso ao Ekthos está pronto'
+  const bodyText = isExistingUser
+    ? 'Você foi adicionado à plataforma de gestão pastoral Ekthos com um novo papel de acesso. Clique no botão abaixo para entrar no sistema.'
+    : 'Você foi convidado para acessar a plataforma de gestão pastoral Ekthos. Clique no botão abaixo para configurar sua senha e acessar o sistema.'
+  const ctaLabel = isExistingUser ? 'Acessar o Ekthos' : 'Configurar minha senha'
+  const validityNote = isExistingUser
+    ? ''
+    : `<p style="margin:0 0 32px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;color:#444444;line-height:1.7;">
+                      O link é válido por <strong>24 horas</strong>.
+                    </p>`
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -102,15 +124,12 @@ function buildInviteHtml(actionLink: string): string {
                 <tr>
                   <td style="padding:40px 48px 32px;">
                     <p style="margin:0 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#161616;line-height:1.3;">
-                      Seu acesso ao Ekthos está pronto
+                      ${headline}
                     </p>
                     <p style="margin:0 0 16px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;color:#444444;line-height:1.7;">
-                      Você foi convidado para acessar a plataforma de gestão pastoral Ekthos.
-                      Clique no botão abaixo para configurar sua senha e acessar o sistema.
+                      ${bodyText}
                     </p>
-                    <p style="margin:0 0 32px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;color:#444444;line-height:1.7;">
-                      O link é válido por <strong>24 horas</strong>.
-                    </p>
+                    ${validityNote}
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0"
                       style="margin:0 auto 40px;">
                       <tr>
@@ -118,7 +137,7 @@ function buildInviteHtml(actionLink: string): string {
                           <a href="${actionLink}"
                             target="_blank"
                             style="display:inline-block;padding:16px 40px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;letter-spacing:0.3px;">
-                            Configurar minha senha
+                            ${ctaLabel}
                           </a>
                         </td>
                       </tr>
@@ -134,8 +153,8 @@ function buildInviteHtml(actionLink: string): string {
                       <tr>
                         <td style="background-color:#FDE8E0;border-left:3px solid #e13500;border-radius:4px;padding:14px 18px;">
                           <p style="margin:0;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:14px;color:#C42E00;line-height:1.6;">
-                            <strong>Não esperava este convite?</strong><br>
-                            Se você não foi convidado para o Ekthos, ignore este e-mail com segurança.
+                            <strong>Não esperava este e-mail?</strong><br>
+                            Se você não foi adicionado ao Ekthos, ignore este e-mail com segurança.
                             Nenhuma ação será tomada.
                           </p>
                         </td>
@@ -309,6 +328,8 @@ Deno.serve(async (req: Request) => {
   // ── Verificar se email já pertence a outra organização real ───
   // Fonte de verdade: user_roles (app_metadata pode estar desatualizado).
   // Igrejas de teste (is_test_church=true) NÃO bloqueiam convite.
+  // existingAuthUserId: definido se o email já existe em auth.users (usuário pré-existente).
+  let existingAuthUserId: string | undefined
   try {
     const usersListResp = await fetch(
       `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
@@ -327,6 +348,7 @@ Deno.serve(async (req: Request) => {
         (u) => u.email?.toLowerCase() === email.toLowerCase(),
       )
       if (foundUser) {
+        existingAuthUserId = foundUser.id
         // Busca roles em churches DIFERENTES da atual
         const { data: conflictRoles } = await supabase
           .from('user_roles')
@@ -354,74 +376,116 @@ Deno.serve(async (req: Request) => {
     console.warn('[church-invite-user] cross-org check error (continuando):', crossOrgErr)
   }
 
-  // ── Step 1: generateLink type='invite' via Admin REST ─────
+  // ── Step 1: Gerar link de acesso via Admin REST ───────────
+  // Usuário existente em auth.users → type='magiclink'
+  //   GoTrue rejeita type='invite' com 422 email_exists para usuários já cadastrados
+  // Usuário novo → type='invite' (cria conta + força configuração de senha)
   let actionLink: string
   let newUserId: string
 
-  try {
-    const genResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-      body: JSON.stringify({
-        type: 'invite',
-        email,
-        options: { redirect_to: `${ALLOWED_ORIGIN}/auth/set-password` },
-      }),
-    })
+  if (existingAuthUserId) {
+    // Usuário já cadastrado — gera magic link de login (não tenta criar nova conta)
+    try {
+      const genResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          type: 'magiclink',
+          email,
+          options: { redirect_to: ALLOWED_ORIGIN },
+        }),
+      })
 
-    if (!genResp.ok) {
-      const errText = await genResp.text()
-      console.error(`[church-invite-user] generateLink failed ${genResp.status}: ${errText}`)
+      if (!genResp.ok) {
+        const errText = await genResp.text()
+        console.error(`[church-invite-user] magiclink failed ${genResp.status}: ${errText}`)
+        return jsonErr('Falha ao gerar link de acesso', 500)
+      }
+
+      const genData = await genResp.json() as { action_link?: string }
+      if (!genData.action_link) {
+        console.error('[church-invite-user] action_link ausente na resposta de magiclink')
+        return jsonErr('Falha ao gerar link de acesso: resposta inválida', 500)
+      }
+
+      actionLink = genData.action_link
+      newUserId  = existingAuthUserId
+      console.log(`[church-invite-user] magiclink gerado para usuário existente: ${email} (${existingAuthUserId})`)
+    } catch (err) {
+      console.error('[church-invite-user] magiclink exception:', err)
       return jsonErr('Falha ao gerar link de acesso', 500)
     }
-
-    const genData = await genResp.json() as {
-      action_link?: string
-      user?: { id?: string }
-    }
-
-    if (!genData.action_link) {
-      console.error('[church-invite-user] action_link ausente na resposta de generateLink')
-      return jsonErr('Falha ao gerar link de acesso: resposta inválida', 500)
-    }
-
-    actionLink = genData.action_link
-
-    if (genData.user?.id) {
-      newUserId = genData.user.id
-    } else {
-      const lookupResp = await fetch(
-        `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
-        {
-          headers: {
-            'apikey': SUPABASE_SERVICE_ROLE_KEY,
-            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          },
+  } else {
+    // Usuário novo — gera invite (cria conta + força set-password)
+    try {
+      const genResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         },
-      )
-      if (!lookupResp.ok) {
-        console.error('[church-invite-user] lookup fallback failed')
-        return jsonErr('Falha ao localizar usuário após geração do link', 500)
+        body: JSON.stringify({
+          type: 'invite',
+          email,
+          options: { redirect_to: `${ALLOWED_ORIGIN}/auth/set-password` },
+        }),
+      })
+
+      if (!genResp.ok) {
+        const errText = await genResp.text()
+        console.error(`[church-invite-user] generateLink failed ${genResp.status}: ${errText}`)
+        return jsonErr('Falha ao gerar link de acesso', 500)
       }
-      const lookupData = await lookupResp.json() as {
-        users?: Array<{ id: string; email?: string }>
+
+      const genData = await genResp.json() as {
+        action_link?: string
+        user?: { id?: string }
       }
-      const found = lookupData.users?.find(
-        (u) => u.email?.toLowerCase() === email.toLowerCase(),
-      )
-      if (!found) {
-        console.error('[church-invite-user] usuário não encontrado após generateLink')
-        return jsonErr('Falha ao localizar usuário após geração do link', 500)
+
+      if (!genData.action_link) {
+        console.error('[church-invite-user] action_link ausente na resposta de generateLink')
+        return jsonErr('Falha ao gerar link de acesso: resposta inválida', 500)
       }
-      newUserId = found.id
+
+      actionLink = genData.action_link
+
+      if (genData.user?.id) {
+        newUserId = genData.user.id
+      } else {
+        const lookupResp = await fetch(
+          `${SUPABASE_URL}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=10`,
+          {
+            headers: {
+              'apikey': SUPABASE_SERVICE_ROLE_KEY,
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+          },
+        )
+        if (!lookupResp.ok) {
+          console.error('[church-invite-user] lookup fallback failed')
+          return jsonErr('Falha ao localizar usuário após geração do link', 500)
+        }
+        const lookupData = await lookupResp.json() as {
+          users?: Array<{ id: string; email?: string }>
+        }
+        const found = lookupData.users?.find(
+          (u) => u.email?.toLowerCase() === email.toLowerCase(),
+        )
+        if (!found) {
+          console.error('[church-invite-user] usuário não encontrado após generateLink')
+          return jsonErr('Falha ao localizar usuário após geração do link', 500)
+        }
+        newUserId = found.id
+      }
+    } catch (err) {
+      console.error('[church-invite-user] generateLink exception:', err)
+      return jsonErr('Falha ao gerar link de acesso', 500)
     }
-  } catch (err) {
-    console.error('[church-invite-user] generateLink exception:', err)
-    return jsonErr('Falha ao gerar link de acesso', 500)
   }
 
   // ── Step 2: Setar app_metadata — merge seguro ─────────────
@@ -472,12 +536,12 @@ Deno.serve(async (req: Request) => {
     await client.send({
       from:    `Ekthos <${FROM_EMAIL}>`,
       to:      [email],
-      subject: 'Seu acesso ao Ekthos está pronto',
-      html:    buildInviteHtml(actionLink),
+      subject: existingAuthUserId ? 'Você foi adicionado ao Ekthos' : 'Seu acesso ao Ekthos está pronto',
+      html:    buildInviteHtml(actionLink, !!existingAuthUserId),
     })
 
     await client.close()
-    console.log(`[church-invite-user] SMTP OK → ${email} (role=${role}, church=${churchId})`)
+    console.log(`[church-invite-user] SMTP OK → ${email} (role=${role}, church=${churchId}, existingUser=${!!existingAuthUserId})`)
   } catch (err) {
     console.error('[church-invite-user] SMTP exception (user criado, roles OK):', err)
   }
