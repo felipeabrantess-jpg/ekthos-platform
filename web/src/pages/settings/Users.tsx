@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { usePlan } from '@/hooks/usePlan'
@@ -9,20 +9,24 @@ import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 
 const ROLE_LABELS: Record<string, string> = {
-  admin:       'Administrador',
-  pastor:      'Pastor',
-  supervisor:  'Supervisor',
-  cell_leader: 'Líder de Célula',
-  secretary:   'Secretário',
-  treasurer:   'Tesoureiro',
-  volunteer:   'Voluntário',
-  member:      'Membro',
+  admin:             'Administrador',
+  admin_departments: 'Gestor de Departamentos',
+  pastor_celulas:    'Pastor de Células',
+  supervisor:        'Supervisor',
+  cell_leader:       'Líder de Célula',
+  secretary:         'Secretária',
+  treasurer:         'Tesoureiro',
+  volunteer:         'Voluntário',
+  member:            'Membro',
 }
 
 const INVITE_ROLE_OPTIONS = [
-  { value: 'admin',       label: 'Administrador' },
-  { value: 'cell_leader', label: 'Líder de Célula' },
-  { value: 'volunteer',   label: 'Voluntário' },
+  { value: 'admin',             label: 'Administrador' },
+  { value: 'admin_departments', label: 'Gestor de Departamentos' },
+  { value: 'secretary',         label: 'Secretária' },
+  { value: 'treasurer',         label: 'Tesoureiro' },
+  { value: 'cell_leader',       label: 'Líder de Célula' },
+  { value: 'volunteer',         label: 'Voluntário' },
 ]
 
 function ProgressBar({ value }: { value: number }) {
@@ -55,11 +59,33 @@ export function Users() {
   const queryClient = useQueryClient()
   const { inviteUser, isLoading: inviting } = useInviteUser()
 
+  // Current user session
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isCurrentUserAdmin, setIsCurrentUserAdmin] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user.id ?? null)
+      setIsCurrentUserAdmin(session?.user.app_metadata?.role === 'admin')
+    })
+  }, [])
+
+  // Invite modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('admin')
   const [inviteName, setInviteName] = useState('')
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // Change role modal state
+  const [changeRoleOpen, setChangeRoleOpen] = useState(false)
+  const [actionUser, setActionUser] = useState<UserRoleRow | null>(null)
+  const [newRole, setNewRole] = useState('')
+  const [actionLoading, setActionLoading] = useState(false)
+  const [actionFeedback, setActionFeedback] = useState<{ ok: boolean; message: string } | null>(null)
+
+  // Remove modal state
+  const [removeOpen, setRemoveOpen] = useState(false)
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['church_users'],
@@ -98,6 +124,19 @@ export function Users() {
     setFeedback(null)
   }
 
+  function handleCloseChangeRole() {
+    setChangeRoleOpen(false)
+    setActionUser(null)
+    setNewRole('')
+    setActionFeedback(null)
+  }
+
+  function handleCloseRemove() {
+    setRemoveOpen(false)
+    setActionUser(null)
+    setActionFeedback(null)
+  }
+
   async function handleInvite() {
     if (!inviteEmail.trim()) return
     setFeedback(null)
@@ -113,6 +152,68 @@ export function Users() {
     }
   }
 
+  async function handleChangeRole() {
+    if (!actionUser || !newRole) return
+    setActionFeedback(null)
+    setActionLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/church-invite-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token ?? ''}`,
+          },
+          body: JSON.stringify({ action: 'change_role', user_id: actionUser.user_id, role: newRole }),
+        },
+      )
+      const data = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        setActionFeedback({ ok: false, message: data.error ?? 'Erro ao trocar papel' })
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ['church_users'] })
+        setTimeout(handleCloseChangeRole, 800)
+      }
+    } catch {
+      setActionFeedback({ ok: false, message: 'Erro de conexão. Tente novamente.' })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function handleRemoveUser() {
+    if (!actionUser) return
+    setActionFeedback(null)
+    setActionLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/church-invite-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token ?? ''}`,
+          },
+          body: JSON.stringify({ action: 'remove', user_id: actionUser.user_id }),
+        },
+      )
+      const data = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        setActionFeedback({ ok: false, message: data.error ?? 'Erro ao remover acesso' })
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ['church_users'] })
+        setTimeout(handleCloseRemove, 800)
+      }
+    } catch {
+      setActionFeedback({ ok: false, message: 'Erro de conexão. Tente novamente.' })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-start justify-between">
@@ -122,14 +223,16 @@ export function Users() {
             Membros da equipe com acesso ao sistema
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setModalOpen(true)}
-          disabled={usedSeats >= maxUsers}
-        >
-          + Convidar usuário
-        </Button>
+        {isCurrentUserAdmin && (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setModalOpen(true)}
+            disabled={usedSeats >= maxUsers}
+          >
+            + Convidar usuário
+          </Button>
+        )}
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-5">
@@ -155,6 +258,7 @@ export function Users() {
         {users.map(u => {
           const profile = profileMap[u.user_id]
           const displayName = profile?.display_name ?? profile?.name ?? 'Usuário'
+          const isSelf = u.user_id === currentUserId
           return (
             <div
               key={u.user_id}
@@ -167,16 +271,45 @@ export function Users() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{displayName}</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {displayName}
+                    {isSelf && <span className="ml-1.5 text-xs text-gray-400">(você)</span>}
+                  </p>
                   <p className="text-xs text-gray-400">
                     {new Date(u.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
               </div>
-              <Badge
-                label={ROLE_LABELS[u.role] ?? u.role}
-                variant="gray"
-              />
+              <div className="flex items-center gap-3">
+                <Badge
+                  label={ROLE_LABELS[u.role] ?? u.role}
+                  variant="gray"
+                />
+                {isCurrentUserAdmin && !isSelf && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="text-xs text-gray-400 hover:text-brand-600 transition-colors px-1 py-0.5 rounded"
+                      onClick={() => {
+                        setActionUser(u)
+                        setNewRole(u.role)
+                        setChangeRoleOpen(true)
+                      }}
+                    >
+                      Trocar papel
+                    </button>
+                    <span className="text-gray-200 select-none">|</span>
+                    <button
+                      className="text-xs text-red-400 hover:text-red-600 transition-colors px-1 py-0.5 rounded"
+                      onClick={() => {
+                        setActionUser(u)
+                        setRemoveOpen(true)
+                      }}
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
@@ -241,6 +374,101 @@ export function Users() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Modal de trocar papel */}
+      <Modal
+        open={changeRoleOpen}
+        onClose={handleCloseChangeRole}
+        title="Trocar papel"
+        size="sm"
+      >
+        {actionUser && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Alterar o papel de <strong>{profileMap[actionUser.user_id]?.display_name ?? profileMap[actionUser.user_id]?.name ?? 'Usuário'}</strong>:
+            </p>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Novo perfil de acesso</label>
+              <select
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                value={newRole}
+                onChange={e => setNewRole(e.target.value)}
+              >
+                {INVITE_ROLE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {actionFeedback && (
+              <p className={`text-sm rounded-lg px-3 py-2 ${
+                actionFeedback.ok
+                  ? 'text-green-700 bg-green-50 border border-green-200'
+                  : 'text-red-600 bg-red-50 border border-red-200'
+              }`}>
+                {actionFeedback.message}
+              </p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" className="flex-1" onClick={handleCloseChangeRole}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                className="flex-1"
+                disabled={newRole === actionUser.role || actionLoading}
+                loading={actionLoading}
+                onClick={() => void handleChangeRole()}
+              >
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Modal de remover acesso */}
+      <Modal
+        open={removeOpen}
+        onClose={handleCloseRemove}
+        title="Remover acesso"
+        size="sm"
+      >
+        {actionUser && (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Tem certeza que deseja remover o acesso de{' '}
+              <strong>{profileMap[actionUser.user_id]?.display_name ?? profileMap[actionUser.user_id]?.name ?? 'Usuário'}</strong>?
+              <br />
+              <span className="text-gray-400 text-xs mt-1 block">
+                O usuário perderá acesso imediatamente e precisará ser convidado novamente para retornar.
+              </span>
+            </p>
+
+            {actionFeedback && (
+              <p className="text-sm rounded-lg px-3 py-2 text-red-600 bg-red-50 border border-red-200">
+                {actionFeedback.message}
+              </p>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <Button variant="secondary" className="flex-1" onClick={handleCloseRemove}>
+                Cancelar
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                disabled={actionLoading}
+                loading={actionLoading}
+                onClick={() => void handleRemoveUser()}
+              >
+                Remover acesso
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )
