@@ -45,9 +45,11 @@ export default class ErrorBoundary extends Component<Props, State> {
             >
               Recarregar página
             </button>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {(process.env.NODE_ENV === 'development' || new URLSearchParams(window.location.search).get('debug') === 'ekthos') && this.state.error && (
               <pre className="mt-4 text-left text-xs text-red-600 bg-red-50 rounded-lg p-3 overflow-auto max-h-40">
                 {this.state.error.message}
+                {'\n\n'}
+                {this.state.error.stack}
               </pre>
             )}
           </div>
