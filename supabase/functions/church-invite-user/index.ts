@@ -1,7 +1,14 @@
 // ============================================================
-// Edge Function: church-invite-user v13
+// Edge Function: church-invite-user v14
 // Convida um usuário para a igreja via generateLink + SMTP.
 // Também suporta trocar papel e remover acesso de usuário existente.
+//
+// v14 (fix identidade errada para usuário existente):
+//   - Usuário existente: NÃO gera magiclink (auto-logava na identidade antiga,
+//     ex: "Marcelo Ramos" ao convidar conceitofirmado@gmail.com)
+//   - Existente: apenas atualiza app_metadata + user_roles + email informativo
+//     com link direto para /login (sem token de auto-login)
+//   - Novo: mantém type='invite' com redirect_to /auth/set-password (sem mudança)
 //
 // v13 (fix sessão herdada do admin ao abrir link de convite):
 //   - redirect_to do magiclink agora aponta para /auth/set-password
@@ -389,41 +396,13 @@ Deno.serve(async (req: Request) => {
   let newUserId: string
 
   if (existingAuthUserId) {
-    // Usuário já cadastrado — gera magic link de login (não tenta criar nova conta)
-    try {
-      const genResp = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          type: 'magiclink',
-          email,
-          options: { redirect_to: `${ALLOWED_ORIGIN}/auth/set-password` },
-        }),
-      })
-
-      if (!genResp.ok) {
-        const errText = await genResp.text()
-        console.error(`[church-invite-user] magiclink failed ${genResp.status}: ${errText}`)
-        return jsonErr('Falha ao gerar link de acesso', 500)
-      }
-
-      const genData = await genResp.json() as { action_link?: string }
-      if (!genData.action_link) {
-        console.error('[church-invite-user] action_link ausente na resposta de magiclink')
-        return jsonErr('Falha ao gerar link de acesso: resposta inválida', 500)
-      }
-
-      actionLink = genData.action_link
-      newUserId  = existingAuthUserId
-      console.log(`[church-invite-user] magiclink gerado para usuário existente: ${email} (${existingAuthUserId})`)
-    } catch (err) {
-      console.error('[church-invite-user] magiclink exception:', err)
-      return jsonErr('Falha ao gerar link de acesso', 500)
-    }
+    // Usuário já cadastrado: NÃO gerar magiclink.
+    // Magiclink auto-loga na identidade existente — exibiria nome/sessão da conta
+    // antiga em vez do acesso isolado à nova church. Usuário existente já tem senha;
+    // deve fazer login normalmente em /login com suas próprias credenciais.
+    newUserId  = existingAuthUserId
+    actionLink = `${ALLOWED_ORIGIN}/login`
+    console.log(`[church-invite-user] usuário existente ${email} (${existingAuthUserId}): notificação sem magiclink → link /login`)
   } else {
     // Usuário novo — gera invite (cria conta + força set-password)
     try {

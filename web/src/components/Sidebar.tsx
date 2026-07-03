@@ -205,7 +205,7 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
   const roleFilteredItems = IGREJA_NAV.filter(item => {
     if (!role) return false
     const allowed = ROUTE_PERMISSIONS[item.path]
-    return (allowed as string[] | undefined)?.includes(role) ?? true
+    return (allowed as string[] | undefined)?.includes(role) ?? false
   })
 
   // Fix guard: === true (anteriormente !== false que deixava undefined passar)
