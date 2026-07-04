@@ -5,6 +5,7 @@ import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import { useCreatePerson, useUpdatePerson } from '../hooks/usePeople'
 import { useGroups } from '@/features/celulas/hooks/useGroups'
+import { useChurchUnits } from '../hooks/useChurchUnits'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
@@ -42,6 +43,7 @@ interface FormState {
   como_conheceu: string
   // Eclesiástico
   celula_id: string
+  unit_id: string
   conversion_date: string
   batismo_status: string
   baptism_date: string
@@ -63,7 +65,7 @@ interface FormState {
 const EMPTY_FORM: FormState = {
   name: '', phone: '', email: '',
   birth_date: '', marital_status: '', neighborhood: '', como_conheceu: '',
-  celula_id: '', conversion_date: '', batismo_status: '', baptism_date: '',
+  celula_id: '', unit_id: '', conversion_date: '', batismo_status: '', baptism_date: '',
   calling: '', ministry_interest: [],
   consolidation_school: '', experiencia_lideranca: '',
   is_dizimista: '',
@@ -85,6 +87,7 @@ function personToForm(p: Person): FormState {
     neighborhood:         p.neighborhood ?? '',
     como_conheceu:        any.como_conheceu ?? '',
     celula_id:            any.celula_id ?? '',
+    unit_id:              any.unit_id ?? '',
     conversion_date:      p.conversion_date ?? '',
     batismo_status:       any.batismo_status ?? '',
     baptism_date:         p.baptism_date ?? '',
@@ -134,6 +137,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const updatePerson = useUpdatePerson()
   const updatePipelineStage = useUpdatePersonPipelineStage()
   const { data: groups = [] } = useGroups(churchId)
+  const { data: churchUnits = [] } = useChurchUnits(churchId)
   const { data: pipelineStages = [] } = usePipelineStages(churchId)
 
   const [activeTab, setActiveTab] = useState<TabId>('pessoal')
@@ -182,6 +186,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       neighborhood:       form.neighborhood.trim() || null,
       como_conheceu:      form.como_conheceu || null,
       celula_id:          form.celula_id || null,
+      unit_id:            form.unit_id || null,
       conversion_date:    form.conversion_date || null,
       batismo_status:     form.batismo_status || null,
       baptism_date:       form.batismo_status === 'sim' ? (form.baptism_date || null) : null,
@@ -351,6 +356,19 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
                   ))}
                 </select>
               </div>
+            )}
+
+            {churchUnits.length > 0 && (
+              <Select
+                label="Unidade / Sede"
+                value={form.unit_id}
+                onChange={(e) => set('unit_id', e.target.value)}
+                placeholder="Não definida"
+              >
+                {churchUnits.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </Select>
             )}
 
             <FieldRow>
