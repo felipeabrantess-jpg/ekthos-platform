@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import { useTags } from '@/features/people/hooks/useTags'
+import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
@@ -274,6 +275,8 @@ export default function People() {
   const [search, setSearch]         = useState('')
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
+  const [unitFilter, setUnitFilter] = useState<string>('')     // unit id | 'none' | ''
+  const [unitDropOpen, setUnitDropOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -290,9 +293,11 @@ export default function People() {
     search,
     page:     isFilteredTab ? 0 : currentPage,
     pageSize: isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
+    unitId:   unitFilter || undefined,
   })
   const { data: totalCount } = usePeopleCount(churchId ?? '')
   const { data: allTags = [] } = useTags(churchId ?? '')
+  const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
   const deletePerson = useDeletePerson()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
@@ -470,6 +475,60 @@ export default function People() {
                     >
                       <Settings2 size={11} />
                       Gerenciar tipos
+                    </button>
+                  </li>
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* Filtro por unidade (só aparece se há unidades cadastradas) */}
+          {churchUnits.length > 0 && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setUnitDropOpen((o) => !o)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+              >
+                {unitFilter
+                  ? unitFilter === 'none'
+                    ? 'Não definida'
+                    : (churchUnits.find((u) => u.id === unitFilter)?.name ?? 'Unidade')
+                  : 'Todas as unidades'}
+                <ChevronDown size={12} className={`transition-transform ${unitDropOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {unitDropOpen && (
+                <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '180px' }}>
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => { setUnitFilter(''); setUnitDropOpen(false); setCurrentPage(0) }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${!unitFilter ? 'font-semibold text-text-primary bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
+                    >
+                      Todas as unidades
+                    </button>
+                  </li>
+                  {churchUnits.map((unit) => (
+                    <li key={unit.id}>
+                      <button
+                        type="button"
+                        onClick={() => { setUnitFilter(unit.id); setUnitDropOpen(false); setCurrentPage(0) }}
+                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === unit.id ? 'font-semibold bg-bg-hover' : 'hover:bg-bg-hover'}`}
+                      >
+                        {unit.name}
+                        {unitFilter === unit.id && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
+                      </button>
+                    </li>
+                  ))}
+                  <li>
+                    <button
+                      type="button"
+                      onClick={() => { setUnitFilter('none'); setUnitDropOpen(false); setCurrentPage(0) }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === 'none' ? 'font-semibold bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
+                    >
+                      Não definida
+                      {unitFilter === 'none' && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
                     </button>
                   </li>
                 </ul>

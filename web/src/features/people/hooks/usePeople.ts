@@ -10,6 +10,8 @@ interface PeopleFilters {
   tag?: string
   optout?: boolean
   celulaId?: string
+  /** UUID de church_unit, ou 'none' para filtrar pessoas sem unidade definida. */
+  unitId?: string
   /** 0-indexed page (para a tab "Visão Geral"). Use pageSize=-1 para buscar tudo (tabs filtradas). */
   page?: number
   /** Tamanho da página. Default: PEOPLE_PAGE_SIZE. Passar 500 para buscar tudo nas tabs filtradas. */
@@ -59,6 +61,14 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
       if (filters.celulaId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query = (query as any).eq('celula_id', filters.celulaId)
+      }
+
+      if (filters.unitId === 'none') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).is('unit_id', null)
+      } else if (filters.unitId) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).eq('unit_id', filters.unitId)
       }
 
       const { data, error } = await query
@@ -118,6 +128,8 @@ interface PersonFields {
   observacoes_pastorais?: string | null
   // Liderança
   is_leader?: boolean
+  // Unidade/sede
+  unit_id?: string | null
 }
 
 interface CreatePersonInput extends PersonFields {

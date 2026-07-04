@@ -8,8 +8,9 @@
  */
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
+import { X, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import {
   useGroups,
   useCreateGroup,
@@ -53,10 +54,11 @@ interface GroupFormData {
   meeting_time: string
   location: string
   notes: string
+  unit_id: string
 }
 
 const emptyGroupForm: GroupFormData = {
-  name: '', leader_id: '', co_leader_id: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '',
+  name: '', leader_id: '', co_leader_id: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '', unit_id: '',
 }
 
 interface GroupModalProps {
@@ -69,9 +71,10 @@ interface GroupModalProps {
 function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
   const createGroup = useCreateGroup()
   const updateGroup = useUpdateGroup()
+  const { data: churchUnits = [] } = useChurchUnits(churchId)
   const [form, setForm] = useState<GroupFormData>(
     editing
-      ? { name: editing.name, leader_id: (editing as any).leader_id ?? '', co_leader_id: (editing as any).co_leader_id ?? '', description: editing.description ?? '', meeting_day: editing.meeting_day ?? '', meeting_time: editing.meeting_time ?? '', location: editing.location ?? '', notes: editing.notes ?? '' }
+      ? { name: editing.name, leader_id: (editing as any).leader_id ?? '', co_leader_id: (editing as any).co_leader_id ?? '', description: editing.description ?? '', meeting_day: editing.meeting_day ?? '', meeting_time: editing.meeting_time ?? '', location: editing.location ?? '', notes: editing.notes ?? '', unit_id: (editing as any).unit_id ?? '' }
       : emptyGroupForm
   )
   const [submitting, setSubmitting] = useState(false)
@@ -88,9 +91,9 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
     setError(null)
     try {
       if (editing) {
-        await updateGroup.mutateAsync({ id: editing.id, church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || null, co_leader_id: form.co_leader_id || null, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
+        await updateGroup.mutateAsync({ id: editing.id, church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || null, co_leader_id: form.co_leader_id || null, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined, unit_id: form.unit_id || null })
       } else {
-        await createGroup.mutateAsync({ church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || undefined, co_leader_id: form.co_leader_id || undefined, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined })
+        await createGroup.mutateAsync({ church_id: churchId, name: form.name.trim(), leader_id: form.leader_id || undefined, co_leader_id: form.co_leader_id || undefined, description: form.description.trim() || undefined, meeting_day: form.meeting_day.trim() || undefined, meeting_time: form.meeting_time.trim() || undefined, location: form.location.trim() || undefined, notes: form.notes.trim() || undefined, unit_id: form.unit_id || undefined })
       }
       onClose()
     } catch (err) {
@@ -107,6 +110,21 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
           <label className="block text-sm font-medium text-text-secondary mb-1">Nome *</label>
           <Input value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="Nome da célula" required />
         </div>
+        {churchUnits.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Unidade / Sede</label>
+            <select
+              value={form.unit_id}
+              onChange={(e) => handleChange('unit_id', e.target.value)}
+              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Não definida</option>
+              {churchUnits.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">Descrição</label>
           <Input value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Breve descrição" />
@@ -434,8 +452,11 @@ export default function Celulas() {
   const [editing, setEditing]     = useState<Group | null>(null)
   const [viewing, setViewing]     = useState<Group | null>(null)
   const [deletingGroup, setDeletingGroup] = useState<Group | null>(null)
+  const [unitFilter, setUnitFilter] = useState<string>('')
+  const [unitDropOpen, setUnitDropOpen] = useState(false)
 
   const { data: groups, isLoading, isError, refetch } = useGroups(churchId ?? '')
+  const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
   const deleteGroup = useDeleteGroup()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
@@ -449,9 +470,12 @@ export default function Celulas() {
     setDeletingGroup(null)
   }
 
-  const activeGroups   = (groups ?? []).filter(g => g.status === 'active')
-  const inactiveGroups = (groups ?? []).filter(g => g.status !== 'active')
-  const allGroups      = groups ?? []
+  const filteredByUnit = unitFilter
+    ? (groups ?? []).filter((g) => (g as any).unit_id === unitFilter)
+    : (groups ?? [])
+  const activeGroups   = filteredByUnit.filter(g => g.status === 'active')
+  const inactiveGroups = filteredByUnit.filter(g => g.status !== 'active')
+  const allGroups      = filteredByUnit
 
   return (
     <div className="space-y-6">
@@ -467,6 +491,47 @@ export default function Celulas() {
         </div>
         <Button onClick={handleNew}>+ Nova Célula</Button>
       </div>
+
+      {/* Filtro por unidade */}
+      {churchUnits.length > 0 && (
+        <div className="relative self-start">
+          <button
+            type="button"
+            onClick={() => setUnitDropOpen((o) => !o)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+          >
+            {unitFilter
+              ? (churchUnits.find((u) => u.id === unitFilter)?.name ?? 'Unidade')
+              : 'Todas as unidades'}
+            <ChevronDown size={12} className={`transition-transform ${unitDropOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {unitDropOpen && (
+            <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '180px' }}>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => { setUnitFilter(''); setUnitDropOpen(false) }}
+                  className={`w-full text-left px-3 py-2 text-sm transition-colors ${!unitFilter ? 'font-semibold bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
+                >
+                  Todas as unidades
+                </button>
+              </li>
+              {churchUnits.map((unit) => (
+                <li key={unit.id}>
+                  <button
+                    type="button"
+                    onClick={() => { setUnitFilter(unit.id); setUnitDropOpen(false) }}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === unit.id ? 'font-semibold bg-bg-hover' : 'hover:bg-bg-hover'}`}
+                  >
+                    {unit.name}
+                    {unitFilter === unit.id && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* ── Tabs ─────────────────────────────────────────────────── */}
       <div className="flex gap-1 border-b border-border-default -mb-2">

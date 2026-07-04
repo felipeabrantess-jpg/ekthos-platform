@@ -33,6 +33,7 @@ interface CreateGroupInput {
   meeting_time?: string
   location?: string
   notes?: string
+  unit_id?: string
 }
 
 export function useCreateGroup() {
@@ -68,6 +69,7 @@ interface UpdateGroupInput {
   location?: string
   notes?: string
   status?: string
+  unit_id?: string | null
 }
 
 export function useUpdateGroup() {
