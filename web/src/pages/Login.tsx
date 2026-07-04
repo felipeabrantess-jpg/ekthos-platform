@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input'
 import PasswordInput from '@/components/ui/PasswordInput'
 
 export default function Login() {
-  const { user, isEkthosAdmin, loading } = useAuth()
+  const { user, isEkthosAdmin, loading, brandingChurch } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -34,12 +34,35 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-primary)' }}>
       <div className="w-full max-w-sm animate-fade-in-up">
-        {/* Logo */}
+        {/* Logo — branding da igreja se vier de subdomínio, senão visual padrão Ekthos */}
         <div className="flex flex-col items-center mb-8">
-          <LogoEkthos height={40} variant="dark" showChurch={true} />
-          <p className="text-sm text-gray-500 mt-3 font-body">
-            Plataforma operacional para igrejas
-          </p>
+          {brandingChurch ? (
+            <>
+              {brandingChurch.logo_url ? (
+                <img
+                  src={brandingChurch.logo_url}
+                  alt={brandingChurch.name}
+                  className="h-10 object-contain"
+                />
+              ) : (
+                <div className="h-10 flex items-center justify-center">
+                  <span className="font-display text-2xl font-semibold text-ekthos-black">
+                    {brandingChurch.name}
+                  </span>
+                </div>
+              )}
+              <p className="text-sm text-gray-500 mt-3 font-body">
+                {brandingChurch.name}
+              </p>
+            </>
+          ) : (
+            <>
+              <LogoEkthos height={40} variant="dark" showChurch={true} />
+              <p className="text-sm text-gray-500 mt-3 font-body">
+                Plataforma operacional para igrejas
+              </p>
+            </>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-black/5 p-8">

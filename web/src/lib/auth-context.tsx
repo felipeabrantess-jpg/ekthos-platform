@@ -27,6 +27,11 @@ const SESSION_TOKEN_KEY = 'ekthos_session_token'
 
 // ── Tipos públicos ──────────────────────────────────────────
 
+export interface BrandingChurch {
+  name: string
+  logo_url: string | null
+}
+
 export interface AuthState {
   user: User | null
   /** Sessão completa com access_token — necessário para decodificar claims JWT (ex: amr). */
@@ -36,6 +41,9 @@ export interface AuthState {
   role: AppRole | null
   isEkthosAdmin: boolean
   loading: boolean
+  /** Branding da igreja identificada pelo subdomínio — só para exibição na tela de login.
+   *  NUNCA usar como church_id, NUNCA passar para queries de dados. */
+  brandingChurch: BrandingChurch | null
 }
 
 // ── Context ─────────────────────────────────────────────────
@@ -48,6 +56,7 @@ const AuthContext = createContext<AuthState>({
   role: null,
   isEkthosAdmin: false,
   loading: true,
+  brandingChurch: null,
 })
 
 // ── Helpers (idênticos à lógica anterior) ───────────────────
@@ -130,6 +139,18 @@ async function resolveAuthFromUser(user: User, session: Session): Promise<AuthSt
 
 // ── Provider ────────────────────────────────────────────────
 
+// Slugs genéricos que NÃO representam uma igreja específica
+const GENERIC_SLUGS = new Set(['localhost', 'www', 'app', 'ekthos-platform', ''])
+
+function resolveSubdomainSlug(): string | null {
+  const hostname = window.location.hostname
+  // Sem ponto = hostname raiz (ex: "localhost", "vercel.app") — não é subdomínio
+  if (!hostname.includes('.')) return null
+  const candidate = hostname.split('.')[0]
+  if (GENERIC_SLUGS.has(candidate)) return null
+  return candidate
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
@@ -139,7 +160,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: null,
     isEkthosAdmin: false,
     loading: true,
+    brandingChurch: null,
   })
+
+  const [brandingChurch, setBrandingChurch] = useState<BrandingChurch | null>(null)
+
+  // Resolução de branding por subdomínio — INDEPENDENTE do fluxo de auth.
+  // Lê apenas churches_public (view com 4 campos). Nunca toca em church_id nem JWT.
+  useEffect(() => {
+    const slug = resolveSubdomainSlug()
+    if (!slug) return
+
+    void (async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data } = await (supabase as any)
+          .from('churches_public')
+          .select('name, logo_url')
+          .eq('slug', slug)
+          .maybeSingle() as { data: BrandingChurch | null }
+        setBrandingChurch(data ?? null)
+      } catch {
+        // Falha silenciosa — visual padrão do Ekthos
+      }
+    })()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -184,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ ...state, brandingChurch }}>{children}</AuthContext.Provider>
 }
 
 // ── Hook público ─────────────────────────────────────────────
