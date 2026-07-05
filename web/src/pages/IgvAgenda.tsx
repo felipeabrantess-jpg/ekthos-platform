@@ -53,7 +53,7 @@ function groupByDay(horarios: readonly HorarioItem[]): [string, HorarioItem[]][]
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p
-      className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] mb-3"
+      className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] mb-3"
       style={{ color: IGV.primaryColor }}
     >
       {children}
@@ -91,8 +91,8 @@ function EmptyEvents() {
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 text-center">
-      <p className="text-[0.85rem] text-amber-700">{message}</p>
+    <div className="rounded-2xl bg-amber-900/20 border border-amber-600/30 p-4 text-center">
+      <p className="text-[0.97rem] text-amber-300">{message}</p>
     </div>
   )
 }
@@ -121,7 +121,7 @@ export default function IgvAgenda() {
 
   return (
     <div
-      className="min-h-screen bg-[#F9F7F4] dark:bg-black flex flex-col"
+      className="min-h-screen bg-black flex flex-col"
       style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
     >
       {/* ── Header ── */}
@@ -134,7 +134,7 @@ export default function IgvAgenda() {
           >
             <ChevronLeft size={18} strokeWidth={2} className="text-gray-600 dark:text-white" />
           </Link>
-          <h1 className="text-[1.05rem] font-bold text-gray-900 dark:text-white">Agenda</h1>
+          <h1 className="text-[1.18rem] font-bold text-gray-900 dark:text-white">Agenda</h1>
         </div>
       </header>
 
@@ -155,7 +155,7 @@ export default function IgvAgenda() {
                   className="px-4 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]"
                   style={{ backgroundColor: `${IGV.primaryColor}0d` }}
                 >
-                  <p className="text-[0.8rem] font-semibold" style={{ color: IGV.secondaryColor }}>
+                  <p className="text-[0.9rem] font-semibold" style={{ color: IGV.secondaryColor }}>
                     {dia}
                   </p>
                 </div>
@@ -170,12 +170,12 @@ export default function IgvAgenda() {
                       >
                         <Clock size={15} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
                       </div>
-                      <span className="text-[0.92rem] font-semibold text-gray-900 dark:text-white flex-1">
+                      <span className="text-[1.04rem] font-semibold text-gray-900 dark:text-white flex-1">
                         {h.hora}
                       </span>
                       <div className="flex items-center gap-1 text-gray-400 dark:text-white">
                         <MapPin size={12} strokeWidth={1.75} />
-                        <span className="text-[0.75rem]">{h.local}</span>
+                        <span className="text-[0.85rem]">{h.local}</span>
                       </div>
                     </div>
                   ))}
@@ -212,11 +212,11 @@ export default function IgvAgenda() {
                   >
                     {/* Data pill */}
                     <div className="flex flex-col items-center justify-center w-12 shrink-0 bg-gray-50 dark:bg-white/10 rounded-xl py-2 border border-black/[0.05] dark:border-white/10">
-                      <span className="text-[0.6rem] font-semibold uppercase text-gray-400 dark:text-white/60 leading-none">
+                      <span className="text-[0.7rem] font-semibold uppercase text-gray-400 dark:text-white/60 leading-none">
                         {monthLabel}
                       </span>
                       <span
-                        className="text-[1.5rem] font-bold leading-tight"
+                        className="text-[1.68rem] font-bold leading-tight"
                         style={{ color: IGV.primaryColor }}
                       >
                         {parseInt(evDay, 10)}
@@ -225,16 +225,16 @@ export default function IgvAgenda() {
 
                     {/* Detalhes */}
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[0.9rem] font-semibold text-gray-900 dark:text-white leading-tight">
+                      <p className="text-[1.02rem] font-semibold text-gray-900 dark:text-white leading-tight">
                         {ev.title}
                       </p>
-                      <p className="text-[0.78rem] text-gray-400 dark:text-white mt-0.5">
+                      <p className="text-[0.88rem] text-gray-400 dark:text-white mt-0.5">
                         {formatDate(ev.date)}
                       </p>
                       {ev.startDatetime && (
                         <div className="flex items-center gap-1 mt-1">
                           <Clock size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
-                          <span className="text-[0.75rem] text-gray-400 dark:text-white">
+                          <span className="text-[0.85rem] text-gray-400 dark:text-white">
                             {formatTime(ev.startDatetime)}
                           </span>
                         </div>
@@ -256,7 +256,7 @@ export default function IgvAgenda() {
         </section>
       </main>
 
-      <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400 dark:text-white">
+      <footer className="text-center px-4 py-5 text-[0.82rem] text-gray-400 dark:text-white/50">
         {IGV.address}
       </footer>
     </div>

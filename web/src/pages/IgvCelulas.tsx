@@ -57,7 +57,7 @@ function GrupoCard({ grupo }: { grupo: Grupo }) {
   const initial = grupo.name.charAt(0).toUpperCase()
 
   return (
-    <div className="bg-white rounded-2xl border border-black/[0.05] shadow-sm p-4">
+    <div className="bg-[#111] rounded-2xl border border-white/10 p-4">
       {/* Cabeçalho: avatar inicial + nome + badge dia */}
       <div className="flex items-start gap-3 mb-3">
         <div
@@ -72,9 +72,9 @@ function GrupoCard({ grupo }: { grupo: Grupo }) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-[0.9rem] leading-tight">{grupo.name}</p>
+          <p className="font-semibold text-white text-[1.02rem] leading-tight">{grupo.name}</p>
           <span
-            className="inline-block text-[0.7rem] font-medium px-2 py-0.5 rounded-full mt-1"
+            className="inline-block text-[0.82rem] font-medium px-2 py-0.5 rounded-full mt-1"
             style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
           >
             {grupo.meeting_day ?? 'A confirmar com o líder'}
@@ -84,15 +84,15 @@ function GrupoCard({ grupo }: { grupo: Grupo }) {
 
       {/* Endereço */}
       {grupo.location && (
-        <p className="text-[0.8rem] text-gray-500 mb-2 leading-snug flex gap-1.5 items-start">
-          <span className="text-gray-300 shrink-0 mt-0.5">📍</span>
+        <p className="text-[0.92rem] text-white/70 mb-2 leading-snug flex gap-1.5 items-start">
+          <span className="text-white/40 shrink-0 mt-0.5">📍</span>
           {grupo.location}
         </p>
       )}
 
       {/* Contato em texto livre (notes) */}
       {grupo.notes && (
-        <p className="text-[0.78rem] text-gray-400 mb-3 leading-snug">{grupo.notes}</p>
+        <p className="text-[0.88rem] text-white/60 mb-3 leading-snug">{grupo.notes}</p>
       )}
 
       {/* Botão WhatsApp (só aparece se extração de telefone tiver sucesso) */}
@@ -101,11 +101,11 @@ function GrupoCard({ grupo }: { grupo: Grupo }) {
           href={buildWhatsAppUrl(phone, grupo.name)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-[0.78rem] font-semibold border"
+          className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-[0.88rem] font-semibold border"
           style={{
-            borderColor:     '#25D36630',
-            color:           '#16a34a',
-            backgroundColor: '#f0fdf4',
+            borderColor:     'rgba(34,197,94,0.25)',
+            color:           '#4ade80',
+            backgroundColor: 'rgba(34,197,94,0.1)',
           }}
         >
           <WhatsAppIcon size={15} />
@@ -142,12 +142,12 @@ export default function IgvCelulas() {
   }, [])
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f9f9f9' }}>
+    <div className="min-h-screen bg-black" style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}>
 
       {/* Header fixo */}
       <div
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3 border-b border-black/[0.06]"
-        style={{ backgroundColor: '#fff' }}
+        className="sticky top-0 z-10 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3 border-b border-white/[0.06]"
+        style={{ backgroundColor: '#000' }}
       >
         <Link
           to="/igv"
@@ -157,8 +157,8 @@ export default function IgvCelulas() {
           <ChevronLeft size={18} strokeWidth={2} />
         </Link>
         <div>
-          <p className="font-semibold text-gray-900 text-[0.9rem] leading-tight">Nossas Células</p>
-          <p className="text-[0.7rem] text-gray-400">Igreja Gerando Vencedores</p>
+          <p className="font-semibold text-white text-[1.02rem] leading-tight">Nossas Células</p>
+          <p className="text-[0.82rem] text-white/50">Igreja Gerando Vencedores</p>
         </div>
       </div>
 
@@ -166,7 +166,7 @@ export default function IgvCelulas() {
 
         {/* Intro */}
         <div className="mb-5">
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <p className="text-[1rem] text-white/70 leading-relaxed">
             Encontre a célula mais perto de você e conecte-se com a comunidade IGV na sua região.
           </p>
         </div>
@@ -181,32 +181,32 @@ export default function IgvCelulas() {
           </div>
 
         ) : error ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-white/50">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: `${IGV.primaryColor}15` }}
             >
               <Home size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
             </div>
-            <p className="font-semibold text-gray-600 mb-1">Não foi possível carregar</p>
-            <p className="text-sm">Verifique sua conexão e tente novamente.</p>
+            <p className="font-semibold text-white/70 mb-1">Não foi possível carregar</p>
+            <p className="text-[1rem]">Verifique sua conexão e tente novamente.</p>
           </div>
 
         ) : grupos.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-white/50">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: `${IGV.primaryColor}15` }}
             >
               <Home size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
             </div>
-            <p className="font-semibold text-gray-600 mb-1">Nenhuma célula encontrada</p>
-            <p className="text-sm">Em breve novas informações!</p>
+            <p className="font-semibold text-white/70 mb-1">Nenhuma célula encontrada</p>
+            <p className="text-[1rem]">Em breve novas informações!</p>
           </div>
 
         ) : (
           <>
-            <p className="text-[0.72rem] text-gray-400 mb-4">{grupos.length} células ativas</p>
+            <p className="text-[0.82rem] text-white/50 mb-4">{grupos.length} células ativas</p>
             <div className="flex flex-col gap-2.5">
               {grupos.map(g => <GrupoCard key={g.id} grupo={g} />)}
             </div>

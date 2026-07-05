@@ -83,22 +83,22 @@ function InitialAvatar({ name, size = 56 }: { name: string; size?: number }) {
 
 function EmpresarioCard({ item }: { item: Empresario }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/[0.05] shadow-sm p-4">
+    <div className="bg-[#111] rounded-2xl border border-white/10 p-4">
       <div className="flex items-start gap-3 mb-3">
         {item.foto_url ? (
           <img
             src={item.foto_url}
             alt={item.nome}
-            className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-black/[0.06]"
+            className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-white/10"
           />
         ) : (
           <InitialAvatar name={item.nome} />
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 text-[0.9rem] leading-tight">{item.nome}</p>
+          <p className="font-semibold text-white text-[1.02rem] leading-tight">{item.nome}</p>
           <span
-            className="inline-block text-[0.7rem] font-medium px-2 py-0.5 rounded-full mt-1"
+            className="inline-block text-[0.82rem] font-medium px-2 py-0.5 rounded-full mt-1"
             style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
           >
             {item.categoria}
@@ -107,7 +107,7 @@ function EmpresarioCard({ item }: { item: Empresario }) {
       </div>
 
       {item.descricao && (
-        <p className="text-sm text-gray-500 mb-3 leading-snug">{item.descricao}</p>
+        <p className="text-[1rem] text-white/70 mb-3 leading-snug">{item.descricao}</p>
       )}
 
       {/* Botões de contato */}
@@ -117,7 +117,8 @@ function EmpresarioCard({ item }: { item: Empresario }) {
             href={buildWhatsAppUrl(item.telefone)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[0.78rem] font-medium px-3 py-1.5 rounded-xl bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 active:scale-[0.98] transition-all"
+            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
+            style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.25)' }}
           >
             <WhatsAppIcon size={15} />
             WhatsApp
@@ -129,7 +130,8 @@ function EmpresarioCard({ item }: { item: Empresario }) {
             href={`https://instagram.com/${item.instagram}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[0.78rem] font-medium px-3 py-1.5 rounded-xl bg-pink-50 text-pink-700 border border-pink-200 hover:bg-pink-100 active:scale-[0.98] transition-all"
+            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
+            style={{ backgroundColor: 'rgba(236,72,153,0.12)', color: '#f472b6', borderColor: 'rgba(236,72,153,0.25)' }}
           >
             <InstagramIcon size={15} />
             @{item.instagram}
@@ -141,7 +143,8 @@ function EmpresarioCard({ item }: { item: Empresario }) {
             href={item.site.startsWith('http') ? item.site : `https://${item.site}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[0.78rem] font-medium px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all"
+            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
+            style={{ backgroundColor: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.25)' }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -153,7 +156,8 @@ function EmpresarioCard({ item }: { item: Empresario }) {
         {item.email && (
           <a
             href={`mailto:${item.email}`}
-            className="flex items-center gap-1.5 text-[0.78rem] font-medium px-3 py-1.5 rounded-xl bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 active:scale-[0.98] transition-all"
+            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
+            style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.12)' }}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
@@ -196,11 +200,11 @@ export default function IgvEmpresarios() {
     : empresarios.filter(e => e.categoria === categoria)
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f9f9f9' }}>
+    <div className="min-h-screen bg-black" style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}>
       {/* Header */}
       <div
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3 border-b border-black/[0.06]"
-        style={{ backgroundColor: '#fff' }}
+        className="sticky top-0 z-10 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3 border-b border-white/[0.06]"
+        style={{ backgroundColor: '#000' }}
       >
         <Link
           to="/igv"
@@ -210,15 +214,15 @@ export default function IgvEmpresarios() {
           <ChevronLeft size={18} strokeWidth={2} />
         </Link>
         <div>
-          <p className="font-semibold text-gray-900 text-[0.9rem] leading-tight">Rede de Negócios</p>
-          <p className="text-[0.7rem] text-gray-400">Igreja Gerando Vencedores</p>
+          <p className="font-semibold text-white text-[1.02rem] leading-tight">Rede de Negócios</p>
+          <p className="text-[0.82rem] text-white/50">Igreja Gerando Vencedores</p>
         </div>
       </div>
 
       <div className="px-4 pt-5 pb-8">
         {/* Intro */}
         <div className="mb-5">
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <p className="text-[1rem] text-white/70 leading-relaxed">
             Conheça os empreendedores da nossa comunidade e apoie quem faz parte da família IGV.
           </p>
         </div>
@@ -231,15 +235,15 @@ export default function IgvEmpresarios() {
             />
           </div>
         ) : empresarios.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16 text-white/50">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: `${IGV.primaryColor}15` }}
             >
               <Briefcase size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
             </div>
-            <p className="font-medium text-gray-500">Em breve por aqui!</p>
-            <p className="text-sm mt-1">Os empresários da IGV serão listados aqui.</p>
+            <p className="font-medium text-white/70">Em breve por aqui!</p>
+            <p className="text-[1rem] mt-1">Os empresários da IGV serão listados aqui.</p>
           </div>
         ) : (
           <>
@@ -250,11 +254,11 @@ export default function IgvEmpresarios() {
                   <button
                     key={cat}
                     onClick={() => setCategoria(cat)}
-                    className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-all"
+                    className="shrink-0 text-[0.88rem] font-medium px-3 py-1.5 rounded-full border transition-all"
                     style={
                       categoria === cat
                         ? { backgroundColor: IGV.primaryColor, color: '#fff', borderColor: IGV.primaryColor }
-                        : { backgroundColor: '#fff', color: '#555', borderColor: '#e5e7eb' }
+                        : { backgroundColor: '#111', color: '#aaa', borderColor: '#444' }
                     }
                   >
                     {cat}
@@ -269,12 +273,12 @@ export default function IgvEmpresarios() {
             </div>
 
             {filtered.length === 0 && (
-              <p className="text-center text-sm text-gray-400 py-8">
+              <p className="text-center text-[1rem] text-white/50 py-8">
                 Nenhum empresário nesta categoria ainda.
               </p>
             )}
 
-            <p className="text-center text-[0.65rem] text-gray-300 mt-8">
+            <p className="text-center text-[0.75rem] text-white/40 mt-8">
               {filtered.length} de {empresarios.length} empresário{empresarios.length !== 1 ? 's' : ''}
             </p>
           </>
