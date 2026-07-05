@@ -1,51 +1,12 @@
-import { useRef, useEffect }  from 'react'
-import { Outlet }             from 'react-router-dom'
-import { Sun, Moon }          from 'lucide-react'
-import { IgvThemeProvider, useIgvTheme } from '@/contexts/IgvThemeContext'
-
-function IgvThemeToggle() {
-  const { isDark, toggleTheme } = useIgvTheme()
-  return (
-    <button
-      onClick={toggleTheme}
-      className="flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-colors bg-white dark:bg-black border border-black/10 dark:border-white/20"
-      aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
-    >
-      {isDark
-        ? <Sun  size={18} strokeWidth={1.75} className="text-white" />
-        : <Moon size={18} strokeWidth={1.75} className="text-gray-600" />
-      }
-    </button>
-  )
-}
-
-function IgvLayoutInner() {
-  const { isDark } = useIgvTheme()
-  const wrapperRef = useRef<HTMLDivElement>(null)
-
-  // Aplica/remove .dark imperatively via ref — garante que o DOM está
-  // sempre sincronizado mesmo em casos de re-render, Suspense fallback
-  // ou eventual remount pelo React Router.
-  useEffect(() => {
-    const el = wrapperRef.current
-    if (!el) return
-    el.classList.toggle('dark', isDark)
-  }, [isDark])
-
-  return (
-    <div ref={wrapperRef} className={isDark ? 'dark' : ''}>
-      <Outlet />
-      <div className="fixed top-4 right-4 z-50 pointer-events-auto">
-        <IgvThemeToggle />
-      </div>
-    </div>
-  )
-}
+import { Outlet }           from 'react-router-dom'
+import { IgvThemeProvider } from '@/contexts/IgvThemeContext'
 
 export default function IgvLayout() {
   return (
     <IgvThemeProvider>
-      <IgvLayoutInner />
+      <div className="dark">
+        <Outlet />
+      </div>
     </IgvThemeProvider>
   )
 }

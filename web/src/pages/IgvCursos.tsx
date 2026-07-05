@@ -45,7 +45,7 @@ function formatPrice(price: number | null): string {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] mb-3"
+    <p className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] mb-3"
        style={{ color: IGV.primaryColor }}>
       {children}
     </p>
@@ -63,14 +63,14 @@ function Spinner() {
 
 function EmptyCourses() {
   return (
-    <div className="rounded-2xl bg-white border border-black/[0.05] shadow-sm p-8 flex flex-col items-center gap-3 text-center">
+    <div className="rounded-2xl bg-[#111] border border-white/10 p-8 flex flex-col items-center gap-3 text-center">
       <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
            style={{ backgroundColor: `${IGV.primaryColor}15` }}>
         <GraduationCap size={24} style={{ color: IGV.primaryColor }} strokeWidth={1.75} />
       </div>
       <div>
-        <p className="font-semibold text-gray-900 text-[0.9rem]">Sem cursos no momento</p>
-        <p className="text-gray-400 text-[0.75rem] mt-1 leading-snug">
+        <p className="font-semibold text-white text-[1.02rem]">Sem cursos no momento</p>
+        <p className="text-white/50 text-[0.86rem] mt-1 leading-snug">
           Em breve novos cursos serão disponibilizados.
         </p>
       </div>
@@ -122,32 +122,32 @@ function EnrollModal({ course, onClose }: EnrollModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
          onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="w-full max-w-md bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
+      <div className="w-full max-w-md bg-[#111] rounded-t-3xl border-t border-white/10 p-6 pb-10 shadow-2xl animate-in slide-in-from-bottom-4 duration-200">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="font-semibold text-gray-900 text-[0.95rem] leading-snug">{course.title}</p>
-            {course.instructor && <p className="text-gray-400 text-[0.75rem] mt-0.5">{course.instructor}</p>}
+            <p className="font-semibold text-white text-[1.07rem] leading-snug">{course.title}</p>
+            {course.instructor && <p className="text-white/50 text-[0.86rem] mt-0.5">{course.instructor}</p>}
           </div>
           <button onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 transition-colors">
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-white/50 hover:text-white/80 transition-colors">
             <X size={18} />
           </button>
         </div>
 
         {status === 'success' && (
           <div className="rounded-2xl p-5 text-center"
-               style={{ backgroundColor: `${IGV.primaryColor}10` }}>
+               style={{ backgroundColor: `${IGV.primaryColor}10`, border: `1px solid ${IGV.primaryColor}30` }}>
             <div className="text-2xl mb-2">🎉</div>
-            <p className="font-semibold text-[0.9rem]" style={{ color: IGV.primaryColor }}>
+            <p className="font-semibold text-[0.97rem]" style={{ color: IGV.primaryColor }}>
               Inscrição confirmada!
             </p>
-            <p className="text-gray-500 text-[0.8rem] mt-1 leading-snug">
+            <p className="text-white/60 text-[0.92rem] mt-1 leading-snug">
               Em breve entraremos em contato com mais detalhes.
             </p>
             <button onClick={onClose}
-                    className="mt-4 px-5 py-2 rounded-xl text-white text-[0.85rem] font-medium"
+                    className="mt-4 px-5 py-2 rounded-xl text-white text-[0.97rem] font-medium"
                     style={{ backgroundColor: IGV.primaryColor }}>
               Fechar
             </button>
@@ -155,22 +155,22 @@ function EnrollModal({ course, onClose }: EnrollModalProps) {
         )}
 
         {status === 'duplicate' && (
-          <div className="rounded-2xl p-5 text-center bg-amber-50 border border-amber-100">
-            <p className="font-semibold text-amber-800 text-[0.9rem]">Você já está inscrito!</p>
-            <p className="text-amber-600 text-[0.8rem] mt-1">Sua inscrição neste curso já foi registrada.</p>
+          <div className="rounded-2xl p-5 text-center bg-amber-900/30 border border-amber-600/30">
+            <p className="font-semibold text-amber-300 text-[0.97rem]">Você já está inscrito!</p>
+            <p className="text-amber-400/80 text-[0.92rem] mt-1">Sua inscrição neste curso já foi registrada.</p>
             <button onClick={onClose}
-                    className="mt-4 px-5 py-2 rounded-xl text-white text-[0.85rem] font-medium bg-amber-600">
+                    className="mt-4 px-5 py-2 rounded-xl text-white text-[0.97rem] font-medium bg-amber-700">
               Fechar
             </button>
           </div>
         )}
 
         {status === 'full' && (
-          <div className="rounded-2xl p-5 text-center bg-red-50 border border-red-100">
-            <p className="font-semibold text-red-700 text-[0.9rem]">Vagas esgotadas</p>
-            <p className="text-red-500 text-[0.8rem] mt-1">Todas as vagas foram preenchidas.</p>
+          <div className="rounded-2xl p-5 text-center bg-red-900/30 border border-red-600/30">
+            <p className="font-semibold text-red-300 text-[0.97rem]">Vagas esgotadas</p>
+            <p className="text-red-400/80 text-[0.92rem] mt-1">Todas as vagas foram preenchidas.</p>
             <button onClick={onClose}
-                    className="mt-4 px-5 py-2 rounded-xl text-white text-[0.85rem] font-medium bg-red-500">
+                    className="mt-4 px-5 py-2 rounded-xl text-white text-[0.97rem] font-medium bg-red-700">
               Fechar
             </button>
           </div>
@@ -179,11 +179,11 @@ function EnrollModal({ course, onClose }: EnrollModalProps) {
         {(status === 'idle' || status === 'loading' || status === 'error') && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {status === 'error' && (
-              <p className="text-red-500 text-[0.8rem] bg-red-50 rounded-xl px-3 py-2">{errorMsg}</p>
+              <p className="text-red-400 text-[0.92rem] bg-red-900/20 border border-red-600/20 rounded-xl px-3 py-2">{errorMsg}</p>
             )}
 
             <div>
-              <label className="text-[0.75rem] font-medium text-gray-500 mb-1 block">
+              <label className="text-[0.86rem] font-medium text-white/60 mb-1 block">
                 Nome completo <span className="text-red-400">*</span>
               </label>
               <input
@@ -192,13 +192,13 @@ function EnrollModal({ course, onClose }: EnrollModalProps) {
                 onChange={e => setName(e.target.value)}
                 placeholder="Seu nome"
                 required
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-[0.9rem] focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': IGV.primaryColor } as React.CSSProperties}
+                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': IGV.primaryColor, fontSize: '16px' } as React.CSSProperties}
               />
             </div>
 
             <div>
-              <label className="text-[0.75rem] font-medium text-gray-500 mb-1 block">
+              <label className="text-[0.86rem] font-medium text-white/60 mb-1 block">
                 WhatsApp / Telefone <span className="text-red-400">*</span>
               </label>
               <input
@@ -207,31 +207,31 @@ function EnrollModal({ course, onClose }: EnrollModalProps) {
                 onChange={e => setPhone(e.target.value)}
                 placeholder="(21) 99999-0000"
                 required
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-[0.9rem] focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': IGV.primaryColor } as React.CSSProperties}
+                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': IGV.primaryColor, fontSize: '16px' } as React.CSSProperties}
               />
             </div>
 
             <div>
-              <label className="text-[0.75rem] font-medium text-gray-500 mb-1 block">E-mail (opcional)</label>
+              <label className="text-[0.86rem] font-medium text-white/60 mb-1 block">E-mail (opcional)</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-[0.9rem] focus:outline-none focus:ring-2 focus:border-transparent"
-                style={{ '--tw-ring-color': IGV.primaryColor } as React.CSSProperties}
+                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:border-transparent"
+                style={{ '--tw-ring-color': IGV.primaryColor, fontSize: '16px' } as React.CSSProperties}
               />
             </div>
 
-            <p className="text-[0.7rem] text-gray-400 leading-snug">
+            <p className="text-[0.82rem] text-white/40 leading-snug">
               Seus dados serão usados apenas para contato sobre este curso (LGPD).
             </p>
 
             <button
               type="submit"
               disabled={status === 'loading' || !name.trim() || !phone.trim()}
-              className="w-full py-3 rounded-xl text-white font-semibold text-[0.9rem] transition-opacity disabled:opacity-50"
+              className="w-full py-3 rounded-xl text-white font-semibold text-[1.02rem] transition-opacity disabled:opacity-50"
               style={{ backgroundColor: IGV.primaryColor }}
             >
               {status === 'loading' ? 'Enviando…' : 'Confirmar inscrição'}
@@ -255,9 +255,9 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
   const isFree     = !course.price || course.price === 0
 
   return (
-    <div className="bg-white rounded-2xl border border-black/[0.05] shadow-sm overflow-hidden mb-3">
+    <div className="bg-[#111] rounded-2xl border border-white/10 overflow-hidden mb-3">
       {course.image_url && (
-        <div className="w-full h-36 bg-gray-100 overflow-hidden">
+        <div className="w-full h-36 bg-white/5 overflow-hidden">
           <img src={course.image_url} alt={course.title}
                className="w-full h-full object-cover" loading="lazy" />
         </div>
@@ -265,10 +265,10 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1.5">
-          <p className="font-semibold text-gray-900 text-[0.9rem] leading-snug flex-1">{course.title}</p>
-          <span className={`shrink-0 text-[0.7rem] font-semibold px-2 py-0.5 rounded-full ${
+          <p className="font-semibold text-white text-[1.02rem] leading-snug flex-1">{course.title}</p>
+          <span className={`shrink-0 text-[0.82rem] font-semibold px-2 py-0.5 rounded-full ${
             isFree
-              ? 'bg-green-50 text-green-700'
+              ? 'bg-green-900/40 text-green-400'
               : 'text-white'
           }`} style={isFree ? {} : { backgroundColor: IGV.primaryColor }}>
             {priceLabel}
@@ -276,22 +276,22 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
         </div>
 
         {course.instructor && (
-          <p className="text-gray-400 text-[0.75rem] mb-2">{course.instructor}</p>
+          <p className="text-white/50 text-[0.86rem] mb-2">{course.instructor}</p>
         )}
 
         {course.description && (
-          <p className="text-gray-600 text-[0.8rem] leading-relaxed mb-3 line-clamp-3">{course.description}</p>
+          <p className="text-white/70 text-[0.92rem] leading-relaxed mb-3 line-clamp-3">{course.description}</p>
         )}
 
         <div className="flex flex-col gap-1.5 mb-3">
           {course.schedule_text && (
-            <div className="flex items-center gap-2 text-gray-500 text-[0.75rem]">
+            <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
               <Clock size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
               <span>{course.schedule_text}</span>
             </div>
           )}
           {(course.start_date || course.end_date) && (
-            <div className="flex items-center gap-2 text-gray-500 text-[0.75rem]">
+            <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
               <GraduationCap size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
               <span>
                 {course.start_date ? formatDate(course.start_date) : ''}
@@ -300,13 +300,13 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
             </div>
           )}
           {course.location && (
-            <div className="flex items-center gap-2 text-gray-500 text-[0.75rem]">
+            <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
               <MapPin size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
               <span>{course.location}</span>
             </div>
           )}
           {course.max_capacity !== null && (
-            <div className="flex items-center gap-2 text-gray-500 text-[0.75rem]">
+            <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
               <Users size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
               <span>
                 {course.is_full
@@ -318,8 +318,8 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
         </div>
 
         {course.prerequisites && (
-          <div className="bg-amber-50 rounded-xl px-3 py-2 mb-3">
-            <p className="text-[0.72rem] text-amber-800 leading-snug">
+          <div className="bg-amber-900/20 border border-amber-500/20 rounded-xl px-3 py-2 mb-3">
+            <p className="text-[0.82rem] text-amber-300 leading-snug">
               <span className="font-semibold">Pré-requisitos: </span>{course.prerequisites}
             </p>
           </div>
@@ -328,9 +328,9 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
         <button
           onClick={() => onEnroll(course)}
           disabled={course.is_full}
-          className="w-full py-2.5 rounded-xl text-[0.85rem] font-semibold transition-opacity disabled:opacity-40"
+          className="w-full py-2.5 rounded-xl text-[0.97rem] font-semibold transition-opacity disabled:opacity-40"
           style={course.is_full
-            ? { backgroundColor: '#e5e7eb', color: '#9ca3af' }
+            ? { backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)' }
             : { backgroundColor: IGV.primaryColor, color: '#fff' }}
         >
           {course.is_full ? 'Vagas esgotadas' : 'Inscrever-se'}
@@ -362,13 +362,13 @@ export default function IgvCursos() {
   }, [])
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F9F7F4', fontFamily: 'DM Sans, sans-serif' }}>
+    <div className="min-h-screen bg-black flex flex-col" style={{ fontFamily: 'DM Sans, sans-serif' }}>
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-black/[0.05] px-4 py-3 flex items-center gap-3">
-        <Link to="/igv" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">
-          <ChevronLeft size={20} strokeWidth={2} className="text-gray-600" />
+      <header className="sticky top-0 z-30 bg-black/90 backdrop-blur-sm border-b border-white/10 px-4 py-3 flex items-center gap-3">
+        <Link to="/igv" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
+          <ChevronLeft size={20} strokeWidth={2} className="text-white/70" />
         </Link>
-        <h1 className="font-semibold text-gray-900 text-[1rem]">Cursos</h1>
+        <h1 className="font-semibold text-white text-[1.12rem]">Cursos</h1>
       </header>
 
       <main className="flex-1 px-4 pt-5 pb-10 max-w-md mx-auto w-full">
@@ -377,8 +377,8 @@ export default function IgvCursos() {
         {loading && <Spinner />}
 
         {!loading && error && (
-          <div className="rounded-2xl bg-white border border-black/[0.05] p-6 text-center">
-            <p className="text-gray-500 text-[0.85rem]">Não foi possível carregar os cursos. Tente novamente.</p>
+          <div className="rounded-2xl bg-[#111] border border-white/10 p-6 text-center">
+            <p className="text-white/60 text-[0.97rem]">Não foi possível carregar os cursos. Tente novamente.</p>
           </div>
         )}
 

@@ -27,9 +27,9 @@ function groupScheduleByLocal(horarios: typeof IGV.horarios) {
 
 function Card({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section className="bg-white rounded-2xl p-5 border border-black/[0.05] shadow-sm">
+    <section className="bg-[#111] rounded-2xl p-5 border border-white/10">
       <p
-        className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] mb-3"
+        className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] mb-3"
         style={{ color: IGV.primaryColor }}
       >
         {label}
@@ -46,22 +46,22 @@ export default function IgvAboutPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#F9F7F4] flex flex-col"
+      className="min-h-screen bg-black flex flex-col"
       style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
     >
 
       {/* Topbar */}
-      <header className="sticky top-0 z-10 bg-white/92 backdrop-blur-sm border-b border-black/[0.06] px-4 h-14 flex items-center gap-3">
+      <header className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-white/10 px-4 h-14 flex items-center gap-3">
         <Link
           to="/igv"
-          className="flex items-center gap-1.5 text-[0.875rem] font-medium transition-colors"
+          className="flex items-center gap-1.5 text-[1rem] font-medium transition-colors"
           style={{ color: IGV.primaryColor }}
         >
           <ArrowLeft size={18} strokeWidth={1.75} />
           Voltar
         </Link>
-        <div className="w-px h-4 bg-black/10" />
-        <span className="text-[0.875rem] font-semibold text-gray-800 truncate">Sobre Nós</span>
+        <div className="w-px h-4 bg-white/20" />
+        <span className="text-[1rem] font-semibold text-white truncate">Sobre Nós</span>
       </header>
 
       <main className="flex-1 px-4 py-5 max-w-[480px] mx-auto w-full space-y-4 pb-12">
@@ -69,32 +69,32 @@ export default function IgvAboutPage() {
         {/* Identidade */}
         <div className="text-center py-4">
           <h1
-            className="text-[1.6rem] font-bold tracking-tight"
+            className="text-[1.8rem] font-bold tracking-tight"
             style={{
               fontFamily: '"Playfair Display", Georgia, serif',
-              color: IGV.secondaryColor,
+              color: IGV.primaryColor,
             }}
           >
             {IGV.name}
           </h1>
-          <p className="text-gray-500 text-[0.875rem] mt-1">{IGV.pastor}</p>
+          <p className="text-white/60 text-[1rem] mt-1">{IGV.pastor}</p>
         </div>
 
         {/* Missão */}
         <Card label="Nossa Missão">
-          <p className="text-[0.9rem] text-gray-700 leading-relaxed">{IGV.missao}</p>
+          <p className="text-[1.02rem] text-white/90 leading-relaxed">{IGV.missao}</p>
         </Card>
 
         {/* Visão */}
         <Card label="Nossa Visão">
-          <p className="text-[0.9rem] text-gray-700 leading-relaxed">{IGV.visao}</p>
+          <p className="text-[1.02rem] text-white/90 leading-relaxed">{IGV.visao}</p>
         </Card>
 
         {/* Valores */}
         <Card label="Nossos Valores">
           <ul className="space-y-2.5 mb-4">
             {IGV.valores.map(v => (
-              <li key={v} className="flex items-start gap-2.5 text-[0.875rem] text-gray-700">
+              <li key={v} className="flex items-start gap-2.5 text-[1rem] text-white/90">
                 <span
                   className="mt-[0.4rem] w-1.5 h-1.5 rounded-full shrink-0"
                   style={{ backgroundColor: IGV.primaryColor }}
@@ -103,7 +103,7 @@ export default function IgvAboutPage() {
               </li>
             ))}
           </ul>
-          <p className="text-[0.8rem] italic text-gray-500 border-t border-gray-100 pt-3 leading-relaxed">
+          <p className="text-[0.92rem] italic text-white/60 border-t border-white/10 pt-3 leading-relaxed">
             "{IGV.valoresFrase}"
           </p>
         </Card>
@@ -114,16 +114,16 @@ export default function IgvAboutPage() {
             {Object.entries(scheduleByLocal).map(([local, cultos]) => (
               <div key={local}>
                 <div className="flex items-center gap-1.5 mb-2">
-                  <MapPin size={13} strokeWidth={1.75} className="text-gray-400" />
-                  <p className="text-[0.72rem] font-semibold text-gray-500 uppercase tracking-wide">
+                  <MapPin size={13} strokeWidth={1.75} className="text-white/40" />
+                  <p className="text-[0.83rem] font-semibold text-white/60 uppercase tracking-wide">
                     {local}
                   </p>
                 </div>
                 <div className="space-y-2 pl-0.5">
                   {cultos.map((c, i) => (
-                    <div key={i} className="flex items-center gap-3 text-[0.875rem]">
-                      <span className="w-28 text-gray-500 shrink-0">{c.dia}</span>
-                      <span className="font-semibold" style={{ color: IGV.secondaryColor }}>
+                    <div key={i} className="flex items-center gap-3 text-[1rem]">
+                      <span className="w-28 text-white/70 shrink-0">{c.dia}</span>
+                      <span className="font-semibold" style={{ color: IGV.primaryColor }}>
                         {c.hora}
                       </span>
                     </div>
@@ -136,13 +136,13 @@ export default function IgvAboutPage() {
 
         {/* Endereço e Contato */}
         <Card label="Endereço e Contato">
-          <p className="text-[0.875rem] text-gray-700 mb-0.5">{IGV.address}</p>
-          <p className="text-[0.875rem] text-gray-500 mb-4">{IGV.phone}</p>
+          <p className="text-[1rem] text-white/90 mb-0.5">{IGV.address}</p>
+          <p className="text-[1rem] text-white/70 mb-4">{IGV.phone}</p>
           <a
             href={`https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent('Olá! Gostaria de saber mais sobre a Igreja Gerando Vencedores.')}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-white text-[0.875rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80"
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-white text-[1rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80"
             style={{ backgroundColor: '#25D366' }}
           >
             <MessageCircle size={16} strokeWidth={1.75} />
@@ -153,7 +153,7 @@ export default function IgvAboutPage() {
         {/* CTA Seja Membro */}
         <Link
           to="/igv/seja-membro"
-          className="flex items-center justify-center w-full h-12 rounded-2xl text-white text-[0.9rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80"
+          className="flex items-center justify-center w-full h-12 rounded-2xl text-white text-[1.02rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80"
           style={{
             background: `linear-gradient(135deg, ${IGV.primaryColor} 0%, ${IGV.secondaryColor} 100%)`,
           }}

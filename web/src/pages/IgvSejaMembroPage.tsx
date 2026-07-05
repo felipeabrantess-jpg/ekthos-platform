@@ -104,7 +104,7 @@ export default function IgvSejaMembroPage() {
   if (submitted) {
     return (
       <div
-        className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-5"
+        className="min-h-screen bg-black flex flex-col items-center justify-center px-5"
         style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
       >
         <div className="w-full max-w-[420px] text-center">
@@ -115,21 +115,21 @@ export default function IgvSejaMembroPage() {
             className="mx-auto mb-5"
           />
           <h1
-            className="text-[1.6rem] font-bold text-gray-900 mb-2 tracking-tight"
+            className="text-[1.8rem] font-bold text-white mb-2 tracking-tight"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
             Bem-vindo(a) à família!
           </h1>
-          <p className="text-[0.9rem] text-gray-500 leading-relaxed mb-7">
+          <p className="text-[1rem] text-white/70 leading-relaxed mb-7">
             Recebemos seu cadastro. Em breve alguém da{' '}
-            <span className="font-medium text-gray-700">{IGV.name}</span>{' '}
+            <span className="font-medium text-white/85">{IGV.name}</span>{' '}
             vai entrar em contato pelo WhatsApp.
           </p>
           <a
             href={`https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent(`Olá! Acabei de me cadastrar em ${IGV.name}. Gostaria de saber mais!`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-2xl text-white text-[0.9rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80 mb-5"
+            className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-2xl text-white text-[1rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80 mb-5"
             style={{ backgroundColor: '#25D366' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -140,7 +140,7 @@ export default function IgvSejaMembroPage() {
           <div>
             <Link
               to="/igv"
-              className="text-[0.875rem] font-medium transition-colors"
+              className="text-[1rem] font-medium transition-colors"
               style={{ color: IGV.primaryColor }}
             >
               ← Voltar para a página da Igreja
@@ -155,22 +155,22 @@ export default function IgvSejaMembroPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#F9F7F4] flex flex-col"
+      className="min-h-screen bg-black flex flex-col"
       style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
     >
 
       {/* Topbar */}
-      <header className="sticky top-0 z-10 bg-white/92 backdrop-blur-sm border-b border-black/[0.06] px-4 h-14 flex items-center gap-3">
+      <header className="sticky top-0 z-10 bg-black/90 backdrop-blur-sm border-b border-white/10 px-4 h-14 flex items-center gap-3">
         <Link
           to="/igv"
-          className="flex items-center gap-1.5 text-[0.875rem] font-medium transition-colors"
+          className="flex items-center gap-1.5 text-[1rem] font-medium transition-colors"
           style={{ color: IGV.primaryColor }}
         >
           <ArrowLeft size={18} strokeWidth={1.75} />
           Voltar
         </Link>
-        <div className="w-px h-4 bg-black/10" />
-        <span className="text-[0.875rem] font-semibold text-gray-800">Seja Membro</span>
+        <div className="w-px h-4 bg-white/20" />
+        <span className="text-[1rem] font-semibold text-white">Seja Membro</span>
       </header>
 
       <main className="flex-1 px-4 py-6 max-w-[480px] mx-auto w-full">
@@ -178,22 +178,22 @@ export default function IgvSejaMembroPage() {
         {/* Header da página */}
         <div className="text-center mb-6">
           <h1
-            className="text-[1.5rem] font-bold text-gray-900 tracking-tight"
+            className="text-[1.7rem] font-bold text-white tracking-tight"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
             Faça parte da família
           </h1>
-          <p className="text-[0.875rem] text-gray-500 mt-1">{IGV.name}</p>
+          <p className="text-[1rem] text-white/60 mt-1">{IGV.name}</p>
         </div>
 
         {/* Card do formulário */}
-        <div className="bg-white rounded-2xl border border-black/[0.05] shadow-sm p-5">
+        <div className="bg-[#111] rounded-2xl border border-white/10 p-5">
           <form onSubmit={e => void handleSubmit(e)} noValidate className="space-y-4">
 
             {/* Nome */}
             <div>
-              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
-                Nome completo <span className="text-red-500">*</span>
+              <label className="block text-[0.92rem] font-semibold text-white/90 mb-1.5">
+                Nome completo <span className="text-red-400">*</span>
               </label>
               <input
                 type="text"
@@ -202,21 +202,21 @@ export default function IgvSejaMembroPage() {
                 value={form.name}
                 onChange={e => handleChange('name', e.target.value)}
                 style={{ fontSize: '16px' }}
-                className={`w-full h-12 px-4 rounded-xl border text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                className={`w-full h-12 px-4 rounded-xl border text-white bg-white/[0.06] placeholder-white/30 focus:outline-none focus:ring-2 transition-colors ${
                   errors.name
-                    ? 'border-red-300 focus:ring-red-100'
-                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-400'
+                    ? 'border-red-500/50 focus:ring-red-900/40'
+                    : 'border-white/15 focus:ring-amber-900/40 focus:border-amber-500/50'
                 }`}
               />
               {errors.name && (
-                <p className="text-[0.75rem] text-red-500 mt-1">{errors.name}</p>
+                <p className="text-[0.85rem] text-red-400 mt-1">{errors.name}</p>
               )}
             </div>
 
             {/* WhatsApp */}
             <div>
-              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
-                WhatsApp / Telefone <span className="text-red-500">*</span>
+              <label className="block text-[0.92rem] font-semibold text-white/90 mb-1.5">
+                WhatsApp / Telefone <span className="text-red-400">*</span>
               </label>
               <input
                 type="tel"
@@ -226,22 +226,22 @@ export default function IgvSejaMembroPage() {
                 value={form.phone}
                 onChange={e => handleChange('phone', e.target.value)}
                 style={{ fontSize: '16px' }}
-                className={`w-full h-12 px-4 rounded-xl border text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                className={`w-full h-12 px-4 rounded-xl border text-white bg-white/[0.06] placeholder-white/30 focus:outline-none focus:ring-2 transition-colors ${
                   errors.phone
-                    ? 'border-red-300 focus:ring-red-100'
-                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-400'
+                    ? 'border-red-500/50 focus:ring-red-900/40'
+                    : 'border-white/15 focus:ring-amber-900/40 focus:border-amber-500/50'
                 }`}
               />
               {errors.phone && (
-                <p className="text-[0.75rem] text-red-500 mt-1">{errors.phone}</p>
+                <p className="text-[0.85rem] text-red-400 mt-1">{errors.phone}</p>
               )}
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
+              <label className="block text-[0.92rem] font-semibold text-white/90 mb-1.5">
                 Email{' '}
-                <span className="text-gray-400 font-normal">(opcional)</span>
+                <span className="text-white/40 font-normal">(opcional)</span>
               </label>
               <input
                 type="email"
@@ -250,22 +250,22 @@ export default function IgvSejaMembroPage() {
                 value={form.email}
                 onChange={e => handleChange('email', e.target.value)}
                 style={{ fontSize: '16px' }}
-                className={`w-full h-12 px-4 rounded-xl border text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 transition-colors ${
+                className={`w-full h-12 px-4 rounded-xl border text-white bg-white/[0.06] placeholder-white/30 focus:outline-none focus:ring-2 transition-colors ${
                   errors.email
-                    ? 'border-red-300 focus:ring-red-100'
-                    : 'border-gray-200 focus:ring-amber-100 focus:border-amber-400'
+                    ? 'border-red-500/50 focus:ring-red-900/40'
+                    : 'border-white/15 focus:ring-amber-900/40 focus:border-amber-500/50'
                 }`}
               />
               {errors.email && (
-                <p className="text-[0.75rem] text-red-500 mt-1">{errors.email}</p>
+                <p className="text-[0.85rem] text-red-400 mt-1">{errors.email}</p>
               )}
             </div>
 
             {/* Quem convidou */}
             <div>
-              <label className="block text-[0.8rem] font-semibold text-gray-700 mb-1.5">
+              <label className="block text-[0.92rem] font-semibold text-white/90 mb-1.5">
                 Quem te convidou?{' '}
-                <span className="text-gray-400 font-normal">(opcional)</span>
+                <span className="text-white/40 font-normal">(opcional)</span>
               </label>
               <input
                 type="text"
@@ -274,14 +274,14 @@ export default function IgvSejaMembroPage() {
                 value={form.invited_by_name}
                 onChange={e => handleChange('invited_by_name', e.target.value)}
                 style={{ fontSize: '16px' }}
-                className="w-full h-12 px-4 rounded-xl border border-gray-200 text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-100 focus:border-amber-400 transition-colors"
+                className="w-full h-12 px-4 rounded-xl border border-white/15 text-white bg-white/[0.06] placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-amber-900/40 focus:border-amber-500/50 transition-colors"
               />
             </div>
 
             {/* Checkbox LGPD — R8: aceite explícito e visível */}
             <div
               className={`rounded-xl border p-3.5 ${
-                errors.lgpd ? 'border-red-200 bg-red-50/60' : 'border-gray-100 bg-gray-50'
+                errors.lgpd ? 'border-red-500/40 bg-red-950/20' : 'border-white/10 bg-white/5'
               }`}
             >
               <label className="flex items-start gap-3 cursor-pointer">
@@ -291,7 +291,7 @@ export default function IgvSejaMembroPage() {
                   onChange={e => handleChange('lgpd', e.target.checked)}
                   className="mt-0.5 w-4 h-4 rounded shrink-0 accent-amber-600"
                 />
-                <span className="text-[0.75rem] text-gray-600 leading-relaxed">
+                <span className="text-[0.87rem] text-white/80 leading-relaxed">
                   Concordo que a <strong>{IGV.name}</strong> utilize meus dados (nome, telefone e email)
                   para fins de contato pastoral, conforme a{' '}
                   <a
@@ -307,7 +307,7 @@ export default function IgvSejaMembroPage() {
                 </span>
               </label>
               {errors.lgpd && (
-                <p className="text-[0.75rem] text-red-500 mt-2 pl-7">{errors.lgpd}</p>
+                <p className="text-[0.85rem] text-red-400 mt-2 pl-7">{errors.lgpd}</p>
               )}
             </div>
 
@@ -315,7 +315,7 @@ export default function IgvSejaMembroPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full h-12 rounded-xl text-white font-semibold text-[0.9rem] transition-opacity disabled:opacity-60"
+              className="w-full h-12 rounded-xl text-white font-semibold text-[1rem] transition-opacity disabled:opacity-60"
               style={{
                 background: `linear-gradient(90deg, ${IGV.primaryColor} 0%, ${IGV.secondaryColor} 100%)`,
               }}
@@ -332,7 +332,7 @@ export default function IgvSejaMembroPage() {
           </form>
         </div>
 
-        <p className="text-[0.72rem] text-gray-400 text-center mt-4 px-2 leading-relaxed">
+        <p className="text-[0.82rem] text-white/50 text-center mt-4 px-2 leading-relaxed">
           Seus dados são protegidos pela LGPD e usados somente pela {IGV.name}.
         </p>
       </main>

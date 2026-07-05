@@ -159,7 +159,7 @@ function ActionCard({
       className="flex flex-col items-center justify-center bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 h-[76px] gap-1.5 active:bg-gray-50/80 dark:active:bg-white/10 transition-colors"
     >
       {children}
-      <span className="text-[0.72rem] font-medium text-gray-700 dark:text-white leading-tight">{label}</span>
+      <span className="text-[0.82rem] font-medium text-gray-700 dark:text-white leading-tight">{label}</span>
     </button>
   )
 }
@@ -182,11 +182,11 @@ function ComingSoonCard({
       onClick={onClick}
       className={`relative flex ${wide ? 'flex-row gap-2.5 px-4 justify-center h-[52px]' : 'flex-col items-center justify-center h-[76px] gap-1.5'} bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 active:bg-gray-50/60 dark:active:bg-white/5 transition-colors`}
     >
-      <span className="absolute top-1.5 right-2 text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 leading-tight">
+      <span className="absolute top-1.5 right-2 text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-900/30 text-amber-400 border border-amber-600/30 leading-tight">
         Em breve
       </span>
       <Icon size={wide ? 18 : 20} strokeWidth={1.75} className="text-gray-300 dark:text-white/30 shrink-0" />
-      <span className={`${wide ? 'text-[0.8rem]' : 'text-[0.72rem]'} font-medium text-gray-400 dark:text-white leading-tight`}>{label}</span>
+      <span className={`${wide ? 'text-[0.9rem]' : 'text-[0.82rem]'} font-medium text-gray-400 dark:text-white leading-tight`}>{label}</span>
     </button>
   )
 }
@@ -318,13 +318,13 @@ export default function IgvPage() {
               className="w-[76px] h-[76px] rounded-2xl shadow-xl object-cover"
             />
             <h1
-              className="mt-3 text-[1.85rem] font-bold text-white leading-tight tracking-tight"
+              className="mt-3 text-[2rem] font-bold text-white leading-tight tracking-tight"
               style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
             >
               {IGV.name}
             </h1>
-            <p className="mt-0.5 text-white/75 text-[0.875rem] font-medium">{IGV.pastor}</p>
-            <p className="mt-0.5 text-white/50 text-[0.75rem]">{IGV.address}</p>
+            <p className="mt-0.5 text-white/75 text-[1rem] font-medium">{IGV.pastor}</p>
+            <p className="mt-0.5 text-white/50 text-[0.86rem]">{IGV.address}</p>
 
             {showInstallButton && (
               <button
@@ -353,8 +353,8 @@ export default function IgvPage() {
               <Users size={18} strokeWidth={1.75} className="text-white" />
             </div>
             <div>
-              <p className="font-semibold text-white text-[0.9rem]">Seja Membro</p>
-              <p className="text-white/65 text-[0.75rem] mt-0.5">Faça parte da família IGV</p>
+              <p className="font-semibold text-white text-[1.02rem]">Seja Membro</p>
+              <p className="text-white/65 text-[0.86rem] mt-0.5">Faça parte da família IGV</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2.5} className="text-white/50 shrink-0" />
@@ -372,8 +372,8 @@ export default function IgvPage() {
               <BookOpen size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Sobre Nós</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Missão, visão e horários</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Sobre Nós</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Missão, visão e horários</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -391,8 +391,8 @@ export default function IgvPage() {
               <Book size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Bíblia Sagrada</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">66 livros — Almeida</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Bíblia Sagrada</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">66 livros — Almeida</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -410,8 +410,8 @@ export default function IgvPage() {
               <Calendar size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Agenda</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Cultos e próximos eventos</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Agenda</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Cultos e próximos eventos</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -429,8 +429,8 @@ export default function IgvPage() {
               <GraduationCap size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Cursos</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Formações com inscrição</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Cursos</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Formações com inscrição</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -448,8 +448,8 @@ export default function IgvPage() {
               <Home size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Nossas Células</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">12 GGVs — encontre a mais perto</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Nossas Células</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">12 GGVs — encontre a mais perto</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -467,15 +467,15 @@ export default function IgvPage() {
               <Briefcase size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Rede de Negócios</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Empresários da congregação</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Rede de Negócios</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Empresários da congregação</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <p
-          className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] mb-2.5"
+          className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] mb-2.5"
           style={{ color: IGV.primaryColor }}
         >
           Conecte-se
@@ -496,7 +496,7 @@ export default function IgvPage() {
           </ActionCard>
         </div>
 
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white mb-2.5">
+        <p className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/50 mb-2.5">
           Em breve
         </p>
 
@@ -511,7 +511,7 @@ export default function IgvPage() {
             >
               <Building2 size={18} strokeWidth={1.75} />
             </div>
-            <p className="font-semibold text-gray-800 dark:text-white text-[0.75rem] leading-tight">Gabinetes</p>
+            <p className="font-semibold text-gray-800 dark:text-white text-[0.86rem] leading-tight">Gabinetes</p>
           </Link>
           <ComingSoonCard label="Eventos"   icon={CalendarCheck} onClick={showComingSoon} />
         </div>
@@ -528,15 +528,15 @@ export default function IgvPage() {
               <Heart size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Pedidos de Oração</p>
-              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Compartilhe com nossa equipe pastoral</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Pedidos de Oração</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Compartilhe com nossa equipe pastoral</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
       </main>
 
-      <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400 dark:text-white">
+      <footer className="text-center px-4 py-5 text-[0.82rem] text-gray-400 dark:text-white/50">
         {IGV.address}
       </footer>
 

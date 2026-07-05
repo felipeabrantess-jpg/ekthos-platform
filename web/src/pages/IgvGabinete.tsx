@@ -376,7 +376,7 @@ export default function IgvGabinete() {
 
         {/* Erro */}
         {state === 'error' && (
-          <p className="text-[0.82rem] text-red-500 bg-red-50 rounded-xl px-4 py-3">{errMsg}</p>
+          <p className="text-[0.82rem] text-red-300 bg-red-900/20 border border-red-600/20 rounded-xl px-4 py-3">{errMsg}</p>
         )}
         {errMsg && state !== 'error' && (
           <p className="text-[0.82rem] text-red-500">{errMsg}</p>
