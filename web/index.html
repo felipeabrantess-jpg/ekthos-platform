@@ -13,7 +13,11 @@
     <meta name="twitter:image" content="/logo/ekthos-church-og.jpg" />
     <link rel="icon" type="image/png" href="/icons/igv-icon-512.png" />
     <link rel="apple-touch-icon" href="/icons/igv-apple-touch-icon.png" />
-    <!-- PWA IGV: manifest + theme-color. Apple touch icon específico para /igv injetado pelo componente. -->
+    <!-- iOS PWA: sem estas 3 tags o iPhone não instala em standalone (abre no Safari normal) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="IGV" />
+    <!-- PWA IGV: manifest + theme-color -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#D97706" />
     <!-- cache-bust: 2026-06-18 -->

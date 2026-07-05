@@ -1,4 +1,4 @@
-const CACHE = 'igv-pwa-v2'
+const CACHE = 'igv-pwa-v3'
 const PRECACHE = ['/igv', '/igv/sobre', '/igv/seja-membro', '/manifest.json']
 
 self.addEventListener('install', e => {
