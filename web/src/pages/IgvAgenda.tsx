@@ -74,15 +74,15 @@ function Spinner() {
 
 function EmptyEvents() {
   return (
-    <div className="rounded-2xl bg-white border border-black/[0.05] shadow-sm p-8 flex flex-col items-center gap-3 text-center">
+    <div className="rounded-2xl bg-white dark:bg-black border border-black/[0.05] dark:border-white/10 shadow-sm p-8 flex flex-col items-center gap-3 text-center">
       <div
         className="w-12 h-12 rounded-2xl flex items-center justify-center"
         style={{ backgroundColor: `${IGV.primaryColor}15` }}
       >
         <Calendar size={22} strokeWidth={1.5} style={{ color: IGV.primaryColor }} />
       </div>
-      <p className="text-[0.9rem] font-medium text-gray-700">Nenhum evento agendado</p>
-      <p className="text-[0.8rem] text-gray-400 leading-snug">
+      <p className="text-[0.9rem] font-medium text-gray-700 dark:text-white">Nenhum evento agendado</p>
+      <p className="text-[0.8rem] text-gray-400 dark:text-white leading-snug">
         Novos eventos serão anunciados em breve.
       </p>
     </div>
@@ -121,20 +121,20 @@ export default function IgvAgenda() {
 
   return (
     <div
-      className="min-h-screen bg-[#F9F7F4] flex flex-col"
+      className="min-h-screen bg-[#F9F7F4] dark:bg-black flex flex-col"
       style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
     >
       {/* ── Header ── */}
-      <header className="bg-white border-b border-black/[0.05] sticky top-0 z-20">
+      <header className="bg-white dark:bg-black border-b border-black/[0.05] dark:border-white/10 sticky top-0 z-20">
         <div className="max-w-[480px] mx-auto flex items-center gap-3 px-4 py-3.5">
           <Link
             to="/igv"
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 border border-black/[0.05] shrink-0 active:bg-gray-100 transition-colors"
+            className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 dark:bg-white/10 border border-black/[0.05] dark:border-white/10 shrink-0 active:bg-gray-100 dark:active:bg-white/20 transition-colors"
             aria-label="Voltar para IGV"
           >
-            <ChevronLeft size={18} strokeWidth={2} className="text-gray-600" />
+            <ChevronLeft size={18} strokeWidth={2} className="text-gray-600 dark:text-white" />
           </Link>
-          <h1 className="text-[1.05rem] font-bold text-gray-900">Agenda</h1>
+          <h1 className="text-[1.05rem] font-bold text-gray-900 dark:text-white">Agenda</h1>
         </div>
       </header>
 
@@ -148,11 +148,11 @@ export default function IgvAgenda() {
             {horarioGroups.map(([dia, horarios]) => (
               <div
                 key={dia}
-                className="bg-white rounded-2xl border border-black/[0.05] shadow-sm overflow-hidden"
+                className="bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm overflow-hidden"
               >
                 {/* Cabeçalho do dia */}
                 <div
-                  className="px-4 py-2.5 border-b border-black/[0.04]"
+                  className="px-4 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]"
                   style={{ backgroundColor: `${IGV.primaryColor}0d` }}
                 >
                   <p className="text-[0.8rem] font-semibold" style={{ color: IGV.secondaryColor }}>
@@ -161,7 +161,7 @@ export default function IgvAgenda() {
                 </div>
 
                 {/* Horários do dia */}
-                <div className="divide-y divide-black/[0.04]">
+                <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                   {horarios.map((h, i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3">
                       <div
@@ -170,10 +170,10 @@ export default function IgvAgenda() {
                       >
                         <Clock size={15} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
                       </div>
-                      <span className="text-[0.92rem] font-semibold text-gray-900 flex-1">
+                      <span className="text-[0.92rem] font-semibold text-gray-900 dark:text-white flex-1">
                         {h.hora}
                       </span>
-                      <div className="flex items-center gap-1 text-gray-400">
+                      <div className="flex items-center gap-1 text-gray-400 dark:text-white">
                         <MapPin size={12} strokeWidth={1.75} />
                         <span className="text-[0.75rem]">{h.local}</span>
                       </div>
@@ -208,11 +208,11 @@ export default function IgvAgenda() {
                 return (
                   <div
                     key={ev.id}
-                    className="bg-white rounded-2xl border border-black/[0.05] shadow-sm p-4 flex items-start gap-3"
+                    className="bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-4 flex items-start gap-3"
                   >
                     {/* Data pill */}
-                    <div className="flex flex-col items-center justify-center w-12 shrink-0 bg-gray-50 rounded-xl py-2 border border-black/[0.05]">
-                      <span className="text-[0.6rem] font-semibold uppercase text-gray-400 leading-none">
+                    <div className="flex flex-col items-center justify-center w-12 shrink-0 bg-gray-50 dark:bg-white/10 rounded-xl py-2 border border-black/[0.05] dark:border-white/10">
+                      <span className="text-[0.6rem] font-semibold uppercase text-gray-400 dark:text-white/60 leading-none">
                         {monthLabel}
                       </span>
                       <span
@@ -225,24 +225,24 @@ export default function IgvAgenda() {
 
                     {/* Detalhes */}
                     <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[0.9rem] font-semibold text-gray-900 leading-tight">
+                      <p className="text-[0.9rem] font-semibold text-gray-900 dark:text-white leading-tight">
                         {ev.title}
                       </p>
-                      <p className="text-[0.78rem] text-gray-400 mt-0.5">
+                      <p className="text-[0.78rem] text-gray-400 dark:text-white mt-0.5">
                         {formatDate(ev.date)}
                       </p>
                       {ev.startDatetime && (
                         <div className="flex items-center gap-1 mt-1">
-                          <Clock size={12} strokeWidth={1.75} className="text-gray-300" />
-                          <span className="text-[0.75rem] text-gray-400">
+                          <Clock size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
+                          <span className="text-[0.75rem] text-gray-400 dark:text-white">
                             {formatTime(ev.startDatetime)}
                           </span>
                         </div>
                       )}
                       {ev.location && (
                         <div className="flex items-center gap-1 mt-0.5">
-                          <MapPin size={12} strokeWidth={1.75} className="text-gray-300" />
-                          <span className="text-[0.75rem] text-gray-400 truncate">
+                          <MapPin size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
+                          <span className="text-[0.75rem] text-gray-400 dark:text-white truncate">
                             {ev.location}
                           </span>
                         </div>
@@ -256,7 +256,7 @@ export default function IgvAgenda() {
         </section>
       </main>
 
-      <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400">
+      <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400 dark:text-white">
         {IGV.address}
       </footer>
     </div>
