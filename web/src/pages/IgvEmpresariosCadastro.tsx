@@ -50,13 +50,13 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
+      <label className="block text-[0.88rem] font-medium text-white/80 mb-1">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-red-400 ml-0.5">*</span>}
       </label>
       {children}
       {error && (
-        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+        <p className="text-xs text-red-400 mt-1 flex items-center gap-1" data-error>
           <AlertCircle size={11} />
           {error}
         </p>
@@ -66,10 +66,12 @@ function Field({
 }
 
 const baseCls =
-  'w-full border rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none transition-shadow bg-white'
+  'w-full border rounded-xl px-3 py-2.5 text-white placeholder-white/30 focus:outline-none transition-shadow bg-white/[0.06]'
+
+const baseStyle: React.CSSProperties = { fontSize: '16px' }
 
 function borderColor(hasError: boolean): React.CSSProperties {
-  return { borderColor: hasError ? '#ef4444' : '#e5e7eb' }
+  return { ...baseStyle, borderColor: hasError ? '#f87171' : 'rgba(255,255,255,0.15)' }
 }
 
 // ── Página ────────────────────────────────────────────────────────────────────
@@ -179,11 +181,11 @@ export default function IgvEmpresariosCadastro() {
   const pc = IGV.primaryColor
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f9f9f9' }}>
+    <div className="min-h-screen bg-black" style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}>
       {/* Header sticky */}
       <div
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-black/[0.06]"
-        style={{ backgroundColor: '#fff' }}
+        className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
+        style={{ backgroundColor: '#000' }}
       >
         <Link
           to="/igv/empresarios"
@@ -193,8 +195,8 @@ export default function IgvEmpresariosCadastro() {
           <ChevronLeft size={18} strokeWidth={2} />
         </Link>
         <div>
-          <p className="font-semibold text-gray-900 text-[0.9rem] leading-tight">Cadastre seu negócio</p>
-          <p className="text-[0.7rem] text-gray-400">Rede de Negócios IGV</p>
+          <p className="font-semibold text-white text-[1rem] leading-tight">Cadastre seu negócio</p>
+          <p className="text-[0.75rem] text-white/40">Rede de Negócios IGV</p>
         </div>
       </div>
 
@@ -209,13 +211,13 @@ export default function IgvEmpresariosCadastro() {
             >
               <CheckCircle2 size={42} style={{ color: pc }} strokeWidth={1.5} />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Cadastro enviado!</h2>
-            <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-xs">
+            <h2 className="text-xl font-bold text-white mb-3">Cadastro enviado!</h2>
+            <p className="text-[1rem] text-white/60 leading-relaxed mb-8 max-w-xs">
               Seu negócio já está na Rede de Negócios da IGV! Acesse agora para confirmar. 🙏
             </p>
             <Link
               to="/igv/empresarios"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-white"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-[1rem] font-semibold text-white"
               style={{ backgroundColor: pc }}
             >
               Ver a Rede de Negócios
@@ -225,20 +227,20 @@ export default function IgvEmpresariosCadastro() {
         ) : (
         /* ── Formulário ─────────────────────────────────────────────────── */
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Preencha os dados abaixo. Nossa equipe revisa antes de publicar — geralmente em até 24 h.
+            <p className="text-[1rem] text-white/60 leading-relaxed">
+              Preencha os dados abaixo e seu negócio aparece na lista imediatamente.
             </p>
 
             {/* Logo */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Logo do negócio <span className="text-gray-400 font-normal text-xs">(opcional)</span>
+              <label className="block text-[0.88rem] font-medium text-white/80 mb-2">
+                Logo do negócio <span className="text-white/30 font-normal text-xs">(opcional)</span>
               </label>
               <div
                 className="flex items-center gap-4 p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-colors"
                 style={{
-                  borderColor:     errors.logo ? '#ef4444' : logoFile ? pc : '#d1d5db',
-                  backgroundColor: logoFile ? `${pc}08` : '#fafafa',
+                  borderColor:     errors.logo ? '#f87171' : logoFile ? pc : 'rgba(255,255,255,0.2)',
+                  backgroundColor: logoFile ? `${pc}08` : 'rgba(255,255,255,0.03)',
                 }}
                 onClick={() => fileRef.current?.click()}
                 role="button"
@@ -249,7 +251,7 @@ export default function IgvEmpresariosCadastro() {
                   <img
                     src={logoPreview}
                     alt="preview"
-                    className="w-14 h-14 rounded-xl object-cover shrink-0 border border-black/[0.06]"
+                    className="w-14 h-14 rounded-xl object-cover shrink-0 border border-white/10"
                   />
                 ) : (
                   <div
@@ -260,10 +262,10 @@ export default function IgvEmpresariosCadastro() {
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-[0.88rem] font-medium text-white/80">
                     {logoFile ? logoFile.name : 'Toque para selecionar'}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">JPEG, PNG ou WebP · máx 5 MB</p>
+                  <p className="text-xs text-white/40 mt-0.5">JPEG, PNG ou WebP · máx 5 MB</p>
                 </div>
                 <input
                   ref={fileRef}
@@ -274,7 +276,7 @@ export default function IgvEmpresariosCadastro() {
                 />
               </div>
               {(logoError || errors.logo) && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1" data-error>
+                <p className="text-xs text-red-400 mt-1 flex items-center gap-1" data-error>
                   <AlertCircle size={11} />
                   {logoError ?? errors.logo}
                 </p>
@@ -282,8 +284,8 @@ export default function IgvEmpresariosCadastro() {
             </div>
 
             {/* Dados do negócio */}
-            <div className="bg-white rounded-2xl border border-black/[0.06] p-4 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Seu negócio</p>
+            <div className="bg-[#111] rounded-2xl border border-white/10 p-4 space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Seu negócio</p>
 
               <Field label="Nome da empresa" required error={errors.nome}>
                 <input
@@ -302,8 +304,8 @@ export default function IgvEmpresariosCadastro() {
                   value={categoria}
                   onChange={e => { setCategoria(e.target.value); clearError('categoria') }}
                 >
-                  <option value="">Selecione uma categoria</option>
-                  {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="" style={{ background: '#111' }}>Selecione uma categoria</option>
+                  {CATEGORIAS.map(c => <option key={c} value={c} style={{ background: '#111' }}>{c}</option>)}
                 </select>
               </Field>
 
@@ -320,8 +322,8 @@ export default function IgvEmpresariosCadastro() {
             </div>
 
             {/* Contato do negócio */}
-            <div className="bg-white rounded-2xl border border-black/[0.06] p-4 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Contato</p>
+            <div className="bg-[#111] rounded-2xl border border-white/10 p-4 space-y-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Contato</p>
 
               <Field label="Telefone / WhatsApp" required error={errors.telefone}>
                 <input
@@ -347,7 +349,7 @@ export default function IgvEmpresariosCadastro() {
 
               <Field label="Instagram" required error={errors.instagram}>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm select-none">@</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-[1rem] select-none">@</span>
                   <input
                     className={`${baseCls} pl-7`}
                     style={borderColor(!!errors.instagram)}
@@ -361,7 +363,7 @@ export default function IgvEmpresariosCadastro() {
               <Field label="Site (opcional)" error={undefined}>
                 <input
                   className={baseCls}
-                  style={{ borderColor: '#e5e7eb' }}
+                  style={{ ...baseStyle, borderColor: 'rgba(255,255,255,0.15)' }}
                   type="url"
                   value={site}
                   onChange={e => setSite(e.target.value)}
@@ -371,8 +373,8 @@ export default function IgvEmpresariosCadastro() {
             </div>
 
             {/* Quem está cadastrando */}
-            <div className="bg-white rounded-2xl border border-black/[0.06] p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-4">Quem está cadastrando</p>
+            <div className="bg-[#111] rounded-2xl border border-white/10 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Quem está cadastrando</p>
               <Field label="Seu nome" required error={errors.nomeContato}>
                 <input
                   className={baseCls}
@@ -386,8 +388,8 @@ export default function IgvEmpresariosCadastro() {
 
             {/* LGPD */}
             <label
-              className="flex items-start gap-3 bg-white rounded-2xl border p-4 cursor-pointer"
-              style={{ borderColor: errors.lgpd ? '#ef4444' : '#e5e7eb' }}
+              className="flex items-start gap-3 bg-[#111] rounded-2xl border p-4 cursor-pointer"
+              style={{ borderColor: errors.lgpd ? '#f87171' : 'rgba(255,255,255,0.10)' }}
             >
               <input
                 type="checkbox"
@@ -396,13 +398,13 @@ export default function IgvEmpresariosCadastro() {
                 className="mt-0.5 shrink-0 w-4 h-4 rounded cursor-pointer"
                 style={{ accentColor: pc }}
               />
-              <span className="text-sm text-gray-600 leading-relaxed">
+              <span className="text-[0.88rem] text-white/60 leading-relaxed">
                 Autorizo que meus dados e os do meu negócio apareçam publicamente na{' '}
-                <strong>Rede de Negócios da IGV</strong>, conforme a LGPD. Posso solicitar remoção a qualquer momento.
+                <strong className="text-white/80">Rede de Negócios da IGV</strong>, conforme a LGPD. Posso solicitar remoção a qualquer momento.
               </span>
             </label>
             {errors.lgpd && (
-              <p className="text-xs text-red-500 -mt-3 flex items-center gap-1" data-error>
+              <p className="text-xs text-red-400 -mt-3 flex items-center gap-1" data-error>
                 <AlertCircle size={11} />
                 {errors.lgpd}
               </p>
@@ -410,7 +412,7 @@ export default function IgvEmpresariosCadastro() {
 
             {/* Erro de envio */}
             {submitError && (
-              <div className="flex items-start gap-2 p-3.5 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
+              <div className="flex items-start gap-2 p-3.5 rounded-xl bg-red-900/20 border border-red-500/30 text-[0.88rem] text-red-300">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>{submitError}</span>
               </div>
@@ -420,7 +422,7 @@ export default function IgvEmpresariosCadastro() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-3.5 rounded-2xl font-semibold text-white text-sm flex items-center justify-center gap-2 transition-opacity active:scale-[0.99]"
+              className="w-full py-3.5 rounded-2xl font-semibold text-white text-[1rem] flex items-center justify-center gap-2 transition-opacity active:scale-[0.99]"
               style={{ backgroundColor: pc, opacity: submitting ? 0.65 : 1 }}
             >
               {submitting ? (
@@ -430,8 +432,8 @@ export default function IgvEmpresariosCadastro() {
               )}
             </button>
 
-            <p className="text-center text-[0.7rem] text-gray-400 pb-2">
-              Após o envio, a equipe IGV revisa antes de publicar.
+            <p className="text-center text-[0.72rem] text-white/30 pb-2">
+              Seu negócio aparece na lista imediatamente após o envio.
             </p>
           </form>
         )}
