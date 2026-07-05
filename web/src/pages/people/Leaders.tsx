@@ -500,7 +500,7 @@ export default function Leaders() {
           if (m.leader_id === p.id) roles.push({ kind: 'ministry_leader', refId: m.id, name: m.name })
         })
         return { ...p, roles } as Leader
-      }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+      }).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }))
     },
   })
 

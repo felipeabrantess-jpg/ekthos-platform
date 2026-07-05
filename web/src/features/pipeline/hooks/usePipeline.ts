@@ -40,7 +40,7 @@ export function usePipelineBoard(churchId: string) {
         `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+        .order('name_sort', { ascending: true })
 
       if (error) throw new Error(error.message)
 
