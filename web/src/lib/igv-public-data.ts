@@ -7,7 +7,7 @@ export const IGV = {
   slug:            'igv-itaipu',
   name:            'Igreja Gerando Vencedores',
   pastor:          'Pr. Valdir Brasil',
-  address:         'Rua São Fábio 55, Piratininga — Niterói/RJ',
+  address:         'Rua São Fábio 55, Itaipu — Niterói/RJ',
   phone:           '(21) 97711-2618',
   whatsapp:        '5521977112618',
   instagramHandle: 'igvitaipu',
