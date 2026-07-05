@@ -156,9 +156,14 @@ interface PersonCardMobileProps {
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
   onDelete: (p: Person) => void
+  showBirthday?: boolean
 }
 
-function PersonCardMobile({ person, allTags, onView, onEdit, onDelete }: PersonCardMobileProps) {
+function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirthday }: PersonCardMobileProps) {
+  const bdayDay = showBirthday && person.birth_date
+    ? new Date(person.birth_date + 'T00:00:00').getDate()
+    : null
+
   return (
     <div
       className="bg-white rounded-2xl border border-border-default p-4 shadow-sm active:bg-bg-primary transition-colors cursor-pointer"
@@ -174,7 +179,14 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete }: PersonC
             {(person.name ?? '?').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? '—'}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? '—'}</p>
+              {bdayDay !== null && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  🎂 dia {bdayDay}
+                </span>
+              )}
+            </div>
             {person.email && (
               <p className="text-xs text-text-secondary truncate mt-0.5">{person.email}</p>
             )}
@@ -218,9 +230,14 @@ interface PersonRowProps {
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
   onDelete: (p: Person) => void
+  showBirthday?: boolean
 }
 
-function PersonRow({ person, allTags, onView, onEdit, onDelete }: PersonRowProps) {
+function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: PersonRowProps) {
+  const bdayDay = showBirthday && person.birth_date
+    ? new Date(person.birth_date + 'T00:00:00').getDate()
+    : null
+
   return (
     <tr
       className="hover:bg-bg-hover transition-colors cursor-pointer"
@@ -228,7 +245,14 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete }: PersonRowProps
     >
       <td className="px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
+            {bdayDay !== null && (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                🎂 dia {bdayDay}
+              </span>
+            )}
+          </div>
           {person.email && (
             <p className="text-xs text-text-secondary">{person.email}</p>
           )}
@@ -288,12 +312,16 @@ export default function People() {
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
 
   // A1: tabs filtradas carregam tudo (client-side); geral pagina no servidor
-  const isFilteredTab = activeTab !== 'geral'
+  // Aniversários: filtro no servidor via birth_month (coluna gerada) — retorna todos do mês
+  const isFilteredTab  = activeTab !== 'geral'
+  const isBirthdayTab  = activeTab === 'aniversarios'
+  const currentMonth   = new Date().getMonth() + 1  // 1-12
   const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', {
     search,
-    page:     isFilteredTab ? 0 : currentPage,
-    pageSize: isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
-    unitId:   unitFilter || undefined,
+    page:       isFilteredTab ? 0 : currentPage,
+    pageSize:   isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
+    unitId:     unitFilter || undefined,
+    birthMonth: isBirthdayTab ? currentMonth : undefined,
   })
   const { data: totalCount } = usePeopleCount(churchId ?? '')
   const { data: allTags = [] } = useTags(churchId ?? '')
@@ -565,6 +593,7 @@ export default function People() {
                 onView={handleView}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                showBirthday={isBirthdayTab}
               />
             ))}
           </div>
@@ -591,6 +620,7 @@ export default function People() {
                       onView={handleView}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
+                      showBirthday={isBirthdayTab}
                     />
                   ))}
                 </tbody>

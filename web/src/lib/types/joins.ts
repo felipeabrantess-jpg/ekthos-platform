@@ -125,6 +125,9 @@ export type Interaction        = Row<'interactions'>
 
 /** people + current pipeline stage via person_pipeline + flags via person_tags */
 export interface PersonWithStage extends Person {
+  /** Geradas: EXTRACT(MONTH/DAY FROM birth_date). Presentes após migration add_birth_month_day_generated_cols. */
+  birth_month?: number | null
+  birth_day?:   number | null
   person_pipeline: Array<{
     stage_id:         string
     last_activity_at: string | null
