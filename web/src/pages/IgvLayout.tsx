@@ -4,7 +4,7 @@ import { IgvThemeProvider } from '@/contexts/IgvThemeContext'
 export default function IgvLayout() {
   return (
     <IgvThemeProvider>
-      <div className="dark">
+      <div className="dark overflow-x-hidden">
         <Outlet />
       </div>
     </IgvThemeProvider>
