@@ -9,12 +9,13 @@
  *  - Em Risco       → stage: frequentador
  */
 
-import { useState, Component, type ReactNode } from 'react'
+import { useState, useMemo, Component, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown } from 'lucide-react'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, CheckCircle2, Phone } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
+import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import PersonModal from '@/features/people/components/PersonModal'
@@ -289,6 +290,109 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: 
   )
 }
 
+// ── BirthdayContactCard — CRM de parabéns para operadores ───────────────────
+
+interface BirthdayContactCardProps {
+  person: PersonWithStage
+  contact: BirthdayContact | null
+  churchId: string
+  monthRef: string
+}
+
+function BirthdayContactCard({ person, contact, churchId, monthRef }: BirthdayContactCardProps) {
+  const toggleContact = useToggleBirthdayContact()
+
+  const bday = person.birth_date ? new Date(person.birth_date + 'T00:00:00') : null
+  const dayStr   = bday ? String(bday.getDate()).padStart(2, '0') : '?'
+  const MONTHS   = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+  const monthStr = bday ? MONTHS[bday.getMonth()] : '?'
+
+  const isContacted = Boolean(contact)
+  const contactedAt = contact?.contacted_at ? new Date(contact.contacted_at) : null
+
+  const handleToggle = () => {
+    void toggleContact.mutateAsync({
+      contactId: contact?.id ?? null,
+      personId:  person.id,
+      churchId,
+      monthRef,
+    })
+  }
+
+  return (
+    <div
+      className={`rounded-2xl border p-4 transition-all ${
+        isContacted
+          ? 'bg-green-50 border-green-200'
+          : 'bg-white border-border-default shadow-sm'
+      }`}
+    >
+      {/* Header: badge de data + nome + telefone */}
+      <div className="flex items-start gap-3 mb-3">
+        <div
+          className="flex flex-col items-center justify-center rounded-xl px-3 py-2 shrink-0 select-none"
+          style={{ backgroundColor: '#D97706', minWidth: 52 }}
+        >
+          <span className="text-white font-bold leading-none" style={{ fontSize: '1.3rem' }}>{dayStr}</span>
+          <span className="text-amber-100 font-medium uppercase" style={{ fontSize: '0.7rem' }}>{monthStr}</span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-text-primary leading-snug" style={{ fontSize: '1.1rem' }}>
+            {person.name ?? '—'}
+          </p>
+          {person.phone ? (
+            <a
+              href={`tel:${person.phone}`}
+              className="flex items-center gap-1 mt-1 font-medium text-blue-600"
+              style={{ fontSize: '0.97rem' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Phone size={14} strokeWidth={2} />
+              {formatPhone(person.phone)}
+            </a>
+          ) : (
+            <p className="text-xs text-text-tertiary mt-1">Sem telefone cadastrado</p>
+          )}
+        </div>
+
+        {isContacted && (
+          <CheckCircle2 size={22} strokeWidth={2.5} className="text-green-600 shrink-0 mt-0.5" />
+        )}
+      </div>
+
+      {/* Info do contato registrado */}
+      {contact && contactedAt && (
+        <p className="mb-3 text-green-700" style={{ fontSize: '0.78rem' }}>
+          Contatado por <strong>{contact.contacted_by_name}</strong> em{' '}
+          {contactedAt.toLocaleDateString('pt-BR')} às{' '}
+          {contactedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      )}
+
+      {/* Botão principal — grande para operadores com pouca familiaridade digital */}
+      <button
+        onClick={handleToggle}
+        disabled={toggleContact.isPending}
+        className={`w-full rounded-xl font-bold transition-all active:scale-[0.99] disabled:opacity-60 ${
+          isContacted ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-white'
+        }`}
+        style={{
+          padding: '14px 0',
+          fontSize: '1.05rem',
+          backgroundColor: !isContacted ? '#D97706' : undefined,
+        }}
+      >
+        {toggleContact.isPending
+          ? 'Aguarde...'
+          : isContacted
+          ? '✓ Contatado  —  toque para desfazer'
+          : '📞 Marcar como contatado'}
+      </button>
+    </div>
+  )
+}
+
 // ── Componente principal ─────────────────────────────────────────────────────
 
 export default function People() {
@@ -315,7 +419,9 @@ export default function People() {
   // Aniversários: filtro no servidor via birth_month (coluna gerada) — retorna todos do mês
   const isFilteredTab  = activeTab !== 'geral'
   const isBirthdayTab  = activeTab === 'aniversarios'
-  const currentMonth   = new Date().getMonth() + 1  // 1-12
+  const now            = new Date()
+  const currentMonth   = now.getMonth() + 1  // 1-12
+  const monthRef       = `${now.getFullYear()}-${String(currentMonth).padStart(2, '0')}`
   const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', {
     search,
     page:       isFilteredTab ? 0 : currentPage,
@@ -327,6 +433,15 @@ export default function People() {
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
   const deletePerson = useDeletePerson()
+  // Contatos de aniversário do mês — só carrega quando na aba Aniversários
+  const { data: contactsData = [] } = useBirthdayContacts(
+    isBirthdayTab ? (churchId ?? '') : '',
+    monthRef,
+  )
+  const contactByPerson = useMemo(
+    () => new Map(contactsData.map((c) => [c.person_id, c])),
+    [contactsData],
+  )
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -583,50 +698,91 @@ export default function People() {
         </div>
       ) : (
         <>
-          {/* ── Mobile: cards ─────────────────────────────────── */}
-          <div className="md:hidden space-y-2">
-            {filteredPeople.map((person) => (
-              <PersonCardMobile
-                key={person.id}
-                person={person}
-                allTags={allTags}
-                onView={handleView}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                showBirthday={isBirthdayTab}
-              />
-            ))}
-          </div>
-
-          {/* ── Desktop: tabela ───────────────────────────────── */}
-          <div className="hidden md:block bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-bg-hover border-b border-border-default">
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border-default">
-                  {filteredPeople.map((person) => (
-                    <PersonRow
-                      key={person.id}
-                      person={person}
-                      allTags={allTags}
-                      onView={handleView}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                      showBirthday={isBirthdayTab}
-                    />
-                  ))}
-                </tbody>
-              </table>
+          {/* ── Birthday CRM: contador de progresso ─────────────────────── */}
+          {isBirthdayTab && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-semibold text-amber-900">
+                  🎂 Parabéns de {now.toLocaleString('pt-BR', { month: 'long' })}
+                </p>
+                <span className="text-sm font-bold text-amber-800">
+                  {contactsData.length} de {filteredPeople.length} contatados
+                </span>
+              </div>
+              <div className="h-2.5 bg-amber-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                  style={{
+                    width: filteredPeople.length > 0
+                      ? `${(contactsData.length / filteredPeople.length) * 100}%`
+                      : '0%',
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ── Birthday CRM: cards de contato ───────────────────────────── */}
+          {isBirthdayTab ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredPeople.map((person) => (
+                <BirthdayContactCard
+                  key={person.id}
+                  person={person}
+                  contact={contactByPerson.get(person.id) ?? null}
+                  churchId={churchId!}
+                  monthRef={monthRef}
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* ── Mobile: cards ─────────────────────────────────── */}
+              <div className="md:hidden space-y-2">
+                {filteredPeople.map((person) => (
+                  <PersonCardMobile
+                    key={person.id}
+                    person={person}
+                    allTags={allTags}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    showBirthday={false}
+                  />
+                ))}
+              </div>
+
+              {/* ── Desktop: tabela ───────────────────────────────── */}
+              <div className="hidden md:block bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-bg-hover border-b border-border-default">
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-default">
+                      {filteredPeople.map((person) => (
+                        <PersonRow
+                          key={person.id}
+                          person={person}
+                          allTags={allTags}
+                          onView={handleView}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                          showBirthday={false}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
