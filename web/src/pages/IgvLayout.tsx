@@ -1,5 +1,6 @@
-import { Outlet }    from 'react-router-dom'
-import { Sun, Moon } from 'lucide-react'
+import { useRef, useEffect }  from 'react'
+import { Outlet }             from 'react-router-dom'
+import { Sun, Moon }          from 'lucide-react'
 import { IgvThemeProvider, useIgvTheme } from '@/contexts/IgvThemeContext'
 
 function IgvThemeToggle() {
@@ -20,8 +21,19 @@ function IgvThemeToggle() {
 
 function IgvLayoutInner() {
   const { isDark } = useIgvTheme()
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Aplica/remove .dark imperatively via ref — garante que o DOM está
+  // sempre sincronizado mesmo em casos de re-render, Suspense fallback
+  // ou eventual remount pelo React Router.
+  useEffect(() => {
+    const el = wrapperRef.current
+    if (!el) return
+    el.classList.toggle('dark', isDark)
+  }, [isDark])
+
   return (
-    <div className={isDark ? 'dark' : ''}>
+    <div ref={wrapperRef} className={isDark ? 'dark' : ''}>
       <Outlet />
       <div className="fixed top-4 right-4 z-50 pointer-events-auto">
         <IgvThemeToggle />
