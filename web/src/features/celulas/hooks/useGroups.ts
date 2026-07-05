@@ -105,9 +105,9 @@ export function useCellMembers(groupId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cell_members')
-        .select('*, people ( id, name, phone, email )')
+        .select('*, people ( id, name, phone, email, name_sort )')
         .eq('group_id', groupId)
-        .order('created_at', { ascending: true })
+        .order('name_sort', { ascending: true, referencedTable: 'people' })
 
       if (error) throw new Error(error.message)
       return data ?? []

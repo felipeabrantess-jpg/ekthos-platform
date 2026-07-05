@@ -10,12 +10,12 @@ export function useVoluntarios(churchId: string, ministryId?: string) {
         .from('volunteers')
         .select(`
           *,
-          people ( id, name, phone ),
+          people ( id, name, phone, name_sort ),
           ministries ( id, name )
         `)
         .eq('church_id', churchId)
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
+        .order('name_sort', { ascending: true, referencedTable: 'people' })
 
       if (ministryId) {
         query = query.eq('ministry_id', ministryId)
