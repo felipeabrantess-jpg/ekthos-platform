@@ -128,7 +128,7 @@ export default function IgvEmpresariosCadastro() {
     if (!email.trim())       errs.email       = 'E-mail é obrigatório'
     if (!instagram.trim())   errs.instagram   = 'Instagram é obrigatório'
     if (!nomeContato.trim()) errs.nomeContato = 'Seu nome é obrigatório'
-    if (!logoFile)           errs.logo        = 'Logo é obrigatória'
+    // logo é opcional — sem validação
     if (!lgpd)               errs.lgpd        = 'Aceite o termo para enviar'
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -232,7 +232,7 @@ export default function IgvEmpresariosCadastro() {
             {/* Logo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Logo do negócio <span className="text-red-500">*</span>
+                Logo do negócio <span className="text-gray-400 font-normal text-xs">(opcional)</span>
               </label>
               <div
                 className="flex items-center gap-4 p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-colors"
