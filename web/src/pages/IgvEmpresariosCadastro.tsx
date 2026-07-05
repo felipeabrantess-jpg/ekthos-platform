@@ -211,7 +211,7 @@ export default function IgvEmpresariosCadastro() {
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-3">Cadastro enviado!</h2>
             <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-xs">
-              Nossa equipe vai revisar e em breve seu negócio aparece na Rede de Negócios da IGV. 🙏
+              Seu negócio já está na Rede de Negócios da IGV! Acesse agora para confirmar. 🙏
             </p>
             <Link
               to="/igv/empresarios"

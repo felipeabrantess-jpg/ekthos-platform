@@ -83,7 +83,7 @@ serve(async (req) => {
     }
 
     const ext = (logo_mime as string).split('/')[1].replace('jpeg', 'jpg')
-    const path = `empresarios/pendentes/${IGV_CHURCH_ID}/${Date.now()}.${ext}`
+    const path = `empresarios/${IGV_CHURCH_ID}/${Date.now()}.${ext}`
 
     const { error: upErr } = await supabase.storage
       .from('church-logos')
@@ -111,7 +111,7 @@ serve(async (req) => {
     lgpd_consent: true,
     foto_url,
     active: true,
-    authorized_public: false,
+    authorized_public: true,
   })
 
   if (insertErr) {
