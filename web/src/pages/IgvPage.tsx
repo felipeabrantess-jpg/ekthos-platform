@@ -457,7 +457,7 @@ export default function IgvPage() {
 
         <Link
           to="/igv/empresarios"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-4 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-4 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -518,7 +518,7 @@ export default function IgvPage() {
 
         <Link
           to="/igv/oracao"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
