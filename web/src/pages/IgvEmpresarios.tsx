@@ -1,6 +1,6 @@
 import { useState, useEffect }   from 'react'
 import { Link }                   from 'react-router-dom'
-import { ChevronLeft, Briefcase } from 'lucide-react'
+import { ChevronLeft, Briefcase, Plus } from 'lucide-react'
 import { supabase }               from '@/lib/supabase'
 import { IGV }                    from '@/lib/igv-public-data'
 
@@ -226,6 +226,16 @@ export default function IgvEmpresarios() {
             Conheça os empreendedores da nossa comunidade e apoie quem faz parte da família IGV.
           </p>
         </div>
+
+        {/* CTA cadastro — sempre visível */}
+        <Link
+          to="/igv/empresarios/cadastrar"
+          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-semibold text-[1.02rem] text-white mb-6 active:opacity-80 transition-opacity"
+          style={{ backgroundColor: IGV.primaryColor }}
+        >
+          <Plus size={18} strokeWidth={2.5} />
+          Cadastrar meu negócio
+        </Link>
 
         {loading ? (
           <div className="flex justify-center py-16">

@@ -164,32 +164,6 @@ function ActionCard({
   )
 }
 
-// ── Card "Em breve" ─────────────────────────────────────────────────
-
-function ComingSoonCard({
-  label,
-  icon: Icon,
-  onClick,
-  wide = false,
-}: {
-  label: string
-  icon: React.ElementType
-  onClick: () => void
-  wide?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`relative flex ${wide ? 'flex-row gap-2.5 px-4 justify-center h-[52px]' : 'flex-col items-center justify-center h-[76px] gap-1.5'} bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 active:bg-gray-50/60 dark:active:bg-white/5 transition-colors`}
-    >
-      <span className="absolute top-1.5 right-2 text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-900/30 text-amber-400 border border-amber-600/30 leading-tight">
-        Em breve
-      </span>
-      <Icon size={wide ? 18 : 20} strokeWidth={1.75} className="text-gray-300 dark:text-white/30 shrink-0" />
-      <span className={`${wide ? 'text-[0.9rem]' : 'text-[0.82rem]'} font-medium text-gray-400 dark:text-white leading-tight`}>{label}</span>
-    </button>
-  )
-}
 
 // ── Componente principal ───────────────────────────────────────────
 
@@ -238,10 +212,6 @@ export default function IgvPage() {
   function triggerToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(null), 2500)
-  }
-
-  function showComingSoon() {
-    triggerToast('Essa funcionalidade chega em breve! 🙌')
   }
 
   function openLink(url: string) {
@@ -496,25 +466,43 @@ export default function IgvPage() {
           </ActionCard>
         </div>
 
-        <p className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white/50 mb-2.5">
-          Em breve
-        </p>
-
-        <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-          <Link
-            to="/igv/gabinete"
-            className="flex flex-col items-center justify-center h-[76px] gap-1.5 bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 hover:shadow-md active:scale-[0.99] transition-all"
-          >
+        <Link
+          to="/igv/gabinete"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+        >
+          <div className="flex items-center gap-3">
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
             >
               <Building2 size={18} strokeWidth={1.75} />
             </div>
-            <p className="font-semibold text-gray-800 dark:text-white text-[0.86rem] leading-tight">Gabinetes</p>
-          </Link>
-          <ComingSoonCard label="Eventos"   icon={CalendarCheck} onClick={showComingSoon} />
-        </div>
+            <div>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Gabinete Pastoral</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Contato com os líderes da IGV</p>
+            </div>
+          </div>
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
+        </Link>
+
+        <Link
+          to="/igv/agenda"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
+            >
+              <CalendarCheck size={18} strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Eventos</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Próximas atividades da IGV</p>
+            </div>
+          </div>
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
+        </Link>
 
         <Link
           to="/igv/oracao"
