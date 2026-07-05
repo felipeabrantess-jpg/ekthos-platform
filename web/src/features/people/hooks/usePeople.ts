@@ -45,7 +45,7 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+        .order('name_sort', { ascending: true })
         .range(from, to)
 
       if (filters.search) {
