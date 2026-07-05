@@ -16,6 +16,11 @@ interface PeopleFilters {
   page?: number
   /** Tamanho da página. Default: PEOPLE_PAGE_SIZE. Passar 500 para buscar tudo nas tabs filtradas. */
   pageSize?: number
+  /**
+   * Filtra por mês de aniversário (1–12) usando a coluna gerada birth_month.
+   * Quando definido: ignora paginação (retorna todos do mês), ordena por birth_day ASC.
+   */
+  birthMonth?: number
 }
 
 // Lista pessoas com stage atual
@@ -23,10 +28,12 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
   return useQuery({
     queryKey: ['people', churchId, filters],
     queryFn: async (): Promise<PersonWithStage[]> => {
-      const page     = filters.page     ?? 0
-      const pageSize = filters.pageSize ?? PEOPLE_PAGE_SIZE
-      const from     = page * pageSize
-      const to       = from + pageSize - 1
+      const isBirthday = Boolean(filters.birthMonth)
+      const page       = filters.page     ?? 0
+      // Quando filtrando por aniversário: busca até 9999 (todos do mês, sem paginação)
+      const pageSize   = isBirthday ? 9999 : (filters.pageSize ?? PEOPLE_PAGE_SIZE)
+      const from       = page * pageSize
+      const to         = from + pageSize - 1
 
       let query = supabase
         .from('people')
@@ -45,8 +52,22 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
-        .order('name_sort', { ascending: true })
-        .range(from, to)
+
+      // Ordenação: dia do aniversário quando filtrando por mês, senão alfabético
+      if (isBirthday) {
+        query = query
+          .order('birth_day',   { ascending: true })
+          .order('name_sort',   { ascending: true })
+      } else {
+        query = query.order('name_sort', { ascending: true })
+      }
+
+      query = query.range(from, to)
+
+      if (filters.birthMonth) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).eq('birth_month', filters.birthMonth)
+      }
 
       if (filters.search) {
         query = query.or(
