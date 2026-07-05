@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react'
 import { Link }                from 'react-router-dom'
 import { Building2, ChevronLeft, Clock } from 'lucide-react'
+import { useIgvTheme } from '@/contexts/IgvThemeContext'
 
 const IGV_COLOR       = '#D97706'
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
@@ -55,6 +56,8 @@ function formatSlotShort(iso: string): string {
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export default function IgvGabinete() {
+  const { isDark } = useIgvTheme()
+
   const [pastors, setPastors]               = useState<Pastor[]>([])
   const [loadingPastors, setLoadingPastors] = useState(true)
   const [slots, setSlots]                   = useState<Slot[]>([])
@@ -128,8 +131,8 @@ export default function IgvGabinete() {
   if (state === 'success') {
     return (
       <div
-        className="min-h-screen flex flex-col items-center justify-center px-5 text-center"
-        style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#FAFAFA' }}
+        className="min-h-screen flex flex-col items-center justify-center px-5 text-center bg-[#FAFAFA] dark:bg-black"
+        style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
       >
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
@@ -137,10 +140,10 @@ export default function IgvGabinete() {
         >
           <Building2 size={28} strokeWidth={1.5} style={{ color: IGV_COLOR }} />
         </div>
-        <h2 className="text-[1.2rem] font-bold text-gray-900 mb-2">
+        <h2 className="text-[1.2rem] font-bold text-gray-900 dark:text-white mb-2">
           Pedido registrado!
         </h2>
-        <p className="text-[0.88rem] text-gray-500 leading-relaxed max-w-xs mb-8">
+        <p className="text-[0.88rem] text-gray-500 dark:text-white leading-relaxed max-w-xs mb-8">
           Nossa equipe pastoral entrará em contato para confirmar o dia e horário do seu atendimento.
         </p>
         <Link
@@ -157,17 +160,17 @@ export default function IgvGabinete() {
   // ── Formulário ──────────────────────────────────────────────────────────────
   return (
     <div
-      style={{ fontFamily: "'DM Sans', system-ui, sans-serif", background: '#FAFAFA', minHeight: '100svh' }}
-      className="flex flex-col"
+      style={{ fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100svh' }}
+      className="flex flex-col bg-[#FAFAFA] dark:bg-black"
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-safe-top pt-5 pb-4">
-        <Link to="/igv" className="p-1 -ml-1 rounded-lg text-gray-500 hover:text-gray-700">
+        <Link to="/igv" className="p-1 -ml-1 rounded-lg text-gray-500 dark:text-white hover:text-gray-700 dark:hover:text-white/80">
           <ChevronLeft size={22} strokeWidth={2} />
         </Link>
         <div>
-          <h1 className="text-[1rem] font-bold text-gray-900">Gabinete Pastoral</h1>
-          <p className="text-[0.72rem] text-gray-400">Solicitação de atendimento</p>
+          <h1 className="text-[1rem] font-bold text-gray-900 dark:text-white">Gabinete Pastoral</h1>
+          <p className="text-[0.72rem] text-gray-400 dark:text-white">Solicitação de atendimento</p>
         </div>
       </div>
 
@@ -176,7 +179,7 @@ export default function IgvGabinete() {
         {/* Escolha do pastor */}
         {!loadingPastors && pastors.length > 0 && (
           <section>
-            <p className="text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide mb-2.5">
+            <p className="text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2.5">
               Pastor (opcional)
             </p>
             <div className="flex flex-col gap-2">
@@ -187,8 +190,8 @@ export default function IgvGabinete() {
                   onClick={() => setPastorId(prev => prev === p.id ? null : p.id)}
                   className="flex items-center gap-3 rounded-2xl p-3.5 border text-left transition-all"
                   style={{
-                    borderColor: pastorId === p.id ? IGV_COLOR : 'rgba(0,0,0,0.07)',
-                    backgroundColor: pastorId === p.id ? `${IGV_COLOR}0D` : '#fff',
+                    borderColor: pastorId === p.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)'),
+                    backgroundColor: pastorId === p.id ? `${IGV_COLOR}0D` : (isDark ? '#000' : '#fff'),
                     boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                   }}
                 >
@@ -207,8 +210,8 @@ export default function IgvGabinete() {
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-[0.88rem] font-semibold text-gray-900 truncate">{p.name ?? '—'}</p>
-                    <p className="text-[0.74rem] text-gray-400 truncate">{p.role}</p>
+                    <p className="text-[0.88rem] font-semibold text-gray-900 dark:text-white truncate">{p.name ?? '—'}</p>
+                    <p className="text-[0.74rem] text-gray-400 dark:text-white truncate">{p.role}</p>
                   </div>
                   {pastorId === p.id && (
                     <div
@@ -229,13 +232,13 @@ export default function IgvGabinete() {
         {/* Slots disponíveis (quando pastor selecionado) */}
         {pastorId && (
           <section>
-            <p className="text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide mb-2.5">
+            <p className="text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2.5">
               Horários disponíveis
             </p>
             {loadingSlots ? (
-              <p className="text-[0.82rem] text-gray-400">Buscando horários...</p>
+              <p className="text-[0.82rem] text-gray-400 dark:text-white">Buscando horários...</p>
             ) : slots.length === 0 ? (
-              <p className="text-[0.82rem] text-gray-400">
+              <p className="text-[0.82rem] text-gray-400 dark:text-white">
                 Nenhum horário cadastrado. Informe sua preferência abaixo.
               </p>
             ) : (
@@ -247,17 +250,17 @@ export default function IgvGabinete() {
                     onClick={() => setSelectedSlotId(prev => prev === s.id ? null : s.id)}
                     className="flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-all"
                     style={{
-                      borderColor: selectedSlotId === s.id ? IGV_COLOR : 'rgba(0,0,0,0.07)',
-                      backgroundColor: selectedSlotId === s.id ? `${IGV_COLOR}0D` : '#fff',
+                      borderColor: selectedSlotId === s.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)'),
+                      backgroundColor: selectedSlotId === s.id ? `${IGV_COLOR}0D` : (isDark ? '#000' : '#fff'),
                       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                     }}
                   >
-                    <Clock size={16} strokeWidth={1.8} style={{ color: selectedSlotId === s.id ? IGV_COLOR : '#9CA3AF' }} className="shrink-0" />
+                    <Clock size={16} strokeWidth={1.8} style={{ color: selectedSlotId === s.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.4)' : '#9CA3AF') }} className="shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[0.86rem] font-semibold text-gray-900 capitalize">
+                      <p className="text-[0.86rem] font-semibold text-gray-900 dark:text-white capitalize">
                         {formatSlotShort(s.slot_datetime)}
                       </p>
-                      <p className="text-[0.74rem] text-gray-400">{s.duration_minutes} minutos</p>
+                      <p className="text-[0.74rem] text-gray-400 dark:text-white">{s.duration_minutes} minutos</p>
                     </div>
                     {selectedSlotId === s.id && (
                       <div
@@ -278,7 +281,7 @@ export default function IgvGabinete() {
 
         {/* Tema */}
         <section>
-          <label className="block text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <label className="block text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2">
             Tema *
           </label>
           <div className="flex flex-wrap gap-2">
@@ -289,8 +292,8 @@ export default function IgvGabinete() {
                 onClick={() => setTema(t)}
                 className="px-3.5 py-1.5 rounded-full text-[0.82rem] font-medium transition-colors"
                 style={{
-                  backgroundColor: tema === t ? IGV_COLOR : 'rgba(0,0,0,0.05)',
-                  color: tema === t ? '#fff' : '#374151',
+                  backgroundColor: tema === t ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
+                  color: tema === t ? '#fff' : (isDark ? '#fff' : '#374151'),
                 }}
               >
                 {t}
@@ -301,7 +304,7 @@ export default function IgvGabinete() {
 
         {/* Tipo de atendimento */}
         <section>
-          <label className="block text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <label className="block text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2">
             Tipo de atendimento
           </label>
           <div className="flex gap-2">
@@ -312,8 +315,8 @@ export default function IgvGabinete() {
                 onClick={() => setTipo(t)}
                 className="flex-1 py-2 rounded-xl text-[0.82rem] font-medium transition-colors"
                 style={{
-                  backgroundColor: tipo === t ? IGV_COLOR : 'rgba(0,0,0,0.05)',
-                  color: tipo === t ? '#fff' : '#374151',
+                  backgroundColor: tipo === t ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
+                  color: tipo === t ? '#fff' : (isDark ? '#fff' : '#374151'),
                 }}
               >
                 {t}
@@ -324,7 +327,7 @@ export default function IgvGabinete() {
 
         {/* Preferência de data/horário */}
         <section>
-          <label className="block text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          <label className="block text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2">
             Preferência de data/horário
           </label>
           <input
@@ -333,14 +336,14 @@ export default function IgvGabinete() {
             onChange={e => setPreferred(e.target.value)}
             placeholder="Ex: Sábado após as 14h, Segunda às 19h..."
             maxLength={200}
-            className="w-full rounded-xl border border-black/[0.08] bg-white px-4 py-3 text-[0.88rem] text-gray-900 placeholder-gray-400 focus:outline-none"
+            className="w-full rounded-xl border border-black/[0.08] dark:border-white/10 bg-white dark:bg-black px-4 py-3 text-[0.88rem] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none"
             style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
           />
         </section>
 
         {/* Dados pessoais */}
         <section className="space-y-3">
-          <p className="text-[0.78rem] font-semibold text-gray-500 uppercase tracking-wide">
+          <p className="text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide">
             Seus dados
           </p>
           <input
@@ -349,7 +352,7 @@ export default function IgvGabinete() {
             onChange={e => setName(e.target.value)}
             required
             placeholder="Nome completo *"
-            className="w-full rounded-xl border border-black/[0.08] bg-white px-4 py-3 text-[0.88rem] text-gray-900 placeholder-gray-400 focus:outline-none"
+            className="w-full rounded-xl border border-black/[0.08] dark:border-white/10 bg-white dark:bg-black px-4 py-3 text-[0.88rem] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none"
             style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
           />
           <input
@@ -358,15 +361,15 @@ export default function IgvGabinete() {
             onChange={e => setPhone(e.target.value)}
             required
             placeholder="WhatsApp / telefone *"
-            className="w-full rounded-xl border border-black/[0.08] bg-white px-4 py-3 text-[0.88rem] text-gray-900 placeholder-gray-400 focus:outline-none"
+            className="w-full rounded-xl border border-black/[0.08] dark:border-white/10 bg-white dark:bg-black px-4 py-3 text-[0.88rem] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none"
             style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
           />
         </section>
 
         {/* LGPD */}
-        <p className="text-[0.72rem] text-gray-400 leading-relaxed">
+        <p className="text-[0.72rem] text-gray-400 dark:text-white leading-relaxed">
           Seus dados e o assunto do atendimento são tratados com{' '}
-          <strong className="text-gray-600">sigilo pastoral absoluto</strong>. Nunca
+          <strong className="text-gray-600 dark:text-white">sigilo pastoral absoluto</strong>. Nunca
           compartilhados com terceiros nem enviados automaticamente por WhatsApp.
           Nossa equipe entrará em contato para confirmar o horário.
         </p>

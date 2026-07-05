@@ -8,6 +8,7 @@ import { useChurch } from '@/hooks/useChurch'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Layout from '@/components/Layout'
 import AdminLayout from '@/components/AdminLayout'
+import IgvLayout from '@/pages/IgvLayout'
 import Spinner from '@/components/ui/Spinner'
 
 // ── Lazy page imports ───────────────────────────────────────
@@ -342,17 +343,20 @@ export default function App() {
           />
 
           {/* ── PWA Público IGV — Fase 0 (path-based, sem auth, sem Layout CRM) ── */}
-          <Route path="/igv" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvPage /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/sobre" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAboutPage /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/seja-membro" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvSejaMembroPage /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/biblia"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvBiblia /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/agenda"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAgenda /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/cursos"       element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/empresarios"          element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresarios /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/empresarios/cadastrar" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresariosCadastro /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/celulas"  element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCelulas /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/oracao"   element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
-          <Route path="/igv/gabinete" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvGabinete /></Suspense></ErrorBoundary>} />
+          {/* IgvLayout: contexto de tema isolado + botão sol/lua flutuante. NÃO afeta o CRM. */}
+          <Route element={<IgvLayout />}>
+            <Route path="/igv"                    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvPage /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/sobre"              element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAboutPage /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/seja-membro"        element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvSejaMembroPage /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/biblia"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvBiblia /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/agenda"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAgenda /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/cursos"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/empresarios"         element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresarios /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/empresarios/cadastrar" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresariosCadastro /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/celulas"            element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCelulas /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/oracao"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
+            <Route path="/igv/gabinete"           element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvGabinete /></Suspense></ErrorBoundary>} />
+          </Route>
 
           {/* ── LGPD — Políticas públicas ── */}
           <Route path="/privacy" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><Privacy /></Suspense></ErrorBoundary>} />

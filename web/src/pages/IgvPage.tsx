@@ -156,10 +156,10 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center bg-white rounded-2xl border border-black/[0.05] shadow-sm p-3 h-[76px] gap-1.5 active:bg-gray-50/80 transition-colors"
+      className="flex flex-col items-center justify-center bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 h-[76px] gap-1.5 active:bg-gray-50/80 dark:active:bg-white/10 transition-colors"
     >
       {children}
-      <span className="text-[0.72rem] font-medium text-gray-700 leading-tight">{label}</span>
+      <span className="text-[0.72rem] font-medium text-gray-700 dark:text-white leading-tight">{label}</span>
     </button>
   )
 }
@@ -180,13 +180,13 @@ function ComingSoonCard({
   return (
     <button
       onClick={onClick}
-      className={`relative flex ${wide ? 'flex-row gap-2.5 px-4 justify-center h-[52px]' : 'flex-col items-center justify-center h-[76px] gap-1.5'} bg-white rounded-2xl border border-black/[0.05] shadow-sm p-3 active:bg-gray-50/60 transition-colors`}
+      className={`relative flex ${wide ? 'flex-row gap-2.5 px-4 justify-center h-[52px]' : 'flex-col items-center justify-center h-[76px] gap-1.5'} bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 active:bg-gray-50/60 dark:active:bg-white/5 transition-colors`}
     >
       <span className="absolute top-1.5 right-2 text-[0.55rem] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 leading-tight">
         Em breve
       </span>
-      <Icon size={wide ? 18 : 20} strokeWidth={1.75} className="text-gray-300 shrink-0" />
-      <span className={`${wide ? 'text-[0.8rem]' : 'text-[0.72rem]'} font-medium text-gray-400 leading-tight`}>{label}</span>
+      <Icon size={wide ? 18 : 20} strokeWidth={1.75} className="text-gray-300 dark:text-white/30 shrink-0" />
+      <span className={`${wide ? 'text-[0.8rem]' : 'text-[0.72rem]'} font-medium text-gray-400 dark:text-white leading-tight`}>{label}</span>
     </button>
   )
 }
@@ -287,7 +287,7 @@ export default function IgvPage() {
 
   return (
     <div
-      className="min-h-screen bg-[#F9F7F4] flex flex-col"
+      className="min-h-screen bg-[#F9F7F4] dark:bg-black flex flex-col"
       style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
     >
 
@@ -362,7 +362,7 @@ export default function IgvPage() {
 
         <Link
           to="/igv/sobre"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-2.5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -372,16 +372,16 @@ export default function IgvPage() {
               <BookOpen size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Sobre Nós</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">Missão, visão e horários</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Sobre Nós</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Missão, visão e horários</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <Link
           to="/igv/biblia"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-2.5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -391,16 +391,16 @@ export default function IgvPage() {
               <Book size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Bíblia Sagrada</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">66 livros — Almeida</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Bíblia Sagrada</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">66 livros — Almeida</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <Link
           to="/igv/agenda"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-2.5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -410,16 +410,16 @@ export default function IgvPage() {
               <Calendar size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Agenda</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">Cultos e próximos eventos</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Agenda</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Cultos e próximos eventos</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <Link
           to="/igv/cursos"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-2.5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -429,16 +429,16 @@ export default function IgvPage() {
               <GraduationCap size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Cursos</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">Formações com inscrição</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Cursos</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Formações com inscrição</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <Link
           to="/igv/celulas"
-          className="flex items-center justify-between w-full bg-white rounded-2xl p-4 mb-2.5 border border-black/[0.05] shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
           <div className="flex items-center gap-3">
             <div
@@ -448,11 +448,11 @@ export default function IgvPage() {
               <Home size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Nossas Células</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">12 GGVs — encontre a mais perto</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Nossas Células</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">12 GGVs — encontre a mais perto</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <Link
@@ -467,11 +467,11 @@ export default function IgvPage() {
               <Briefcase size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Rede de Negócios</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">Empresários da congregação</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Rede de Negócios</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Empresários da congregação</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
 
         <p
@@ -496,14 +496,14 @@ export default function IgvPage() {
           </ActionCard>
         </div>
 
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-gray-400 mb-2.5">
+        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-gray-400 dark:text-white mb-2.5">
           Em breve
         </p>
 
         <div className="grid grid-cols-2 gap-2.5 mb-2.5">
           <Link
             to="/igv/gabinete"
-            className="flex flex-col items-center justify-center h-[76px] gap-1.5 bg-white rounded-2xl border border-black/[0.05] shadow-sm p-3 hover:shadow-md active:scale-[0.99] transition-all"
+            className="flex flex-col items-center justify-center h-[76px] gap-1.5 bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 hover:shadow-md active:scale-[0.99] transition-all"
           >
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -511,7 +511,7 @@ export default function IgvPage() {
             >
               <Building2 size={18} strokeWidth={1.75} />
             </div>
-            <p className="font-semibold text-gray-800 text-[0.75rem] leading-tight">Gabinetes</p>
+            <p className="font-semibold text-gray-800 dark:text-white text-[0.75rem] leading-tight">Gabinetes</p>
           </Link>
           <ComingSoonCard label="Eventos"   icon={CalendarCheck} onClick={showComingSoon} />
         </div>
@@ -528,21 +528,21 @@ export default function IgvPage() {
               <Heart size={18} strokeWidth={1.75} />
             </div>
             <div>
-              <p className="font-semibold text-gray-900 text-[0.9rem]">Pedidos de Oração</p>
-              <p className="text-gray-400 text-[0.75rem] mt-0.5">Compartilhe com nossa equipe pastoral</p>
+              <p className="font-semibold text-gray-900 dark:text-white text-[0.9rem]">Pedidos de Oração</p>
+              <p className="text-gray-400 dark:text-white text-[0.75rem] mt-0.5">Compartilhe com nossa equipe pastoral</p>
             </div>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 shrink-0" />
+          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
         </Link>
       </main>
 
-      <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400">
+      <footer className="text-center px-4 py-5 text-[0.7rem] text-gray-400 dark:text-white">
         {IGV.address}
       </footer>
 
       {/* ── Banner iOS fixo ── */}
       {showBanner && !bannerDismissed && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-black/[0.07] px-4 pt-3 pb-7 shadow-2xl">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-black/[0.07] dark:border-white/10 px-4 pt-3 pb-7 shadow-2xl">
           <div className="flex items-start gap-3">
             <div
               className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
@@ -550,7 +550,7 @@ export default function IgvPage() {
             >
               <SafariShareIcon size={18} />
             </div>
-            <p className="text-[0.8rem] text-gray-700 flex-1 leading-snug">
+            <p className="text-[0.8rem] text-gray-700 dark:text-white flex-1 leading-snug">
               {isInApp
                 ? 'Abra no Safari para instalar: toque em ··· → Abrir no Safari'
                 : <>Instalar app: <strong>Compartilhar</strong> {' '}→{' '} <strong>Adicionar à Tela de Início</strong></>
@@ -558,7 +558,7 @@ export default function IgvPage() {
             </p>
             <button
               onClick={() => setBannerDismissed(true)}
-              className="text-gray-400 text-[0.8rem] shrink-0 px-1"
+              className="text-gray-400 dark:text-white/60 text-[0.8rem] shrink-0 px-1"
               aria-label="Fechar"
             >
               ✕
@@ -583,20 +583,20 @@ export default function IgvPage() {
           onClick={() => setShowIOSModal(false)}
         >
           <div
-            className="bg-white w-full rounded-t-3xl px-6 pt-5 pb-10"
+            className="bg-white dark:bg-black w-full rounded-t-3xl px-6 pt-5 pb-10"
             onClick={e => e.stopPropagation()}
           >
             {/* Drag handle */}
-            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
+            <div className="w-10 h-1 bg-gray-200 dark:bg-white/20 rounded-full mx-auto mb-4" />
 
             {isInApp ? (
               /* ── Versão in-app browser ── */
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xl" aria-hidden="true">⚠️</span>
-                  <p className="text-[1.05rem] font-bold text-gray-900">Navegador embutido</p>
+                  <p className="text-[1.05rem] font-bold text-gray-900 dark:text-white">Navegador embutido</p>
                 </div>
-                <p className="text-[0.85rem] text-gray-600 leading-relaxed">
+                <p className="text-[0.85rem] text-gray-600 dark:text-white leading-relaxed">
                   Você está no navegador do WhatsApp, Instagram ou similar.
                   Esses apps <strong>não têm</strong> a opção de instalar.
                 </p>
@@ -628,7 +628,7 @@ export default function IgvPage() {
                 </button>
                 <button
                   onClick={() => setShowIOSModal(false)}
-                  className="w-full h-11 rounded-2xl text-gray-500 text-[0.875rem] font-medium"
+                  className="w-full h-11 rounded-2xl text-gray-500 dark:text-white text-[0.875rem] font-medium"
                 >
                   Fechar
                 </button>
@@ -637,7 +637,7 @@ export default function IgvPage() {
               /* ── Versão Safari normal ── */
               <div className="space-y-4">
                 <p
-                  className="text-[1.1rem] font-bold text-gray-900"
+                  className="text-[1.1rem] font-bold text-gray-900 dark:text-white"
                   style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
                 >
                   Adicionar à Tela Inicial
@@ -651,14 +651,14 @@ export default function IgvPage() {
                   >
                     <SafariShareIcon size={30} />
                   </div>
-                  <p className="text-[0.72rem] text-gray-500 font-medium">
+                  <p className="text-[0.72rem] text-gray-500 dark:text-white font-medium">
                     Botão <strong>Compartilhar</strong> na barra do Safari
                   </p>
                   {/* Seta bounce apontando para baixo (onde a barra do Safari fica) */}
                   <div className="text-2xl animate-bounce" style={{ color: IGV.primaryColor }} aria-hidden="true">
                     ↓
                   </div>
-                  <p className="text-[0.68rem] text-gray-400">
+                  <p className="text-[0.68rem] text-gray-400 dark:text-white">
                     (barra inferior do Safari)
                   </p>
                 </div>
@@ -670,7 +670,7 @@ export default function IgvPage() {
                     'Role a lista e toque em "Adicionar à Tela de Início"',
                     'Toque em "Adicionar" no canto superior direito',
                   ].map((txt, i) => (
-                    <div key={i} className="flex items-start gap-3 text-[0.875rem] text-gray-700">
+                    <div key={i} className="flex items-start gap-3 text-[0.875rem] text-gray-700 dark:text-white">
                       <span
                         className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.7rem] font-bold text-white"
                         style={{ backgroundColor: IGV.primaryColor }}
