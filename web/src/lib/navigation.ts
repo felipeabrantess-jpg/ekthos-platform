@@ -63,7 +63,6 @@ export const IGREJA_NAV: NavItem[] = [
   { path: '/pipeline',    label: 'Discipulado', Icon: GitBranch,        moduleKey: 'pipeline'    },
   { path: '/celulas',     label: 'Células',     Icon: Network,          moduleKey: 'celulas'     },
   { path: '/ministerios', label: 'Ministérios', Icon: Building2,        moduleKey: 'ministerios' },
-  { path: '/voluntarios', label: 'Voluntários', Icon: HandHeart,        moduleKey: 'volunteer-pro' },
   { path: '/kids',        label: 'Kids',        Icon: Baby,             moduleKey: null           },
   { path: '/agenda',      label: 'Calendário',  Icon: Calendar,         moduleKey: 'agenda'      },
   { path: '/eventos',     label: 'Eventos',     Icon: CalendarDays,     moduleKey: 'agenda'      },
@@ -83,6 +82,7 @@ export const IGREJA_NAV: NavItem[] = [
 // moduleKey: 'volunteer-pro' — guard na Sidebar e em ModuleRoute no App.tsx
 
 export const VOLUNTEER_PRO_NAV: NavItem[] = [
+  { path: '/voluntarios',           label: 'Voluntários', Icon: HandHeart,     moduleKey: 'volunteer-pro' },
   { path: '/volunteer/escalas',     label: 'Escalas',     Icon: CalendarDays,  moduleKey: 'volunteer-pro' },
   { path: '/volunteer/relatorios',  label: 'Relatórios',  Icon: ClipboardList, moduleKey: 'volunteer-pro' },
 ]
