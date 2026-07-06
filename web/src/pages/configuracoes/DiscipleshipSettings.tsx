@@ -24,6 +24,7 @@ import Spinner from '@/components/ui/Spinner'
 interface Stage {
   id: string
   name: string
+  slug?: string
   order_index: number
   is_active: boolean
   sla_hours: number | null
@@ -227,6 +228,7 @@ function StageForm({ initial, onSave, onCancel, saving }: StageFormProps) {
     if (!name.trim()) return
     onSave({
       name: name.trim(),
+      slug: name.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
       color,
       icon: 'circle',
       order_index: initial?.order_index ?? 99,
