@@ -508,10 +508,33 @@ export default function People() {
         .order('name_sort', { ascending: true })
 
       if (dateFilter === 'custom') {
-        if (customFrom) q = q.gte('first_visit_date', customFrom)
-        if (customTo)   q = q.lte('first_visit_date', customTo)
+        // Modo personalizado: usa first_visit_date com fallback para created_at
+        const from = customFrom || null
+        const to   = customTo   || null
+        if (from && to) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          q = (q as any).or(
+            `first_visit_date.gte.${from},and(first_visit_date.is.null,created_at.gte.${from}T00:00:00)`
+          ).or(
+            `first_visit_date.lte.${to},and(first_visit_date.is.null,created_at.lte.${to}T23:59:59)`
+          )
+        } else if (from) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          q = (q as any).or(
+            `first_visit_date.gte.${from},and(first_visit_date.is.null,created_at.gte.${from}T00:00:00)`
+          )
+        } else if (to) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          q = (q as any).or(
+            `first_visit_date.lte.${to},and(first_visit_date.is.null,created_at.lte.${to}T23:59:59)`
+          )
+        }
       } else {
-        q = q.gte('first_visit_date', novosDateCutoff!)
+        // Períodos fixos (7/15/30 dias): first_visit_date OU created_at dentro do período
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        q = (q as any).or(
+          `first_visit_date.gte.${novosDateCutoff},and(first_visit_date.is.null,created_at.gte.${novosDateCutoff}T00:00:00)`
+        )
       }
 
       const { data, error } = await q
