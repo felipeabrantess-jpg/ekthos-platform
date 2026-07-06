@@ -81,6 +81,7 @@ export default function ConversationsPage() {
             <ConversationThread
               conversationId={selected}
               conversation={selectedConversation}
+              onAssume={refetch}
             />
           </div>
 
