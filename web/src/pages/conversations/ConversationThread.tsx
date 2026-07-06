@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   Bot, User, ArrowLeftRight, Phone, Lock, Send,
-  CheckCheck, Clock, AlertCircle, Loader2,
+  CheckCheck, Clock, AlertCircle, Loader2, UserCheck,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useConversationMessages, type ConversationMessage } from '@/hooks/useConversationMessages'
@@ -140,7 +140,37 @@ function Composer({ conversationId, disabled }: ComposerProps) {
   const [text, setText]       = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setError] = useState<string | null>(null)
+  const [assuming, setAssuming] = useState(false)
   const textareaRef           = useRef<HTMLTextAreaElement>(null)
+
+  const handleAssume = useCallback(async () => {
+    if (assuming) return
+    setAssuming(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/conversation-handoff`,
+        {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ conversation_id: conversationId, action: 'assume' }),
+        }
+      )
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error((err as { error?: string }).error ?? `Erro ${res.status}`)
+      }
+      // Realtime atualiza conversation.ownership → 'human' automaticamente
+    } catch (err) {
+      console.error('[Composer] assume error:', err)
+    } finally {
+      setAssuming(false)
+    }
+  }, [conversationId, assuming])
 
   const sendMessage = useCallback(async () => {
     const body = text.trim()
@@ -190,12 +220,28 @@ function Composer({ conversationId, disabled }: ComposerProps) {
 
   if (disabled) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 bg-[#f9eedc] rounded-xl border border-[#EDE0CC]">
-        <Lock size={15} className="text-[#8A8A8A] shrink-0" />
-        <p className="text-xs text-[#8A8A8A] flex-1">
-          Clique em <strong className="text-[#161616]">Assumir</strong> no painel à direita para responder manualmente.
-        </p>
-        <Bot size={15} className="text-blue-400 shrink-0" />
+      <div className="space-y-2">
+        <div className="flex items-center gap-3 px-4 py-3 bg-[#f9eedc] rounded-xl border border-[#EDE0CC]">
+          <Lock size={15} className="text-[#8A8A8A] shrink-0" />
+          <p className="text-xs text-[#8A8A8A] flex-1">
+            Clique em <strong className="text-[#161616]">Assumir conversa</strong> para responder manualmente.
+          </p>
+          <Bot size={15} className="text-blue-400 shrink-0" />
+        </div>
+        <button
+          onClick={() => void handleAssume()}
+          disabled={assuming}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
+                     border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold
+                     transition-all hover:brightness-95 active:brightness-90
+                     disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {assuming
+            ? <Loader2 size={15} className="animate-spin" />
+            : <UserCheck size={15} />
+          }
+          {assuming ? 'Assumindo…' : 'Assumir conversa'}
+        </button>
       </div>
     )
   }
