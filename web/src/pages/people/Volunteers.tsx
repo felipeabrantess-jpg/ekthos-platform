@@ -1,17 +1,19 @@
 /**
- * Volunteers.tsx — Lista de voluntários (/voluntarios)
+ * Volunteers.tsx — Módulo de Cuidado de Voluntários
  *
- * Design idêntico a /lideres:
- * - Cards mobile-first
- * - Filtro por ministério (chips)
- * - Busca por nome
- * - Stats (total, por ministério top 3)
- * - "+ Adicionar" com busca de pessoa por nome (não UUID)
+ * Partes:
+ *  - Painel de status (total / servindo / afastado / precisa cuidado) — Parte 4
+ *  - Lista com badge de care_status — Parte 2
+ *  - Drawer de ficha individual (edição inline + histórico) — Partes 2 e 3
+ *  - Registro de novo cuidado — Parte 3
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { HandHeart, Search, X, Plus, Trash2, Pencil } from 'lucide-react'
+import {
+  HandHeart, Search, X, Plus, Trash2, Pencil,
+  ChevronRight, Calendar, MessageSquare, Clock, User,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useAuth } from '@/hooks/useAuth'
@@ -24,6 +26,18 @@ import {
   useUpdateVolunteer,
   useDeactivateVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
+import {
+  useVolunteerCareStats,
+  useCareLogs,
+  useAddCareLog,
+  useUpdateCareFields,
+  type CareStatus,
+  type Satisfaction,
+  type CareType,
+  CARE_STATUS_LABEL,
+  SATISFACTION_LABEL,
+  CARE_TYPE_LABEL,
+} from '@/features/voluntarios/hooks/useVolunteerCare'
 import type { VolunteerWithPerson } from '@/lib/types/joins'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -33,15 +47,470 @@ interface PersonResult { id: string; name: string; email: string | null; phone: 
 
 type VolunteerRow = VolunteerWithPerson & {
   ministries?: Ministry | null
+  care_status?: CareStatus
+  satisfaction?: Satisfaction | null
+  care_notes?: string | null
+  care_responsible_id?: string | null
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  volunteer:  'Voluntário',
-  leader:     'Líder',
+  volunteer:   'Voluntário',
+  leader:      'Líder',
   'co-leader': 'Co-líder',
 }
 
-// ── AddVolunteerModal (com busca por nome) ────────────────────────────────────
+const DAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+
+// ── Helpers de estilo por status ──────────────────────────────────────────────
+
+function careStatusStyle(status: CareStatus | undefined) {
+  switch (status) {
+    case 'servindo':
+      return { bg: 'bg-[#E8F5E9]', text: 'text-[#2D7A4F]', dot: '#2D7A4F' }
+    case 'afastado':
+      return { bg: 'bg-amber-50', text: 'text-amber-700', dot: '#D97706' }
+    case 'precisa_cuidado':
+      return { bg: 'bg-red-50', text: 'text-red-700', dot: '#DC2626' }
+    default:
+      return { bg: 'bg-bg-hover', text: 'text-text-secondary', dot: '#9CA3AF' }
+  }
+}
+
+function satisfactionStyle(s: Satisfaction | null | undefined) {
+  switch (s) {
+    case 'satisfeito':  return 'bg-[#E8F5E9] text-[#2D7A4F]'
+    case 'neutro':      return 'bg-amber-50 text-amber-700'
+    case 'insatisfeito': return 'bg-red-50 text-red-700'
+    default:            return 'bg-bg-hover text-text-secondary'
+  }
+}
+
+// ── PARTE 4: Painel de status ─────────────────────────────────────────────────
+
+interface CarePanelProps {
+  churchId: string
+  statusFilter: CareStatus | null
+  onFilter: (s: CareStatus | null) => void
+}
+
+function CarePanel({ churchId, statusFilter, onFilter }: CarePanelProps) {
+  const { data: stats, isLoading } = useVolunteerCareStats(churchId)
+
+  const cards: { label: string; key: CareStatus | null; value: number; color: string; bg: string; border: string }[] = [
+    { label: 'Total',           key: null,             value: stats?.total ?? 0,           color: 'text-text-primary',  bg: 'bg-bg-primary',  border: 'border-border-default' },
+    { label: 'Servindo',        key: 'servindo',       value: stats?.servindo ?? 0,        color: 'text-[#2D7A4F]',     bg: 'bg-[#F0FBF7]',  border: 'border-[#A8DEC9]' },
+    { label: 'Afastados',       key: 'afastado',       value: stats?.afastado ?? 0,        color: 'text-amber-700',      bg: 'bg-amber-50',    border: 'border-amber-200' },
+    { label: 'Precisa Cuidado', key: 'precisa_cuidado', value: stats?.precisa_cuidado ?? 0, color: 'text-red-600',        bg: 'bg-red-50',      border: 'border-red-200' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {cards.map(card => {
+        const active = statusFilter === card.key
+        return (
+          <button
+            key={card.label}
+            onClick={() => onFilter(active ? null : card.key)}
+            className={`rounded-2xl border p-4 text-center transition-all hover:shadow-md ${card.bg} ${card.border} ${active ? 'ring-2 ring-offset-1 ring-primary' : ''}`}
+          >
+            {isLoading ? (
+              <div className="h-7 flex items-center justify-center"><Spinner size="sm" /></div>
+            ) : (
+              <p className={`text-2xl font-bold font-mono ${card.color}`}>{card.value}</p>
+            )}
+            <p className="text-xs text-text-secondary mt-1 font-medium">{card.label}</p>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── PARTE 3: Timeline de cuidado ──────────────────────────────────────────────
+
+const CARE_TYPE_ICON: Record<CareType, string> = {
+  reuniao:  '🤝',
+  conversa: '💬',
+  visita:   '🏠',
+  ligacao:  '📞',
+  outro:    '📝',
+}
+
+interface AddCareLogFormProps {
+  volunteerId: string
+  churchId: string
+  onDone: () => void
+}
+
+function AddCareLogForm({ volunteerId, churchId, onDone }: AddCareLogFormProps) {
+  const today = new Date().toISOString().slice(0, 10)
+  const [careDate, setCareDate] = useState(today)
+  const [careType, setCareType] = useState<CareType>('reuniao')
+  const [notes, setNotes] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const addLog = useAddCareLog()
+
+  async function handleSubmit() {
+    setError(null)
+    try {
+      await addLog.mutateAsync({ volunteer_id: volunteerId, church_id: churchId, care_date: careDate, care_type: careType, notes })
+      setNotes('')
+      onDone()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao registrar')
+    }
+  }
+
+  return (
+    <div className="border border-border-default rounded-xl p-4 space-y-3 bg-bg-primary">
+      <p className="text-sm font-semibold text-text-primary">Registrar cuidado</p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1">Data</label>
+          <input
+            type="date"
+            value={careDate}
+            max={today}
+            onChange={e => setCareDate(e.target.value)}
+            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-text-secondary mb-1">Tipo</label>
+          <select
+            value={careType}
+            onChange={e => setCareType(e.target.value as CareType)}
+            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {(Object.keys(CARE_TYPE_LABEL) as CareType[]).map(t => (
+              <option key={t} value={t}>{CARE_TYPE_ICON[t]} {CARE_TYPE_LABEL[t]}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-text-secondary mb-1">O que foi conversado</label>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          placeholder="Descreva brevemente o encontro..."
+          rows={3}
+          className="w-full rounded-xl border border-border-default px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+        />
+      </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <Button
+        onClick={() => { void handleSubmit() }}
+        loading={addLog.isPending}
+        disabled={addLog.isPending}
+        className="w-full"
+      >
+        Salvar registro
+      </Button>
+    </div>
+  )
+}
+
+interface CareTimelineProps {
+  volunteerId: string
+  churchId: string
+}
+
+function CareTimeline({ volunteerId, churchId }: CareTimelineProps) {
+  const [showForm, setShowForm] = useState(false)
+  const { data: logs = [], isLoading } = useCareLogs(volunteerId)
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-text-primary">Histórico de cuidado</p>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-1 text-xs font-medium rounded-lg px-2.5 py-1.5 transition-colors"
+            style={{ backgroundColor: '#EDE9FE', color: '#5B21B6' }}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Registrar
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <AddCareLogForm
+          volunteerId={volunteerId}
+          churchId={churchId}
+          onDone={() => setShowForm(false)}
+        />
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-4"><Spinner size="sm" /></div>
+      ) : logs.length === 0 ? (
+        <p className="text-sm text-text-tertiary text-center py-4">
+          Nenhum registro de cuidado ainda.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {logs.map(log => {
+            const d = new Date(log.care_date + 'T12:00:00')
+            const dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+            return (
+              <div
+                key={log.id}
+                className="flex gap-3 rounded-xl border border-border-default p-3 bg-bg-primary"
+              >
+                <div
+                  className="flex items-center justify-center w-9 h-9 rounded-xl shrink-0 text-lg"
+                  style={{ backgroundColor: '#EDE9FE' }}
+                >
+                  {CARE_TYPE_ICON[log.care_type as CareType] ?? '📝'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-semibold" style={{ color: '#5B21B6' }}>
+                      {CARE_TYPE_LABEL[log.care_type as CareType] ?? log.care_type}
+                    </span>
+                    <span className="text-xs text-text-tertiary flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />{dateStr}
+                    </span>
+                    {log.created_by_name && (
+                      <span className="text-xs text-text-tertiary flex items-center gap-1">
+                        <User className="w-3 h-3" />{log.created_by_name}
+                      </span>
+                    )}
+                  </div>
+                  {log.notes && (
+                    <p className="mt-1 text-sm text-text-secondary">{log.notes}</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── PARTE 2: Drawer de ficha do voluntário ────────────────────────────────────
+
+interface VolunteerDrawerProps {
+  volunteer: VolunteerRow
+  churchId: string
+  onClose: () => void
+}
+
+function VolunteerDrawer({ volunteer, churchId, onClose }: VolunteerDrawerProps) {
+  const updateCare = useUpdateCareFields()
+  const status = (volunteer as any).care_status as CareStatus ?? 'servindo'
+  const satisfaction = (volunteer as any).satisfaction as Satisfaction | null ?? null
+  const careNotes = (volunteer as any).care_notes as string | null ?? null
+
+  const [editStatus, setEditStatus] = useState<CareStatus>(status)
+  const [editSatisfaction, setEditSatisfaction] = useState<Satisfaction | null>(satisfaction)
+  const [editNotes, setEditNotes] = useState(careNotes ?? '')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const person = volunteer.people
+  const ministry = volunteer.ministries
+  const joinedAt = volunteer.joined_at
+    ? new Date(volunteer.joined_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+    : null
+
+  const availDays: number[] = (volunteer as any).availability?.days ?? []
+  const availPeriod: string = (volunteer as any).availability?.period ?? ''
+
+  const PERIOD_LABEL: Record<string, string> = {
+    morning: 'Manhã', afternoon: 'Tarde', evening: 'Noite', any: 'Qualquer período',
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateCare.mutateAsync({
+        id: volunteer.id,
+        church_id: churchId,
+        care_status: editStatus,
+        satisfaction: editSatisfaction,
+        care_notes: editNotes || null,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const statusStyle = careStatusStyle(editStatus)
+
+  return (
+    <ModalPortal>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 z-50 bg-black/40"
+        onClick={onClose}
+      />
+      {/* Drawer */}
+      <div
+        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md flex flex-col overflow-hidden shadow-2xl"
+        style={{ backgroundColor: 'var(--color-bg-primary, #fff)' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border-default shrink-0">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+              style={{ background: 'var(--church-primary, var(--color-primary))' }}
+            >
+              {(person?.name ?? '?').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p className="font-semibold text-text-primary leading-tight">{person?.name ?? '—'}</p>
+              {ministry && <p className="text-xs text-text-secondary">{ministry.name}</p>}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-text-tertiary hover:bg-bg-hover transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body (scrollable) */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+
+          {/* Informações básicas */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {joinedAt && (
+              <div className="rounded-xl border border-border-default bg-bg-primary p-3">
+                <p className="text-xs text-text-tertiary flex items-center gap-1 mb-0.5">
+                  <Clock className="w-3 h-3" />Desde
+                </p>
+                <p className="font-medium text-text-primary capitalize">{joinedAt}</p>
+              </div>
+            )}
+            {volunteer.role && (
+              <div className="rounded-xl border border-border-default bg-bg-primary p-3">
+                <p className="text-xs text-text-tertiary mb-0.5">Função</p>
+                <p className="font-medium text-text-primary">{ROLE_LABELS[volunteer.role] ?? volunteer.role}</p>
+              </div>
+            )}
+            {availDays.length > 0 && (
+              <div className="col-span-2 rounded-xl border border-border-default bg-bg-primary p-3">
+                <p className="text-xs text-text-tertiary mb-1.5">Disponibilidade</p>
+                <div className="flex flex-wrap gap-1">
+                  {availDays.map((d: number) => (
+                    <span key={d} className="px-2 py-0.5 rounded-lg text-xs font-medium bg-bg-hover text-text-secondary">
+                      {DAYS_PT[d]}
+                    </span>
+                  ))}
+                  {availPeriod && availPeriod !== 'any' && (
+                    <span className="px-2 py-0.5 rounded-lg text-xs font-medium bg-bg-hover text-text-secondary">
+                      {PERIOD_LABEL[availPeriod] ?? availPeriod}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            {person?.phone && (
+              <div className="rounded-xl border border-border-default bg-bg-primary p-3">
+                <p className="text-xs text-text-tertiary mb-0.5">Telefone</p>
+                <a href={`tel:${person.phone}`} className="font-medium text-[#2563EB] text-sm hover:underline">
+                  {person.phone}
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Status de serviço */}
+          <div>
+            <p className="text-sm font-semibold text-text-primary mb-2">Status</p>
+            <div className="flex gap-2 flex-wrap">
+              {(['servindo', 'afastado', 'precisa_cuidado'] as CareStatus[]).map(s => {
+                const st = careStatusStyle(s)
+                const active = editStatus === s
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setEditStatus(s)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${st.bg} ${st.text} ${active ? 'ring-2 ring-offset-1 ring-current' : 'opacity-60 hover:opacity-90'}`}
+                    style={{ borderColor: active ? st.dot : 'transparent' }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: st.dot }} />
+                    {CARE_STATUS_LABEL[s]}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Satisfação */}
+          <div>
+            <p className="text-sm font-semibold text-text-primary mb-2">Satisfação no serviço</p>
+            <div className="flex gap-2 flex-wrap">
+              {([null, 'satisfeito', 'neutro', 'insatisfeito'] as (Satisfaction | null)[]).map(s => {
+                const active = editSatisfaction === s
+                const label = s === null ? 'Não definida' : SATISFACTION_LABEL[s]
+                return (
+                  <button
+                    key={label}
+                    onClick={() => setEditSatisfaction(s)}
+                    className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                      s === null ? 'bg-bg-hover text-text-secondary border-transparent' : satisfactionStyle(s)
+                    } ${active ? 'ring-2 ring-offset-1 ring-current' : 'opacity-60 hover:opacity-90'}`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Anotações de cuidado */}
+          <div>
+            <p className="text-sm font-semibold text-text-primary mb-2">
+              <MessageSquare className="w-4 h-4 inline mr-1" />
+              Anotações pastorais
+            </p>
+            <textarea
+              value={editNotes}
+              onChange={e => setEditNotes(e.target.value)}
+              placeholder="Observações sobre este voluntário..."
+              rows={3}
+              className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+          </div>
+
+          {/* Salvar ficha */}
+          <Button
+            onClick={() => { void handleSave() }}
+            loading={saving}
+            disabled={saving}
+            className="w-full"
+          >
+            {saved ? '✓ Salvo!' : 'Salvar ficha'}
+          </Button>
+
+          {/* Divisor */}
+          <div className="border-t border-border-default" />
+
+          {/* PARTE 3: Histórico de cuidado */}
+          <CareTimeline volunteerId={volunteer.id} churchId={churchId} />
+        </div>
+      </div>
+    </ModalPortal>
+  )
+}
+
+// ── AddVolunteerModal ─────────────────────────────────────────────────────────
 
 interface AddVolunteerModalProps {
   onClose: () => void
@@ -58,7 +527,6 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
   const [role, setRole] = useState('volunteer')
   const [error, setError] = useState<string | null>(null)
 
-  // Search people by name
   const { data: searchResults = [], isFetching } = useQuery({
     queryKey: ['people_search', churchId, personSearch],
     queryFn: async () => {
@@ -97,25 +565,20 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
-        {/* Header */}
+      <div className="relative bg-bg-primary w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-ekthos-black">Adicionar Voluntário</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
+          <h2 className="font-semibold text-text-primary">Adicionar Voluntário</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-bg-hover transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Person search */}
         <div>
-          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Pessoa *</label>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Pessoa *</label>
           {selectedPerson ? (
-            <div className="flex items-center justify-between bg-brand-50 rounded-xl px-3 py-2.5">
-              <span className="text-sm font-medium text-brand-700">{selectedPerson.name}</span>
-              <button
-                onClick={() => { setSelectedPerson(null); setPersonSearch('') }}
-                className="p-1 rounded text-brand-400 hover:text-brand-600"
-              >
+            <div className="flex items-center justify-between bg-bg-hover rounded-xl px-3 py-2.5">
+              <span className="text-sm font-medium text-text-primary">{selectedPerson.name}</span>
+              <button onClick={() => { setSelectedPerson(null); setPersonSearch('') }} className="p-1 rounded text-text-tertiary hover:text-text-secondary">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -127,20 +590,20 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
                 onChange={e => setPersonSearch(e.target.value)}
               />
               {personSearch.length >= 2 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-black/10 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-bg-primary border border-border-default rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
                   {isFetching ? (
                     <div className="flex justify-center py-3"><Spinner size="sm" /></div>
                   ) : searchResults.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-3">Nenhuma pessoa encontrada</p>
+                    <p className="text-sm text-text-tertiary text-center py-3">Nenhuma pessoa encontrada</p>
                   ) : (
                     searchResults.map(p => (
                       <button
                         key={p.id}
                         onClick={() => { setSelectedPerson(p); setPersonSearch('') }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-cream transition-colors"
+                        className="w-full text-left px-4 py-2.5 hover:bg-bg-hover transition-colors"
                       >
-                        <p className="text-sm font-medium text-ekthos-black">{p.name}</p>
-                        {p.email && <p className="text-xs text-gray-400">{p.email}</p>}
+                        <p className="text-sm font-medium text-text-primary">{p.name}</p>
+                        {p.email && <p className="text-xs text-text-tertiary">{p.email}</p>}
                       </button>
                     ))
                   )}
@@ -150,28 +613,24 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
           )}
         </div>
 
-        {/* Ministry */}
         <div>
-          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Ministério *</label>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Ministério *</label>
           <select
             value={ministryId}
             onChange={e => setMinistryId(e.target.value)}
-            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">Selecionar ministério...</option>
-            {ministries.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
+            {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
         </div>
 
-        {/* Role */}
         <div>
-          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Função</label>
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Função</label>
           <select
             value={role}
             onChange={e => setRole(e.target.value)}
-            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="volunteer">Voluntário</option>
             <option value="leader">Líder</option>
@@ -180,7 +639,6 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
-
         <div className="flex gap-2 pt-1">
           <Button variant="secondary" onClick={onClose} className="flex-1">Cancelar</Button>
           <Button
@@ -200,8 +658,6 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
 
 // ── EditVolunteerModal ────────────────────────────────────────────────────────
 
-const DAYS_PT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-
 interface EditVolunteerModalProps {
   volunteer: VolunteerRow
   onClose: () => void
@@ -218,8 +674,6 @@ interface EditForm {
 
 function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVolunteerModalProps) {
   const updateVolunteer = useUpdateVolunteer()
-
-  // Normaliza availability.days para number[] independente do que vier do banco
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawDays = (volunteer as any).availability?.days ?? []
   const initialDays: number[] = rawDays.map((d: unknown) => Number(d))
@@ -227,11 +681,8 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
   const [editForm, setEditForm] = useState<EditForm>({
     ministryId: volunteer.ministries?.id ?? '',
     role: volunteer.role ?? 'volunteer',
-    availability: {
-      days: initialDays,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      period: (volunteer as any).availability?.period ?? 'any',
-    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    availability: { days: initialDays, period: (volunteer as any).availability?.period ?? 'any' },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     min_days_between_services: (volunteer as any).min_days_between_services ?? 7,
   })
@@ -251,14 +702,15 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
       })
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar voluntário')
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar')
     }
   }
 
   function toggleDay(idx: number) {
     setEditForm(f => {
-      const current = f.availability.days
-      const updated = current.includes(idx) ? current.filter(d => d !== idx) : [...current, idx]
+      const updated = f.availability.days.includes(idx)
+        ? f.availability.days.filter(d => d !== idx)
+        : [...f.availability.days, idx]
       return { ...f, availability: { ...f.availability, days: updated } }
     })
   }
@@ -267,79 +719,50 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-bg-primary w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-ekthos-black">Editar Voluntário</h2>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-cream transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+          <h2 className="font-semibold text-text-primary">Editar Voluntário</h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-bg-hover transition-colors"><X className="w-4 h-4" /></button>
         </div>
+        <p className="text-sm font-medium text-text-primary bg-bg-hover rounded-xl px-3 py-2.5">{volunteer.people?.name ?? 'Voluntário'}</p>
 
-        <p className="text-sm font-medium text-brand-700 bg-brand-50 rounded-xl px-3 py-2.5">
-          {volunteer.people?.name ?? 'Voluntário'}
-        </p>
-
-        {/* Ministério */}
         <div>
-          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Ministério</label>
-          <select
-            value={editForm.ministryId}
-            onChange={e => setEditForm(f => ({ ...f, ministryId: e.target.value }))}
-            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
-          >
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Ministério</label>
+          <select value={editForm.ministryId} onChange={e => setEditForm(f => ({ ...f, ministryId: e.target.value }))}
+            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
             <option value="">Sem ministério</option>
-            {ministries.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
+            {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
         </div>
 
-        {/* Função */}
         <div>
-          <label className="block text-sm font-medium text-ekthos-black mb-1.5">Função</label>
-          <select
-            value={editForm.role}
-            onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
-            className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
-          >
+          <label className="block text-sm font-medium text-text-primary mb-1.5">Função</label>
+          <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
+            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
             <option value="volunteer">Voluntário</option>
             <option value="leader">Líder</option>
             <option value="co-leader">Co-líder</option>
           </select>
         </div>
 
-        {/* Dias disponíveis */}
         <div>
-          <label className="text-sm font-medium text-[#5A5A5A] mb-2 block">Dias disponíveis</label>
+          <label className="text-sm font-medium text-text-secondary mb-2 block">Dias disponíveis</label>
           <div className="flex gap-2 flex-wrap">
-            {DAYS_PT.map((day, idx) => {
-              const isSelected = editForm.availability.days.includes(idx)
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => toggleDay(idx)}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                    isSelected
-                      ? 'bg-[#e13500] text-white border-[#e13500]'
-                      : 'bg-white text-[#5A5A5A] border-gray-200 hover:border-[#e13500]'
-                  }`}
-                >
-                  {day}
-                </button>
-              )
-            })}
+            {DAYS_PT.map((day, idx) => (
+              <button key={idx} type="button" onClick={() => toggleDay(idx)}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                  editForm.availability.days.includes(idx) ? 'bg-primary text-white border-primary' : 'bg-bg-primary text-text-secondary border-border-default hover:border-primary'
+                }`}>
+                {day}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Período preferencial */}
         <div>
-          <label className="text-sm font-medium text-[#5A5A5A] mb-2 block">Período preferencial</label>
-          <select
-            value={editForm.availability.period}
-            onChange={e => setEditForm(f => ({ ...f, availability: { ...f.availability, period: e.target.value } }))}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
-          >
+          <label className="text-sm font-medium text-text-secondary mb-2 block">Período preferencial</label>
+          <select value={editForm.availability.period} onChange={e => setEditForm(f => ({ ...f, availability: { ...f.availability, period: e.target.value } }))}
+            className="w-full border border-border-default rounded-xl px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
             <option value="any">Qualquer período</option>
             <option value="morning">Manhã</option>
             <option value="afternoon">Tarde</option>
@@ -347,33 +770,17 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
           </select>
         </div>
 
-        {/* Intervalo mínimo entre escalas */}
         <div>
-          <label className="text-sm font-medium text-[#5A5A5A] mb-2 block">
-            Intervalo mínimo entre escalas (dias)
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="90"
-            value={editForm.min_days_between_services}
+          <label className="text-sm font-medium text-text-secondary mb-2 block">Intervalo mínimo entre escalas (dias)</label>
+          <input type="number" min="1" max="90" value={editForm.min_days_between_services}
             onChange={e => setEditForm(f => ({ ...f, min_days_between_services: parseInt(e.target.value) || 7 }))}
-            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
-          />
+            className="w-full border border-border-default rounded-xl px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
-
         <div className="flex gap-2 pt-1">
           <Button variant="secondary" onClick={onClose} className="flex-1">Cancelar</Button>
-          <Button
-            onClick={() => { void handleSave() }}
-            loading={updateVolunteer.isPending}
-            disabled={updateVolunteer.isPending}
-            className="flex-1"
-          >
-            Salvar
-          </Button>
+          <Button onClick={() => { void handleSave() }} loading={updateVolunteer.isPending} disabled={updateVolunteer.isPending} className="flex-1">Salvar</Button>
         </div>
       </div>
     </div>
@@ -383,93 +790,92 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
 
 // ── VolunteerCard ─────────────────────────────────────────────────────────────
 
-interface VolunteerPointsEntry {
-  volunteer_id: string
-  total_points: number
-  total_awards: number
-}
+interface VolunteerPointsEntry { volunteer_id: string; total_points: number; total_awards: number }
 
 function VolunteerCard({
-  volunteer,
-  onRemove,
-  onEdit,
-  points,
+  volunteer, onRemove, onEdit, onView, points,
 }: {
   volunteer: VolunteerRow
   onRemove: (v: VolunteerRow) => void
   onEdit: (v: VolunteerRow) => void
+  onView: (v: VolunteerRow) => void
   points?: VolunteerPointsEntry
 }) {
   const person = volunteer.people
   const ministry = volunteer.ministries
   const pts = points?.total_points ?? 0
   const medal = pts >= 100 ? '🥇' : pts >= 50 ? '🥈' : pts >= 20 ? '🥉' : '⭐'
+  const status = (volunteer as any).care_status as CareStatus ?? 'servindo'
+  const st = careStatusStyle(status)
 
   return (
-    <div className="bg-white rounded-2xl border border-black/10 p-4 flex gap-3">
-      {/* Avatar */}
-      <div className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-brand-600 font-semibold text-sm shrink-0">
+    <button
+      className="bg-bg-primary rounded-2xl border border-border-default p-4 flex gap-3 text-left w-full hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+      onClick={() => onView(volunteer)}
+    >
+      <div
+        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+        style={{ background: 'var(--church-primary, var(--color-primary))' }}
+      >
         {(person?.name ?? '?').charAt(0).toUpperCase()}
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-ekthos-black text-sm truncate">{person?.name ?? '—'}</p>
-          <div className="flex gap-1 shrink-0">
-            <button
-              onClick={() => onEdit(volunteer)}
-              className="p-1.5 rounded-lg text-gray-300 hover:text-brand-500 hover:bg-brand-50 transition-colors"
-              title="Editar"
-            >
+          <p className="font-semibold text-text-primary text-sm truncate">{person?.name ?? '—'}</p>
+          <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+            <button onClick={() => onEdit(volunteer)}
+              className="p-1.5 rounded-lg text-text-tertiary hover:text-primary-text hover:bg-bg-hover transition-colors" title="Editar escala">
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button
-              onClick={() => onRemove(volunteer)}
-              className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
-            >
+            <button onClick={() => onRemove(volunteer)}
+              className="p-1.5 rounded-lg text-text-tertiary hover:text-red-500 hover:bg-red-50 transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        {person?.email && <p className="text-xs text-gray-400 truncate">{person.email}</p>}
-        {person?.phone && <p className="text-xs text-gray-400">{person.phone}</p>}
+        <div className="mt-1.5 flex flex-wrap gap-1.5 items-center">
+          {/* Badge de status de cuidado */}
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${st.bg} ${st.text}`}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: st.dot }} />
+            {CARE_STATUS_LABEL[status]}
+          </span>
 
-        <div className="mt-2 flex flex-wrap gap-2">
           {ministry && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium bg-brand-50 text-brand-700 px-2 py-0.5 rounded-lg">
+            <span className="inline-flex items-center text-xs font-medium bg-bg-hover text-text-secondary px-2 py-0.5 rounded-lg">
               {ministry.name}
             </span>
           )}
           {volunteer.role && (
-            <span className="text-xs text-gray-500">
-              {ROLE_LABELS[volunteer.role] ?? volunteer.role}
-            </span>
+            <span className="text-xs text-text-tertiary">{ROLE_LABELS[volunteer.role] ?? volunteer.role}</span>
           )}
-          {/* Badge de pontos — mostrar apenas se > 0 */}
           {pts > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium bg-[#f9eedc] text-[#670000] rounded-full px-2 py-0.5">
+            <span className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-800 rounded-full px-2 py-0.5">
               {medal} {pts} pts
             </span>
           )}
         </div>
       </div>
-    </div>
+
+      <ChevronRight className="w-4 h-4 text-text-tertiary shrink-0 self-center" />
+    </button>
   )
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Página principal ──────────────────────────────────────────────────────────
 
 export default function Volunteers() {
   const { churchId } = useAuth()
   const [search, setSearch] = useState('')
   const [ministryFilter, setMinistryFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<CareStatus | null>(null)
   const [addOpen, setAddOpen] = useState(false)
   const [editingVolunteer, setEditingVolunteer] = useState<VolunteerRow | null>(null)
   const [removingVolunteer, setRemovingVolunteer] = useState<VolunteerRow | null>(null)
+  const [drawerVolunteer, setDrawerVolunteer] = useState<VolunteerRow | null>(null)
   const deactivate = useDeactivateVolunteer()
 
-  // Fetch ministries for filter chips
   const { data: ministries = [] } = useQuery({
     queryKey: ['ministries_list', churchId],
     queryFn: async () => {
@@ -484,12 +890,8 @@ export default function Volunteers() {
     enabled: Boolean(churchId),
   })
 
-  const { data: volunteers = [], isLoading } = useVoluntarios(
-    churchId ?? '',
-    ministryFilter || undefined,
-  )
+  const { data: volunteers = [], isLoading } = useVoluntarios(churchId ?? '', ministryFilter || undefined)
 
-  // Pontos de gamificação por voluntário (D8)
   const { data: pointsData } = useQuery({
     queryKey: ['volunteer-points', churchId],
     queryFn: async () => {
@@ -497,18 +899,25 @@ export default function Volunteers() {
         .from('volunteer_total_points')
         .select('volunteer_id, total_points, total_awards')
         .eq('church_id', churchId!)
-      return Object.fromEntries(
-        (data ?? []).map(p => [p.volunteer_id, p as VolunteerPointsEntry])
-      )
+      return Object.fromEntries((data ?? []).map(p => [p.volunteer_id, p as VolunteerPointsEntry]))
     },
     enabled: Boolean(churchId),
   })
 
-  const filteredVolunteers = (volunteers as VolunteerRow[]).filter(v =>
-    !search.trim() ||
-    (v.people?.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
-    (v.people?.email ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredVolunteers = useMemo(() => {
+    let list = volunteers as VolunteerRow[]
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(v =>
+        (v.people?.name ?? '').toLowerCase().includes(q) ||
+        (v.people?.email ?? '').toLowerCase().includes(q)
+      )
+    }
+    if (statusFilter) {
+      list = list.filter(v => ((v as any).care_status ?? 'servindo') === statusFilter)
+    }
+    return list
+  }, [volunteers, search, statusFilter])
 
   async function confirmRemove() {
     if (!removingVolunteer || !churchId) return
@@ -516,28 +925,17 @@ export default function Volunteers() {
     setRemovingVolunteer(null)
   }
 
-  // Stats
-  const total = (volunteers as VolunteerRow[]).length
-  const byMinistry = (volunteers as VolunteerRow[]).reduce<Record<string, number>>((acc, v) => {
-    const name = v.ministries?.name ?? 'Sem ministério'
-    acc[name] = (acc[name] ?? 0) + 1
-    return acc
-  }, {})
-  const topMinistries = Object.entries(byMinistry)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-20 md:pb-0">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center">
-            <HandHeart className="w-5 h-5 text-brand-600" />
+          <div className="w-10 h-10 rounded-xl bg-bg-hover flex items-center justify-center">
+            <HandHeart className="w-5 h-5 text-primary-text" />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold text-ekthos-black">Voluntários</h1>
-            <p className="text-sm text-gray-500">Servidores ativos na igreja</p>
+            <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Voluntários</h1>
+            <p className="text-sm text-text-secondary">Módulo de Cuidado</p>
           </div>
         </div>
         <Button onClick={() => setAddOpen(true)}>
@@ -546,38 +944,44 @@ export default function Volunteers() {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white rounded-2xl border border-black/10 p-4 text-center">
-          <p className="text-2xl font-bold text-ekthos-black">{total}</p>
-          <p className="text-xs text-gray-400 mt-1">Total</p>
-        </div>
-        {topMinistries.map(([name, count]) => (
-          <div key={name} className="bg-white rounded-2xl border border-black/10 p-4 text-center">
-            <p className="text-2xl font-bold text-ekthos-black">{count}</p>
-            <p className="text-xs text-gray-400 mt-1 truncate" title={name}>{name}</p>
-          </div>
-        ))}
-      </div>
+      {/* PARTE 4: Painel de status */}
+      {churchId && (
+        <CarePanel
+          churchId={churchId}
+          statusFilter={statusFilter}
+          onFilter={setStatusFilter}
+        />
+      )}
 
-      {/* Search */}
+      {/* Filtro ativo de status */}
+      {statusFilter && (
+        <button
+          onClick={() => setStatusFilter(null)}
+          className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-xl bg-bg-hover text-text-secondary hover:bg-border-default transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+          Limpar filtro: {CARE_STATUS_LABEL[statusFilter]}
+        </button>
+      )}
+
+      {/* Busca */}
       <div className="relative">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Buscar voluntário..."
-          className="block w-full pl-9 pr-4 py-2.5 rounded-xl border border-black/10 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+          className="block w-full pl-9 pr-4 py-2.5 rounded-xl border border-border-default text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
-      {/* Ministry filter chips */}
+      {/* Filtro por ministério */}
       {ministries.length > 0 && (
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setMinistryFilter('')}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-              ministryFilter === '' ? 'bg-brand-600 text-white' : 'bg-white border border-black/10 text-gray-600 hover:bg-cream'
+              ministryFilter === '' ? 'bg-primary text-white' : 'bg-bg-primary border border-border-default text-text-secondary hover:bg-bg-hover'
             }`}
           >
             Todos
@@ -587,7 +991,7 @@ export default function Volunteers() {
               key={m.id}
               onClick={() => setMinistryFilter(ministryFilter === m.id ? '' : m.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                ministryFilter === m.id ? 'bg-brand-600 text-white' : 'bg-white border border-black/10 text-gray-600 hover:bg-cream'
+                ministryFilter === m.id ? 'bg-primary text-white' : 'bg-bg-primary border border-border-default text-text-secondary hover:bg-bg-hover'
               }`}
             >
               {m.name}
@@ -596,33 +1000,43 @@ export default function Volunteers() {
         </div>
       )}
 
-      {/* List */}
+      {/* Lista */}
       {isLoading ? (
         <div className="flex justify-center py-12"><Spinner size="lg" /></div>
       ) : filteredVolunteers.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-text-tertiary">
           <HandHeart className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-sm mb-4">
-            {search || ministryFilter ? 'Nenhum voluntário encontrado.' : 'Nenhum voluntário cadastrado ainda.'}
+            {search || ministryFilter || statusFilter ? 'Nenhum voluntário encontrado.' : 'Nenhum voluntário cadastrado ainda.'}
           </p>
-          {!search && !ministryFilter && (
+          {!search && !ministryFilter && !statusFilter && (
             <Button onClick={() => setAddOpen(true)}>
               <Plus className="w-4 h-4 mr-1" /> Adicionar primeiro voluntário
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-2.5 md:grid-cols-2">
           {filteredVolunteers.map(v => (
             <VolunteerCard
               key={v.id}
               volunteer={v}
               onRemove={setRemovingVolunteer}
               onEdit={setEditingVolunteer}
+              onView={setDrawerVolunteer}
               points={pointsData?.[v.id]}
             />
           ))}
         </div>
+      )}
+
+      {/* Drawer de ficha (Partes 2 + 3) */}
+      {drawerVolunteer && churchId && (
+        <VolunteerDrawer
+          volunteer={drawerVolunteer}
+          churchId={churchId}
+          onClose={() => setDrawerVolunteer(null)}
+        />
       )}
 
       {/* Edit modal */}
@@ -650,24 +1064,22 @@ export default function Volunteers() {
         <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setRemovingVolunteer(null)} />
-          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
+          <div className="relative bg-bg-primary rounded-2xl shadow-xl p-6 w-full max-w-sm space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-ekthos-black">Remover voluntário</h3>
-                <p className="text-sm text-gray-500">Vinculação com ministério</p>
+                <h3 className="font-semibold text-text-primary">Remover voluntário</h3>
+                <p className="text-sm text-text-secondary">Vinculação com ministério</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-secondary">
               Remover <strong>{removingVolunteer.people?.name}</strong> do ministério{' '}
               <strong>{removingVolunteer.ministries?.name}</strong>?
             </p>
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => setRemovingVolunteer(null)} className="flex-1">
-                Cancelar
-              </Button>
+              <Button variant="secondary" onClick={() => setRemovingVolunteer(null)} className="flex-1">Cancelar</Button>
               <Button
                 onClick={() => { void confirmRemove() }}
                 loading={deactivate.isPending}
