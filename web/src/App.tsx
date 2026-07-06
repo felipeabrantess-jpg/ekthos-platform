@@ -86,6 +86,7 @@ const CuidadoDistribuir   = lazy(() => import('@/pages/cuidado/Distribuir'))
 const CuidadoPainel       = lazy(() => import('@/pages/cuidado/Painel'))
 const CuidadoDuplicados   = lazy(() => import('@/pages/cuidado/Duplicados'))
 const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
+const CuidadoPessoas      = lazy(() => import('@/pages/cuidado/CuidadoPessoas'))
 
 // Kids Check-in — páginas públicas (sem auth, sem Layout CRM)
 const KidsCheckin = lazy(() => import('@/pages/kids/KidsCheckin'))
@@ -465,6 +466,7 @@ export default function App() {
             <Route path="cuidado/distribuir"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDistribuir /></Suspense></ErrorBoundary>} />
             <Route path="cuidado/painel"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoPainel /></Suspense></ErrorBoundary>} />
             <Route path="cuidado/duplicados"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDuplicados /></Suspense></ErrorBoundary>} />
+            <Route path="cuidado/pessoas"      element={<ErrorBoundary><RoleRoute path="cuidado/pessoas"><Suspense fallback={<PageLoader />}><CuidadoPessoas /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Registro de Culto — Fatia 3 (CRM autenticado) ── */}
             <Route path="culto/relatorios" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><RelatoriosCulto /></Suspense></ErrorBoundary>} />

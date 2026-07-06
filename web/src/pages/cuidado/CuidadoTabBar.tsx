@@ -1,10 +1,13 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink }   from 'react-router-dom'
+import { useAuth }   from '@/hooks/useAuth'
+import { canAccess } from '@/hooks/useRole'
 
-const TABS = [
-  { to: '/cuidado/responsaveis', label: 'Responsáveis' },
-  { to: '/cuidado/distribuir',   label: 'Distribuição'  },
-  { to: '/cuidado/painel',       label: 'Painel'        },
-  { to: '/cuidado/duplicados',   label: 'Duplicados'    },
+const ALL_TABS = [
+  { to: '/cuidado/responsaveis', label: 'Responsáveis', guard: null                  },
+  { to: '/cuidado/distribuir',   label: 'Distribuição',  guard: null                  },
+  { to: '/cuidado/painel',       label: 'Painel',        guard: null                  },
+  { to: '/cuidado/duplicados',   label: 'Duplicados',    guard: null                  },
+  { to: '/cuidado/pessoas',      label: 'Pessoas',       guard: '/cuidado/pessoas'    },
 ]
 
 const base: React.CSSProperties = {
@@ -15,9 +18,12 @@ const base: React.CSSProperties = {
 }
 
 export default function CuidadoTabBar() {
+  const { role } = useAuth()
+  const tabs = ALL_TABS.filter(t => !t.guard || canAccess(role, t.guard))
+
   return (
     <div className="flex gap-1 flex-wrap" style={{ padding: '0 0 12px 0' }}>
-      {TABS.map(({ to, label }) => (
+      {tabs.map(({ to, label }) => (
         <NavLink
           key={to}
           to={to}
