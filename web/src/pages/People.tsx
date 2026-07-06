@@ -569,6 +569,26 @@ export default function People() {
     [contactsData],
   )
 
+  // Derivações antes do early return — useMemo deve ser chamado antes de qualquer
+  // return condicional (React Rules of Hooks)
+  const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
+  const tabFiltered = applyTabFilter(activeTab, allPeople)
+  // Filtro por tag (client-side — person_tags já vem no payload)
+  const tagFiltered = tagFilter
+    ? tabFiltered.filter((p) =>
+        (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
+      )
+    : tabFiltered
+  // Para aba novos com período ativo: usa dados do servidor (query dedicada)
+  // Para aba novos sem período (all): usa tagFiltered (query principal)
+  // Para todas as outras abas: usa tagFiltered
+  const filteredPeople = useMemo(() => {
+    if (activeTab === 'novos' && dateFilter !== 'all') {
+      return novosServerData ?? []
+    }
+    return tagFiltered
+  }, [activeTab, dateFilter, novosServerData, tagFiltered])
+
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
   function handleView(person: PersonWithStage)  { setSelectedPerson(person) }
@@ -591,24 +611,6 @@ export default function People() {
       setDeletingId(null)
     }
   }
-
-  const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
-  const tabFiltered = applyTabFilter(activeTab, allPeople)
-  // Filtro por tag (client-side — person_tags já vem no payload)
-  const tagFiltered = tagFilter
-    ? tabFiltered.filter((p) =>
-        (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
-      )
-    : tabFiltered
-  // Para aba novos com período ativo: usa dados do servidor (query dedicada)
-  // Para aba novos sem período (all): usa tagFiltered (query principal)
-  // Para todas as outras abas: usa tagFiltered
-  const filteredPeople = useMemo(() => {
-    if (activeTab === 'novos' && dateFilter !== 'all') {
-      return novosServerData ?? []
-    }
-    return tagFiltered
-  }, [activeTab, dateFilter, novosServerData, tagFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
