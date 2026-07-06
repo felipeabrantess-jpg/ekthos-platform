@@ -1,5 +1,6 @@
 import { useState }             from 'react'
-import { Check, Search, ChevronDown, ChevronUp } from 'lucide-react'
+import { useNavigate }          from 'react-router-dom'
+import { Check, Search, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react'
 import { useQuery }             from '@tanstack/react-query'
 import { useAuth }              from '@/hooks/useAuth'
 import { supabase }             from '@/lib/supabase'
@@ -10,6 +11,7 @@ import {
   useUpsertCareContact,
   type CareContact,
 } from '@/features/cuidado/hooks/useCareContacts'
+import { usePessoasConversas }  from '@/features/cuidado/hooks/usePessoasConversas'
 
 // ── People query ──────────────────────────────────────────────────────────────
 
@@ -51,21 +53,17 @@ function waHref(phone: string): string {
   return `https://wa.me/55${phone.replace(/\D/g, '').replace(/^55/, '')}`
 }
 
-const WhatsAppIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
-    <path d="M16 3C8.832 3 3 8.832 3 16c0 2.41.661 4.664 1.813 6.594L3 29l6.563-1.781A12.935 12.935 0 0016 29c7.168 0 13-5.832 13-13S23.168 3 16 3zm0 2c6.086 0 11 4.914 11 11s-4.914 11-11 11a10.94 10.94 0 01-5.594-1.531l-.375-.22-3.937 1.063 1.094-3.813-.25-.406A10.94 10.94 0 015 16C5 9.914 9.914 5 16 5zm-3.094 5.438c-.2 0-.527.074-.8.374-.274.3-1.044 1.02-1.044 2.485 0 1.465 1.067 2.883 1.215 3.083.149.2 2.067 3.227 5.075 4.398.71.277 1.261.44 1.692.567.71.21 1.356.18 1.867.11.57-.079 1.75-.716 2-1.4.248-.686.248-1.28.173-1.404-.074-.124-.273-.198-.57-.347-.298-.148-1.754-.867-2.027-.965-.273-.099-.473-.149-.672.149-.2.298-.77.966-.942 1.165-.173.2-.348.224-.645.075-.298-.15-1.254-.46-2.39-1.474-.882-.788-1.478-1.762-1.65-2.059-.173-.299-.018-.46.129-.606.133-.133.298-.347.446-.521.148-.174.198-.3.297-.499.1-.2.05-.372-.024-.52-.074-.15-.67-1.614-.918-2.21-.24-.578-.485-.499-.667-.509-.175-.008-.374-.01-.573-.01z" />
-  </svg>
-)
-
 // ── PersonCareRow ─────────────────────────────────────────────────────────────
 
 interface PersonCareRowProps {
-  person:   PersonRow
-  contact:  CareContact | null
-  churchId: string
+  person:     PersonRow
+  contact:    CareContact | null
+  churchId:   string
+  conversaId: string | null
 }
 
-function PersonCareRow({ person, contact, churchId }: PersonCareRowProps) {
+function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowProps) {
+  const navigate = useNavigate()
   const [expanded,  setExpanded]  = useState(false)
   const [notes,     setNotes]     = useState(contact?.notes ?? '')
   const [contacted, setContacted] = useState(contact?.contacted ?? false)
@@ -123,18 +121,42 @@ function PersonCareRow({ person, contact, churchId }: PersonCareRowProps) {
           )}
         </div>
 
-        {/* WhatsApp */}
+        {/* Ação primária: Ver conversa (número da igreja) ou Sem conversa */}
+        {conversaId ? (
+          <button
+            onClick={e => { e.stopPropagation(); navigate(`/conversas/${conversaId}`) }}
+            className="flex items-center gap-1.5 rounded-xl shrink-0 text-white font-medium hover:opacity-80 active:opacity-60 transition-opacity"
+            style={{ padding: '0 12px', height: 34, fontSize: 12, backgroundColor: '#e13500' }}
+            title="Ver conversa no WhatsApp da igreja"
+          >
+            <MessageSquare size={13} />
+            Ver conversa
+          </button>
+        ) : (
+          <div
+            className="flex items-center gap-1.5 rounded-xl shrink-0 select-none opacity-40"
+            style={{ padding: '0 12px', height: 34, fontSize: 12, fontWeight: 500, backgroundColor: '#E5E7EB', color: '#6B7280' }}
+            title="Esta pessoa ainda não tem conversa iniciada no WhatsApp da igreja"
+          >
+            <MessageSquare size={13} />
+            Sem conversa
+          </div>
+        )}
+
+        {/* Fallback: WhatsApp pessoal (sempre disponível como secundário) */}
         {person.phone && (
           <a
             href={waHref(person.phone)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
-            className="flex items-center justify-center rounded-xl shrink-0 hover:opacity-80 active:opacity-60 transition-opacity"
-            style={{ width: 36, height: 36, backgroundColor: '#1D9E75' }}
-            title="Abrir no WhatsApp"
+            className="flex items-center justify-center rounded-lg shrink-0 hover:opacity-80 active:opacity-60 transition-opacity"
+            style={{ width: 28, height: 28, backgroundColor: '#25D366' }}
+            title="WhatsApp pessoal (número do usuário)"
           >
-            <WhatsAppIcon />
+            <svg width="15" height="15" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 3C8.832 3 3 8.832 3 16c0 2.41.661 4.664 1.813 6.594L3 29l6.563-1.781A12.935 12.935 0 0016 29c7.168 0 13-5.832 13-13S23.168 3 16 3zm0 2c6.086 0 11 4.914 11 11s-4.914 11-11 11a10.94 10.94 0 01-5.594-1.531l-.375-.22-3.937 1.063 1.094-3.813-.25-.406A10.94 10.94 0 015 16C5 9.914 9.914 5 16 5zm-3.094 5.438c-.2 0-.527.074-.8.374-.274.3-1.044 1.02-1.044 2.485 0 1.465 1.067 2.883 1.215 3.083.149.2 2.067 3.227 5.075 4.398.71.277 1.261.44 1.692.567.71.21 1.356.18 1.867.11.57-.079 1.75-.716 2-1.4.248-.686.248-1.28.173-1.404-.074-.124-.273-.198-.57-.347-.298-.148-1.754-.867-2.027-.965-.273-.099-.473-.149-.672.149-.2.298-.77.966-.942 1.165-.173.2-.348.224-.645.075-.298-.15-1.254-.46-2.39-1.474-.882-.788-1.478-1.762-1.65-2.059-.173-.299-.018-.46.129-.606.133-.133.298-.347.446-.521.148-.174.198-.3.297-.499.1-.2.05-.372-.024-.52-.074-.15-.67-1.614-.918-2.21-.24-.578-.485-.499-.667-.509-.175-.008-.374-.01-.573-.01z" />
+            </svg>
           </a>
         )}
 
@@ -215,8 +237,9 @@ export default function CuidadoPessoas() {
   const { churchId }  = useAuth()
   const [search, setSearch] = useState('')
 
-  const { data: people  = [], isLoading } = usePeopleWithPhone(churchId ?? '')
-  const { data: contacts = [] }           = useCareContacts(churchId ?? '')
+  const { data: people      = [], isLoading } = usePeopleWithPhone(churchId ?? '')
+  const { data: contacts    = [] }            = useCareContacts(churchId ?? '')
+  const { data: conversaMap = new Map() }     = usePessoasConversas(churchId ?? '')
 
   const contactMap     = new Map(contacts.map(c => [c.person_id, c]))
   const contactedCount = contacts.filter(c => c.contacted).length
@@ -277,6 +300,7 @@ export default function CuidadoPessoas() {
               person={p}
               contact={contactMap.get(p.id) ?? null}
               churchId={churchId ?? ''}
+              conversaId={conversaMap.get(p.id) ?? null}
             />
           ))}
         </div>
