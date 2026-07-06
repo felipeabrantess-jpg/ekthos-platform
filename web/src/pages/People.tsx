@@ -459,7 +459,7 @@ export default function People() {
   const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
   const periodoParam = searchParams.get('periodo') as DateFilter | null
   const [dateFilter, setDateFilter] = useState<DateFilter>(
-    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam : '7'
+    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam : 'all'
   )
   const [customFrom, setCustomFrom] = useState('')
   const [customTo,   setCustomTo]   = useState('')
@@ -554,7 +554,8 @@ export default function People() {
   const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
     geral:        { title: 'Nenhuma pessoa cadastrada', description: 'Adicione a primeira pessoa clicando em "Nova Pessoa".' },
     aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
-    novos:        { title: 'Nenhum novo convertido', description: 'Pessoas nos stages Visitante ou Interesse em Grupo aparecerão aqui.' },
+    novos:        { title: 'Nenhum novo visitante no período', description: 'Tente ampliar o período ou selecionar "Todos".' },
+    convertidos:  { title: 'Nenhum novo convertido', description: 'Pessoas com data de conversão nos últimos 30 dias aparecerão aqui.' },
     lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
     'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
   }

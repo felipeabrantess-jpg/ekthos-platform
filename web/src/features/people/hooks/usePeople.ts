@@ -21,6 +21,12 @@ interface PeopleFilters {
    * Quando definido: ignora paginação (retorna todos do mês), ordena por birth_day ASC.
    */
   birthMonth?: number
+  /** Filtra por person_stage (campo direto na tabela people). */
+  personStage?: string
+  /** Filtra por first_visit_date >= data (ISO date string YYYY-MM-DD). */
+  firstVisitAfter?: string
+  /** Filtra por first_visit_date <= data (ISO date string YYYY-MM-DD). */
+  firstVisitBefore?: string
 }
 
 // Lista pessoas com stage atual
@@ -90,6 +96,21 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
       } else if (filters.unitId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query = (query as any).eq('unit_id', filters.unitId)
+      }
+
+      if (filters.personStage) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).eq('person_stage', filters.personStage)
+      }
+
+      if (filters.firstVisitAfter) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).gte('first_visit_date', filters.firstVisitAfter)
+      }
+
+      if (filters.firstVisitBefore) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).lte('first_visit_date', filters.firstVisitBefore)
       }
 
       const { data, error } = await query
