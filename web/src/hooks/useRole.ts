@@ -48,7 +48,9 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/cuidado':     ['admin', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
   '/culto/relatorios': ['admin', 'secretary'],
   '/conversas':   ['admin', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
-  '/campanha':    ['admin'],
+  '/campanha':      ['admin'],
+  '/configuracoes': ['admin'],
+  '/settings':      ['admin'],
 }
 
 // Verifica se um role tem acesso a uma rota

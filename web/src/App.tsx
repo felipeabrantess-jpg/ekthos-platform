@@ -510,7 +510,7 @@ export default function App() {
             <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
 
             {/* ── Lote A: Configurações reestruturadas ── */}
-            <Route path="configuracoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConfiguracoesLayoutPage /></Suspense></ErrorBoundary>}>
+            <Route path="configuracoes" element={<ErrorBoundary><RoleRoute path="configuracoes"><Suspense fallback={<PageLoader />}><ConfiguracoesLayoutPage /></Suspense></RoleRoute></ErrorBoundary>}>
               <Route index element={<Suspense fallback={<PageLoader />}><ConfiguracoesIndex /></Suspense>} />
               <Route path="dados"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><DadosPage /></Suspense></ErrorBoundary>} />
               <Route path="identidade" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><IdentidadePage /></Suspense></ErrorBoundary>} />
@@ -523,7 +523,7 @@ export default function App() {
             </Route>
 
             {/* ── Settings legados (backward compat) ── */}
-            <Route path="settings" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><SettingsLayoutPage /></Suspense></ErrorBoundary>}>
+            <Route path="settings" element={<ErrorBoundary><RoleRoute path="settings"><Suspense fallback={<PageLoader />}><SettingsLayoutPage /></Suspense></RoleRoute></ErrorBoundary>}>
               <Route index element={<Navigate to="billing" replace />} />
               <Route path="billing"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><BillingPage /></Suspense></ErrorBoundary>} />
               <Route path="users"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><UsersPage /></Suspense></ErrorBoundary>} />
