@@ -39,6 +39,7 @@ interface CreateVolunteerInput {
   role?: string
   skills?: string[]
   availability?: { days: string[]; period: string }
+  joined_at?: string
 }
 
 export function useCreateVolunteer() {
@@ -57,6 +58,7 @@ export function useCreateVolunteer() {
           skills: input.skills ?? [],
           availability: input.availability ?? { days: [], period: 'any' },
           is_active: true,
+          ...(input.joined_at ? { joined_at: input.joined_at } : {}),
         } as any)
         .select()
         .single()
@@ -78,6 +80,13 @@ interface UpdateVolunteerInput {
   skills?: string[]
   availability?: { days: string[]; period: string }
   ministry_id?: string
+  joined_at?: string
+  min_days_between_services?: number
+  willingness?: string | null
+  care_status?: string | null
+  satisfaction?: string | null
+  care_notes?: string | null
+  care_responsible_id?: string | null
 }
 
 export function useUpdateVolunteer() {
@@ -99,6 +108,7 @@ export function useUpdateVolunteer() {
     },
     onSuccess: (_data, { church_id }) => {
       void queryClient.invalidateQueries({ queryKey: ['voluntarios', church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['volunteer-care-stats', church_id] })
     },
   })
 }

@@ -524,7 +524,7 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
   const [personSearch, setPersonSearch] = useState('')
   const [selectedPerson, setSelectedPerson] = useState<PersonResult | null>(null)
   const [ministryId, setMinistryId] = useState(defaultMinistryId ?? '')
-  const [role, setRole] = useState('volunteer')
+  const [joinedAt, setJoinedAt] = useState(new Date().toISOString().split('T')[0])
   const [error, setError] = useState<string | null>(null)
 
   const { data: searchResults = [], isFetching } = useQuery({
@@ -551,9 +551,9 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
         church_id: churchId,
         person_id: selectedPerson.id,
         ministry_id: ministryId,
-        role,
         skills: [],
         availability: { days: [], period: 'any' },
+        joined_at: joinedAt ? new Date(joinedAt).toISOString() : undefined,
       })
       onClose()
     } catch (err) {
@@ -565,7 +565,7 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-bg-primary w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4">
+      <div className="relative bg-bg-primary w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-text-primary">Adicionar Voluntário</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-bg-hover transition-colors">
@@ -573,69 +573,75 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
           </button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">Pessoa *</label>
-          {selectedPerson ? (
-            <div className="flex items-center justify-between bg-bg-hover rounded-xl px-3 py-2.5">
-              <span className="text-sm font-medium text-text-primary">{selectedPerson.name}</span>
-              <button onClick={() => { setSelectedPerson(null); setPersonSearch('') }} className="p-1 rounded text-text-tertiary hover:text-text-secondary">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="relative">
-              <Input
-                placeholder="Buscar por nome..."
-                value={personSearch}
-                onChange={e => setPersonSearch(e.target.value)}
-              />
-              {personSearch.length >= 2 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-bg-primary border border-border-default rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
-                  {isFetching ? (
-                    <div className="flex justify-center py-3"><Spinner size="sm" /></div>
-                  ) : searchResults.length === 0 ? (
-                    <p className="text-sm text-text-tertiary text-center py-3">Nenhuma pessoa encontrada</p>
-                  ) : (
-                    searchResults.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => { setSelectedPerson(p); setPersonSearch('') }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-bg-hover transition-colors"
-                      >
-                        <p className="text-sm font-medium text-text-primary">{p.name}</p>
-                        {p.email && <p className="text-xs text-text-tertiary">{p.email}</p>}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+        {/* ── Seção 1 — Quem é ── */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-text-tertiary">Quem é</p>
+
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">Pessoa *</label>
+            {selectedPerson ? (
+              <div className="flex items-center justify-between bg-bg-hover rounded-xl px-3 py-2.5">
+                <span className="text-sm font-medium text-text-primary">{selectedPerson.name}</span>
+                <button onClick={() => { setSelectedPerson(null); setPersonSearch('') }} className="p-1 rounded text-text-tertiary hover:text-text-secondary">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={personSearch}
+                  onChange={e => setPersonSearch(e.target.value)}
+                />
+                {personSearch.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-bg-primary border border-border-default rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto">
+                    {isFetching ? (
+                      <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+                    ) : searchResults.length === 0 ? (
+                      <p className="text-sm text-text-tertiary text-center py-3">Nenhuma pessoa encontrada</p>
+                    ) : (
+                      searchResults.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setSelectedPerson(p); setPersonSearch('') }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-bg-hover transition-colors"
+                        >
+                          <p className="text-sm font-medium text-text-primary">{p.name}</p>
+                          {p.email && <p className="text-xs text-text-tertiary">{p.email}</p>}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">Ministério onde serve *</label>
+            <select
+              value={ministryId}
+              onChange={e => setMinistryId(e.target.value)}
+              className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Selecionar ministério...</option>
+              {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">Ministério *</label>
-          <select
-            value={ministryId}
-            onChange={e => setMinistryId(e.target.value)}
-            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="">Selecionar ministério...</option>
-            {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">Função</label>
-          <select
-            value={role}
-            onChange={e => setRole(e.target.value)}
-            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="volunteer">Voluntário</option>
-            <option value="leader">Líder</option>
-            <option value="co-leader">Co-líder</option>
-          </select>
+        {/* ── Seção 2 — Serviço ── */}
+        <div className="space-y-3 pt-1 border-t border-border-default">
+          <p className="text-xs font-semibold uppercase tracking-widest text-text-tertiary pt-2">Serviço</p>
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">Desde quando serve?</label>
+            <input
+              type="date"
+              value={joinedAt}
+              onChange={e => setJoinedAt(e.target.value)}
+              className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
@@ -670,35 +676,79 @@ interface EditForm {
   role: string
   availability: { days: number[]; period: string }
   min_days_between_services: number
+  joined_at: string
+  willingness: string
+  care_status: string
+  satisfaction: string
+  care_notes: string
+  care_responsible_id: string
 }
 
 function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVolunteerModalProps) {
   const updateVolunteer = useUpdateVolunteer()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawDays = (volunteer as any).availability?.days ?? []
+  const v = volunteer as any
+  const rawDays = v.availability?.days ?? []
   const initialDays: number[] = rawDays.map((d: unknown) => Number(d))
 
   const [editForm, setEditForm] = useState<EditForm>({
-    ministryId: volunteer.ministries?.id ?? '',
-    role: volunteer.role ?? 'volunteer',
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    availability: { days: initialDays, period: (volunteer as any).availability?.period ?? 'any' },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    min_days_between_services: (volunteer as any).min_days_between_services ?? 7,
+    ministryId:              volunteer.ministries?.id ?? '',
+    role:                    volunteer.role ?? 'volunteer',
+    availability:            { days: initialDays, period: v.availability?.period ?? 'any' },
+    min_days_between_services: v.min_days_between_services ?? 7,
+    joined_at:               volunteer.joined_at ? new Date(volunteer.joined_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    willingness:             v.willingness ?? '',
+    care_status:             v.care_status ?? 'servindo',
+    satisfaction:            v.satisfaction ?? '',
+    care_notes:              v.care_notes ?? '',
+    care_responsible_id:     v.care_responsible_id ?? '',
   })
   const [error, setError] = useState<string | null>(null)
+
+  // Responsável pelo cuidado — busca e seleção de pessoa
+  const [responsibleSearch, setResponsibleSearch] = useState('')
+  const [responsiblePerson, setResponsiblePerson] = useState<PersonResult | null>(null)
+
+  // Resolve nome do responsável atual ao abrir o modal
+  const { data: resolvedResponsible } = useQuery({
+    queryKey: ['person_by_id', editForm.care_responsible_id],
+    queryFn: async () => {
+      const { data } = await supabase.from('people').select('id, name, email, phone')
+        .eq('id', editForm.care_responsible_id).single()
+      return data as PersonResult | null
+    },
+    enabled: Boolean(editForm.care_responsible_id) && !responsiblePerson,
+  })
+
+  const { data: responsibleResults = [], isFetching: fetchingResponsible } = useQuery({
+    queryKey: ['people_search_responsible', churchId, responsibleSearch],
+    queryFn: async () => {
+      if (responsibleSearch.trim().length < 2) return []
+      const { data } = await supabase.from('people').select('id, name, email, phone')
+        .eq('church_id', churchId).ilike('name', `%${responsibleSearch}%`).is('deleted_at', null).limit(8)
+      return (data ?? []) as PersonResult[]
+    },
+    enabled: responsibleSearch.trim().length >= 2,
+  })
+
+  const displayResponsible = responsiblePerson ?? resolvedResponsible ?? null
 
   async function handleSave() {
     setError(null)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (updateVolunteer.mutateAsync as any)({
+      await updateVolunteer.mutateAsync({
         id: volunteer.id,
         church_id: churchId,
         ministry_id: editForm.ministryId || undefined,
         role: editForm.role,
         availability: editForm.availability,
         min_days_between_services: editForm.min_days_between_services,
+        joined_at: editForm.joined_at ? new Date(editForm.joined_at).toISOString() : undefined,
+        willingness: editForm.willingness || null,
+        care_status: editForm.care_status || null,
+        satisfaction: editForm.satisfaction || null,
+        care_notes: editForm.care_notes || null,
+        care_responsible_id: editForm.care_responsible_id || null,
       })
       onClose()
     } catch (err) {
@@ -715,66 +765,170 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
     })
   }
 
+  const selectCls = 'block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary'
+  const labelCls  = 'block text-sm font-medium text-text-primary mb-1.5'
+  const sectionHeaderCls = 'text-xs font-semibold uppercase tracking-widest text-text-tertiary pt-2'
+
   return (
     <ModalPortal>
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-bg-primary w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-bg-primary w-full md:max-w-lg md:rounded-2xl rounded-t-2xl shadow-xl p-5 space-y-5 max-h-[92vh] overflow-y-auto">
+
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-text-primary">Editar Voluntário</h2>
+          <div>
+            <h2 className="font-semibold text-text-primary">Editar Voluntário</h2>
+            <p className="text-sm text-text-secondary mt-0.5">{volunteer.people?.name ?? 'Voluntário'}</p>
+          </div>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-bg-hover transition-colors"><X className="w-4 h-4" /></button>
         </div>
-        <p className="text-sm font-medium text-text-primary bg-bg-hover rounded-xl px-3 py-2.5">{volunteer.people?.name ?? 'Voluntário'}</p>
 
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">Ministério</label>
-          <select value={editForm.ministryId} onChange={e => setEditForm(f => ({ ...f, ministryId: e.target.value }))}
-            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="">Sem ministério</option>
-            {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-text-primary mb-1.5">Função</label>
-          <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
-            className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="volunteer">Voluntário</option>
-            <option value="leader">Líder</option>
-            <option value="co-leader">Co-líder</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="text-sm font-medium text-text-secondary mb-2 block">Dias disponíveis</label>
-          <div className="flex gap-2 flex-wrap">
-            {DAYS_PT.map((day, idx) => (
-              <button key={idx} type="button" onClick={() => toggleDay(idx)}
-                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                  editForm.availability.days.includes(idx) ? 'bg-primary text-white border-primary' : 'bg-bg-primary text-text-secondary border-border-default hover:border-primary'
-                }`}>
-                {day}
-              </button>
-            ))}
+        {/* ── Seção 1 — Quem é ── */}
+        <div className="space-y-3 pt-1 border-t border-border-default">
+          <p className={sectionHeaderCls}>Quem é</p>
+          <div>
+            <label className={labelCls}>Ministério onde serve</label>
+            <select value={editForm.ministryId} onChange={e => setEditForm(f => ({ ...f, ministryId: e.target.value }))} className={selectCls}>
+              <option value="">Sem ministério</option>
+              {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Função</label>
+            <select value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))} className={selectCls}>
+              <option value="volunteer">Voluntário</option>
+              <option value="leader">Líder</option>
+              <option value="co-leader">Co-líder</option>
+            </select>
           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-text-secondary mb-2 block">Período preferencial</label>
-          <select value={editForm.availability.period} onChange={e => setEditForm(f => ({ ...f, availability: { ...f.availability, period: e.target.value } }))}
-            className="w-full border border-border-default rounded-xl px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary">
-            <option value="any">Qualquer período</option>
-            <option value="morning">Manhã</option>
-            <option value="afternoon">Tarde</option>
-            <option value="evening">Noite</option>
-          </select>
+        {/* ── Seção 2 — Serviço ── */}
+        <div className="space-y-3 pt-1 border-t border-border-default">
+          <p className={sectionHeaderCls}>Serviço</p>
+
+          <div>
+            <label className={labelCls}>Quais dias você consegue servir?</label>
+            <div className="flex gap-2 flex-wrap">
+              {DAYS_PT.map((day, idx) => (
+                <button key={idx} type="button" onClick={() => toggleDay(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                    editForm.availability.days.includes(idx)
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-bg-primary text-text-secondary border-border-default hover:border-primary'
+                  }`}>
+                  {day}
+                </button>
+              ))}
+            </div>
+            <select value={editForm.availability.period}
+              onChange={e => setEditForm(f => ({ ...f, availability: { ...f.availability, period: e.target.value } }))}
+              className={`${selectCls} mt-2`}>
+              <option value="any">Qualquer período</option>
+              <option value="morning">Manhã</option>
+              <option value="afternoon">Tarde</option>
+              <option value="evening">Noite</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Você gosta do que faz? É onde queria estar?</label>
+            <select value={editForm.willingness} onChange={e => setEditForm(f => ({ ...f, willingness: e.target.value }))} className={selectCls}>
+              <option value="">Não informado</option>
+              <option value="muito">Muito — é exatamente onde quero estar</option>
+              <option value="mais_ou_menos">Mais ou menos — serve, mas poderia ser diferente</option>
+              <option value="nao_muito">Não muito — preferia estar em outro lugar</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Desde quando serve?</label>
+            <input type="date" value={editForm.joined_at}
+              onChange={e => setEditForm(f => ({ ...f, joined_at: e.target.value }))}
+              className={selectCls} />
+          </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium text-text-secondary mb-2 block">Intervalo mínimo entre escalas (dias)</label>
-          <input type="number" min="1" max="90" value={editForm.min_days_between_services}
-            onChange={e => setEditForm(f => ({ ...f, min_days_between_services: parseInt(e.target.value) || 7 }))}
-            className="w-full border border-border-default rounded-xl px-3 py-2 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary" />
+        {/* ── Seção 3 — Cuidado ── */}
+        <div className="space-y-3 pt-1 border-t border-border-default">
+          <p className={sectionHeaderCls}>Cuidado</p>
+
+          <div>
+            <label className={labelCls}>Como tem se sentido servindo?</label>
+            <select value={editForm.satisfaction} onChange={e => setEditForm(f => ({ ...f, satisfaction: e.target.value }))} className={selectCls}>
+              <option value="">Não informado</option>
+              <option value="satisfeito">Satisfeito</option>
+              <option value="neutro">Neutro</option>
+              <option value="insatisfeito">Insatisfeito</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Status atual</label>
+            <select value={editForm.care_status} onChange={e => setEditForm(f => ({ ...f, care_status: e.target.value }))} className={selectCls}>
+              <option value="servindo">Servindo</option>
+              <option value="afastado">Afastado</option>
+              <option value="precisa_cuidado">Precisa de cuidado</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelCls}>Tem algo que a igreja pode fazer por você? Algo pra orar junto?</label>
+            <textarea
+              value={editForm.care_notes}
+              onChange={e => setEditForm(f => ({ ...f, care_notes: e.target.value }))}
+              placeholder="Anotações de cuidado, pedidos de oração..."
+              rows={3}
+              className="block w-full rounded-xl border border-border-default px-3 py-2.5 text-sm bg-bg-primary text-text-primary focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>Líder responsável pelo cuidado</label>
+            {displayResponsible ? (
+              <div className="flex items-center justify-between bg-bg-hover rounded-xl px-3 py-2.5">
+                <span className="text-sm font-medium text-text-primary">{displayResponsible.name}</span>
+                <button onClick={() => {
+                  setResponsiblePerson(null)
+                  setResponsibleSearch('')
+                  setEditForm(f => ({ ...f, care_responsible_id: '' }))
+                }} className="p-1 rounded text-text-tertiary hover:text-text-secondary">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <Input
+                  placeholder="Buscar líder por nome..."
+                  value={responsibleSearch}
+                  onChange={e => setResponsibleSearch(e.target.value)}
+                />
+                {responsibleSearch.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-bg-primary border border-border-default rounded-xl shadow-lg z-10 max-h-40 overflow-y-auto">
+                    {fetchingResponsible ? (
+                      <div className="flex justify-center py-3"><Spinner size="sm" /></div>
+                    ) : responsibleResults.length === 0 ? (
+                      <p className="text-sm text-text-tertiary text-center py-3">Nenhuma pessoa encontrada</p>
+                    ) : (
+                      responsibleResults.map(p => (
+                        <button key={p.id}
+                          onClick={() => {
+                            setResponsiblePerson(p)
+                            setResponsibleSearch('')
+                            setEditForm(f => ({ ...f, care_responsible_id: p.id }))
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-bg-hover transition-colors">
+                          <p className="text-sm font-medium text-text-primary">{p.name}</p>
+                          {p.email && <p className="text-xs text-text-tertiary">{p.email}</p>}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
