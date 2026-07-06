@@ -9,10 +9,8 @@
  *  - Em Risco       → stage: frequentador
  */
 
-import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { useState, useMemo, Component, type ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -47,15 +45,14 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   }
 }
 
-type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
+type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'lideres' | 'em-risco'
 
 const TABS: { id: PeopleTab; label: string }[] = [
-  { id: 'geral',         label: 'Visão geral'       },
-  { id: 'aniversarios',  label: 'Aniversários'      },
-  { id: 'novos',         label: 'Novos Visitantes'  },
-  { id: 'convertidos',   label: 'Novos Convertidos' },
-  { id: 'lideres',       label: 'Líderes'           },
-  { id: 'em-risco',      label: 'Em Risco'          },
+  { id: 'geral',         label: 'Visão geral'      },
+  { id: 'aniversarios',  label: 'Aniversários'     },
+  { id: 'novos',         label: 'Novos Convertidos' },
+  { id: 'lideres',       label: 'Líderes'          },
+  { id: 'em-risco',      label: 'Em Risco'         },
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -97,13 +94,7 @@ function filterBirthdayThisMonth(people: PersonWithStage[]): PersonWithStage[] {
 function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithStage[] {
   switch (tab) {
     case 'aniversarios': return filterBirthdayThisMonth(people)
-    case 'novos':        return people.filter(p => p.person_stage === 'visitante')
-    case 'convertidos': {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
-      return people.filter(p => p.conversion_date != null && p.conversion_date >= cutoff)
-    }
+    case 'novos':        return filterByStage(people, ['visitante'])
     case 'lideres':      return filterByStage(people, ['lider'])
     case 'em-risco':     return filterByStage(people, ['frequentador'])
     default:             return people
@@ -430,20 +421,7 @@ export default function People() {
   const { churchId } = useAuth()
   const navigate      = useNavigate()
   const queryClient   = useQueryClient()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const validTabs: PeopleTab[] = ['geral', 'aniversarios', 'novos', 'convertidos', 'lideres', 'em-risco']
-  const tabParam = searchParams.get('tab') as PeopleTab | null
-  const [activeTab, setActiveTab] = useState<PeopleTab>(
-    tabParam && validTabs.includes(tabParam) ? tabParam : 'geral'
-  )
-
-  useEffect(() => {
-    if (tabParam && validTabs.includes(tabParam) && tabParam !== activeTab) {
-      setActiveTab(tabParam)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabParam])
-
+  const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
   const [search, setSearch]         = useState('')
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
@@ -458,14 +436,6 @@ export default function People() {
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null) // A2: modal
   const [deleteError, setDeleteError]       = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
-  type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
-  const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
-  const periodoParam = searchParams.get('periodo') as DateFilter | null
-  const [dateFilter, setDateFilter] = useState<DateFilter>(
-    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam : 'all'
-  )
-  const [customFrom, setCustomFrom] = useState('')
-  const [customTo,   setCustomTo]   = useState('')
 
   // A1: tabs filtradas carregam tudo (client-side); geral pagina no servidor
   // Aniversários: filtro no servidor via birth_month (coluna gerada) — retorna todos do mês
@@ -481,81 +451,6 @@ export default function People() {
     unitId:     unitFilter || undefined,
     birthMonth: isBirthdayTab ? currentMonth : undefined,
   })
-  // Abre painel da pessoa quando URL tem ?person=<id> (vindo de notificação)
-  // Deve ficar APÓS usePeople para que 'people' esteja fora do TDZ no array de deps
-  const personParam = searchParams.get('person')
-  useEffect(() => {
-    if (!personParam || !people) return
-    const found = people.find(p => p.id === personParam)
-    if (found) {
-      setSelectedPerson(found)
-      setSearchParams(prev => { prev.delete('person'); return prev }, { replace: true })
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personParam, people])
-  // Query server-side dedicada para aba novos com filtro de período
-  // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
-  const novosDateCutoff = useMemo(() => {
-    if (dateFilter === 'all' || dateFilter === 'custom') return null
-    const d = new Date(Date.now() - parseInt(dateFilter, 10) * 24 * 60 * 60 * 1000)
-    return d.toISOString().split('T')[0]
-  }, [dateFilter])
-
-  const { data: novosServerData } = useQuery({
-    queryKey: ['novos-visitantes-periodo', churchId, dateFilter, customFrom, customTo],
-    enabled: activeTab === 'novos' && dateFilter !== 'all' && Boolean(churchId),
-    queryFn: async (): Promise<PersonWithStage[]> => {
-      let q = supabase
-        .from('people')
-        .select(`
-          *,
-          person_pipeline (
-            stage_id, last_activity_at, entered_at,
-            pipeline_stages ( id, name, slug, order_index, color )
-          ),
-          person_tags ( tag_id, tags ( id, name, color, sort_order ) )
-        `)
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        .eq('person_stage', 'visitante')
-        .order('created_at', { ascending: false })
-
-      if (dateFilter === 'custom') {
-        // Modo personalizado: usa first_visit_date com fallback para created_at
-        const from = customFrom || null
-        const to   = customTo   || null
-        if (from && to) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          q = (q as any).or(
-            `first_visit_date.gte.${from},and(first_visit_date.is.null,created_at.gte.${from}T00:00:00)`
-          ).or(
-            `first_visit_date.lte.${to},and(first_visit_date.is.null,created_at.lte.${to}T23:59:59)`
-          )
-        } else if (from) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          q = (q as any).or(
-            `first_visit_date.gte.${from},and(first_visit_date.is.null,created_at.gte.${from}T00:00:00)`
-          )
-        } else if (to) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          q = (q as any).or(
-            `first_visit_date.lte.${to},and(first_visit_date.is.null,created_at.lte.${to}T23:59:59)`
-          )
-        }
-      } else {
-        // Períodos fixos (7/15/30 dias): first_visit_date OU created_at dentro do período
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        q = (q as any).or(
-          `first_visit_date.gte.${novosDateCutoff},and(first_visit_date.is.null,created_at.gte.${novosDateCutoff}T00:00:00)`
-        )
-      }
-
-      const { data, error } = await q
-      if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as PersonWithStage[]
-    },
-  })
-
   const { data: totalCount } = usePeopleCount(churchId ?? '')
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
@@ -569,26 +464,6 @@ export default function People() {
     () => new Map(contactsData.map((c) => [c.person_id, c])),
     [contactsData],
   )
-
-  // Derivações antes do early return — useMemo deve ser chamado antes de qualquer
-  // return condicional (React Rules of Hooks)
-  const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
-  const tabFiltered = applyTabFilter(activeTab, allPeople)
-  // Filtro por tag (client-side — person_tags já vem no payload)
-  const tagFiltered = tagFilter
-    ? tabFiltered.filter((p) =>
-        (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
-      )
-    : tabFiltered
-  // Para aba novos com período ativo: usa dados do servidor (query dedicada)
-  // Para aba novos sem período (all): usa tagFiltered (query principal)
-  // Para todas as outras abas: usa tagFiltered
-  const filteredPeople = useMemo(() => {
-    if (activeTab === 'novos' && dateFilter !== 'all') {
-      return novosServerData ?? []
-    }
-    return tagFiltered
-  }, [activeTab, dateFilter, novosServerData, tagFiltered])
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -613,6 +488,15 @@ export default function People() {
     }
   }
 
+  const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
+  const tabFiltered = applyTabFilter(activeTab, allPeople)
+  // Filtro por tag (client-side — person_tags já vem no payload)
+  const filteredPeople = tagFilter
+    ? tabFiltered.filter((p) =>
+        (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
+      )
+    : tabFiltered
+
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
   const totalPages     = Math.ceil((totalCount ?? 0) / PEOPLE_PAGE_SIZE)
@@ -621,8 +505,7 @@ export default function People() {
   const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
     geral:        { title: 'Nenhuma pessoa cadastrada', description: 'Adicione a primeira pessoa clicando em "Nova Pessoa".' },
     aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
-    novos:        { title: 'Nenhum novo visitante no período', description: 'Tente ampliar o período ou selecionar "Todos".' },
-    convertidos:  { title: 'Nenhum novo convertido', description: 'Pessoas com data de conversão nos últimos 30 dias aparecerão aqui.' },
+    novos:        { title: 'Nenhum novo convertido', description: 'Pessoas nos stages Visitante ou Interesse em Grupo aparecerão aqui.' },
     lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
     'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
   }
@@ -668,7 +551,7 @@ export default function People() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0); setSearchParams(tab.id === 'geral' ? {} : { tab: tab.id }) }}
+            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
@@ -692,54 +575,6 @@ export default function People() {
           </button>
         ))}
       </div>
-
-      {/* Filtro de período — aba Novos Visitantes */}
-      {activeTab === 'novos' && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {(['7', '15', '30', 'all'] as const).map(opt => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => setDateFilter(opt)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                dateFilter === opt
-                  ? 'bg-primary-text text-white border-primary-text'
-                  : 'bg-white text-text-secondary border-border-default hover:bg-bg-hover'
-              }`}
-            >
-              {opt === 'all' ? 'Todos' : `Últimos ${opt} dias`}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => setDateFilter('custom')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              dateFilter === 'custom'
-                ? 'bg-primary-text text-white border-primary-text'
-                : 'bg-white text-text-secondary border-border-default hover:bg-bg-hover'
-            }`}
-          >
-            Personalizado
-          </button>
-          {dateFilter === 'custom' && (
-            <div className="flex items-center gap-2 mt-1 w-full sm:w-auto sm:mt-0">
-              <input
-                type="date"
-                value={customFrom}
-                onChange={e => setCustomFrom(e.target.value)}
-                className="px-2 py-1.5 rounded-xl border border-border-default text-xs text-text-primary bg-white focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <span className="text-xs text-text-tertiary">até</span>
-              <input
-                type="date"
-                value={customTo}
-                onChange={e => setCustomTo(e.target.value)}
-                className="px-2 py-1.5 rounded-xl border border-border-default text-xs text-text-primary bg-white focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Busca + Filtros */}
       {activeTab === 'geral' && (
