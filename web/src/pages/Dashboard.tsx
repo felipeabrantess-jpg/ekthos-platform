@@ -227,17 +227,18 @@ export default function Dashboard() {
   const { data: consolidacao } = useConsolidacaoStats(churchId ?? '')
 
   const { data: novosConvertidos = 0 } = useQuery({
-    queryKey: ['novos_convertidos_30d', churchId],
+    queryKey: ['novos_convertidos_mes', churchId],
     enabled: !!churchId,
     queryFn: async () => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const now = new Date()
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        .toISOString().split('T')[0]
       const { count } = await supabase
         .from('people')
         .select('id', { count: 'exact', head: true })
         .eq('church_id', churchId!)
         .is('deleted_at', null)
-        .gte('conversion_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .gte('conversion_date', firstDayOfMonth)
       return count ?? 0
     },
   })
@@ -332,9 +333,9 @@ export default function Dashboard() {
         {/* Novos Convertidos widget */}
         <div className="mt-4">
           <MetricCard
-            label="Novos Convertidos (30 dias)"
+            label="Novos Convertidos (mês)"
             value={novosConvertidos}
-            sub="com data de conversão nos últimos 30 dias"
+            sub="com data de conversão neste mês"
             color={novosConvertidos > 0 ? 'green' : 'default'}
             icon={<Heart size={18} strokeWidth={1.75} />}
           />

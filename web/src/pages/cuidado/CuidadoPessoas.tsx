@@ -1,7 +1,7 @@
 import { useState }             from 'react'
 import { useNavigate }          from 'react-router-dom'
-import { Check, Search, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react'
-import { useQuery }             from '@tanstack/react-query'
+import { Check, Search, ChevronDown, ChevronUp, MessageSquare, Heart } from 'lucide-react'
+import { useQuery, useQueryClient }  from '@tanstack/react-query'
 import { useAuth }              from '@/hooks/useAuth'
 import { supabase }             from '@/lib/supabase'
 import Spinner                  from '@/components/ui/Spinner'
@@ -16,10 +16,11 @@ import { usePessoasConversas }  from '@/features/cuidado/hooks/usePessoasConvers
 // ── People query ──────────────────────────────────────────────────────────────
 
 interface PersonRow {
-  id:        string
-  name:      string | null
-  phone:     string | null
-  name_sort: string | null
+  id:              string
+  name:            string | null
+  phone:           string | null
+  name_sort:       string | null
+  conversion_date: string | null
 }
 
 function usePeopleWithPhone(churchId: string) {
@@ -28,7 +29,7 @@ function usePeopleWithPhone(churchId: string) {
     queryFn: async (): Promise<PersonRow[]> => {
       const { data, error } = await supabase
         .from('people')
-        .select('id, name, phone, name_sort')
+        .select('id, name, phone, name_sort, conversion_date')
         .eq('church_id', churchId)
         .is('deleted_at', null)
         .not('phone', 'is', null)
@@ -63,10 +64,14 @@ interface PersonCareRowProps {
 }
 
 function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowProps) {
-  const navigate = useNavigate()
-  const [expanded,  setExpanded]  = useState(false)
-  const [notes,     setNotes]     = useState(contact?.notes ?? '')
-  const [contacted, setContacted] = useState(contact?.contacted ?? false)
+  const navigate     = useNavigate()
+  const queryClient  = useQueryClient()
+  const todayStr     = new Date().toISOString().split('T')[0]
+  const [expanded,   setExpanded]  = useState(false)
+  const [notes,      setNotes]     = useState(contact?.notes ?? '')
+  const [contacted,  setContacted] = useState(contact?.contacted ?? false)
+  const [convDate,   setConvDate]  = useState<string | null>(person.conversion_date ?? null)
+  const isConverted  = convDate !== null && convDate !== ''
   const upsert = useUpsertCareContact()
 
   const isContacted  = contact?.contacted ?? false
@@ -79,12 +84,18 @@ function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowP
     if (!expanded) {
       setNotes(contact?.notes ?? '')
       setContacted(contact?.contacted ?? false)
+      setConvDate(person.conversion_date ?? null)
     }
     setExpanded(v => !v)
   }
 
   async function handleSave() {
     await upsert.mutateAsync({ personId: person.id, churchId, contacted, notes })
+    await supabase
+      .from('people')
+      .update({ conversion_date: convDate ?? null })
+      .eq('id', person.id)
+    await queryClient.invalidateQueries({ queryKey: ['novos_convertidos_mes', churchId] })
     setExpanded(false)
   }
 
@@ -205,6 +216,41 @@ function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowP
               placeholder="Registro do cuidado, oração, necessidade..."
               className="w-full rounded-lg border border-border-default bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary resize-none focus:outline-none focus:ring-2 focus:ring-[#1D9E75]"
             />
+          </div>
+
+          {/* Conversão */}
+          <div className="pt-1 border-t border-border-default space-y-2">
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div
+                role="switch"
+                aria-checked={isConverted}
+                onClick={() => setConvDate(isConverted ? null : todayStr)}
+                className="relative rounded-full shrink-0 transition-colors"
+                style={{ width: 40, height: 22, backgroundColor: isConverted ? '#670000' : '#D1D5DB' }}
+              >
+                <div
+                  className="absolute top-[3px] rounded-full bg-white shadow transition-all"
+                  style={{ width: 16, height: 16, left: isConverted ? 21 : 3 }}
+                />
+              </div>
+              <span className="flex items-center gap-1.5 font-medium" style={{ fontSize: 14, color: isConverted ? '#670000' : 'var(--text-secondary)' }}>
+                <Heart size={13} />
+                {isConverted ? 'Convertido(a)' : 'Marcar como convertido(a)'}
+              </span>
+            </label>
+            {isConverted && (
+              <div>
+                <label className="block text-xs font-medium text-text-secondary mb-1">Data da conversão</label>
+                <input
+                  type="date"
+                  value={convDate ?? ''}
+                  max={todayStr}
+                  onChange={e => setConvDate(e.target.value || null)}
+                  className="rounded-lg border border-border-default bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2"
+                  style={{ outlineColor: '#670000' }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Ações */}
