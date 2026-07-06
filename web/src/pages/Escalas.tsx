@@ -163,9 +163,9 @@ interface AddAssignmentModalProps {
   ministryId: string
 }
 
-function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }: AddAssignmentModalProps) {
+function AddAssignmentModal({ open, onClose, churchId, scheduleId }: AddAssignmentModalProps) {
   const addAssignment = useAddAssignment()
-  const { data: volunteers } = useVoluntarios(churchId, ministryId)
+  const { data: volunteers } = useVoluntarios(churchId)
   const [volunteerId, setVolunteerId] = useState('')
   const [role, setRole] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -238,7 +238,9 @@ function AddAssignmentModal({ open, onClose, churchId, scheduleId, ministryId }:
             >
               <option value="">Selecionar voluntário...</option>
               {(volunteers ?? []).map((v) => (
-                <option key={v.id} value={v.id}>{v.people?.name ?? v.id}</option>
+                <option key={v.id} value={v.id}>
+                  {v.people?.name ?? v.id}{v.ministries?.name ? ` — ${v.ministries.name}` : ''}
+                </option>
               ))}
             </select>
           </div>
