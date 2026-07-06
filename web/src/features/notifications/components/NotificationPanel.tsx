@@ -23,7 +23,8 @@ function NotificationItem({ notification: n, onClose }: { notification: AppNotif
 
   async function handleClick() {
     if (!n.read) await markRead.mutateAsync(n.id)
-    if (n.link) navigate(n.link)
+    if (n.person_id) navigate(`/pessoas?person=${n.person_id}`)
+    else if (n.link) navigate(n.link)
     onClose()
   }
 

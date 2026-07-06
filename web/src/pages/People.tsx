@@ -443,6 +443,18 @@ export default function People() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam])
+
+  // Abre painel da pessoa quando URL tem ?person=<id> (vindo de notificação)
+  const personParam = searchParams.get('person')
+  useEffect(() => {
+    if (!personParam || !people) return
+    const found = people.find(p => p.id === personParam)
+    if (found) {
+      setSelectedPerson(found)
+      setSearchParams(prev => { prev.delete('person'); return prev }, { replace: true })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personParam, people])
   const [search, setSearch]         = useState('')
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
@@ -505,7 +517,7 @@ export default function People() {
         .eq('church_id', churchId!)
         .is('deleted_at', null)
         .eq('person_stage', 'visitante')
-        .order('name_sort', { ascending: true })
+        .order('created_at', { ascending: false })
 
       if (dateFilter === 'custom') {
         // Modo personalizado: usa first_visit_date com fallback para created_at
