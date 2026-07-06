@@ -38,7 +38,7 @@ export function useEscalas(churchId: string, filters: EscalasFilters = {}) {
               joined_at,
               created_at,
               updated_at,
-              people ( id, name, phone )
+              people!person_id ( id, name, phone )
             )
           )
         `)
