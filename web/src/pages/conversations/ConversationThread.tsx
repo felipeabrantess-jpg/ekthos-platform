@@ -134,18 +134,21 @@ function EmptyThread() {
 interface ComposerProps {
   conversationId: string
   disabled:       boolean   // true quando ownership !== 'human'
+  onAssume?:      () => void
 }
 
-function Composer({ conversationId, disabled }: ComposerProps) {
-  const [text, setText]       = useState('')
-  const [sending, setSending] = useState(false)
-  const [sendError, setError] = useState<string | null>(null)
+function Composer({ conversationId, disabled, onAssume }: ComposerProps) {
+  const [text, setText]         = useState('')
+  const [sending, setSending]   = useState(false)
+  const [sendError, setError]   = useState<string | null>(null)
   const [assuming, setAssuming] = useState(false)
-  const textareaRef           = useRef<HTMLTextAreaElement>(null)
+  const [assumeError, setAssumeError] = useState<string | null>(null)
+  const textareaRef             = useRef<HTMLTextAreaElement>(null)
 
   const handleAssume = useCallback(async () => {
     if (assuming) return
     setAssuming(true)
+    setAssumeError(null)
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const token = sessionData.session?.access_token
@@ -164,13 +167,16 @@ function Composer({ conversationId, disabled }: ComposerProps) {
         const err = await res.json().catch(() => ({}))
         throw new Error((err as { error?: string }).error ?? `Erro ${res.status}`)
       }
-      // Realtime atualiza conversation.ownership → 'human' automaticamente
+      // Força refetch imediato — não depende só do Realtime
+      onAssume?.()
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao assumir conversa'
+      setAssumeError(msg)
       console.error('[Composer] assume error:', err)
     } finally {
       setAssuming(false)
     }
-  }, [conversationId, assuming])
+  }, [conversationId, assuming, onAssume])
 
   const sendMessage = useCallback(async () => {
     const body = text.trim()
@@ -228,6 +234,9 @@ function Composer({ conversationId, disabled }: ComposerProps) {
           </p>
           <Bot size={15} className="text-blue-400 shrink-0" />
         </div>
+        {assumeError && (
+          <p className="text-xs text-[#e13500] px-1">{assumeError}</p>
+        )}
         <button
           onClick={() => void handleAssume()}
           disabled={assuming}
@@ -289,11 +298,12 @@ function Composer({ conversationId, disabled }: ComposerProps) {
 interface ConversationThreadProps {
   conversationId: string | null
   conversation:   Conversation | null
+  onAssume?:      () => void
 }
 
 // ── Componente ─────────────────────────────────────────────
 
-export function ConversationThread({ conversationId, conversation }: ConversationThreadProps) {
+export function ConversationThread({ conversationId, conversation, onAssume }: ConversationThreadProps) {
   const { messages, loading } = useConversationMessages(conversationId)
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -414,6 +424,7 @@ export function ConversationThread({ conversationId, conversation }: Conversatio
             <Composer
               conversationId={conversationId}
               disabled={composerLocked}
+              onAssume={onAssume}
             />
           )
         }

@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: church-invite-user v15
+// Edge Function: church-invite-user v16
 // Convida um usuário para a igreja via generateLink + SMTP.
 // Também suporta trocar papel e remover acesso de usuário existente.
 //
@@ -65,21 +65,28 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const ALLOWED_ROLES = ['admin', 'cell_leader', 'volunteer', 'treasurer', 'secretary', 'admin_departments']
 
-const CORS: Record<string, string> = {
-  'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+const EKTHOSCHURCH_DOMAIN_RE = /^https:\/\/[a-z0-9-]+\.ekthoschurch\.com$/
+
+function makeCors(origin: string | null): Record<string, string> {
+  const allowed = origin && (origin === ALLOWED_ORIGIN || EKTHOSCHURCH_DOMAIN_RE.test(origin))
+    ? origin
+    : ALLOWED_ORIGIN
+  return {
+    'Access-Control-Allow-Origin':  allowed,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  }
 }
 
-function jsonErr(msg: string, status: number): Response {
+function jsonErr(msg: string, status: number, cors = makeCors(null)): Response {
   return new Response(JSON.stringify({ error: msg }), {
-    status, headers: { ...CORS, 'Content-Type': 'application/json' },
+    status, headers: { ...cors, 'Content-Type': 'application/json' },
   })
 }
 
-function jsonOk(data: unknown, status = 200): Response {
+function jsonOk(data: unknown, status = 200, cors = makeCors(null)): Response {
   return new Response(JSON.stringify(data), {
-    status, headers: { ...CORS, 'Content-Type': 'application/json' },
+    status, headers: { ...cors, 'Content-Type': 'application/json' },
   })
 }
 
@@ -215,34 +222,38 @@ function buildInviteHtml(actionLink: string, isExistingUser = false): string {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS })
-  if (req.method !== 'POST') return jsonErr('Method not allowed', 405)
+  const cors = makeCors(req.headers.get('origin'))
+  const err  = (msg: string, status: number) => jsonErr(msg, status, cors)
+  const ok   = (data: unknown, status = 200)  => jsonOk(data, status, cors)
+
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
+  if (req.method !== 'POST') return err('Method not allowed', 405)
 
   // ── Auth ──────────────────────────────────────────────────
   const authHeader = req.headers.get('Authorization')
-  if (!authHeader?.startsWith('Bearer ')) return jsonErr('Unauthorized', 401)
+  if (!authHeader?.startsWith('Bearer ')) return err('Unauthorized', 401)
   const token = authHeader.slice(7)
 
   const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(token)
-  if (authErr || !user) return jsonErr('Unauthorized', 401)
+  if (authErr || !user) return err('Unauthorized', 401)
 
   const churchId   = user.app_metadata?.church_id as string | undefined
   const callerRole = user.app_metadata?.role       as string | undefined
 
-  if (!churchId)              return jsonErr('Church not found in token', 400)
-  if (callerRole !== 'admin') return jsonErr('Apenas administradores podem realizar esta ação', 403)
+  if (!churchId)              return err('Church not found in token', 400)
+  if (callerRole !== 'admin') return err('Apenas administradores podem realizar esta ação', 403)
 
   // ── Body ──────────────────────────────────────────────────
   let body: { email?: string; role?: string; name?: string; action?: string; user_id?: string }
-  try { body = await req.json() } catch { return jsonErr('Invalid JSON body', 400) }
+  try { body = await req.json() } catch { return err('Invalid JSON body', 400) }
 
   const { email, role, name, action, user_id: targetUserId } = body
 
   // ── Action: change_role ───────────────────────────────────
   if (action === 'change_role') {
-    if (!targetUserId || typeof targetUserId !== 'string') return jsonErr('user_id é obrigatório', 400)
-    if (!role || !ALLOWED_ROLES.includes(role))            return jsonErr(`role deve ser um de: ${ALLOWED_ROLES.join(', ')}`, 400)
-    if (targetUserId === user.id)                          return jsonErr('Não é possível alterar seu próprio papel', 400)
+    if (!targetUserId || typeof targetUserId !== 'string') return err('user_id é obrigatório', 400)
+    if (!role || !ALLOWED_ROLES.includes(role))            return err(`role deve ser um de: ${ALLOWED_ROLES.join(', ')}`, 400)
+    if (targetUserId === user.id)                          return err('Não é possível alterar seu próprio papel', 400)
 
     const { data: existing } = await supabase
       .from('user_roles')
@@ -250,7 +261,7 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', targetUserId)
       .eq('church_id', churchId)
       .maybeSingle()
-    if (!existing) return jsonErr('Usuário não encontrado nesta organização', 404)
+    if (!existing) return err('Usuário não encontrado nesta organização', 404)
 
     const { error: updateRoleErr } = await supabase
       .from('user_roles')
@@ -259,7 +270,7 @@ Deno.serve(async (req: Request) => {
       .eq('church_id', churchId)
     if (updateRoleErr) {
       console.error('[church-invite-user] change_role user_roles error:', updateRoleErr.message)
-      return jsonErr('Erro ao atualizar papel', 500)
+      return err('Erro ao atualizar papel', 500)
     }
 
     const { data: targetUserData } = await supabase.auth.admin.getUserById(targetUserId)
@@ -267,13 +278,13 @@ Deno.serve(async (req: Request) => {
     await supabase.auth.admin.updateUserById(targetUserId, { app_metadata: mergedMeta })
 
     console.log(`[church-invite-user] change_role OK: ${targetUserId} → ${role} (church=${churchId})`)
-    return jsonOk({ user_id: targetUserId, role })
+    return ok({ user_id: targetUserId, role })
   }
 
   // ── Action: remove ────────────────────────────────────────
   if (action === 'remove') {
-    if (!targetUserId || typeof targetUserId !== 'string') return jsonErr('user_id é obrigatório', 400)
-    if (targetUserId === user.id) return jsonErr('Não é possível remover seu próprio acesso', 400)
+    if (!targetUserId || typeof targetUserId !== 'string') return err('user_id é obrigatório', 400)
+    if (targetUserId === user.id) return err('Não é possível remover seu próprio acesso', 400)
 
     const { data: existing } = await supabase
       .from('user_roles')
@@ -281,7 +292,7 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', targetUserId)
       .eq('church_id', churchId)
       .maybeSingle()
-    if (!existing) return jsonErr('Usuário não encontrado nesta organização', 404)
+    if (!existing) return err('Usuário não encontrado nesta organização', 404)
 
     const { error: deleteErr } = await supabase
       .from('user_roles')
@@ -290,7 +301,7 @@ Deno.serve(async (req: Request) => {
       .eq('church_id', churchId)
     if (deleteErr) {
       console.error('[church-invite-user] remove user_roles error:', deleteErr.message)
-      return jsonErr('Erro ao remover acesso', 500)
+      return err('Erro ao remover acesso', 500)
     }
 
     // Limpa app_metadata somente se church_id bater — preserva ekthos_roles e outros campos
@@ -303,19 +314,19 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`[church-invite-user] remove OK: ${targetUserId} (church=${churchId})`)
-    return jsonOk({ user_id: targetUserId, removed: true })
+    return ok({ user_id: targetUserId, removed: true })
   }
 
   // ── Fluxo de convite (action ausente) ────────────────────
-  if (!email || typeof email !== 'string') return jsonErr('email é obrigatório', 400)
+  if (!email || typeof email !== 'string') return err('email é obrigatório', 400)
   if (!role || !ALLOWED_ROLES.includes(role)) {
-    return jsonErr(`role deve ser um de: ${ALLOWED_ROLES.join(', ')}`, 400)
+    return err(`role deve ser um de: ${ALLOWED_ROLES.join(', ')}`, 400)
   }
 
   // ── Guard: SMTP credentials necessárias ──────────────────
   if (!GMAIL_SMTP_USER || !GMAIL_APP_PASSWORD) {
     console.error('[church-invite-user] GMAIL_SMTP_USER ou GMAIL_APP_PASSWORD não configurados')
-    return jsonErr('Configuração de email incompleta no servidor', 500)
+    return err('Configuração de email incompleta no servidor', 500)
   }
 
   // ── Checar limite de assentos ─────────────────────────────
@@ -334,7 +345,7 @@ Deno.serve(async (req: Request) => {
     .eq('church_id', churchId)
 
   if ((currentUsers ?? 0) >= maxUsers) {
-    return jsonErr(`Limite de ${maxUsers} usuários atingido. Faça upgrade do plano.`, 403)
+    return err(`Limite de ${maxUsers} usuários atingido. Faça upgrade do plano.`, 403)
   }
 
   // ── Verificar se email já pertence a outra organização real ───
@@ -376,7 +387,7 @@ Deno.serve(async (req: Request) => {
           console.warn(
             `[church-invite-user] 409 cross-church real: ${email} (${foundUser.id}) já em outra org real, tentativa da church ${churchId}`,
           )
-          return jsonErr(
+          return err(
             'Este email já está vinculado a outra organização. Para transferir acesso, acione um admin Ekthos.',
             409,
           )
@@ -423,7 +434,7 @@ Deno.serve(async (req: Request) => {
       if (!genResp.ok) {
         const errText = await genResp.text()
         console.error(`[church-invite-user] generateLink failed ${genResp.status}: ${errText}`)
-        return jsonErr('Falha ao gerar link de acesso', 500)
+        return err('Falha ao gerar link de acesso', 500)
       }
 
       const genData = await genResp.json() as {
@@ -433,7 +444,7 @@ Deno.serve(async (req: Request) => {
 
       if (!genData.action_link) {
         console.error('[church-invite-user] action_link ausente na resposta de generateLink')
-        return jsonErr('Falha ao gerar link de acesso: resposta inválida', 500)
+        return err('Falha ao gerar link de acesso: resposta inválida', 500)
       }
 
       actionLink = genData.action_link
@@ -452,7 +463,7 @@ Deno.serve(async (req: Request) => {
         )
         if (!lookupResp.ok) {
           console.error('[church-invite-user] lookup fallback failed')
-          return jsonErr('Falha ao localizar usuário após geração do link', 500)
+          return err('Falha ao localizar usuário após geração do link', 500)
         }
         const lookupData = await lookupResp.json() as {
           users?: Array<{ id: string; email?: string }>
@@ -462,13 +473,13 @@ Deno.serve(async (req: Request) => {
         )
         if (!found) {
           console.error('[church-invite-user] usuário não encontrado após generateLink')
-          return jsonErr('Falha ao localizar usuário após geração do link', 500)
+          return err('Falha ao localizar usuário após geração do link', 500)
         }
         newUserId = found.id
       }
-    } catch (err) {
-      console.error('[church-invite-user] generateLink exception:', err)
-      return jsonErr('Falha ao gerar link de acesso', 500)
+    } catch (genErr) {
+      console.error('[church-invite-user] generateLink exception:', genErr)
+      return err('Falha ao gerar link de acesso', 500)
     }
   }
 
@@ -504,7 +515,7 @@ Deno.serve(async (req: Request) => {
       name:         name ?? null,
       display_name: name ?? email,
     },
-    { onConflict: 'user_id' },
+    { onConflict: 'user_id,church_id' },
   )
 
   // ── Step 5: Enviar email via Google SMTP ──────────────────
@@ -534,5 +545,5 @@ Deno.serve(async (req: Request) => {
     console.error('[church-invite-user] SMTP exception (user criado, roles OK):', err)
   }
 
-  return jsonOk({ user_id: newUserId, email, role }, 201)
+  return ok({ user_id: newUserId, email, role }, 201)
 })
