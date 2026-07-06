@@ -146,6 +146,7 @@ function Composer({ conversationId, disabled, onAssume }: ComposerProps) {
   const textareaRef             = useRef<HTMLTextAreaElement>(null)
 
   const handleAssume = useCallback(async () => {
+    console.log('[Assumir] click disparado', { conversationId, assuming, hasOnAssume: !!onAssume })
     if (assuming) return
     setAssuming(true)
     setAssumeError(null)
