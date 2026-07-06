@@ -1,4 +1,12 @@
 {
+  "redirects": [
+    {
+      "source": "/visita/:path*",
+      "destination": "https://igreja-gerando-vencedores.ekthoschurch.com/visita/:path*",
+      "permanent": true,
+      "has": [{ "type": "host", "value": "ekthos-platform.vercel.app" }]
+    }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
