@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { Camera } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
@@ -10,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
+import { supabase } from '@/lib/supabase'
 import type { Person, AppRoleDB, PipelineStage } from '@/lib/types/joins'
 
 // ──────────────────────────────────────────────────────────────────────
@@ -143,6 +145,9 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const [activeTab, setActiveTab] = useState<TabId>('pessoal')
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Tabs visíveis para o role atual
   const visibleTabs = TABS.filter((t) => !t.gated || t.gated(role as AppRoleDB | null))
@@ -150,9 +155,28 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   // Preenche o form ao editar
   useEffect(() => {
     setForm(person ? personToForm(person) : EMPTY_FORM)
+    setAvatarUrl((person as any)?.avatar_url ?? null)
     setActiveTab('pessoal')
     setError(null)
   }, [person?.id, open])
+
+  async function handlePhotoUpload(file: File) {
+    setAvatarUploading(true)
+    try {
+      const ext  = file.name.split('.').pop() ?? 'jpg'
+      const path = `people/${churchId}/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('church-logos')
+        .upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data } = supabase.storage.from('church-logos').getPublicUrl(path)
+      setAvatarUrl(data.publicUrl)
+    } catch {
+      // Falha no upload não bloqueia o cadastro
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
 
   // Célula selecionada → auto-fill líder (exibição)
   const selectedGroup = groups.find((g) => g.id === form.celula_id)
@@ -178,6 +202,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   function buildPayload() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const payload: Record<string, any> = {
+      avatar_url:         avatarUrl ?? null,
       name:               form.name.trim() || null,
       phone:              normalizePhone(form.phone),
       email:              form.email.trim() || null,
@@ -268,6 +293,66 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
         {activeTab === 'pessoal' && (
           <div className="space-y-3 pt-1">
             <SectionTitle>Identificação</SectionTitle>
+
+            {/* Foto — sempre opcional, nunca bloqueia */}
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="relative shrink-0 rounded-full overflow-hidden border-2 border-dashed border-gray-200 hover:border-brand-400 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500"
+                style={{ width: 64, height: 64 }}
+                title="Clique para selecionar foto"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Foto" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                    {avatarUploading
+                      ? <div className="w-5 h-5 rounded-full border-2 border-brand-600 border-t-transparent animate-spin" />
+                      : <Camera size={22} className="text-gray-300" />
+                    }
+                  </div>
+                )}
+                {avatarUrl && !avatarUploading && (
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <Camera size={16} className="text-white opacity-0 hover:opacity-100" />
+                  </div>
+                )}
+              </button>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Foto (opcional)</p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  className="text-xs text-brand-600 hover:underline disabled:opacity-50 mt-0.5"
+                >
+                  {avatarUploading ? 'Enviando…' : avatarUrl ? 'Trocar foto' : 'Selecionar imagem'}
+                </button>
+                {avatarUrl && !avatarUploading && (
+                  <button
+                    type="button"
+                    onClick={() => setAvatarUrl(null)}
+                    className="block text-xs text-gray-400 hover:text-red-500 hover:underline mt-0.5"
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) void handlePhotoUpload(file)
+                  e.target.value = ''
+                }}
+              />
+            </div>
+
             <Input
               label="Nome completo *"
               value={form.name}
