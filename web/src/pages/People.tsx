@@ -11,6 +11,8 @@
 
 import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -478,6 +480,46 @@ export default function People() {
     unitId:     unitFilter || undefined,
     birthMonth: isBirthdayTab ? currentMonth : undefined,
   })
+  // Query server-side dedicada para aba novos com filtro de período
+  // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
+  const novosDateCutoff = useMemo(() => {
+    if (dateFilter === 'all' || dateFilter === 'custom') return null
+    const d = new Date(Date.now() - parseInt(dateFilter, 10) * 24 * 60 * 60 * 1000)
+    return d.toISOString().split('T')[0]
+  }, [dateFilter])
+
+  const { data: novosServerData } = useQuery({
+    queryKey: ['novos-visitantes-periodo', churchId, dateFilter, customFrom, customTo],
+    enabled: activeTab === 'novos' && dateFilter !== 'all' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      let q = supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        .eq('person_stage', 'visitante')
+        .order('name_sort', { ascending: true })
+
+      if (dateFilter === 'custom') {
+        if (customFrom) q = q.gte('first_visit_date', customFrom)
+        if (customTo)   q = q.lte('first_visit_date', customTo)
+      } else {
+        q = q.gte('first_visit_date', novosDateCutoff!)
+      }
+
+      const { data, error } = await q
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
   const { data: totalCount } = usePeopleCount(churchId ?? '')
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
@@ -523,28 +565,15 @@ export default function People() {
         (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
       )
     : tabFiltered
-  // Filtro por data de cadastro (apenas na aba novos)
+  // Para aba novos com período ativo: usa dados do servidor (query dedicada)
+  // Para aba novos sem período (all): usa tagFiltered (query principal)
+  // Para todas as outras abas: usa tagFiltered
   const filteredPeople = useMemo(() => {
-    if (activeTab !== 'novos') return tagFiltered
-    if (dateFilter === 'all') return tagFiltered
-    if (dateFilter === 'custom') {
-      const from = customFrom ? new Date(customFrom + 'T00:00:00') : null
-      const to   = customTo   ? new Date(customTo   + 'T23:59:59') : null
-      return tagFiltered.filter(p => {
-        const d = (p.first_visit_date ?? p.created_at) ? new Date((p.first_visit_date ?? p.created_at)!) : null
-        if (!d) return false
-        if (from && d < from) return false
-        if (to   && d > to)   return false
-        return true
-      })
+    if (activeTab === 'novos' && dateFilter !== 'all') {
+      return novosServerData ?? []
     }
-    const days = parseInt(dateFilter, 10)
-    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-    return tagFiltered.filter(p => {
-      const dateStr = p.first_visit_date ?? p.created_at
-      return dateStr && new Date(dateStr) >= cutoff
-    })
-  }, [activeTab, tagFiltered, dateFilter, customFrom, customTo])
+    return tagFiltered
+  }, [activeTab, dateFilter, novosServerData, tagFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
