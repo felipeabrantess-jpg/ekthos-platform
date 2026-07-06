@@ -456,7 +456,11 @@ export default function People() {
   const [deleteError, setDeleteError]       = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
   type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
-  const [dateFilter, setDateFilter] = useState<DateFilter>('7')
+  const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
+  const periodoParam = searchParams.get('periodo') as DateFilter | null
+  const [dateFilter, setDateFilter] = useState<DateFilter>(
+    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam : '7'
+  )
   const [customFrom, setCustomFrom] = useState('')
   const [customTo,   setCustomTo]   = useState('')
 
@@ -527,7 +531,7 @@ export default function People() {
       const from = customFrom ? new Date(customFrom + 'T00:00:00') : null
       const to   = customTo   ? new Date(customTo   + 'T23:59:59') : null
       return tagFiltered.filter(p => {
-        const d = p.created_at ? new Date(p.created_at) : null
+        const d = (p.first_visit_date ?? p.created_at) ? new Date((p.first_visit_date ?? p.created_at)!) : null
         if (!d) return false
         if (from && d < from) return false
         if (to   && d > to)   return false
@@ -536,7 +540,10 @@ export default function People() {
     }
     const days = parseInt(dateFilter, 10)
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-    return tagFiltered.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
+    return tagFiltered.filter(p => {
+      const dateStr = p.first_visit_date ?? p.created_at
+      return dateStr && new Date(dateStr) >= cutoff
+    })
   }, [activeTab, tagFiltered, dateFilter, customFrom, customTo])
 
   // A1: paginação só na tab geral
