@@ -505,7 +505,7 @@ export default function People() {
         .eq('church_id', churchId!)
         .is('deleted_at', null)
         .eq('person_stage', 'visitante')
-        .order('name_sort', { ascending: true })
+        .order('created_at', { ascending: false })
 
       if (dateFilter === 'custom') {
         // Modo personalizado: usa first_visit_date com fallback para created_at
