@@ -7,6 +7,7 @@ import {
   GraduationCap, Wallet, AlertTriangle, CheckCircle, BarChart2, TrendingUp, Heart,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, canManageDepartments } from '@/hooks/useRole'
 import type { AppRole } from '@/hooks/useRole'
@@ -58,7 +59,7 @@ function SectionTitle({ title, sub }: { title: string; sub?: string }) {
 }
 
 function MetricCard({
-  label, value, sub, meta, alert, color = 'default', icon,
+  label, value, sub, meta, alert, color = 'default', icon, href,
 }: {
   label: string
   value: string | number
@@ -67,7 +68,9 @@ function MetricCard({
   alert?: boolean
   color?: 'default' | 'green' | 'yellow' | 'red' | 'purple' | 'blue'
   icon?: React.ReactNode
+  href?: string
 }) {
+  const navigate = useNavigate()
   const borderMap = {
     default: 'border-border-default',
     green:   'border-success/20',
@@ -89,7 +92,13 @@ function MetricCard({
   const valueClass  = valueColorMap[alert ? 'red' : color]
 
   return (
-    <div className={`bg-bg-primary rounded-2xl border p-5 shadow-sm ${borderClass}`}>
+    <div
+      className={`bg-bg-primary rounded-2xl border p-5 shadow-sm ${borderClass}${href ? ' cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={href ? () => navigate(href) : undefined}
+      role={href ? 'button' : undefined}
+      tabIndex={href ? 0 : undefined}
+      onKeyDown={href ? (e) => { if (e.key === 'Enter') navigate(href) } : undefined}
+    >
       <div className="flex items-start justify-between">
         <p className="text-xs font-medium leading-tight text-text-secondary">
           {label}
@@ -302,6 +311,7 @@ export default function Dashboard() {
             sub="novos esta semana"
             color="blue"
             icon={<UserPlus size={18} strokeWidth={1.75} />}
+            href="/pessoas?tab=novos"
           />
           <MetricCard
             label="Membros Ativos"
@@ -337,6 +347,7 @@ export default function Dashboard() {
             sub="com data de conversão nos últimos 30 dias"
             color={novosConvertidos > 0 ? 'green' : 'default'}
             icon={<Heart size={18} strokeWidth={1.75} />}
+            href="/pessoas?tab=convertidos"
           />
         </div>
       </section>

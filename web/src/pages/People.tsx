@@ -9,8 +9,8 @@
  *  - Em Risco       → stage: frequentador
  */
 
-import { useState, useMemo, Component, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -45,14 +45,15 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   }
 }
 
-type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'lideres' | 'em-risco'
+type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
 
 const TABS: { id: PeopleTab; label: string }[] = [
-  { id: 'geral',         label: 'Visão geral'      },
-  { id: 'aniversarios',  label: 'Aniversários'     },
-  { id: 'novos',         label: 'Novos Convertidos' },
-  { id: 'lideres',       label: 'Líderes'          },
-  { id: 'em-risco',      label: 'Em Risco'         },
+  { id: 'geral',         label: 'Visão geral'       },
+  { id: 'aniversarios',  label: 'Aniversários'      },
+  { id: 'novos',         label: 'Novos Visitantes'  },
+  { id: 'convertidos',   label: 'Novos Convertidos' },
+  { id: 'lideres',       label: 'Líderes'           },
+  { id: 'em-risco',      label: 'Em Risco'          },
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -95,6 +96,12 @@ function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithSt
   switch (tab) {
     case 'aniversarios': return filterBirthdayThisMonth(people)
     case 'novos':        return filterByStage(people, ['visitante'])
+    case 'convertidos': {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
+      return people.filter(p => p.conversion_date != null && p.conversion_date >= cutoff)
+    }
     case 'lideres':      return filterByStage(people, ['lider'])
     case 'em-risco':     return filterByStage(people, ['frequentador'])
     default:             return people
@@ -421,7 +428,19 @@ export default function People() {
   const { churchId } = useAuth()
   const navigate      = useNavigate()
   const queryClient   = useQueryClient()
-  const [activeTab, setActiveTab] = useState<PeopleTab>('geral')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const validTabs: PeopleTab[] = ['geral', 'aniversarios', 'novos', 'convertidos', 'lideres', 'em-risco']
+  const tabParam = searchParams.get('tab') as PeopleTab | null
+  const [activeTab, setActiveTab] = useState<PeopleTab>(
+    tabParam && validTabs.includes(tabParam) ? tabParam : 'geral'
+  )
+
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam])
   const [search, setSearch]         = useState('')
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
@@ -551,7 +570,7 @@ export default function People() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
+            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0); setSearchParams(tab.id === 'geral' ? {} : { tab: tab.id }) }}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
