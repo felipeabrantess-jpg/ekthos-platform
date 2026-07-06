@@ -95,7 +95,7 @@ function filterBirthdayThisMonth(people: PersonWithStage[]): PersonWithStage[] {
 function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithStage[] {
   switch (tab) {
     case 'aniversarios': return filterBirthdayThisMonth(people)
-    case 'novos':        return filterByStage(people, ['visitante'])
+    case 'novos':        return people.filter(p => p.person_stage === 'visitante')
     case 'convertidos': {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
