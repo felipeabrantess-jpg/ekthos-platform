@@ -6,16 +6,18 @@ export function useVoluntarios(churchId: string, ministryId?: string) {
   return useQuery({
     queryKey: ['voluntarios', churchId, ministryId],
     queryFn: async (): Promise<VolunteerWithPerson[]> => {
+      // people!person_id desambigua: volunteers tem 2 FKs para people
+      // (person_id e care_responsible_id) — sem hint PostgREST retorna HTTP 300
       let query = supabase
         .from('volunteers')
         .select(`
           *,
-          people ( id, name, phone, name_sort ),
+          people!person_id ( id, name, phone, name_sort ),
           ministries ( id, name )
         `)
         .eq('church_id', churchId)
         .eq('is_active', true)
-        .order('name_sort', { ascending: true, referencedTable: 'people' })
+        .order('joined_at', { ascending: false })
 
       if (ministryId) {
         query = query.eq('ministry_id', ministryId)
@@ -64,6 +66,7 @@ export function useCreateVolunteer() {
     },
     onSuccess: (_data, { church_id }) => {
       void queryClient.invalidateQueries({ queryKey: ['voluntarios', church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['volunteer-care-stats', church_id] })
     },
   })
 }
@@ -116,6 +119,7 @@ export function useDeactivateVolunteer() {
     },
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['voluntarios', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['volunteer-care-stats', churchId] })
     },
   })
 }
