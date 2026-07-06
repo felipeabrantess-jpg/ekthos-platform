@@ -312,7 +312,7 @@ export default function Dashboard() {
             sub="novos esta semana"
             color="blue"
             icon={<UserPlus size={18} strokeWidth={1.75} />}
-            href="/pessoas?tab=novos"
+            href="/pessoas?tab=novos&periodo=7"
           />
           <MetricCard
             label="Membros Ativos"
