@@ -444,17 +444,6 @@ export default function People() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabParam])
 
-  // Abre painel da pessoa quando URL tem ?person=<id> (vindo de notificação)
-  const personParam = searchParams.get('person')
-  useEffect(() => {
-    if (!personParam || !people) return
-    const found = people.find(p => p.id === personParam)
-    if (found) {
-      setSelectedPerson(found)
-      setSearchParams(prev => { prev.delete('person'); return prev }, { replace: true })
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personParam, people])
   const [search, setSearch]         = useState('')
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
@@ -492,6 +481,18 @@ export default function People() {
     unitId:     unitFilter || undefined,
     birthMonth: isBirthdayTab ? currentMonth : undefined,
   })
+  // Abre painel da pessoa quando URL tem ?person=<id> (vindo de notificação)
+  // Deve ficar APÓS usePeople para que 'people' esteja fora do TDZ no array de deps
+  const personParam = searchParams.get('person')
+  useEffect(() => {
+    if (!personParam || !people) return
+    const found = people.find(p => p.id === personParam)
+    if (found) {
+      setSelectedPerson(found)
+      setSearchParams(prev => { prev.delete('person'); return prev }, { replace: true })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [personParam, people])
   // Query server-side dedicada para aba novos com filtro de período
   // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
   const novosDateCutoff = useMemo(() => {
