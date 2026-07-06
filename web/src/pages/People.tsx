@@ -455,6 +455,10 @@ export default function People() {
   const [personToDelete, setPersonToDelete] = useState<Person | null>(null) // A2: modal
   const [deleteError, setDeleteError]       = useState<string | null>(null)
   const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
+  type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
+  const [dateFilter, setDateFilter] = useState<DateFilter>('7')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo,   setCustomTo]   = useState('')
 
   // A1: tabs filtradas carregam tudo (client-side); geral pagina no servidor
   // Aniversários: filtro no servidor via birth_month (coluna gerada) — retorna todos do mês
@@ -510,11 +514,30 @@ export default function People() {
   const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
   const tabFiltered = applyTabFilter(activeTab, allPeople)
   // Filtro por tag (client-side — person_tags já vem no payload)
-  const filteredPeople = tagFilter
+  const tagFiltered = tagFilter
     ? tabFiltered.filter((p) =>
         (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
       )
     : tabFiltered
+  // Filtro por data de cadastro (apenas na aba novos)
+  const filteredPeople = useMemo(() => {
+    if (activeTab !== 'novos') return tagFiltered
+    if (dateFilter === 'all') return tagFiltered
+    if (dateFilter === 'custom') {
+      const from = customFrom ? new Date(customFrom + 'T00:00:00') : null
+      const to   = customTo   ? new Date(customTo   + 'T23:59:59') : null
+      return tagFiltered.filter(p => {
+        const d = p.created_at ? new Date(p.created_at) : null
+        if (!d) return false
+        if (from && d < from) return false
+        if (to   && d > to)   return false
+        return true
+      })
+    }
+    const days = parseInt(dateFilter, 10)
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    return tagFiltered.filter(p => p.created_at && new Date(p.created_at) >= cutoff)
+  }, [activeTab, tagFiltered, dateFilter, customFrom, customTo])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
@@ -594,6 +617,54 @@ export default function People() {
           </button>
         ))}
       </div>
+
+      {/* Filtro de período — aba Novos Visitantes */}
+      {activeTab === 'novos' && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {(['7', '15', '30', 'all'] as const).map(opt => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => setDateFilter(opt)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                dateFilter === opt
+                  ? 'bg-primary-text text-white border-primary-text'
+                  : 'bg-white text-text-secondary border-border-default hover:bg-bg-hover'
+              }`}
+            >
+              {opt === 'all' ? 'Todos' : `Últimos ${opt} dias`}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setDateFilter('custom')}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              dateFilter === 'custom'
+                ? 'bg-primary-text text-white border-primary-text'
+                : 'bg-white text-text-secondary border-border-default hover:bg-bg-hover'
+            }`}
+          >
+            Personalizado
+          </button>
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 mt-1 w-full sm:w-auto sm:mt-0">
+              <input
+                type="date"
+                value={customFrom}
+                onChange={e => setCustomFrom(e.target.value)}
+                className="px-2 py-1.5 rounded-xl border border-border-default text-xs text-text-primary bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <span className="text-xs text-text-tertiary">até</span>
+              <input
+                type="date"
+                value={customTo}
+                onChange={e => setCustomTo(e.target.value)}
+                className="px-2 py-1.5 rounded-xl border border-border-default text-xs text-text-primary bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Busca + Filtros */}
       {activeTab === 'geral' && (
