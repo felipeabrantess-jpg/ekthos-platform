@@ -23,16 +23,15 @@ interface PersonRow {
   conversion_date: string | null
 }
 
-function usePeopleWithPhone(churchId: string) {
+function usePeopleForCuidado(churchId: string) {
   return useQuery({
-    queryKey: ['people-with-phone', churchId],
+    queryKey: ['people-for-cuidado', churchId],
     queryFn: async (): Promise<PersonRow[]> => {
       const { data, error } = await supabase
         .from('people')
         .select('id, name, phone, name_sort, conversion_date')
         .eq('church_id', churchId)
         .is('deleted_at', null)
-        .not('phone', 'is', null)
         .order('name_sort', { ascending: true })
       if (error) throw new Error(error.message)
       return (data ?? []) as PersonRow[]
@@ -283,7 +282,7 @@ export default function CuidadoPessoas() {
   const { churchId }  = useAuth()
   const [search, setSearch] = useState('')
 
-  const { data: people      = [], isLoading } = usePeopleWithPhone(churchId ?? '')
+  const { data: people      = [], isLoading } = usePeopleForCuidado(churchId ?? '')
   const { data: contacts    = [] }            = useCareContacts(churchId ?? '')
   const { data: conversaMap = new Map() }     = usePessoasConversas(churchId ?? '')
 
@@ -302,7 +301,7 @@ export default function CuidadoPessoas() {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <p className="font-medium text-text-secondary" style={{ fontSize: 14 }}>
-            Membros com WhatsApp
+            Pessoas
           </p>
           <span className="font-semibold text-text-secondary" style={{ fontSize: 13 }}>
             {contactedCount} de {people.length} contatados
@@ -336,7 +335,7 @@ export default function CuidadoPessoas() {
         <div className="flex justify-center py-10"><Spinner /></div>
       ) : filtered.length === 0 ? (
         <p className="text-center text-text-tertiary py-10" style={{ fontSize: 14 }}>
-          {search ? 'Nenhuma pessoa encontrada.' : 'Nenhum membro com telefone cadastrado.'}
+          {search ? 'Nenhuma pessoa encontrada.' : 'Nenhuma pessoa cadastrada.'}
         </p>
       ) : (
         <div className="space-y-2">
