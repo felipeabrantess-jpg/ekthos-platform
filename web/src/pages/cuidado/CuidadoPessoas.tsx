@@ -70,6 +70,18 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+// ── Filtro de período ─────────────────────────────────────────────────────────
+
+type Period = '7' | '15' | '30' | '365' | 'all'
+
+const PERIOD_CHIPS: { key: Period; label: string }[] = [
+  { key: 'all', label: 'Todos'   },
+  { key: '7',   label: '7 dias'  },
+  { key: '15',  label: '15 dias' },
+  { key: '30',  label: '30 dias' },
+  { key: '365', label: '1 ano'   },
+]
+
 // ── PersonCareRow ─────────────────────────────────────────────────────────────
 
 interface PersonCareRowProps {
@@ -305,6 +317,7 @@ export default function CuidadoPessoas() {
   const [search,        setSearch]        = useState('')
   const [modalOpen,     setModalOpen]     = useState(false)
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
+  const [period,        setPeriod]        = useState<Period>('all')
 
   const queryClient = useQueryClient()
 
@@ -312,9 +325,17 @@ export default function CuidadoPessoas() {
   const { data: contacts    = [] }            = useCareContacts(churchId ?? '')
   const { data: conversaMap = new Map() }     = usePessoasConversas(churchId ?? '')
 
-  const contactMap     = new Map(contacts.map(c => [c.person_id, c]))
-  const contactedCount = contacts.filter(c => c.contacted).length
-  const isSearching    = search.trim().length > 0
+  const contactMap  = new Map(contacts.map(c => [c.person_id, c]))
+  const isSearching = search.trim().length > 0
+
+  // Filtro de período em memória — funciona em cima do resultado já filtrado por nome
+  const periodMs    = period === 'all' ? null : Number(period) * 86_400_000
+  const now         = Date.now()
+  const displayList = periodMs === null
+    ? filtered
+    : filtered.filter(p => (now - new Date(p.created_at).getTime()) <= periodMs)
+
+  const contactedCount = displayList.filter(p => contactMap.get(p.id)?.contacted).length
 
   async function handleEditPerson(personId: string) {
     const { data } = await supabase
@@ -340,14 +361,14 @@ export default function CuidadoPessoas() {
               Pessoas
             </p>
             <span className="font-semibold text-text-secondary" style={{ fontSize: 13 }}>
-              {contactedCount} de {filtered.length} contatados
+              {contactedCount} de {displayList.length} contatados
             </span>
           </div>
           <div className="rounded-full overflow-hidden bg-bg-hover" style={{ height: 6 }}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width:           filtered.length > 0 ? `${(contactedCount / filtered.length) * 100}%` : '0%',
+                width:           displayList.length > 0 ? `${(contactedCount / displayList.length) * 100}%` : '0%',
                 backgroundColor: '#1D9E75',
               }}
             />
@@ -367,16 +388,40 @@ export default function CuidadoPessoas() {
         />
       </div>
 
+      {/* Chips de período */}
+      <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {PERIOD_CHIPS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setPeriod(key)}
+            className="shrink-0 rounded-full border font-medium transition-colors"
+            style={{
+              padding:         '4px 14px',
+              fontSize:        13,
+              backgroundColor: period === key ? '#1D9E75' : 'transparent',
+              color:           period === key ? '#fff' : 'var(--text-secondary)',
+              borderColor:     period === key ? '#1D9E75' : 'var(--border-default)',
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* Lista */}
       {isLoading ? (
         <div className="flex justify-center py-10"><Spinner /></div>
-      ) : filtered.length === 0 ? (
+      ) : displayList.length === 0 ? (
         <p className="text-center text-text-tertiary py-10" style={{ fontSize: 14 }}>
-          {search ? 'Nenhuma pessoa encontrada.' : 'Nenhuma pessoa cadastrada.'}
+          {search
+            ? 'Nenhuma pessoa encontrada.'
+            : period !== 'all'
+              ? 'Nenhuma pessoa cadastrada neste período.'
+              : 'Nenhuma pessoa cadastrada.'}
         </p>
       ) : (
         <div className="space-y-2">
-          {filtered.map(p => (
+          {displayList.map(p => (
             <PersonCareRow
               key={p.id}
               person={p}
