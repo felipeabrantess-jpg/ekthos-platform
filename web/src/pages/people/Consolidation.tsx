@@ -1,64 +1,26 @@
-import { useState, useEffect, useRef, Component, type ReactNode } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle,
-  X, ChevronDown, Loader2, UserCheck,
-} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
 import Spinner from '@/components/ui/Spinner'
-import { usePipelineStages, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
-import { useCareContacts, useUpsertCareContact } from '@/features/cuidado/hooks/useCareContacts'
-import type { PipelineStage } from '@/lib/types/joins'
-
-// ── Tipos ─────────────────────────────────────────────────────
-
-interface PipelineStageData {
-  id:    string
-  name:  string
-  color: string | null
-}
 
 interface ConsolidationPerson {
-  id:                  string
-  name:                string
-  email:               string | null
-  phone:               string | null
-  avatar_url:          string | null
-  conversion_date:     string | null
-  first_visit_date:    string | null
-  created_at:          string
-  pipeline_stage_id:   string | null
-  pipeline_stage:      PipelineStageData | null  // null = sem etapa no Kanban
-  days_in_stage:       number
-  at_risk:             boolean
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  avatar_url: string | null
+  conversion_date: string | null
+  first_visit_date: string | null
+  created_at: string
+  stage_name: string | null
+  days_in_stage: number
+  at_risk: boolean
 }
 
-// ── Error Boundary — um card com erro não derruba a página ────
-
-interface EBState { hasError: boolean }
-
-class CardErrorBoundary extends Component<{ children: ReactNode }, EBState> {
-  constructor(props: { children: ReactNode }) {
-    super(props)
-    this.state = { hasError: false }
-  }
-  static getDerivedStateFromError() { return { hasError: true } }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="bg-white rounded-2xl border border-black/10 p-4 text-xs text-gray-400 italic">
-          Não foi possível exibir este card.
-        </div>
-      )
-    }
-    return this.props.children
-  }
-}
-
-// ── Toast ─────────────────────────────────────────────────────
-
+// ── Toast ────────────────────────────────────────────────────
 interface ToastState { msg: string; type: 'success' | 'error'; key: number }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -71,9 +33,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
     <div
       className="fixed bottom-6 right-6 z-50 flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg text-sm max-w-xs border"
       style={{
-        background:  type === 'success' ? '#f0fdf4' : '#fef2f2',
-        borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
-        color:       type === 'success' ? '#166534' : '#991b1b',
+        background:   type === 'success' ? '#f0fdf4' : '#fef2f2',
+        borderColor:  type === 'success' ? '#bbf7d0' : '#fecaca',
+        color:        type === 'success' ? '#166534' : '#991b1b',
       }}
     >
       {type === 'success'
@@ -88,17 +50,18 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────
+// ── Helpers de telefone ───────────────────────────────────────
 
+/** Remove tudo que não é dígito, sem "+". Ex: "+55 21 99703-3891" → "5521997033891" */
 function normalizePhoneDigits(phone: string): string {
   return phone.replace(/\D/g, '')
 }
 
-function daysSince(dateStr: string | null | undefined): number {
+function daysSince(dateStr: string | null): number {
   if (!dateStr) return 0
   const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return 0
-  return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24))
+  const now = new Date()
+  return Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
 }
 
 function formatDate(dateStr: string | null): string {
@@ -106,28 +69,7 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-}
-
-// ── Extrai PipelineStageData do join com segurança total ──────
-// person_pipeline → pipeline_stages pode voltar como objeto OU array[1]
-// dependendo da versão do PostgREST. Trata ambos os casos.
-function extractPipelineStage(raw: unknown): PipelineStageData | null {
-  if (!raw) return null
-  const obj = Array.isArray(raw) ? raw[0] : raw
-  if (!obj || typeof obj !== 'object') return null
-  const r = obj as Record<string, unknown>
-  if (typeof r.id !== 'string' || typeof r.name !== 'string') return null
-  return {
-    id:    r.id,
-    name:  r.name,
-    color: typeof r.color === 'string' ? r.color : null,
-  }
-}
-
-// ── Ícone WhatsApp ────────────────────────────────────────────
-
+// Ícone WhatsApp SVG (inline — sem dependência externa)
 function WhatsAppIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -137,99 +79,8 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
   )
 }
 
-// ── Seletor de etapa ──────────────────────────────────────────
-// useMovePersonToStage instanciado no pai e passado como prop — sem instância por card
-
-interface StageSelectorProps {
-  person:        ConsolidationPerson
-  stages:        PipelineStage[]
-  churchId:      string
-  isPending:     boolean
-  onSelect:      (personId: string, stageId: string) => void
-}
-
-function PipelineStagePicker({ person, stages, churchId: _churchId, isPending, onSelect }: StageSelectorProps) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
-
-  const currentStage = person.pipeline_stage
-  const badgeColor   = currentStage?.color ?? '#9ca3af'
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        disabled={isPending || stages.length === 0}
-        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium border border-black/10 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
-        title={stages.length === 0 ? 'Nenhuma etapa configurada' : 'Alterar etapa'}
-      >
-        {isPending
-          ? <Loader2 size={11} className="animate-spin text-gray-400" />
-          : <span className="w-2 h-2 rounded-full shrink-0" style={{ background: badgeColor }} />
-        }
-        <span className="truncate max-w-[110px]">
-          {currentStage?.name ?? 'Sem etapa'}
-        </span>
-        <ChevronDown size={11} className="text-gray-400 shrink-0" />
-      </button>
-
-      {open && stages.length > 0 && (
-        <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-black/10 rounded-xl shadow-lg min-w-[180px] py-1 overflow-hidden">
-          {stages.map(s => (
-            <button
-              key={s.id}
-              onClick={() => {
-                setOpen(false)
-                if (s.id !== person.pipeline_stage_id) {
-                  onSelect(person.id, s.id)
-                }
-              }}
-              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-gray-50 transition-colors ${
-                s.id === person.pipeline_stage_id ? 'font-semibold text-ekthos-black' : 'text-gray-700'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color ?? '#9ca3af' }} />
-              {s.name}
-              {s.id === person.pipeline_stage_id && (
-                <CheckCircle size={11} className="ml-auto text-brand-600 shrink-0" />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Card da pessoa ────────────────────────────────────────────
-// useUpsertCareContact instanciado no pai; onMarkContacted passado como prop
-
-interface PersonRowProps {
-  person:           ConsolidationPerson
-  stages:           PipelineStage[]
-  churchId:         string
-  careContactAt:    string | null
-  stagePending:     boolean
-  onCopy:           (msg: string) => void
-  onStageSelect:    (personId: string, stageId: string) => void
-  onMarkContacted:  (personId: string) => void
-  contactPending:   boolean
-}
-
-function PersonRow({
-  person, stages, churchId, careContactAt,
-  stagePending, onCopy, onStageSelect, onMarkContacted, contactPending,
-}: PersonRowProps) {
-  const hasPhone    = Boolean(person.phone)
+function PersonRow({ person, onCopy }: { person: ConsolidationPerson; onCopy: (msg: string) => void }) {
+  const hasPhone = Boolean(person.phone)
   const phoneDigits = hasPhone ? normalizePhoneDigits(person.phone!) : ''
 
   const firstName = (person.name ?? '').split(' ')[0]
@@ -248,9 +99,11 @@ function PersonRow({
     }
   }
 
-  const actionBtn = (disabled: boolean, extraClass: string) =>
+  const actionBtn = (label: string, disabled: boolean, extraClass: string) =>
     `inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-      disabled ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400' : extraClass
+      disabled
+        ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400'
+        : extraClass
     }`
 
   return (
@@ -261,7 +114,6 @@ function PersonRow({
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* Nome + risco */}
         <div className="flex items-start justify-between gap-2">
           <p className="font-semibold text-ekthos-black text-sm truncate">{person.name ?? '(sem nome)'}</p>
           {person.at_risk && (
@@ -278,83 +130,73 @@ function PersonRow({
           : <p className="text-xs text-red-400 italic">Sem telefone cadastrado</p>
         }
 
-        {/* Datas + seletor de etapa */}
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
           {person.conversion_date && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
               <Heart className="w-3 h-3 text-brand-600" />
               Convertido em {formatDate(person.conversion_date)}
             </span>
           )}
           {person.first_visit_date && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Primeira visita {formatDate(person.first_visit_date)}
             </span>
           )}
-
-          <PipelineStagePicker
-            person={person}
-            stages={stages}
-            churchId={churchId}
-            isPending={stagePending}
-            onSelect={onStageSelect}
-          />
-        </div>
-
-        {/* Contatado */}
-        <div className="mt-2">
-          {careContactAt ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-              <UserCheck size={11} />
-              Contatado em {formatShortDate(careContactAt)}
+          {person.stage_name && (
+            <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded-lg font-medium">
+              {person.stage_name} · {person.days_in_stage}d
             </span>
-          ) : (
-            <button
-              onClick={() => onMarkContacted(person.id)}
-              disabled={contactPending}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-dashed border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50"
-            >
-              {contactPending
-                ? <Loader2 size={11} className="animate-spin" />
-                : <UserCheck size={11} />
-              }
-              Marcar contatado
-            </button>
           )}
         </div>
 
         {/* Ações rápidas */}
         <div className="mt-3 flex flex-wrap gap-2">
+          {/* WhatsApp */}
           {hasPhone ? (
-            <a href={waUrl} target="_blank" rel="noopener noreferrer"
-              className={actionBtn(false, 'bg-[#e8f9f2] text-[#1D9E75] hover:bg-[#d0f3e6]')}
-              title="Abrir WhatsApp">
-              <WhatsAppIcon size={14} />WhatsApp
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={actionBtn('WhatsApp', false, 'bg-[#e8f9f2] text-[#1D9E75] hover:bg-[#d0f3e6]')}
+              title="Abrir WhatsApp"
+            >
+              <WhatsAppIcon size={14} />
+              WhatsApp
             </a>
           ) : (
-            <span className={actionBtn(true, '')} title="Sem telefone cadastrado">
-              <WhatsAppIcon size={14} />WhatsApp
+            <span className={actionBtn('WhatsApp', true, '')} title="Sem telefone cadastrado">
+              <WhatsAppIcon size={14} />
+              WhatsApp
             </span>
           )}
 
+          {/* Ligar */}
           {hasPhone ? (
-            <a href={telUrl} className={actionBtn(false, 'bg-blue-50 text-blue-600 hover:bg-blue-100')} title="Ligar">
-              <Phone size={13} />Ligar
+            <a
+              href={telUrl}
+              className={actionBtn('Ligar', false, 'bg-blue-50 text-blue-600 hover:bg-blue-100')}
+              title="Ligar"
+            >
+              <Phone size={13} />
+              Ligar
             </a>
           ) : (
-            <span className={actionBtn(true, '')} title="Sem telefone cadastrado">
-              <Phone size={13} />Ligar
+            <span className={actionBtn('Ligar', true, '')} title="Sem telefone cadastrado">
+              <Phone size={13} />
+              Ligar
             </span>
           )}
 
+          {/* Copiar */}
           <button
             onClick={hasPhone ? handleCopy : undefined}
             disabled={!hasPhone}
-            className={actionBtn(!hasPhone, 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
+            className={actionBtn('Copiar', !hasPhone, 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
             title={hasPhone ? 'Copiar telefone' : 'Sem telefone cadastrado'}
           >
-            <Copy size={13} />Copiar
+            <Copy size={13} />
+            Copiar
           </button>
         </div>
       </div>
@@ -362,143 +204,62 @@ function PersonRow({
   )
 }
 
-// ── Tela principal ────────────────────────────────────────────
-
-type ContactFilter = 'all' | 'at_risk' | 'not_contacted'
-
 export default function Consolidation() {
-  const { churchId }  = useAuth()
-  const queryClient   = useQueryClient()
-  const [search,  setSearch]  = useState('')
-  const [filter,  setFilter]  = useState<ContactFilter>('all')
-  const [toast,   setToast]   = useState<ToastState | null>(null)
-  // Rastreia qual personId está com mutação em andamento para o spinner por card
-  const [pendingStageId,   setPendingStageId]   = useState<string | null>(null)
-  const [pendingContactId, setPendingContactId] = useState<string | null>(null)
+  const { churchId } = useAuth()
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<'all' | 'at_risk'>('all')
+  const [toast,  setToast]  = useState<ToastState | null>(null)
 
-  function showToast(msg: string, type: 'success' | 'error' = 'success') {
-    setToast({ msg, type, key: Date.now() })
-  }
-
-  // Etapas do Kanban desta igreja — mesma fonte do /pipeline
-  const { data: stages = [] } = usePipelineStages(churchId ?? '')
-
-  // Registros de contato
-  const { data: careContacts = [] } = useCareContacts(churchId ?? '')
-  const careMap = new Map(
-    careContacts.filter(c => c.contacted).map(c => [c.person_id, c.contacted_at])
-  )
-
-  // Mutations instanciadas UMA vez no pai, compartilhadas por todos os cards
-  const moveStage  = useMovePersonToStage()
-  const upsertCare = useUpsertCareContact()
-
-  function handleStageSelect(personId: string, stageId: string) {
-    setPendingStageId(personId)
-    moveStage.mutate(
-      { personId, newStageId: stageId, churchId: churchId! },
-      {
-        onSuccess: () => {
-          // Invalida a lista de consolidação localmente — sem alterar o hook global do Kanban
-          void queryClient.invalidateQueries({ queryKey: ['consolidation', churchId] })
-          showToast('Etapa alterada!')
-        },
-        onError: (err) => showToast(`Erro ao alterar etapa: ${(err as Error).message}`, 'error'),
-        onSettled: () => setPendingStageId(null),
-      }
-    )
-  }
-
-  function handleMarkContacted(personId: string) {
-    if (!churchId) return
-    setPendingContactId(personId)
-    upsertCare.mutate(
-      { personId, churchId, contacted: true, notes: '' },
-      {
-        onSuccess: () => showToast('Pessoa marcada como contatada!'),
-        onError: (err) => showToast(`Erro: ${(err as Error).message}`, 'error'),
-        onSettled: () => setPendingContactId(null),
-      }
-    )
+  function showToast(msg: string) {
+    setToast({ msg, type: 'success', key: Date.now() })
   }
 
   const { data: people = [], isLoading } = useQuery({
     queryKey: ['consolidation', churchId],
     enabled: !!churchId,
     queryFn: async () => {
+      // Get people with recent activity (last 90 days).
+      // C2: usa OR entre conversion_date, first_visit_date e created_at como fallback
+      // para incluir visitantes que chegaram via QR Code mas sem conversion_date.
       const ninetyDaysAgo = new Date()
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
       const dateStr = ninetyDaysAgo.toISOString().split('T')[0]
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('people')
-        .select(`
-          id, name, email, phone, avatar_url,
-          conversion_date, first_visit_date, created_at,
-          person_pipeline (
-            stage_id,
-            entered_at,
-            pipeline_stages ( id, name, color )
-          )
-        `)
+        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage, created_at')
         .eq('church_id', churchId!)
+        // C2: OR entre os 3 campos para incluir visitantes QR Code (sem conversion_date)
         .or(`conversion_date.gte.${dateStr},first_visit_date.gte.${dateStr},created_at.gte.${dateStr}`)
         .is('deleted_at', null)
         .not('name', 'is', null)
         .order('conversion_date', { ascending: false, nullsFirst: false })
 
-      if (error) throw new Error(error.message)
-
       return (data ?? []).map(p => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawPP    = (p as any).person_pipeline
-        // person_pipeline pode ser array ou objeto; pegar o primeiro registro
-        const pp       = Array.isArray(rawPP) ? rawPP[0] : rawPP
-        // pipeline_stages pode retornar array[1] ou objeto dependendo do PostgREST
-        const ps       = extractPipelineStage(pp?.pipeline_stages)
-
-        const refDate     = p.conversion_date ?? p.first_visit_date ?? p.created_at
-        const daysRef     = daysSince(refDate)
-        const daysInStage = pp?.entered_at ? daysSince(pp.entered_at as string) : daysRef
+        // C2: fallback hierárquico: conversion_date → first_visit_date → created_at
+        const refDate = p.conversion_date ?? p.first_visit_date ?? p.created_at
+        const days = daysSince(refDate)
+        // person_stage is ENUM — show its value as label directly
+        const stageName = p.person_stage as string | null
 
         return {
-          id:               p.id,
-          name:             p.name,
-          email:            p.email,
-          phone:            p.phone,
-          avatar_url:       p.avatar_url,
-          conversion_date:  p.conversion_date,
-          first_visit_date: p.first_visit_date,
-          created_at:       p.created_at,
-          pipeline_stage_id: pp?.stage_id ?? null,
-          pipeline_stage:    ps,           // null = sem etapa cadastrada
-          days_in_stage:     daysInStage,
-          at_risk:           daysRef > 30,
+          ...p,
+          stage_name: stageName,
+          days_in_stage: days,
+          at_risk: days > 30,
         } as ConsolidationPerson
       })
     },
   })
 
-  const notContactedCount = people.filter(p => !careMap.has(p.id)).length
-
   const filtered = people
-    .filter(p => {
-      if (filter === 'at_risk')       return p.at_risk
-      if (filter === 'not_contacted') return !careMap.has(p.id)
-      return true
-    })
+    .filter(p => filter === 'all' || p.at_risk)
     .filter(p =>
       (p.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
       (p.email ?? '').toLowerCase().includes(search.toLowerCase())
     )
 
   const atRiskCount = people.filter(p => p.at_risk).length
-
-  const FILTERS: { id: ContactFilter; label: string }[] = [
-    { id: 'all',           label: 'Todos' },
-    { id: 'not_contacted', label: `Não contatados${notContactedCount > 0 ? ` (${notContactedCount})` : ''}` },
-    { id: 'at_risk',       label: 'Em risco' },
-  ]
 
   return (
     <div className="space-y-6">
@@ -525,36 +286,39 @@ export default function Consolidation() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-col gap-3">
+      {/* Filters */}
+      <div className="flex gap-3">
         <Input
           placeholder="Buscar pessoa..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          className="flex-1"
         />
-        <div className="flex border border-black/10 rounded-xl overflow-hidden">
-          {FILTERS.map(f => (
+        <div className="flex border border-black/10 rounded-xl overflow-hidden shrink-0">
+          {(['all', 'at_risk'] as const).map(f => (
             <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
-                filter === f.id ? 'bg-brand-600 text-white' : 'bg-white text-gray-500 hover:bg-cream'
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                filter === f
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-gray-500 hover:bg-cream'
               }`}
             >
-              {f.label}
+              {f === 'all' ? 'Todos' : 'Em risco'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Lista */}
+      {/* List */}
       {isLoading ? (
         <div className="flex justify-center py-12"><Spinner size="lg" /></div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <Heart className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-sm">
-            {search || filter !== 'all'
+            {search || filter === 'at_risk'
               ? 'Nenhuma pessoa encontrada.'
               : 'Nenhuma pessoa em consolidação.'}
           </p>
@@ -562,19 +326,7 @@ export default function Consolidation() {
       ) : (
         <div className="space-y-3">
           {filtered.map(person => (
-            <CardErrorBoundary key={person.id}>
-              <PersonRow
-                person={person}
-                stages={stages}
-                churchId={churchId!}
-                careContactAt={careMap.get(person.id) ?? null}
-                stagePending={pendingStageId === person.id}
-                contactPending={pendingContactId === person.id}
-                onCopy={showToast}
-                onStageSelect={handleStageSelect}
-                onMarkContacted={handleMarkContacted}
-              />
-            </CardErrorBoundary>
+            <PersonRow key={person.id} person={person} onCopy={showToast} />
           ))}
         </div>
       )}
