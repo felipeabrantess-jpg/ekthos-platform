@@ -1,18 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle,
-  X, ChevronDown, Loader2, UserCheck,
-} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
 import Spinner from '@/components/ui/Spinner'
-import { usePipelineStages, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
-import { useCareContacts, useUpsertCareContact } from '@/features/cuidado/hooks/useCareContacts'
-import type { PipelineStage } from '@/lib/types/joins'
-
-// ── Tipos ─────────────────────────────────────────────────────
 
 interface ConsolidationPerson {
   id: string
@@ -23,16 +15,12 @@ interface ConsolidationPerson {
   conversion_date: string | null
   first_visit_date: string | null
   created_at: string
-  // pipeline (Sistema B)
-  pipeline_stage_id:   string | null
-  pipeline_stage_name: string | null
-  pipeline_stage_color: string | null
+  stage_name: string | null
   days_in_stage: number
   at_risk: boolean
 }
 
-// ── Toast ─────────────────────────────────────────────────────
-
+// ── Toast ────────────────────────────────────────────────────
 interface ToastState { msg: string; type: 'success' | 'error'; key: number }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -45,9 +33,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
     <div
       className="fixed bottom-6 right-6 z-50 flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg text-sm max-w-xs border"
       style={{
-        background:  type === 'success' ? '#f0fdf4' : '#fef2f2',
-        borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
-        color:       type === 'success' ? '#166534' : '#991b1b',
+        background:   type === 'success' ? '#f0fdf4' : '#fef2f2',
+        borderColor:  type === 'success' ? '#bbf7d0' : '#fecaca',
+        color:        type === 'success' ? '#166534' : '#991b1b',
       }}
     >
       {type === 'success'
@@ -62,8 +50,9 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
   )
 }
 
-// ── Helpers ───────────────────────────────────────────────────
+// ── Helpers de telefone ───────────────────────────────────────
 
+/** Remove tudo que não é dígito, sem "+". Ex: "+55 21 99703-3891" → "5521997033891" */
 function normalizePhoneDigits(phone: string): string {
   return phone.replace(/\D/g, '')
 }
@@ -80,12 +69,7 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function formatShortDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-}
-
-// ── Ícone WhatsApp ────────────────────────────────────────────
-
+// Ícone WhatsApp SVG (inline — sem dependência externa)
 function WhatsAppIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -95,110 +79,9 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
   )
 }
 
-// ── Seletor de etapa do pipeline ──────────────────────────────
-
-interface StageSelectorProps {
-  person:        ConsolidationPerson
-  stages:        PipelineStage[]
-  churchId:      string
-  onStageChange: (msg: string) => void
-}
-
-function PipelineStagePicker({ person, stages, churchId, onStageChange }: StageSelectorProps) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  const queryClient = useQueryClient()
-  const moveStage = useMovePersonToStage()
-
-  // Fechar ao clicar fora
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [open])
-
-  const currentStage = stages.find(s => s.id === person.pipeline_stage_id)
-
-  function handleSelect(stage: PipelineStage) {
-    if (stage.id === person.pipeline_stage_id) { setOpen(false); return }
-    setOpen(false)
-    moveStage.mutate(
-      { personId: person.id, newStageId: stage.id, churchId },
-      {
-        onSuccess: () => {
-          // useMovePersonToStage invalida pipeline-board e people, mas não consolidation
-          void queryClient.invalidateQueries({ queryKey: ['consolidation', churchId] })
-          onStageChange(`Etapa alterada para "${stage.name}"`)
-        },
-        onError: (err) => {
-          onStageChange(`Erro ao alterar etapa: ${(err as Error).message}`)
-        },
-      }
-    )
-  }
-
-  const badgeColor = currentStage?.color ?? '#6b7280'
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        disabled={moveStage.isPending}
-        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium border border-black/10 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
-        title="Alterar etapa"
-      >
-        {moveStage.isPending
-          ? <Loader2 size={11} className="animate-spin text-gray-400" />
-          : <span className="w-2 h-2 rounded-full shrink-0" style={{ background: badgeColor }} />
-        }
-        <span className="truncate max-w-[110px]">
-          {currentStage?.name ?? 'Sem etapa'}
-        </span>
-        <ChevronDown size={11} className="text-gray-400 shrink-0" />
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-black/10 rounded-xl shadow-lg min-w-[180px] py-1 overflow-hidden">
-          {stages.length === 0 && (
-            <p className="px-3 py-2 text-xs text-gray-400">Nenhuma etapa configurada</p>
-          )}
-          {stages.map(s => (
-            <button
-              key={s.id}
-              onClick={() => handleSelect(s)}
-              className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-gray-50 transition-colors ${
-                s.id === person.pipeline_stage_id ? 'font-semibold text-ekthos-black' : 'text-gray-700'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: s.color ?? '#6b7280' }} />
-              {s.name}
-              {s.id === person.pipeline_stage_id && (
-                <CheckCircle size={11} className="ml-auto text-brand-600 shrink-0" />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Card da pessoa ────────────────────────────────────────────
-
-interface PersonRowProps {
-  person:        ConsolidationPerson
-  stages:        PipelineStage[]
-  churchId:      string
-  careContactAt: string | null
-  onToast:       (msg: string, type?: 'success' | 'error') => void
-}
-
-function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonRowProps) {
-  const hasPhone    = Boolean(person.phone)
+function PersonRow({ person, onCopy }: { person: ConsolidationPerson; onCopy: (msg: string) => void }) {
+  const hasPhone = Boolean(person.phone)
   const phoneDigits = hasPhone ? normalizePhoneDigits(person.phone!) : ''
-  const upsertCare  = useUpsertCareContact()
 
   const firstName = (person.name ?? '').split(' ')[0]
   const waMessage = encodeURIComponent(
@@ -210,23 +93,13 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
   async function handleCopy() {
     try {
       await navigator.clipboard.writeText(person.phone!)
-      onToast('Telefone copiado!')
+      onCopy('Telefone copiado!')
     } catch {
-      onToast('Não foi possível copiar.', 'error')
+      onCopy('Não foi possível copiar.')
     }
   }
 
-  function handleMarkContacted() {
-    upsertCare.mutate(
-      { personId: person.id, churchId, contacted: true, notes: '' },
-      {
-        onSuccess: () => onToast('Pessoa marcada como contatada!'),
-        onError: (err) => onToast(`Erro: ${(err as Error).message}`, 'error'),
-      }
-    )
-  }
-
-  const actionBtn = (disabled: boolean, extraClass: string) =>
+  const actionBtn = (label: string, disabled: boolean, extraClass: string) =>
     `inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
       disabled
         ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400'
@@ -241,7 +114,6 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
       </div>
 
       <div className="flex-1 min-w-0">
-        {/* Nome + risco */}
         <div className="flex items-start justify-between gap-2">
           <p className="font-semibold text-ekthos-black text-sm truncate">{person.name ?? '(sem nome)'}</p>
           {person.at_risk && (
@@ -258,49 +130,23 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
           : <p className="text-xs text-red-400 italic">Sem telefone cadastrado</p>
         }
 
-        {/* Datas + etapa pipeline */}
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
           {person.conversion_date && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
               <Heart className="w-3 h-3 text-brand-600" />
               Convertido em {formatDate(person.conversion_date)}
             </span>
           )}
           {person.first_visit_date && (
-            <span className="flex items-center gap-1 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Primeira visita {formatDate(person.first_visit_date)}
             </span>
           )}
-
-          {/* Seletor de etapa do Kanban */}
-          <PipelineStagePicker
-            person={person}
-            stages={stages}
-            churchId={churchId}
-            onStageChange={onToast}
-          />
-        </div>
-
-        {/* Selo "Contatado" ou botão de marcar */}
-        <div className="mt-2">
-          {careContactAt ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-              <UserCheck size={11} />
-              Contatado em {formatShortDate(careContactAt)}
+          {person.stage_name && (
+            <span className="bg-brand-50 text-brand-700 px-2 py-0.5 rounded-lg font-medium">
+              {person.stage_name} · {person.days_in_stage}d
             </span>
-          ) : (
-            <button
-              onClick={handleMarkContacted}
-              disabled={upsertCare.isPending}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-dashed border-gray-300 text-gray-500 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50"
-            >
-              {upsertCare.isPending
-                ? <Loader2 size={11} className="animate-spin" />
-                : <UserCheck size={11} />
-              }
-              Marcar contatado
-            </button>
           )}
         </div>
 
@@ -312,14 +158,14 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={actionBtn(false, 'bg-[#e8f9f2] text-[#1D9E75] hover:bg-[#d0f3e6]')}
+              className={actionBtn('WhatsApp', false, 'bg-[#e8f9f2] text-[#1D9E75] hover:bg-[#d0f3e6]')}
               title="Abrir WhatsApp"
             >
               <WhatsAppIcon size={14} />
               WhatsApp
             </a>
           ) : (
-            <span className={actionBtn(true, '')} title="Sem telefone cadastrado">
+            <span className={actionBtn('WhatsApp', true, '')} title="Sem telefone cadastrado">
               <WhatsAppIcon size={14} />
               WhatsApp
             </span>
@@ -329,14 +175,14 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
           {hasPhone ? (
             <a
               href={telUrl}
-              className={actionBtn(false, 'bg-blue-50 text-blue-600 hover:bg-blue-100')}
+              className={actionBtn('Ligar', false, 'bg-blue-50 text-blue-600 hover:bg-blue-100')}
               title="Ligar"
             >
               <Phone size={13} />
               Ligar
             </a>
           ) : (
-            <span className={actionBtn(true, '')} title="Sem telefone cadastrado">
+            <span className={actionBtn('Ligar', true, '')} title="Sem telefone cadastrado">
               <Phone size={13} />
               Ligar
             </span>
@@ -346,7 +192,7 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
           <button
             onClick={hasPhone ? handleCopy : undefined}
             disabled={!hasPhone}
-            className={actionBtn(!hasPhone, 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
+            className={actionBtn('Copiar', !hasPhone, 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
             title={hasPhone ? 'Copiar telefone' : 'Sem telefone cadastrado'}
           >
             <Copy size={13} />
@@ -358,101 +204,62 @@ function PersonRow({ person, stages, churchId, careContactAt, onToast }: PersonR
   )
 }
 
-// ── Tela principal ────────────────────────────────────────────
-
-type ContactFilter = 'all' | 'at_risk' | 'not_contacted'
-
 export default function Consolidation() {
   const { churchId } = useAuth()
-  const [search,  setSearch]  = useState('')
-  const [filter,  setFilter]  = useState<ContactFilter>('all')
-  const [toast,   setToast]   = useState<ToastState | null>(null)
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<'all' | 'at_risk'>('all')
+  const [toast,  setToast]  = useState<ToastState | null>(null)
 
-  function showToast(msg: string, type: 'success' | 'error' = 'success') {
-    setToast({ msg, type, key: Date.now() })
+  function showToast(msg: string) {
+    setToast({ msg, type: 'success', key: Date.now() })
   }
-
-  // Etapas do pipeline dessa igreja (mesma fonte do Kanban)
-  const { data: stages = [] } = usePipelineStages(churchId ?? '')
-
-  // Registros de contato
-  const { data: careContacts = [] } = useCareContacts(churchId ?? '')
-
-  const careMap = new Map(careContacts.filter(c => c.contacted).map(c => [c.person_id, c.contacted_at]))
 
   const { data: people = [], isLoading } = useQuery({
     queryKey: ['consolidation', churchId],
     enabled: !!churchId,
     queryFn: async () => {
+      // Get people with recent activity (last 90 days).
+      // C2: usa OR entre conversion_date, first_visit_date e created_at como fallback
+      // para incluir visitantes que chegaram via QR Code mas sem conversion_date.
       const ninetyDaysAgo = new Date()
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
       const dateStr = ninetyDaysAgo.toISOString().split('T')[0]
 
       const { data } = await supabase
         .from('people')
-        .select(`
-          id, name, email, phone, avatar_url,
-          conversion_date, first_visit_date, created_at,
-          person_pipeline (
-            stage_id,
-            entered_at,
-            pipeline_stages ( id, name, order_index, color )
-          )
-        `)
+        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage, created_at')
         .eq('church_id', churchId!)
+        // C2: OR entre os 3 campos para incluir visitantes QR Code (sem conversion_date)
         .or(`conversion_date.gte.${dateStr},first_visit_date.gte.${dateStr},created_at.gte.${dateStr}`)
         .is('deleted_at', null)
         .not('name', 'is', null)
         .order('conversion_date', { ascending: false, nullsFirst: false })
 
       return (data ?? []).map(p => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const pp  = (p as any).person_pipeline?.[0]
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ps  = pp?.pipeline_stages as any ?? null
+        // C2: fallback hierárquico: conversion_date → first_visit_date → created_at
         const refDate = p.conversion_date ?? p.first_visit_date ?? p.created_at
-        const daysRef = daysSince(refDate)
-        const enteredAt = pp?.entered_at as string | null
-        const daysInStage = enteredAt ? daysSince(enteredAt) : daysRef
+        const days = daysSince(refDate)
+        // person_stage is ENUM — show its value as label directly
+        const stageName = p.person_stage as string | null
 
         return {
-          id:                   p.id,
-          name:                 p.name,
-          email:                p.email,
-          phone:                p.phone,
-          avatar_url:           p.avatar_url,
-          conversion_date:      p.conversion_date,
-          first_visit_date:     p.first_visit_date,
-          created_at:           p.created_at,
-          pipeline_stage_id:    pp?.stage_id   ?? null,
-          pipeline_stage_name:  ps?.name       ?? null,
-          pipeline_stage_color: ps?.color      ?? null,
-          days_in_stage:        daysInStage,
-          at_risk:              daysRef > 30,
+          ...p,
+          stage_name: stageName,
+          days_in_stage: days,
+          at_risk: days > 30,
         } as ConsolidationPerson
       })
     },
   })
 
   const filtered = people
-    .filter(p => {
-      if (filter === 'at_risk')       return p.at_risk
-      if (filter === 'not_contacted') return !careMap.has(p.id)
-      return true
-    })
+    .filter(p => filter === 'all' || p.at_risk)
     .filter(p =>
       (p.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
       (p.email ?? '').toLowerCase().includes(search.toLowerCase())
     )
 
-  const atRiskCount      = people.filter(p => p.at_risk).length
-  const notContactedCount = people.filter(p => !careMap.has(p.id)).length
-
-  const FILTERS: { id: ContactFilter; label: string }[] = [
-    { id: 'all',           label: 'Todos'          },
-    { id: 'not_contacted', label: `Não contatados${notContactedCount > 0 ? ` (${notContactedCount})` : ''}` },
-    { id: 'at_risk',       label: 'Em risco'       },
-  ]
+  const atRiskCount = people.filter(p => p.at_risk).length
 
   return (
     <div className="space-y-6">
@@ -479,38 +286,39 @@ export default function Consolidation() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-col gap-3">
+      {/* Filters */}
+      <div className="flex gap-3">
         <Input
           placeholder="Buscar pessoa..."
           value={search}
           onChange={e => setSearch(e.target.value)}
+          className="flex-1"
         />
-        <div className="flex border border-black/10 rounded-xl overflow-hidden">
-          {FILTERS.map(f => (
+        <div className="flex border border-black/10 rounded-xl overflow-hidden shrink-0">
+          {(['all', 'at_risk'] as const).map(f => (
             <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={`flex-1 px-2 py-2 text-xs font-medium transition-colors ${
-                filter === f.id
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-3 py-2 text-xs font-medium transition-colors ${
+                filter === f
                   ? 'bg-brand-600 text-white'
                   : 'bg-white text-gray-500 hover:bg-cream'
               }`}
             >
-              {f.label}
+              {f === 'all' ? 'Todos' : 'Em risco'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Lista */}
+      {/* List */}
       {isLoading ? (
         <div className="flex justify-center py-12"><Spinner size="lg" /></div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <Heart className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="text-sm">
-            {search || filter !== 'all'
+            {search || filter === 'at_risk'
               ? 'Nenhuma pessoa encontrada.'
               : 'Nenhuma pessoa em consolidação.'}
           </p>
@@ -518,14 +326,7 @@ export default function Consolidation() {
       ) : (
         <div className="space-y-3">
           {filtered.map(person => (
-            <PersonRow
-              key={person.id}
-              person={person}
-              stages={stages}
-              churchId={churchId!}
-              careContactAt={careMap.get(person.id) ?? null}
-              onToast={showToast}
-            />
+            <PersonRow key={person.id} person={person} onCopy={showToast} />
           ))}
         </div>
       )}
