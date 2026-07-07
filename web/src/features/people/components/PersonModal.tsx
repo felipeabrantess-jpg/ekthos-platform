@@ -41,7 +41,14 @@ interface FormState {
   email: string
   birth_date: string
   marital_status: string
+  // Endereço
+  zip_code: string
+  street: string
+  street_number: string
+  address_complement: string
   neighborhood: string
+  city: string
+  state: string
   como_conheceu: string
   // Eclesiástico
   celula_id: string
@@ -66,7 +73,10 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   name: '', phone: '', email: '',
-  birth_date: '', marital_status: '', neighborhood: '', como_conheceu: '',
+  birth_date: '', marital_status: '',
+  zip_code: '', street: '', street_number: '', address_complement: '',
+  neighborhood: '', city: '', state: '',
+  como_conheceu: '',
   celula_id: '', unit_id: '', conversion_date: '', batismo_status: '', baptism_date: '',
   calling: '', ministry_interest: [],
   consolidation_school: '', experiencia_lideranca: '',
@@ -86,7 +96,13 @@ function personToForm(p: Person): FormState {
     email:                p.email ?? '',
     birth_date:           p.birth_date ?? '',
     marital_status:       p.marital_status ?? '',
+    zip_code:             any.zip_code ?? '',
+    street:               any.street ?? '',
+    street_number:        any.street_number ?? '',
+    address_complement:   any.address_complement ?? '',
     neighborhood:         p.neighborhood ?? '',
+    city:                 any.city ?? '',
+    state:                any.state ?? '',
     como_conheceu:        any.como_conheceu ?? '',
     celula_id:            any.celula_id ?? '',
     unit_id:              any.unit_id ?? '',
@@ -147,6 +163,8 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const [error, setError] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [cepLoading, setCepLoading] = useState(false)
+  const [cepError, setCepError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Tabs visíveis para o role atual
@@ -198,6 +216,31 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     return raw.trim() // retorna original se não conseguir normalizar
   }
 
+  // Busca endereço via ViaCEP — falha silenciosa, nunca trava o cadastro
+  async function fetchCep(digits: string) {
+    setCepLoading(true)
+    setCepError(null)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      if (!res.ok) throw new Error('http_error')
+      const data = await res.json() as {
+        erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string
+      }
+      if (data.erro) { setCepError('CEP não encontrado.'); return }
+      setForm((f) => ({
+        ...f,
+        street:       data.logradouro ?? f.street,
+        neighborhood: data.bairro     ?? f.neighborhood,
+        city:         data.localidade ?? f.city,
+        state:        data.uf         ?? f.state,
+      }))
+    } catch {
+      setCepError('CEP não encontrado.')
+    } finally {
+      setCepLoading(false)
+    }
+  }
+
   // Constrói o payload final para salvar
   function buildPayload() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -208,7 +251,13 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       email:              form.email.trim() || null,
       birth_date:         form.birth_date || null,
       marital_status:     form.marital_status || null,
+      zip_code:           form.zip_code.replace(/\D/g, '') || null,
+      street:             form.street.trim() || null,
+      street_number:      form.street_number.trim() || null,
+      address_complement: form.address_complement.trim() || null,
       neighborhood:       form.neighborhood.trim() || null,
+      city:               form.city.trim() || null,
+      state:              form.state.trim().toUpperCase() || null,
       como_conheceu:      form.como_conheceu || null,
       celula_id:          form.celula_id || null,
       unit_id:            form.unit_id || null,
@@ -397,26 +446,80 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
                 <option value="viuvo">Viúvo(a)</option>
               </Select>
             </FieldRow>
+            <Select
+              label="Como conheceu a igreja"
+              value={form.como_conheceu}
+              onChange={(e) => set('como_conheceu', e.target.value)}
+              placeholder="Selecionar..."
+            >
+              <option value="convite_membro">Convite de membro</option>
+              <option value="redes_sociais">Redes sociais</option>
+              <option value="passou_na_frente">Passou na frente</option>
+              <option value="evento">Evento</option>
+              <option value="familia">Família</option>
+              <option value="outro">Outro</option>
+            </Select>
+
+            <SectionTitle>Endereço</SectionTitle>
+            <div className="w-44">
+              <Input
+                label="CEP"
+                value={form.zip_code}
+                placeholder="00000-000"
+                maxLength={9}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  set('zip_code', raw)
+                  setCepError(null)
+                  const digits = raw.replace(/\D/g, '')
+                  if (digits.length === 8) void fetchCep(digits)
+                }}
+              />
+              {cepLoading && <p className="text-xs text-gray-400 mt-1">Buscando endereço…</p>}
+              {cepError   && <p className="text-xs text-amber-600 mt-1">{cepError}</p>}
+            </div>
             <FieldRow>
               <Input
-                label="Bairro / Endereço"
+                label="Logradouro / Rua"
+                value={form.street}
+                onChange={(e) => set('street', e.target.value)}
+                placeholder="Ex: Rua das Flores"
+              />
+              <Input
+                label="Número"
+                value={form.street_number}
+                onChange={(e) => set('street_number', e.target.value)}
+                placeholder="Ex: 42"
+              />
+            </FieldRow>
+            <FieldRow>
+              <Input
+                label="Bairro"
                 value={form.neighborhood}
                 onChange={(e) => set('neighborhood', e.target.value)}
                 placeholder="Ex: Vila Mariana"
               />
-              <Select
-                label="Como conheceu a igreja"
-                value={form.como_conheceu}
-                onChange={(e) => set('como_conheceu', e.target.value)}
-                placeholder="Selecionar..."
-              >
-                <option value="convite_membro">Convite de membro</option>
-                <option value="redes_sociais">Redes sociais</option>
-                <option value="passou_na_frente">Passou na frente</option>
-                <option value="evento">Evento</option>
-                <option value="familia">Família</option>
-                <option value="outro">Outro</option>
-              </Select>
+              <Input
+                label="Complemento"
+                value={form.address_complement}
+                onChange={(e) => set('address_complement', e.target.value)}
+                placeholder="Apto 201, Bloco B…"
+              />
+            </FieldRow>
+            <FieldRow>
+              <Input
+                label="Cidade"
+                value={form.city}
+                onChange={(e) => set('city', e.target.value)}
+                placeholder="Ex: São Paulo"
+              />
+              <Input
+                label="UF"
+                value={form.state}
+                onChange={(e) => set('state', e.target.value.toUpperCase())}
+                placeholder="SP"
+                maxLength={2}
+              />
             </FieldRow>
           </div>
         )}
