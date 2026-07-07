@@ -83,6 +83,7 @@ export function usePastoralDashboard(churchId: string) {
       const now = new Date()
 
       // Datas de referência
+      const thirtyDaysAgo   = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
       const sevenDaysAgo    = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
       const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
       const oneDayAgo       = new Date(now.getTime() - 24 * 60 * 60 * 1000)
@@ -115,14 +116,16 @@ export function usePastoralDashboard(churchId: string) {
           .eq('church_id', churchId)
           .is('deleted_at', null),
 
-        // W1: visitantes com first_visit_date na última semana
-        supabase
+        // W1: novos visitantes dos últimos 30 dias — first_visit_date OU (null + created_at)
+        // Mesmo critério da lista /pessoas?tab=novos&periodo=30 para garantir consistência.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any)
           .from('people')
           .select('id', { count: 'exact', head: true })
           .eq('church_id', churchId)
           .is('deleted_at', null)
           .eq('person_stage', 'visitante')
-          .gte('first_visit_date', sevenDaysAgo.toISOString().slice(0, 10)),
+          .or(`first_visit_date.gte.${thirtyDaysAgo.toISOString().slice(0, 10)},and(first_visit_date.is.null,created_at.gte.${thirtyDaysAgo.toISOString()})`),
 
         // W4 + W7 + W12: todos os grupos
         supabase

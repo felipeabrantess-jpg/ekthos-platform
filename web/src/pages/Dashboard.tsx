@@ -306,12 +306,12 @@ export default function Dashboard() {
             icon={<UserCheck size={18} strokeWidth={1.75} />}
           />
           <MetricCard
-            label="Visitantes esta Semana"
+            label="Novos Visitantes (30 dias)"
             value={data.visitantesSemana}
-            sub="novos esta semana"
+            sub="nos últimos 30 dias"
             color="blue"
             icon={<UserPlus size={18} strokeWidth={1.75} />}
-            href="/pessoas?tab=novos&periodo=7"
+            href="/pessoas?tab=novos&periodo=30"
           />
           <MetricCard
             label="Membros Ativos"

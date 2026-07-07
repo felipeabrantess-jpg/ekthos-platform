@@ -472,7 +472,9 @@ export default function People() {
   const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
   const periodoParam = searchParams.get('periodo') as DateFilter | null
   const [dateFilter, setDateFilter] = useState<DateFilter>(
-    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam : 'all'
+    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam :
+    // Aba novos sem ?periodo=X abre com 30 dias (evita mostrar 5.824 visitantes sem filtro)
+    tabParam === 'novos' ? '30' : 'all'
   )
   const [customFrom, setCustomFrom] = useState('')
   const [customTo,   setCustomTo]   = useState('')
@@ -554,6 +556,35 @@ export default function People() {
     },
   })
 
+  // Query server-side dedicada para aba "Novos Convertidos" — evita filtragem client-side
+  // sobre os 50 carregados da Visão Geral (pessoa convertida pode não estar na página 1).
+  const { data: convertidosServerData } = useQuery({
+    queryKey: ['novos-convertidos', churchId],
+    enabled: activeTab === 'convertidos' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        .not('conversion_date', 'is', null)
+        .gte('conversion_date', cutoff)
+        .order('conversion_date', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
   const { data: totalCount } = usePeopleCount(churchId ?? '')
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
@@ -601,13 +632,17 @@ export default function People() {
     : tabFiltered
   // Para aba novos com período ativo: usa dados do servidor (query dedicada)
   // Para aba novos sem período (all): usa tagFiltered (query principal)
+  // Para aba convertidos: sempre usa query server-side (não depende dos 50 da paginação geral)
   // Para todas as outras abas: usa tagFiltered
   const filteredPeople = useMemo(() => {
     if (activeTab === 'novos' && dateFilter !== 'all') {
       return novosServerData ?? []
     }
+    if (activeTab === 'convertidos') {
+      return convertidosServerData ?? []
+    }
     return tagFiltered
-  }, [activeTab, dateFilter, novosServerData, tagFiltered])
+  }, [activeTab, dateFilter, novosServerData, convertidosServerData, tagFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
