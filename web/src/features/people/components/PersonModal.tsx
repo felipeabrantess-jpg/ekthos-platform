@@ -13,6 +13,8 @@ import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
 import { supabase } from '@/lib/supabase'
 import type { Person, AppRoleDB, PipelineStage } from '@/lib/types/joins'
+import PersonSelect from '@/components/ui/PersonSelect'
+import { useFamilyRelationships, useSaveFamilyRelationship, useRemoveFamilyRelationship } from '../hooks/useFamilyRelationships'
 
 // ──────────────────────────────────────────────────────────────────────
 // Tipos
@@ -177,6 +179,37 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     setActiveTab('pessoal')
     setError(null)
   }, [person?.id, open])
+
+  // ── Vínculos familiares ── todos os hooks ANTES de qualquer return ──
+  const { data: familyRels = [] } = useFamilyRelationships(person?.id)
+  const saveFamilyRel   = useSaveFamilyRelationship()
+  const removeFamilyRel = useRemoveFamilyRelationship()
+  const [spouseKey, setSpouseKey] = useState(0)
+  const [childKey,  setChildKey]  = useState(0)
+
+  const spouse   = familyRels.find((r) => r.relationship_type === 'conjuge') ?? null
+  const children = familyRels.filter((r) => r.relationship_type === 'filho')
+
+  function handleAddSpouse(relatedPersonId: string) {
+    if (!person?.id || relatedPersonId === person.id) return
+    saveFamilyRel.mutate(
+      { personId: person.id, churchId, relatedPersonId, type: 'conjuge' },
+      { onSuccess: () => setSpouseKey((k) => k + 1) }
+    )
+  }
+
+  function handleAddChild(relatedPersonId: string) {
+    if (!person?.id || relatedPersonId === person.id) return
+    saveFamilyRel.mutate(
+      { personId: person.id, churchId, relatedPersonId, type: 'filho' },
+      { onSuccess: () => setChildKey((k) => k + 1) }
+    )
+  }
+
+  function handleRemoveFamilyRel(relatedPersonId: string) {
+    if (!person?.id) return
+    removeFamilyRel.mutate({ personId: person.id, relatedPersonId })
+  }
 
   async function handlePhotoUpload(file: File) {
     setAvatarUploading(true)
@@ -521,6 +554,70 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
                 maxLength={2}
               />
             </FieldRow>
+
+            {/* ── Família — só em modo edição (pessoa já existe no banco) ── */}
+            {isEdit && (
+              <div>
+                <SectionTitle>Família</SectionTitle>
+
+                {/* Cônjuge */}
+                <div className="mb-3">
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">Cônjuge</p>
+                  {spouse ? (
+                    <div className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-black/10 bg-gray-50 text-sm">
+                      <span className="font-medium text-gray-800">{spouse.people?.name ?? '—'}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFamilyRel(spouse.related_person_id)}
+                        disabled={removeFamilyRel.isPending}
+                        className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded disabled:opacity-50"
+                        title="Remover vínculo"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <PersonSelect
+                      key={spouseKey}
+                      placeholder="Buscar cônjuge..."
+                      value={null}
+                      onChange={(id) => { if (id) handleAddSpouse(id) }}
+                    />
+                  )}
+                </div>
+
+                {/* Filhos */}
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">Filhos</p>
+                  <div className="space-y-1.5">
+                    {children.map((child) => (
+                      <div key={child.id} className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-black/10 bg-gray-50 text-sm">
+                        <span className="font-medium text-gray-800">{child.people?.name ?? '—'}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFamilyRel(child.related_person_id)}
+                          disabled={removeFamilyRel.isPending}
+                          className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded disabled:opacity-50"
+                          title="Remover vínculo"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                    <PersonSelect
+                      key={childKey}
+                      placeholder="Adicionar filho(a)..."
+                      value={null}
+                      onChange={(id) => { if (id) handleAddChild(id) }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
