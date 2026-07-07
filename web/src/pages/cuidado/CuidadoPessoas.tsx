@@ -23,20 +23,30 @@ interface PersonRow {
   conversion_date: string | null
 }
 
-function usePeopleForCuidado(churchId: string) {
+function usePeopleForCuidado(churchId: string, search: string) {
+  const trimmed = search.trim()
   return useQuery({
-    queryKey: ['people-for-cuidado', churchId],
+    queryKey: ['people-for-cuidado', churchId, trimmed],
     queryFn: async (): Promise<PersonRow[]> => {
-      const { data, error } = await supabase
+      let q = supabase
         .from('people')
         .select('id, name, phone, name_sort, conversion_date')
         .eq('church_id', churchId)
         .is('deleted_at', null)
         .order('name_sort', { ascending: true })
+      if (trimmed) {
+        // Busca no banco — percorre TODOS os registros, não só os carregados
+        q = q.ilike('name', `%${trimmed}%`)
+      } else {
+        // PostgREST default max-rows = 1000; forçar limite alto para carregar todos
+        q = q.limit(10000)
+      }
+      const { data, error } = await q
       if (error) throw new Error(error.message)
       return (data ?? []) as PersonRow[]
     },
     enabled: Boolean(churchId),
+    staleTime: 60_000,
   })
 }
 
@@ -282,41 +292,40 @@ export default function CuidadoPessoas() {
   const { churchId }  = useAuth()
   const [search, setSearch] = useState('')
 
-  const { data: people      = [], isLoading } = usePeopleForCuidado(churchId ?? '')
+  const { data: filtered    = [], isLoading } = usePeopleForCuidado(churchId ?? '', search)
   const { data: contacts    = [] }            = useCareContacts(churchId ?? '')
   const { data: conversaMap = new Map() }     = usePessoasConversas(churchId ?? '')
 
   const contactMap     = new Map(contacts.map(c => [c.person_id, c]))
   const contactedCount = contacts.filter(c => c.contacted).length
-
-  const filtered = people.filter(p =>
-    !search || (p.name ?? '').toLowerCase().includes(search.toLowerCase()),
-  )
+  const isSearching    = search.trim().length > 0
 
   return (
     <div className="space-y-4 max-w-3xl">
       <CuidadoTabBar />
 
-      {/* Progresso */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <p className="font-medium text-text-secondary" style={{ fontSize: 14 }}>
-            Pessoas
-          </p>
-          <span className="font-semibold text-text-secondary" style={{ fontSize: 13 }}>
-            {contactedCount} de {people.length} contatados
-          </span>
+      {/* Progresso — oculto durante busca ativa */}
+      {!isSearching && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="font-medium text-text-secondary" style={{ fontSize: 14 }}>
+              Pessoas
+            </p>
+            <span className="font-semibold text-text-secondary" style={{ fontSize: 13 }}>
+              {contactedCount} de {filtered.length} contatados
+            </span>
+          </div>
+          <div className="rounded-full overflow-hidden bg-bg-hover" style={{ height: 6 }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width:           filtered.length > 0 ? `${(contactedCount / filtered.length) * 100}%` : '0%',
+                backgroundColor: '#1D9E75',
+              }}
+            />
+          </div>
         </div>
-        <div className="rounded-full overflow-hidden bg-bg-hover" style={{ height: 6 }}>
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{
-              width:           people.length > 0 ? `${(contactedCount / people.length) * 100}%` : '0%',
-              backgroundColor: '#1D9E75',
-            }}
-          />
-        </div>
-      </div>
+      )}
 
       {/* Busca */}
       <div className="relative">
