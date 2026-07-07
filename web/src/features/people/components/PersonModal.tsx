@@ -43,6 +43,7 @@ interface FormState {
   email: string
   birth_date: string
   marital_status: string
+  wedding_date: string
   // Endereço
   zip_code: string
   street: string
@@ -75,7 +76,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   name: '', phone: '', email: '',
-  birth_date: '', marital_status: '',
+  birth_date: '', marital_status: '', wedding_date: '',
   zip_code: '', street: '', street_number: '', address_complement: '',
   neighborhood: '', city: '', state: '',
   como_conheceu: '',
@@ -98,6 +99,7 @@ function personToForm(p: Person): FormState {
     email:                p.email ?? '',
     birth_date:           p.birth_date ?? '',
     marital_status:       p.marital_status ?? '',
+    wedding_date:         any.wedding_date ?? '',
     zip_code:             any.zip_code ?? '',
     street:               any.street ?? '',
     street_number:        any.street_number ?? '',
@@ -284,6 +286,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       email:              form.email.trim() || null,
       birth_date:         form.birth_date || null,
       marital_status:     form.marital_status || null,
+      wedding_date:       form.wedding_date || null,
       zip_code:           form.zip_code.replace(/\D/g, '') || null,
       street:             form.street.trim() || null,
       street_number:      form.street_number.trim() || null,
@@ -479,6 +482,14 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
                 <option value="viuvo">Viúvo(a)</option>
               </Select>
             </FieldRow>
+            {form.marital_status.toLowerCase().startsWith('casado') && (
+              <Input
+                label="Aniversário de Casamento"
+                value={form.wedding_date}
+                onChange={(e) => set('wedding_date', e.target.value)}
+                type="date"
+              />
+            )}
             <Select
               label="Como conheceu a igreja"
               value={form.como_conheceu}
