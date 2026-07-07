@@ -154,7 +154,6 @@ function buildInviteHtml(actionLink: string, isExistingUser = false): string {
                       <tr>
                         <td align="center" style="border-radius:8px;background-color:#e13500;">
                           <a href="${actionLink}"
-                            target="_blank"
                             style="display:inline-block;padding:16px 40px;font-family:'DM Sans',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px;letter-spacing:0.3px;">
                             ${ctaLabel}
                           </a>

@@ -98,7 +98,10 @@ export default function SetPassword() {
       setProcessing(false)
     }
 
-    processInviteToken()
+    processInviteToken().catch(err => {
+      console.error('[set-password] processInviteToken error:', err)
+      setProcessing(false)
+    })
   }, [])
 
   // Aguarda processamento do token E resolução do AuthProvider
