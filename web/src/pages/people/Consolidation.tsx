@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Heart, AlertTriangle, Clock } from 'lucide-react'
+import { Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
@@ -20,6 +20,43 @@ interface ConsolidationPerson {
   at_risk: boolean
 }
 
+// ── Toast ────────────────────────────────────────────────────
+interface ToastState { msg: string; type: 'success' | 'error'; key: number }
+
+function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 3500)
+    return () => clearTimeout(t)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-50 flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg text-sm max-w-xs border"
+      style={{
+        background:   type === 'success' ? '#f0fdf4' : '#fef2f2',
+        borderColor:  type === 'success' ? '#bbf7d0' : '#fecaca',
+        color:        type === 'success' ? '#166534' : '#991b1b',
+      }}
+    >
+      {type === 'success'
+        ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+        : <X           size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
+      }
+      <span className="flex-1">{msg}</span>
+      <button onClick={onClose} className="opacity-60 hover:opacity-100 shrink-0 mt-0.5">
+        <X size={14} strokeWidth={2} />
+      </button>
+    </div>
+  )
+}
+
+// ── Helpers de telefone ───────────────────────────────────────
+
+/** Remove tudo que não é dígito, sem "+". Ex: "+55 21 99703-3891" → "5521997033891" */
+function normalizePhoneDigits(phone: string): string {
+  return phone.replace(/\D/g, '')
+}
+
 function daysSince(dateStr: string | null): number {
   if (!dateStr) return 0
   const d = new Date(dateStr)
@@ -32,7 +69,43 @@ function formatDate(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-function PersonRow({ person }: { person: ConsolidationPerson }) {
+// Ícone WhatsApp SVG (inline — sem dependência externa)
+function WhatsAppIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.533 5.861L.057 23.997l6.305-1.654A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.371l-.359-.213-3.722.976.994-3.634-.234-.373A9.817 9.817 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/>
+    </svg>
+  )
+}
+
+function PersonRow({ person, onCopy }: { person: ConsolidationPerson; onCopy: (msg: string) => void }) {
+  const hasPhone = Boolean(person.phone)
+  const phoneDigits = hasPhone ? normalizePhoneDigits(person.phone!) : ''
+
+  const firstName = (person.name ?? '').split(' ')[0]
+  const waMessage = encodeURIComponent(
+    `Oi ${firstName}, aqui é da Igreja Gerando Vencedores! Que alegria ter você com a gente 🧡 Posso te ajudar em algo?`
+  )
+  const waUrl  = `https://wa.me/${phoneDigits}?text=${waMessage}`
+  const telUrl = person.phone ? `tel:${person.phone.trim()}` : undefined
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(person.phone!)
+      onCopy('Telefone copiado!')
+    } catch {
+      onCopy('Não foi possível copiar.')
+    }
+  }
+
+  const actionBtn = (label: string, disabled: boolean, extraClass: string) =>
+    `inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+      disabled
+        ? 'opacity-40 cursor-not-allowed bg-gray-100 text-gray-400'
+        : extraClass
+    }`
+
   return (
     <div className={`bg-white rounded-2xl border p-4 flex gap-3 items-start ${person.at_risk ? 'border-red-200' : 'border-black/10'}`}>
       {/* Avatar */}
@@ -52,7 +125,10 @@ function PersonRow({ person }: { person: ConsolidationPerson }) {
         </div>
 
         {person.email && <p className="text-xs text-gray-400 truncate">{person.email}</p>}
-        {person.phone && <p className="text-xs text-gray-400">{person.phone}</p>}
+        {person.phone
+          ? <p className="text-xs text-gray-400">{person.phone}</p>
+          : <p className="text-xs text-red-400 italic">Sem telefone cadastrado</p>
+        }
 
         <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500">
           {person.conversion_date && (
@@ -73,6 +149,56 @@ function PersonRow({ person }: { person: ConsolidationPerson }) {
             </span>
           )}
         </div>
+
+        {/* Ações rápidas */}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {/* WhatsApp */}
+          {hasPhone ? (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={actionBtn('WhatsApp', false, 'bg-[#e8f9f2] text-[#1D9E75] hover:bg-[#d0f3e6]')}
+              title="Abrir WhatsApp"
+            >
+              <WhatsAppIcon size={14} />
+              WhatsApp
+            </a>
+          ) : (
+            <span className={actionBtn('WhatsApp', true, '')} title="Sem telefone cadastrado">
+              <WhatsAppIcon size={14} />
+              WhatsApp
+            </span>
+          )}
+
+          {/* Ligar */}
+          {hasPhone ? (
+            <a
+              href={telUrl}
+              className={actionBtn('Ligar', false, 'bg-blue-50 text-blue-600 hover:bg-blue-100')}
+              title="Ligar"
+            >
+              <Phone size={13} />
+              Ligar
+            </a>
+          ) : (
+            <span className={actionBtn('Ligar', true, '')} title="Sem telefone cadastrado">
+              <Phone size={13} />
+              Ligar
+            </span>
+          )}
+
+          {/* Copiar */}
+          <button
+            onClick={hasPhone ? handleCopy : undefined}
+            disabled={!hasPhone}
+            className={actionBtn('Copiar', !hasPhone, 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
+            title={hasPhone ? 'Copiar telefone' : 'Sem telefone cadastrado'}
+          >
+            <Copy size={13} />
+            Copiar
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -82,6 +208,11 @@ export default function Consolidation() {
   const { churchId } = useAuth()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'all' | 'at_risk'>('all')
+  const [toast,  setToast]  = useState<ToastState | null>(null)
+
+  function showToast(msg: string) {
+    setToast({ msg, type: 'success', key: Date.now() })
+  }
 
   const { data: people = [], isLoading } = useQuery({
     queryKey: ['consolidation', churchId],
@@ -195,9 +326,13 @@ export default function Consolidation() {
       ) : (
         <div className="space-y-3">
           {filtered.map(person => (
-            <PersonRow key={person.id} person={person} />
+            <PersonRow key={person.id} person={person} onCopy={showToast} />
           ))}
         </div>
+      )}
+
+      {toast && (
+        <Toast key={toast.key} msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />
       )}
     </div>
   )
