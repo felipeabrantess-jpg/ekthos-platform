@@ -12,6 +12,8 @@ import {
   type CareContact,
 } from '@/features/cuidado/hooks/useCareContacts'
 import { usePessoasConversas }  from '@/features/cuidado/hooks/usePessoasConversas'
+import PersonModal              from '@/features/people/components/PersonModal'
+import type { Person }          from '@/lib/types/joins'
 
 // ── People query ──────────────────────────────────────────────────────────────
 
@@ -21,6 +23,7 @@ interface PersonRow {
   phone:           string | null
   name_sort:       string | null
   conversion_date: string | null
+  created_at:      string
 }
 
 function usePeopleForCuidado(churchId: string, search: string) {
@@ -30,7 +33,7 @@ function usePeopleForCuidado(churchId: string, search: string) {
     queryFn: async (): Promise<PersonRow[]> => {
       let q = supabase
         .from('people')
-        .select('id, name, phone, name_sort, conversion_date')
+        .select('id, name, phone, name_sort, conversion_date, created_at')
         .eq('church_id', churchId)
         .is('deleted_at', null)
         .order('name_sort', { ascending: true })
@@ -63,16 +66,21 @@ function waHref(phone: string): string {
   return `https://wa.me/55${phone.replace(/\D/g, '').replace(/^55/, '')}`
 }
 
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 // ── PersonCareRow ─────────────────────────────────────────────────────────────
 
 interface PersonCareRowProps {
-  person:     PersonRow
-  contact:    CareContact | null
-  churchId:   string
-  conversaId: string | null
+  person:       PersonRow
+  contact:      CareContact | null
+  churchId:     string
+  conversaId:   string | null
+  onEditPerson: (personId: string) => void
 }
 
-function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowProps) {
+function PersonCareRow({ person, contact, churchId, conversaId, onEditPerson }: PersonCareRowProps) {
   const navigate     = useNavigate()
   const queryClient  = useQueryClient()
   const todayStr     = new Date().toISOString().split('T')[0]
@@ -127,16 +135,20 @@ function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowP
           {(person.name ?? '?').charAt(0).toUpperCase()}
         </div>
 
-        {/* Nome + telefone — clicável */}
+        {/* Nome (abre cadastro) + telefone/data — expand no restante */}
         <div className="flex-1 min-w-0 cursor-pointer" onClick={handleToggleExpand}>
-          <p className="font-medium text-text-primary truncate" style={{ fontSize: 15 }}>
+          <p
+            className="font-medium text-text-primary truncate hover:underline"
+            style={{ fontSize: 15 }}
+            onClick={e => { e.stopPropagation(); onEditPerson(person.id) }}
+          >
             {person.name ?? '—'}
           </p>
           {byLabel ? (
             <p className="truncate" style={{ fontSize: 11, color: '#0F6E56' }}>{byLabel}</p>
           ) : (
-            <p className="truncate text-text-tertiary" style={{ fontSize: 13 }}>
-              {person.phone ? formatPhone(person.phone) : '—'}
+            <p className="truncate text-text-tertiary" style={{ fontSize: 11 }}>
+              {person.phone ? formatPhone(person.phone) : '—'} · {formatDate(person.created_at)}
             </p>
           )}
         </div>
@@ -290,7 +302,11 @@ function PersonCareRow({ person, contact, churchId, conversaId }: PersonCareRowP
 
 export default function CuidadoPessoas() {
   const { churchId }  = useAuth()
-  const [search, setSearch] = useState('')
+  const [search,        setSearch]        = useState('')
+  const [modalOpen,     setModalOpen]     = useState(false)
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null)
+
+  const queryClient = useQueryClient()
 
   const { data: filtered    = [], isLoading } = usePeopleForCuidado(churchId ?? '', search)
   const { data: contacts    = [] }            = useCareContacts(churchId ?? '')
@@ -299,6 +315,18 @@ export default function CuidadoPessoas() {
   const contactMap     = new Map(contacts.map(c => [c.person_id, c]))
   const contactedCount = contacts.filter(c => c.contacted).length
   const isSearching    = search.trim().length > 0
+
+  async function handleEditPerson(personId: string) {
+    const { data } = await supabase
+      .from('people')
+      .select('*')
+      .eq('id', personId)
+      .single()
+    if (data) {
+      setEditingPerson(data as Person)
+      setModalOpen(true)
+    }
+  }
 
   return (
     <div className="space-y-4 max-w-3xl">
@@ -355,10 +383,22 @@ export default function CuidadoPessoas() {
               contact={contactMap.get(p.id) ?? null}
               churchId={churchId ?? ''}
               conversaId={conversaMap.get(p.id) ?? null}
+              onEditPerson={handleEditPerson}
             />
           ))}
         </div>
       )}
+
+      <PersonModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false)
+          setEditingPerson(null)
+          void queryClient.invalidateQueries({ queryKey: ['people-for-cuidado', churchId] })
+        }}
+        churchId={churchId ?? ''}
+        person={editingPerson}
+      />
     </div>
   )
 }
