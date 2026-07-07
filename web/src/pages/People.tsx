@@ -11,10 +11,9 @@
 
 import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
