@@ -253,18 +253,34 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: 
       onClick={() => onView(person)}
     >
       <td className="px-4 py-3">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
-            {bdayDay !== null && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-                🎂 dia {bdayDay}
-              </span>
+        <div className="flex items-center gap-3">
+          {(person as any).avatar_url ? (
+            <img
+              src={(person as any).avatar_url}
+              alt={person.name ?? ''}
+              className="h-8 w-8 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
+              style={{ background: 'var(--church-primary, var(--color-primary))' }}
+            >
+              {(person.name ?? '?').charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
+              {bdayDay !== null && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  🎂 dia {bdayDay}
+                </span>
+              )}
+            </div>
+            {person.email && (
+              <p className="text-xs text-text-secondary">{person.email}</p>
             )}
           </div>
-          {person.email && (
-            <p className="text-xs text-text-secondary">{person.email}</p>
-          )}
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-text-secondary">
