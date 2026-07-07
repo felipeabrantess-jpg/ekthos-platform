@@ -172,13 +172,21 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirth
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar placeholder */}
-          <div
-            className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-            style={{ background: 'var(--church-primary, var(--color-primary))' }}
-          >
-            {(person.name ?? '?').charAt(0).toUpperCase()}
-          </div>
+          {/* Avatar: foto se disponível, inicial como fallback */}
+          {(person as any).avatar_url ? (
+            <img
+              src={(person as any).avatar_url}
+              alt={person.name ?? ''}
+              className="h-10 w-10 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+              style={{ background: 'var(--church-primary, var(--color-primary))' }}
+            >
+              {(person.name ?? '?').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? '—'}</p>
