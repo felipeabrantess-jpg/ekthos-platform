@@ -49,12 +49,12 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
 
 const TABS: { id: PeopleTab; label: string }[] = [
-  { id: 'geral',         label: 'Visão geral'       },
-  { id: 'aniversarios',  label: 'Aniversários'      },
-  { id: 'novos',         label: 'Novos Visitantes'  },
-  { id: 'convertidos',   label: 'Novos Convertidos' },
-  { id: 'lideres',       label: 'Líderes'           },
-  { id: 'em-risco',      label: 'Em Risco'          },
+  { id: 'geral',         label: 'Visão geral'        },
+  { id: 'aniversarios',  label: 'Aniversários'       },
+  { id: 'novos',         label: 'Novos Visitantes'   },
+  { id: 'convertidos',   label: 'Novos Convertidos'  },
+  { id: 'lideres',       label: 'Líderes'            },
+  { id: 'em-risco',      label: 'Em Risco'           },
 ]
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -97,12 +97,7 @@ function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithSt
   switch (tab) {
     case 'aniversarios': return filterBirthdayThisMonth(people)
     case 'novos':        return people.filter(p => p.person_stage === 'visitante')
-    case 'convertidos': {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
-      return people.filter(p => p.conversion_date != null && p.conversion_date >= cutoff)
-    }
+    case 'convertidos':  return people.filter(p => Boolean(p.conversion_date))
     case 'lideres':      return filterByStage(people, ['lider'])
     case 'em-risco':     return filterByStage(people, ['frequentador'])
     default:             return people
@@ -180,13 +175,21 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirth
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar placeholder */}
-          <div
-            className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-            style={{ background: 'var(--church-primary, var(--color-primary))' }}
-          >
-            {(person.name ?? '?').charAt(0).toUpperCase()}
-          </div>
+          {/* Avatar: foto se disponível, inicial como fallback */}
+          {(person as any).avatar_url ? (
+            <img
+              src={(person as any).avatar_url}
+              alt={person.name ?? ''}
+              className="h-10 w-10 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+              style={{ background: 'var(--church-primary, var(--color-primary))' }}
+            >
+              {(person.name ?? '?').charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? '—'}</p>
@@ -253,18 +256,34 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: 
       onClick={() => onView(person)}
     >
       <td className="px-4 py-3">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
-            {bdayDay !== null && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-                🎂 dia {bdayDay}
-              </span>
+        <div className="flex items-center gap-3">
+          {(person as any).avatar_url ? (
+            <img
+              src={(person as any).avatar_url}
+              alt={person.name ?? ''}
+              className="h-8 w-8 rounded-full object-cover shrink-0"
+            />
+          ) : (
+            <div
+              className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
+              style={{ background: 'var(--church-primary, var(--color-primary))' }}
+            >
+              {(person.name ?? '?').charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
+              {bdayDay !== null && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  🎂 dia {bdayDay}
+                </span>
+              )}
+            </div>
+            {person.email && (
+              <p className="text-xs text-text-secondary">{person.email}</p>
             )}
           </div>
-          {person.email && (
-            <p className="text-xs text-text-secondary">{person.email}</p>
-          )}
         </div>
       </td>
       <td className="px-4 py-3 text-sm text-text-secondary">
@@ -427,33 +446,13 @@ function BirthdayContactCard({ person, contact, churchId, monthRef }: BirthdayCo
 
 export default function People() {
   const { churchId } = useAuth()
-  const navigate      = useNavigate()
-  const queryClient   = useQueryClient()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const validTabs: PeopleTab[] = ['geral', 'aniversarios', 'novos', 'convertidos', 'lideres', 'em-risco']
-  const tabParam = searchParams.get('tab') as PeopleTab | null
-  const [activeTab, setActiveTab] = useState<PeopleTab>(
-    tabParam && validTabs.includes(tabParam) ? tabParam : 'geral'
+  const navigate                            = useNavigate()
+  const [searchParams, setSearchParams]     = useSearchParams()
+  const tabParam                            = searchParams.get('tab') as PeopleTab | null
+  const queryClient                         = useQueryClient()
+  const [activeTab, setActiveTab]           = useState<PeopleTab>(
+    tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'geral'
   )
-
-  useEffect(() => {
-    if (tabParam && validTabs.includes(tabParam) && tabParam !== activeTab) {
-      setActiveTab(tabParam)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabParam])
-
-  // Abre painel da pessoa quando URL tem ?person=<id> (vindo de notificação)
-  const personParam = searchParams.get('person')
-  useEffect(() => {
-    if (!personParam || !people) return
-    const found = people.find(p => p.id === personParam)
-    if (found) {
-      setSelectedPerson(found)
-      setSearchParams(prev => { prev.delete('person'); return prev }, { replace: true })
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [personParam, people])
   const [search, setSearch]         = useState('')
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
@@ -599,6 +598,22 @@ export default function People() {
     [contactsData],
   )
 
+  // Abre painel de detalhe diretamente quando URL tem ?person=UUID
+  // Usado pela notificação in-app que navega para /pessoas?person=<id>
+  useEffect(() => {
+    const personParam = searchParams.get('person')
+    if (!personParam || !people) return
+    const found = people.find(p => p.id === personParam)
+    if (found) {
+      setSelectedPerson(found)
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev)
+        next.delete('person')
+        return next
+      }, { replace: true })
+    }
+  }, [searchParams, people, setSearchParams])
+
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
   function handleView(person: PersonWithStage)  { setSelectedPerson(person) }
@@ -624,16 +639,10 @@ export default function People() {
 
   const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
   const tabFiltered = applyTabFilter(activeTab, allPeople)
-  // Filtro por tag (client-side — person_tags já vem no payload)
-  const tagFiltered = tagFilter
-    ? tabFiltered.filter((p) =>
-        (p.person_tags ?? []).some((pt) => pt.tag_id === tagFilter)
-      )
-    : tabFiltered
   // Para aba novos com período ativo: usa dados do servidor (query dedicada)
   // Para aba novos sem período (all): usa tagFiltered (query principal)
   // Para aba convertidos: sempre usa query server-side (não depende dos 50 da paginação geral)
-  // Para todas as outras abas: usa tagFiltered
+  // Para todas as outras abas: usa tagFiltered com filtro de tag client-side
   const filteredPeople = useMemo(() => {
     if (activeTab === 'novos' && dateFilter !== 'all') {
       return novosServerData ?? []
@@ -641,8 +650,10 @@ export default function People() {
     if (activeTab === 'convertidos') {
       return convertidosServerData ?? []
     }
-    return tagFiltered
-  }, [activeTab, dateFilter, novosServerData, convertidosServerData, tagFiltered])
+    return tagFilter
+      ? tabFiltered.filter(p => (p.person_tags ?? []).some(pt => pt.tag_id === tagFilter))
+      : tabFiltered
+  }, [activeTab, dateFilter, novosServerData, convertidosServerData, tagFilter, tabFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
@@ -652,7 +663,7 @@ export default function People() {
   const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
     geral:        { title: 'Nenhuma pessoa cadastrada', description: 'Adicione a primeira pessoa clicando em "Nova Pessoa".' },
     aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
-    novos:        { title: 'Nenhum novo visitante no período', description: 'Tente ampliar o período ou selecionar "Todos".' },
+    novos:        { title: 'Nenhum novo visitante', description: 'Visitantes cadastrados nos últimos 30 dias aparecerão aqui.' },
     convertidos:  { title: 'Nenhum novo convertido', description: 'Pessoas com data de conversão nos últimos 30 dias aparecerão aqui.' },
     lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
     'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
@@ -699,7 +710,7 @@ export default function People() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0); setSearchParams(tab.id === 'geral' ? {} : { tab: tab.id }) }}
+            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
@@ -724,48 +735,48 @@ export default function People() {
         ))}
       </div>
 
-      {/* Filtro de período — aba Novos Visitantes */}
+      {/* Filtro de período — só na aba novos visitantes */}
       {activeTab === 'novos' && (
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          {(['7', '15', '30', 'all'] as const).map(opt => (
+        <div className="flex flex-wrap items-center gap-2">
+          {(['all', '7', '15', '30'] as const).map((v) => (
             <button
-              key={opt}
+              key={v}
               type="button"
-              onClick={() => setDateFilter(opt)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                dateFilter === opt
-                  ? 'bg-primary-text text-white border-primary-text'
-                  : 'bg-white text-text-secondary border-border-default hover:bg-bg-hover'
+              onClick={() => setDateFilter(v as DateFilter)}
+              className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
+                dateFilter === v
+                  ? 'border-primary text-primary-text bg-bg-hover'
+                  : 'border-border-default text-text-secondary hover:text-text-primary bg-bg-hover'
               }`}
+              style={dateFilter === v ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
             >
-              {opt === 'all' ? 'Todos' : `Últimos ${opt} dias`}
+              {v === 'all' ? 'Todos' : `${v} dias`}
             </button>
           ))}
           <button
             type="button"
             onClick={() => setDateFilter('custom')}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              dateFilter === 'custom'
-                ? 'bg-primary-text text-white border-primary-text'
-                : 'bg-white text-text-secondary border-border-default hover:bg-bg-hover'
+            className={`px-3 py-1.5 rounded-xl text-sm font-medium border border-border-default bg-bg-hover transition-colors ${
+              dateFilter === 'custom' ? 'text-primary-text' : 'text-text-secondary hover:text-text-primary'
             }`}
+            style={dateFilter === 'custom' ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
           >
             Personalizado
           </button>
           {dateFilter === 'custom' && (
-            <div className="flex items-center gap-2 mt-1 w-full sm:w-auto sm:mt-0">
+            <div className="flex items-center gap-2 w-full mt-1">
               <input
                 type="date"
                 value={customFrom}
                 onChange={e => setCustomFrom(e.target.value)}
-                className="px-2 py-1.5 rounded-xl border border-border-default text-xs text-text-primary bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-bg-hover"
               />
-              <span className="text-xs text-text-tertiary">até</span>
+              <span className="text-text-tertiary text-sm">até</span>
               <input
                 type="date"
                 value={customTo}
                 onChange={e => setCustomTo(e.target.value)}
-                className="px-2 py-1.5 rounded-xl border border-border-default text-xs text-text-primary bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-bg-hover"
               />
             </div>
           )}
