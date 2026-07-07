@@ -295,7 +295,7 @@ export default function SetPassword() {
             <Button
               type="submit"
               loading={submitting}
-              disabled={!allValid || confirm !== password}
+              disabled={submitting}
               className="w-full mt-2"
               size="lg"
             >
