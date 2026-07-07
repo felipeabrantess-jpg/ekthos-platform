@@ -186,7 +186,7 @@ Deno.serve(async (req: Request) => {
     // ── 5. Upsert person ──────────────────────────────────
     const { data: existing } = await supabase
       .from('people')
-      .select('id')
+      .select('id, first_visit_date')
       .eq('church_id', churchId)
       .eq('phone', phoneClean)
       .maybeSingle()
@@ -201,6 +201,12 @@ Deno.serve(async (req: Request) => {
       if (name) updates.name = name
       // invitedByName vai para observacoes_pastorais (como_conheceu só aceita enum fixo)
       if (invitedByName) updates.observacoes_pastorais = 'Convidado por: ' + invitedByName
+      // Se first_visit_date nunca foi preenchido (importado sem data de visita),
+      // registra hoje como primeira visita para que o card "Visitantes da Semana" a conte.
+      // Não reclassifica person_stage nem toca em cadastros antigos.
+      if (!existing.first_visit_date) {
+        updates.first_visit_date = new Date().toISOString().split('T')[0]
+      }
 
       const { error: updErr } = await supabase.from('people').update(updates).eq('id', existing.id)
       if (updErr) console.warn('[visitor-capture] UPDATE person falhou (não crítico):', updErr.message)
