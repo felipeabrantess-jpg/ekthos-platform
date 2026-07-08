@@ -9,6 +9,10 @@ export interface CareContact {
   contacted_by: string | null
   contacted_by_name: string
   contacted_at: string
+  next_followup_at:      string | null
+  next_followup_note:    string | null
+  next_followup_by:      string | null
+  next_followup_by_name: string | null
 }
 
 export function useCareContacts(churchId: string) {
@@ -18,7 +22,7 @@ export function useCareContacts(churchId: string) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('care_contacts')
-        .select('id, person_id, contacted, notes, contacted_by, contacted_by_name, contacted_at')
+        .select('id, person_id, contacted, notes, contacted_by, contacted_by_name, contacted_at, next_followup_at, next_followup_note, next_followup_by, next_followup_by_name')
         .eq('church_id', churchId)
       if (error) throw new Error((error as { message: string }).message)
       return ((data as unknown[]) ?? []) as CareContact[]
@@ -28,17 +32,19 @@ export function useCareContacts(churchId: string) {
 }
 
 interface UpsertCareInput {
-  personId:  string
-  churchId:  string
-  contacted: boolean
-  notes:     string
+  personId:         string
+  churchId:         string
+  contacted:        boolean
+  notes:            string
+  nextFollowupAt:   string | null
+  nextFollowupNote: string | null
 }
 
 export function useUpsertCareContact() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ personId, churchId, contacted, notes }: UpsertCareInput) => {
+    mutationFn: async ({ personId, churchId, contacted, notes, nextFollowupAt, nextFollowupNote }: UpsertCareInput) => {
       const { data: { user } } = await supabase.auth.getUser()
       const name =
         (user?.user_metadata?.full_name as string | undefined) ??
@@ -50,13 +56,17 @@ export function useUpsertCareContact() {
         .from('care_contacts')
         .upsert(
           {
-            person_id:         personId,
-            church_id:         churchId,
+            person_id:             personId,
+            church_id:             churchId,
             contacted,
-            notes:             notes || null,
-            contacted_by:      user?.id ?? null,
-            contacted_by_name: name,
-            contacted_at:      new Date().toISOString(),
+            notes:                 notes || null,
+            contacted_by:          user?.id ?? null,
+            contacted_by_name:     name,
+            contacted_at:          new Date().toISOString(),
+            next_followup_at:      nextFollowupAt,
+            next_followup_note:    nextFollowupNote,
+            next_followup_by:      nextFollowupAt ? (user?.id ?? null) : null,
+            next_followup_by_name: nextFollowupAt ? name : null,
           },
           { onConflict: 'person_id,church_id' },
         )

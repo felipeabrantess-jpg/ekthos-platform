@@ -75,6 +75,19 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
+function formatFollowup(iso: string): string {
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
 // ── Filtro de período ─────────────────────────────────────────────────────────
 
 type Period = '7' | '15' | '30' | '365' | 'all'
@@ -104,7 +117,12 @@ function PersonCareRow({ person, contact, churchId, conversaId, onEditPerson }: 
   const [expanded,   setExpanded]  = useState(false)
   const [notes,      setNotes]     = useState(contact?.notes ?? '')
   const [contacted,  setContacted] = useState(contact?.contacted ?? false)
-  const [convDate,   setConvDate]  = useState<string | null>(person.conversion_date ?? null)
+  const [convDate,        setConvDate]        = useState<string | null>(person.conversion_date ?? null)
+  const [followupAt,      setFollowupAt]      = useState(
+    contact?.next_followup_at ? toDatetimeLocal(contact.next_followup_at) : ''
+  )
+  const [followupNote,    setFollowupNote]    = useState(contact?.next_followup_note ?? '')
+  const [editingFollowup, setEditingFollowup] = useState(false)
   const isConverted  = convDate !== null && convDate !== ''
   const upsert = useUpsertCareContact()
 
@@ -119,12 +137,22 @@ function PersonCareRow({ person, contact, churchId, conversaId, onEditPerson }: 
       setNotes(contact?.notes ?? '')
       setContacted(contact?.contacted ?? false)
       setConvDate(person.conversion_date ?? null)
+      setFollowupAt(contact?.next_followup_at ? toDatetimeLocal(contact.next_followup_at) : '')
+      setFollowupNote(contact?.next_followup_note ?? '')
+      setEditingFollowup(false)
     }
     setExpanded(v => !v)
   }
 
   async function handleSave() {
-    await upsert.mutateAsync({ personId: person.id, churchId, contacted, notes })
+    await upsert.mutateAsync({
+      personId:         person.id,
+      churchId,
+      contacted,
+      notes,
+      nextFollowupAt:   followupAt ? new Date(followupAt).toISOString() : null,
+      nextFollowupNote: followupNote || null,
+    })
     await supabase
       .from('people')
       .update({ conversion_date: convDate ?? null })
@@ -287,6 +315,74 @@ function PersonCareRow({ person, contact, churchId, conversaId, onEditPerson }: 
                   className="rounded-lg border border-border-default bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2"
                   style={{ outlineColor: '#670000' }}
                 />
+              </div>
+            )}
+          </div>
+
+          {/* Próximo retorno */}
+          <div className="pt-1 border-t border-border-default space-y-2">
+            <p className="text-xs font-semibold text-text-secondary">Próximo retorno</p>
+            {contact?.next_followup_at && !editingFollowup ? (
+              <div
+                className="rounded-lg p-2.5 space-y-1"
+                style={{ backgroundColor: '#F0F9FF', borderLeft: '3px solid #0EA5E9' }}
+              >
+                <p className="font-medium" style={{ fontSize: 13 }}>
+                  📅 {formatFollowup(contact.next_followup_at)}
+                </p>
+                {contact.next_followup_note && (
+                  <p className="text-text-secondary truncate" style={{ fontSize: 12 }}>
+                    {contact.next_followup_note}
+                  </p>
+                )}
+                <div className="flex items-center gap-3 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFollowupAt(toDatetimeLocal(contact.next_followup_at!))
+                      setFollowupNote(contact.next_followup_note ?? '')
+                      setEditingFollowup(true)
+                    }}
+                    className="text-xs font-medium hover:underline"
+                    style={{ color: '#0EA5E9' }}
+                  >
+                    Remarcar
+                  </button>
+                  <span className="text-text-tertiary" style={{ fontSize: 11 }}>·</span>
+                  <button
+                    type="button"
+                    onClick={() => { setFollowupAt(''); setFollowupNote('') }}
+                    className="text-xs text-text-tertiary hover:text-red-500 transition-colors"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="datetime-local"
+                  value={followupAt}
+                  onChange={e => setFollowupAt(e.target.value)}
+                  className="w-full rounded-lg border border-border-default bg-bg-primary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2"
+                  style={{ colorScheme: 'light' }}
+                />
+                <input
+                  type="text"
+                  value={followupNote}
+                  onChange={e => setFollowupNote(e.target.value)}
+                  placeholder="Observação (opcional)"
+                  className="w-full rounded-lg border border-border-default bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2"
+                />
+                {editingFollowup && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingFollowup(false)}
+                    className="text-xs text-text-tertiary hover:text-text-secondary"
+                  >
+                    Cancelar remarcar
+                  </button>
+                )}
               </div>
             )}
           </div>
