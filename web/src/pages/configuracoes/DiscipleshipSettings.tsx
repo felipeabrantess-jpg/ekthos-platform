@@ -33,6 +33,12 @@ interface Stage {
   is_entry_point: boolean
   is_terminal: boolean
   description: string | null
+  ministry_id: string | null
+}
+
+interface MinistryOption {
+  id: string
+  name: string
 }
 
 interface Template {
@@ -136,9 +142,10 @@ interface StageRowProps {
   onEdit: (stage: Stage) => void
   onDelete: (id: string) => void
   deleting: boolean
+  ministryName: string | null
 }
 
-function StageRow({ stage, onMoveUp, onMoveDown, isFirst, isLast, onEdit, onDelete, deleting }: StageRowProps) {
+function StageRow({ stage, onMoveUp, onMoveDown, isFirst, isLast, onEdit, onDelete, deleting, ministryName }: StageRowProps) {
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 bg-white border border-cream-dark/60 rounded-xl hover:border-cream-dark transition-colors">
       {/* Drag handle (visual only) */}
@@ -165,6 +172,11 @@ function StageRow({ stage, onMoveUp, onMoveDown, isFirst, isLast, onEdit, onDele
         )}
         {stage.sla_hours != null && (
           <span className="text-[10px] text-ekthos-black/40">SLA {stage.sla_hours}h</span>
+        )}
+        {ministryName && (
+          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+            {ministryName}
+          </span>
         )}
       </div>
 
@@ -213,15 +225,17 @@ interface StageFormProps {
   onSave: (data: Omit<Stage, 'id' | 'church_id'>) => void
   onCancel: () => void
   saving: boolean
+  ministries: MinistryOption[]
 }
 
-function StageForm({ initial, onSave, onCancel, saving }: StageFormProps) {
+function StageForm({ initial, onSave, onCancel, saving, ministries }: StageFormProps) {
   const [name, setName]               = useState(initial?.name ?? '')
   const [color, setColor]             = useState(initial?.color ?? '#94a3b8')
   const [slaHours, setSlaHours]       = useState(initial?.sla_hours?.toString() ?? '')
   const [isEntry, setIsEntry]         = useState(initial?.is_entry_point ?? false)
   const [isTerminal, setIsTerminal]   = useState(initial?.is_terminal ?? false)
   const [description, setDescription] = useState(initial?.description ?? '')
+  const [ministryId, setMinistryId]   = useState<string | null>(initial?.ministry_id ?? null)
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -237,6 +251,7 @@ function StageForm({ initial, onSave, onCancel, saving }: StageFormProps) {
       is_entry_point: isEntry,
       is_terminal: isTerminal,
       description: description.trim() || null,
+      ministry_id: ministryId,
     })
   }
 
@@ -321,6 +336,28 @@ function StageForm({ initial, onSave, onCancel, saving }: StageFormProps) {
         />
       </div>
 
+      {/* Ministry */}
+      {ministries.length > 0 && (
+        <div>
+          <label className="text-xs font-medium text-ekthos-black/60 block mb-1">
+            Ministério responsável — opcional
+          </label>
+          <select
+            value={ministryId ?? ''}
+            onChange={e => setMinistryId(e.target.value || null)}
+            className="w-full text-sm bg-white border border-cream-dark rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-200 focus:border-brand-400 text-ekthos-black"
+          >
+            <option value="">Sem ministério</option>
+            {ministries.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+          <p className="text-[10px] text-ekthos-black/35 mt-1">
+            Quando ativado, o responsável deste ministério será notificado ao receber uma pessoa nesta etapa.
+          </p>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-2 pt-1">
         <Button type="submit" variant="primary" className="text-xs py-1.5 px-4" disabled={saving || !name.trim()}>
@@ -363,7 +400,7 @@ export function DiscipleshipSettings() {
         .eq('is_active', true)
         .order('order_index', { ascending: true })
       if (error) throw error
-      return (data ?? []) as Stage[]
+      return (data ?? []) as unknown as Stage[]
     },
     enabled: Boolean(churchId),
   })
@@ -378,6 +415,21 @@ export function DiscipleshipSettings() {
       if (error) throw error
       return (data ?? []) as unknown as Template[]
     },
+  })
+
+  const { data: ministries = [] } = useQuery({
+    queryKey: ['ministries-options', churchId],
+    queryFn: async (): Promise<MinistryOption[]> => {
+      const { data, error } = await supabase
+        .from('ministries')
+        .select('id, name')
+        .eq('church_id', churchId!)
+        .eq('is_active', true)
+        .order('name', { ascending: true })
+      if (error) throw error
+      return (data ?? []) as MinistryOption[]
+    },
+    enabled: Boolean(churchId),
   })
 
   // ── Mutations ─────────────────────────────────────────────────────────────────
@@ -421,6 +473,8 @@ export function DiscipleshipSettings() {
             is_entry_point: payload.is_entry_point,
             is_terminal: payload.is_terminal,
             description: payload.description,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ministry_id: (payload.ministry_id ?? null) as any,
           })
           .eq('id', payload.id)
         if (error) throw error
@@ -575,14 +629,18 @@ export function DiscipleshipSettings() {
                 </div>
               )}
 
-              {stages.map((stage, i) => (
-                editingStage?.id === stage.id ? (
+              {stages.map((stage, i) => {
+                const ministryName = stage.ministry_id
+                  ? (ministries.find(m => m.id === stage.ministry_id)?.name ?? null)
+                  : null
+                return editingStage?.id === stage.id ? (
                   <StageForm
                     key={stage.id}
                     initial={editingStage}
                     onSave={handleSaveEdit}
                     onCancel={() => setEditingStage(null)}
                     saving={saveStageMutation.isPending}
+                    ministries={ministries}
                   />
                 ) : (
                   <StageRow
@@ -596,9 +654,10 @@ export function DiscipleshipSettings() {
                     onEdit={setEditingStage}
                     onDelete={handleDeleteStage}
                     deleting={deletingId === stage.id}
+                    ministryName={ministryName}
                   />
                 )
-              ))}
+              })}
 
               {/* Add form inline */}
               {showAddForm && (
@@ -606,6 +665,7 @@ export function DiscipleshipSettings() {
                   onSave={handleSaveNew}
                   onCancel={() => setShowAddForm(false)}
                   saving={saveStageMutation.isPending}
+                  ministries={ministries}
                 />
               )}
             </div>
