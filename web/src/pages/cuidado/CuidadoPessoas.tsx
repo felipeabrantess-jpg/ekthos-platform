@@ -1,4 +1,4 @@
-import { useState }             from 'react'
+import { useState, useEffect }  from 'react'
 import { useNavigate }          from 'react-router-dom'
 import { Check, Search, ChevronDown, ChevronUp, MessageSquare, Heart } from 'lucide-react'
 import { useQuery, useQueryClient }  from '@tanstack/react-query'
@@ -26,27 +26,32 @@ interface PersonRow {
   created_at:      string
 }
 
-function usePeopleForCuidado(churchId: string, search: string) {
-  const trimmed = search.trim()
+const PAGE_SIZE = 500
+
+function usePeopleForCuidado(churchId: string, search: string, period: Period, offset: number) {
+  const trimmed   = search.trim()
+  const cutoffIso = period !== 'all'
+    ? new Date(Date.now() - Number(period) * 86_400_000).toISOString()
+    : null
+
   return useQuery({
-    queryKey: ['people-for-cuidado', churchId, trimmed],
-    queryFn: async (): Promise<PersonRow[]> => {
+    queryKey: ['people-for-cuidado', churchId, trimmed, period, offset],
+    queryFn: async (): Promise<{ rows: PersonRow[]; hasMore: boolean; fetchedOffset: number }> => {
       let q = supabase
         .from('people')
         .select('id, name, phone, name_sort, conversion_date, created_at')
         .eq('church_id', churchId)
         .is('deleted_at', null)
         .order('name_sort', { ascending: true })
-      if (trimmed) {
-        // Busca no banco — percorre TODOS os registros, não só os carregados
-        q = q.ilike('name', `%${trimmed}%`)
-      } else {
-        // PostgREST default max-rows = 1000; forçar limite alto para carregar todos
-        q = q.limit(10000)
-      }
+        .range(offset, offset + PAGE_SIZE - 1)
+
+      if (trimmed)   q = q.ilike('name', `%${trimmed}%`)
+      if (cutoffIso) q = q.gte('created_at', cutoffIso)
+
       const { data, error } = await q
       if (error) throw new Error(error.message)
-      return (data ?? []) as PersonRow[]
+      const rows = (data ?? []) as unknown as PersonRow[]
+      return { rows, hasMore: rows.length === PAGE_SIZE, fetchedOffset: offset }
     },
     enabled: Boolean(churchId),
     staleTime: 60_000,
@@ -318,24 +323,34 @@ export default function CuidadoPessoas() {
   const [modalOpen,     setModalOpen]     = useState(false)
   const [editingPerson, setEditingPerson] = useState<Person | null>(null)
   const [period,        setPeriod]        = useState<Period>('all')
+  const [pageOffset,    setPageOffset]    = useState(0)
+  const [accRows,       setAccRows]       = useState<PersonRow[]>([])
 
   const queryClient = useQueryClient()
 
-  const { data: filtered    = [], isLoading } = usePeopleForCuidado(churchId ?? '', search)
+  const { data: pageResult, isLoading, isFetching } = usePeopleForCuidado(
+    churchId ?? '', search, period, pageOffset
+  )
   const { data: contacts    = [] }            = useCareContacts(churchId ?? '')
   const { data: conversaMap = new Map() }     = usePessoasConversas(churchId ?? '')
 
-  const contactMap  = new Map(contacts.map(c => [c.person_id, c]))
-  const isSearching = search.trim().length > 0
+  const contactMap     = new Map(contacts.map(c => [c.person_id, c]))
+  const isSearching    = search.trim().length > 0
+  const contactedCount = accRows.filter(p => contactMap.get(p.id)?.contacted).length
 
-  // Filtro de período em memória — funciona em cima do resultado já filtrado por nome
-  const periodMs    = period === 'all' ? null : Number(period) * 86_400_000
-  const now         = Date.now()
-  const displayList = periodMs === null
-    ? filtered
-    : filtered.filter(p => (now - new Date(p.created_at).getTime()) <= periodMs)
+  // Acumula páginas: substitui ao mudar filtros, adiciona ao carregar mais
+  useEffect(() => {
+    if (!pageResult) return
+    setAccRows(prev =>
+      pageResult.fetchedOffset === 0 ? pageResult.rows : [...prev, ...pageResult.rows]
+    )
+  }, [pageResult])
 
-  const contactedCount = displayList.filter(p => contactMap.get(p.id)?.contacted).length
+  // Reseta paginação ao trocar busca ou período
+  useEffect(() => {
+    setPageOffset(0)
+    setAccRows([])
+  }, [search, period])
 
   async function handleEditPerson(personId: string) {
     const { data } = await supabase
@@ -347,6 +362,10 @@ export default function CuidadoPessoas() {
       setEditingPerson(data as Person)
       setModalOpen(true)
     }
+  }
+
+  function handleLoadMore() {
+    setPageOffset(accRows.length)
   }
 
   return (
@@ -361,14 +380,14 @@ export default function CuidadoPessoas() {
               Pessoas
             </p>
             <span className="font-semibold text-text-secondary" style={{ fontSize: 13 }}>
-              {contactedCount} de {displayList.length} contatados
+              {contactedCount} de {accRows.length} contatados
             </span>
           </div>
           <div className="rounded-full overflow-hidden bg-bg-hover" style={{ height: 6 }}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width:           displayList.length > 0 ? `${(contactedCount / displayList.length) * 100}%` : '0%',
+                width:           accRows.length > 0 ? `${(contactedCount / accRows.length) * 100}%` : '0%',
                 backgroundColor: '#1D9E75',
               }}
             />
@@ -409,9 +428,9 @@ export default function CuidadoPessoas() {
       </div>
 
       {/* Lista */}
-      {isLoading ? (
+      {isLoading || (!accRows.length && isFetching) ? (
         <div className="flex justify-center py-10"><Spinner /></div>
-      ) : displayList.length === 0 ? (
+      ) : accRows.length === 0 ? (
         <p className="text-center text-text-tertiary py-10" style={{ fontSize: 14 }}>
           {search
             ? 'Nenhuma pessoa encontrada.'
@@ -421,7 +440,7 @@ export default function CuidadoPessoas() {
         </p>
       ) : (
         <div className="space-y-2">
-          {displayList.map(p => (
+          {accRows.map(p => (
             <PersonCareRow
               key={p.id}
               person={p}
@@ -431,6 +450,20 @@ export default function CuidadoPessoas() {
               onEditPerson={handleEditPerson}
             />
           ))}
+        </div>
+      )}
+
+      {/* Carregar mais */}
+      {pageResult?.hasMore && (
+        <div className="flex justify-center pb-4">
+          <button
+            onClick={handleLoadMore}
+            disabled={isFetching}
+            className="rounded-xl border font-medium text-text-secondary hover:text-text-primary transition-colors disabled:opacity-50"
+            style={{ padding: '8px 24px', fontSize: 13, borderColor: 'var(--border-default)' }}
+          >
+            {isFetching ? 'Carregando...' : 'Carregar mais'}
+          </button>
         </div>
       )}
 
