@@ -37,17 +37,23 @@ export function useUpdatePersonPipelineStage() {
 
       if (existing) {
         // Atualiza etapa + reseta SLA
+        // .select('id') obrigatório: sem ele Supabase retorna {error:null} mesmo quando
+        // RLS bloqueia silenciosamente e 0 linhas são afetadas — impossível detectar a falha.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
+        const { data: updated, error } = await (supabase as any)
           .from('person_pipeline')
           .update({ stage_id: stageId, entered_at: now, last_activity_at: now })
           .eq('person_id', personId)
           .eq('church_id', churchId)
+          .select('id')
         if (error) throw new Error((error as { message: string }).message)
+        if (!updated || (updated as unknown[]).length === 0) {
+          throw new Error('Sem permissão para atualizar esta pessoa. (0 linhas afetadas — possível bloqueio de RLS)')
+        }
       } else {
         // Primeira vez no pipeline
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
+        const { data: inserted, error } = await (supabase as any)
           .from('person_pipeline')
           .insert({
             church_id:        churchId,
@@ -56,7 +62,11 @@ export function useUpdatePersonPipelineStage() {
             entered_at:       now,
             last_activity_at: now,
           })
+          .select('id')
         if (error) throw new Error((error as { message: string }).message)
+        if (!inserted || (inserted as unknown[]).length === 0) {
+          throw new Error('Não foi possível criar o registro de pipeline. (INSERT retornou vazio)')
+        }
       }
 
       // Histórico (fire-and-forget — não bloqueia UI)

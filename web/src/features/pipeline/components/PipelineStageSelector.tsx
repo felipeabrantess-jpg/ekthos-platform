@@ -23,6 +23,7 @@ interface PipelineStageSelectorProps {
 
 export function PipelineStageSelector({ person, churchId }: PipelineStageSelectorProps) {
   const [open, setOpen] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const { data: stages = [] } = usePipelineStages(churchId)
   const updateStage = useUpdatePersonPipelineStage()
@@ -47,7 +48,14 @@ export function PipelineStageSelector({ person, churchId }: PipelineStageSelecto
   function handleSelect(stage: StageWithColor) {
     if (stage.id === currentId) { setOpen(false); return }
     setOpen(false)
-    void updateStage.mutateAsync({ personId: person.id, stageId: stage.id, churchId })
+    setSaveError(null)
+    updateStage
+      .mutateAsync({ personId: person.id, stageId: stage.id, churchId })
+      .catch((e: unknown) => {
+        const msg = e instanceof Error ? e.message : 'Erro desconhecido ao salvar estágio'
+        console.error('[PipelineStageSelector] Falha ao salvar:', msg, { personId: person.id, stageId: stage.id, churchId })
+        setSaveError(msg)
+      })
   }
 
   return (
@@ -80,6 +88,15 @@ export function PipelineStageSelector({ person, churchId }: PipelineStageSelecto
         }
         <ChevronDown size={10} strokeWidth={2} />
       </button>
+
+      {saveError && (
+        <div
+          className="absolute left-0 top-full mt-1 z-50 rounded-lg px-3 py-2 text-xs max-w-[280px]"
+          style={{ background: '#FDE8E0', color: '#C42E00', border: '1px solid #e1350040' }}
+        >
+          <span className="font-semibold">Erro ao salvar:</span> {saveError}
+        </div>
+      )}
 
       {open && (
         <div
