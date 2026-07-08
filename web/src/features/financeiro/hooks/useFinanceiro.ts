@@ -158,6 +158,7 @@ interface CreateDonationInput {
   status?: DonationStatus
   campaign_id?: string | null
   bank_account_id?: string | null
+  culto_type?: string | null
 }
 
 export function useCreateDonation() {
@@ -180,6 +181,8 @@ export function useCreateDonation() {
           campaign_id: input.campaign_id ?? null,
           bank_account_id: input.bank_account_id ?? null,
           receipt_sent: false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          culto_type: (input.culto_type ?? null) as any,
         } as any)
         .select()
         .single()
@@ -1280,5 +1283,61 @@ export function useToggleReconciled() {
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['reconciliation', churchId] })
     },
+  })
+}
+
+export interface ApuracaoCultoRow {
+  data: string         // YYYY-MM-DD
+  culto_type: string
+  dizimo: number
+  oferta: number
+  campanha: number
+  missoes: number
+  construcao: number
+  total: number
+}
+
+export function useApuracaoCultos(churchId: string) {
+  return useQuery({
+    queryKey: ['apuracao-cultos', churchId],
+    queryFn: async (): Promise<ApuracaoCultoRow[]> => {
+      const { data, error } = await (supabase as any)
+        .from('donations')
+        .select('created_at, culto_type, type, amount')
+        .eq('church_id', churchId)
+        .not('culto_type', 'is', null)
+        .order('created_at', { ascending: false })
+
+      if (error) throw new Error((error as { message: string }).message)
+
+      const raw = (data ?? []) as Array<{
+        created_at: string
+        culto_type: string
+        type: string
+        amount: string | number
+      }>
+
+      const map = new Map<string, ApuracaoCultoRow>()
+      for (const row of raw) {
+        const data_dia = row.created_at.slice(0, 10)
+        const key = `${data_dia}__${row.culto_type}`
+        const existing = map.get(key) ?? {
+          data: data_dia,
+          culto_type: row.culto_type,
+          dizimo: 0, oferta: 0, campanha: 0, missoes: 0, construcao: 0, total: 0,
+        }
+        const amt = Number(row.amount)
+        if (row.type === 'dizimo')    existing.dizimo    += amt
+        if (row.type === 'oferta')    existing.oferta    += amt
+        if (row.type === 'campanha')  existing.campanha  += amt
+        if (row.type === 'missoes')   existing.missoes   += amt
+        if (row.type === 'construcao')existing.construcao+= amt
+        existing.total += amt
+        map.set(key, existing)
+      }
+
+      return Array.from(map.values())
+    },
+    enabled: Boolean(churchId),
   })
 }

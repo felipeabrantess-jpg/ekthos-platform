@@ -34,6 +34,7 @@ import {
   useDRE,
   useReconciliation,
   useToggleReconciled,
+  useApuracaoCultos,
   uploadReceipt,
   deleteReceipt,
   getSignedReceiptUrl,
@@ -45,6 +46,7 @@ import {
   type FluxoCaixaData,
   type DREData,
   type ReconciliationItem,
+  type ApuracaoCultoRow,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import Spinner from '@/components/ui/Spinner'
@@ -219,6 +221,7 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAcco
     status: 'pending' as DonationStatus,
     campaign_id: '',
     bank_account_id: '',
+    culto_type: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -243,6 +246,7 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAcco
         status: form.status,
         campaign_id: form.campaign_id || null,
         bank_account_id: form.bank_account_id || null,
+        culto_type: form.culto_type || null,
       })
       onClose()
     } catch (err) {
@@ -325,6 +329,21 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAcco
               <option value="confirmed">Confirmado</option>
             </select>
           </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de culto <span className="text-gray-400 font-normal">(opcional)</span></label>
+          <select
+            value={form.culto_type}
+            onChange={(e) => setForm((p) => ({ ...p, culto_type: e.target.value }))}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Não informado</option>
+            <option value="domingo">Domingo</option>
+            <option value="quarta">Quarta-feira</option>
+            <option value="consagracao">Consagração</option>
+            <option value="seminario">Seminário</option>
+            <option value="outro">Outro</option>
+          </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Observações</label>
@@ -2136,6 +2155,100 @@ function ConciliacaoSection({ churchId, bankAccounts }: ConciliacaoSectionProps)
   )
 }
 
+const CULTO_LABELS: Record<string, string> = {
+  domingo: 'Domingo',
+  quarta: 'Quarta-feira',
+  consagracao: 'Consagração',
+  seminario: 'Seminário',
+  outro: 'Outro',
+}
+
+function ApuracaoCultosSection({ rows }: { rows: ApuracaoCultoRow[] }) {
+  const [mesFilter, setMesFilter] = useState('')
+
+  const filtered = mesFilter
+    ? rows.filter(r => r.data.startsWith(mesFilter))
+    : rows
+
+  const meses = Array.from(new Set(rows.map(r => r.data.slice(0, 7)))).sort((a, b) => b.localeCompare(a))
+
+  const hasData = filtered.length > 0
+
+  function formatDate(d: string) {
+    const [y, m, day] = d.split('-')
+    return `${day}/${m}/${y}`
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-800">Apuração de Cultos</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Entradas agrupadas por data e tipo de culto</p>
+        </div>
+        {meses.length > 0 && (
+          <select
+            value={mesFilter}
+            onChange={e => setMesFilter(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Todos os meses</option>
+            {meses.map(m => {
+              const [y, mo] = m.split('-')
+              const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+              return <option key={m} value={m}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>
+            })}
+          </select>
+        )}
+      </div>
+
+      {!hasData ? (
+        <div className="px-5 py-8 text-center text-sm text-gray-400">
+          Nenhuma apuração encontrada.{' '}
+          {rows.length === 0
+            ? 'Registre doações informando o "Tipo de culto" para vê-las aqui.'
+            : 'Tente selecionar outro mês.'}
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50">
+          {filtered.map(row => {
+            const tiposComValor = [
+              { label: 'Dízimos',    value: row.dizimo },
+              { label: 'Ofertas',    value: row.oferta },
+              { label: 'Campanha',   value: row.campanha },
+              { label: 'Missões',    value: row.missoes },
+              { label: 'Construção', value: row.construcao },
+            ].filter(t => t.value > 0)
+
+            return (
+              <div key={`${row.data}__${row.culto_type}`} className="px-5 py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-semibold text-gray-800">{formatDate(row.data)}</span>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    {CULTO_LABELS[row.culto_type] ?? row.culto_type}
+                  </span>
+                </div>
+                <div className="space-y-1.5 pl-2">
+                  {tiposComValor.map(t => (
+                    <div key={t.label} className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">{t.label}</span>
+                      <span className="text-xs font-medium text-gray-700">{BRL.format(t.value)}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between items-center pt-1.5 border-t border-gray-100 mt-1">
+                    <span className="text-xs font-semibold text-gray-700">Total</span>
+                    <span className="text-sm font-bold text-green-700">{BRL.format(row.total)}</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Financeiro() {
   const { churchId } = useAuth()
   const [createOpen, setCreateOpen] = useState(false)
@@ -2164,6 +2277,7 @@ export default function Financeiro() {
   const { data: receivables } = useReceivables(churchId ?? '')
   const { data: balances } = useBankAccountBalances(churchId ?? '')
   const { data: fluxo } = useFluxoCaixa(churchId ?? '')
+  const { data: apuracaoRows = [] } = useApuracaoCultos(churchId ?? '')
 
   // DRE período
   const todayStr = new Date().toISOString().split('T')[0]
@@ -2288,6 +2402,9 @@ export default function Financeiro() {
           valueColor="text-green-600"
         />
       </div>
+
+      {/* Apuração de Cultos — F2 */}
+      <ApuracaoCultosSection rows={apuracaoRows} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Type Breakdown */}
