@@ -58,6 +58,7 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
+        .is('left_at', null)
 
       // Ordenação: dia do aniversário quando filtrando por mês, senão alfabético
       if (isBirthday) {
