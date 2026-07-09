@@ -50,6 +50,8 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/culto/relatorios': ['admin', 'secretary'],
   '/conversas':   ['admin', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
   '/campanha':      ['admin'],
+  '/agentes':  ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  '/modulos':  ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
   '/configuracoes': ['admin'],
   '/settings':      ['admin'],
 }

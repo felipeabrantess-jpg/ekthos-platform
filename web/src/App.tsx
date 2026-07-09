@@ -488,28 +488,28 @@ export default function App() {
             <Route path="conversas"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
             <Route path="conversas/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
 
-            <Route path="agents" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agents /></Suspense></ErrorBoundary>} />
+            <Route path="agents" element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><Agents /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Lote A: Agentes IA ── */}
-            <Route path="agentes"      element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentsList /></Suspense></ErrorBoundary>} />
-            <Route path="agentes/:slug" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></ErrorBoundary>} />
+            <Route path="agentes"      element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><AgentsList /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="agentes/:slug" element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><AgentDetail /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Frente D: Chat dedicado por agente ── */}
-            <Route path="agentes/:slug/configurar"           element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentConfig /></Suspense></ErrorBoundary>} />
-            <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
-            <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/:slug/configurar"           element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><AgentConfig /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="agentes/:slug/conversar"            element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="agentes/:slug/conversar/:sessionId" element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><AgentChat /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── MEGA-ONDA B: Dashboards de agentes ── */}
-            <Route path="agentes/agent-acolhimento/dashboard"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><AcolhimentoDashboard /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/agent-acolhimento/dashboard"    element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><AcolhimentoDashboard /></Suspense></RoleRoute></ErrorBoundary>} />
             {/* ReengajamentoDashboard route lives in chore/ato1-limpeza (has the page file) */}
-            <Route path="agentes/:slug/aprovacao"                element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ApprovalQueue /></Suspense></ErrorBoundary>} />
+            <Route path="agentes/:slug/aprovacao"                element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><ApprovalQueue /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── MEGA-ONDA B: Consumo + Recargas ── */}
-            <Route path="consumo"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConsumePage /></Suspense></ErrorBoundary>} />
-            <Route path="recargas"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><RecargasPage /></Suspense></ErrorBoundary>} />
+            <Route path="consumo"   element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><ConsumePage /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="recargas"  element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><RecargasPage /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Lote A: Módulos ── */}
-            <Route path="modulos/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></ErrorBoundary>} />
+            <Route path="modulos/:id" element={<ErrorBoundary><RoleRoute path="modulos"><Suspense fallback={<PageLoader />}><ModuleDetail /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Lote A: Configurações reestruturadas ── */}
             <Route path="configuracoes" element={<ErrorBoundary><RoleRoute path="configuracoes"><Suspense fallback={<PageLoader />}><ConfiguracoesLayoutPage /></Suspense></RoleRoute></ErrorBoundary>}>
