@@ -443,10 +443,13 @@ export default function CuidadoPessoas() {
     )
   }, [pageResult])
 
-  // Reseta paginação ao trocar busca ou período
+  // Reseta apenas o offset ao trocar busca ou período.
+  // NÃO limpar accRows aqui: quando o período destino está em cache (staleTime 60s),
+  // Effect1 e Effect2 rodam no mesmo commit — Effect1 preenche, Effect2 apagava,
+  // React Query não refazia busca e a tela ficava em branco até F5.
+  // O Effect de acumulação já substitui accRows via fetchedOffset===0.
   useEffect(() => {
     setPageOffset(0)
-    setAccRows([])
   }, [search, period])
 
   async function handleEditPerson(personId: string) {
