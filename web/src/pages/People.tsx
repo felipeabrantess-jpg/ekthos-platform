@@ -324,12 +324,14 @@ interface BirthdayContactCardProps {
   contact: BirthdayContact | null
   churchId: string
   monthRef: string
+  onNameClick: (person: PersonWithStage) => void
 }
 
 const MONTHS_SHORT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
 
-function BirthdayContactCard({ person, contact, churchId, monthRef }: BirthdayContactCardProps) {
+function BirthdayContactCard({ person, contact, churchId, monthRef, onNameClick }: BirthdayContactCardProps) {
   const toggleContact = useToggleBirthdayContact()
+  const stage = person.person_pipeline?.[0]?.pipeline_stages ?? null
 
   const bday      = person.birth_date ? new Date(person.birth_date + 'T00:00:00') : null
   const dayStr    = bday ? String(bday.getDate()).padStart(2, '0') : '?'
@@ -375,11 +377,27 @@ function BirthdayContactCard({ person, contact, churchId, monthRef }: BirthdayCo
         </span>
       </div>
 
-      {/* 2. Nome + telefone + quem/quando (quando contatado) */}
+      {/* 2. Nome + estágio + telefone + quem/quando (quando contatado) */}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-text-primary truncate" style={{ fontSize: 16 }}>
+        <button
+          type="button"
+          onClick={() => onNameClick(person)}
+          className="font-medium text-text-primary hover:text-brand-600 truncate text-left w-full transition-colors leading-tight"
+          style={{ fontSize: 16 }}
+        >
           {person.name ?? '—'}
-        </p>
+        </button>
+        {stage && (
+          <span
+            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap mt-0.5"
+            style={{
+              backgroundColor: stage.color ? `${stage.color}22` : 'rgba(0,0,0,0.07)',
+              color:           stage.color ?? '#5A5A5A',
+            }}
+          >
+            {stage.name}
+          </span>
+        )}
         {person.phone ? (
           <a
             href={`tel:${person.phone}`}
@@ -954,7 +972,7 @@ export default function People() {
 
           {/* ── Birthday CRM: lista compacta ─────────────────────────────── */}
           {isBirthdayTab ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2 max-w-lg">
               {filteredPeople.map((person) => (
                 <BirthdayContactCard
                   key={person.id}
@@ -962,6 +980,7 @@ export default function People() {
                   contact={contactByPerson.get(person.id) ?? null}
                   churchId={churchId!}
                   monthRef={monthRef}
+                  onNameClick={(p) => handleEdit(p as Person)}
                 />
               ))}
             </div>
