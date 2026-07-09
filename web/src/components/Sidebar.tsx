@@ -47,11 +47,21 @@ const RAIL_ITEMS: { id: Category; Icon: typeof LayoutGrid; label: string }[] = [
   { id: 'config',  Icon: Settings,   label: 'Config.'    },
 ]
 
+// Controle de acesso por papel para os ícones do rail.
+// 'igreja' não precisa de entrada — é visível para todos.
+// Roles ausentes na lista ficam sem esse ícone (ex: treasurer).
+const RAIL_PERMISSIONS: Partial<Record<Category, string[]>> = {
+  agentes: ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  modulos: ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+  config:  ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'],
+}
+
 // ── Rail (64px) ──────────────────────────────────────────────────────────────
 
 interface RailProps {
   active: Category
   onSelect: (c: Category) => void
+  role: string | null
   churchLogoUrl?: string
   churchName?: string
   onLogout: () => void
@@ -60,7 +70,14 @@ interface RailProps {
   drawerOpen: boolean
 }
 
-function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, userInitial, onOpenDrawer, drawerOpen }: RailProps) {
+function SidebarRail({ active, onSelect, role, churchLogoUrl, churchName, onLogout, userInitial, onOpenDrawer, drawerOpen }: RailProps) {
+  const visibleRailItems = RAIL_ITEMS.filter(item => {
+    const allowed = RAIL_PERMISSIONS[item.id]
+    if (!allowed) return true   // 'igreja' — sem restrição de papel
+    if (!role) return false
+    return allowed.includes(role)
+  })
+
   return (
     <div
       className="flex flex-col h-full shrink-0"
@@ -89,7 +106,7 @@ function SidebarRail({ active, onSelect, churchLogoUrl, churchName, onLogout, us
 
       {/* Categoria items */}
       <nav className="flex-1 flex flex-col items-center gap-1 py-3">
-        {RAIL_ITEMS.map(({ id, Icon, label }) => {
+        {visibleRailItems.map(({ id, Icon, label }) => {
           const isActive = active === id
           return (
             <div key={id} className="relative group">
@@ -585,12 +602,21 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
     config:  'Configurações',
   }
 
+  // Garante que localStorage com categoria não autorizada não vaza conteúdo proibido.
+  const isRailCategoryAllowed = (cat: Category): boolean => {
+    const allowed = RAIL_PERMISSIONS[cat]
+    if (!allowed) return true
+    return allowed.includes(role ?? '')
+  }
+  const effectiveCategory: Category = isRailCategoryAllowed(activeCategory) ? activeCategory : 'igreja'
+
   const sidebarContent = (
     <>
       {/* Rail 64px */}
       <SidebarRail
         active={activeCategory}
         onSelect={handleSelectCategory}
+        role={role}
         churchLogoUrl={church?.logo_url ?? undefined}
         churchName={church?.name ?? undefined}
         onLogout={handleLogout}
@@ -615,15 +641,15 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
         >
           <span className="text-[11px] font-bold uppercase tracking-widest truncate"
             style={{ color: 'var(--text-tertiary)' }}>
-            {SUBPANEL_HEADER[activeCategory]}
+            {SUBPANEL_HEADER[effectiveCategory]}
           </span>
-          {activeCategory === 'agentes' && !planLoading && (
+          {effectiveCategory === 'agentes' && !planLoading && (
             <span className="text-[9px] font-semibold ml-2 shrink-0"
               style={{ color: 'var(--text-tertiary)' }}>
               {activeAgentSlugs.length}/{allAgents.length}
             </span>
           )}
-          {activeCategory === 'config' && role && (
+          {effectiveCategory === 'config' && role && (
             <span className="text-[9px] font-semibold ml-2 shrink-0"
               style={{ color: 'var(--text-tertiary)' }}>
               {ROLE_LABELS[role]}
@@ -633,13 +659,13 @@ export default function Sidebar({ isMobileOpen = false, onMobileClose }: Sidebar
 
         {/* Conteúdo scrollável */}
         <nav className="flex-1 overflow-y-auto sidebar-scroll px-2 py-3">
-          {activeCategory === 'igreja'  && <IgrejaSubPanel role={role} enabledModules={enabledModules} />}
-          {activeCategory === 'agentes' && (
+          {effectiveCategory === 'igreja'  && <IgrejaSubPanel role={role} enabledModules={enabledModules} />}
+          {effectiveCategory === 'agentes' && (
             <AgentesSubPanel allAgents={allAgents} hasAgent={hasAgent}
               activeAgentSlugs={activeAgentSlugs} planSlug={planSlug} planLoading={planLoading} />
           )}
-          {activeCategory === 'modulos' && <ModulosSubPanel />}
-          {activeCategory === 'config'  && <ConfigSubPanel />}
+          {effectiveCategory === 'modulos' && <ModulosSubPanel />}
+          {effectiveCategory === 'config'  && <ConfigSubPanel />}
         </nav>
 
         {/* Rodapé: nome + role + tema */}
