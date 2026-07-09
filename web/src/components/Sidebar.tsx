@@ -213,6 +213,13 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
   const enabledItems  = roleFilteredItems.filter(i => !i.moduleKey || enabledModules[i.moduleKey] === true)
   const disabledItems = roleFilteredItems.filter(i => i.moduleKey && enabledModules[i.moduleKey] !== true)
 
+  // Volunteer Pro: aplica o mesmo filtro de role (antes só checava módulo — bug)
+  const roleFilteredVolunteerItems = VOLUNTEER_PRO_NAV.filter(item => {
+    if (!role) return false
+    const allowed = ROUTE_PERMISSIONS[item.path]
+    return (allowed as string[] | undefined)?.includes(role) ?? false
+  })
+
   const navItemBase: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '6px 12px', fontSize: 13, fontWeight: 500,
@@ -293,14 +300,14 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
         </>
       )}
 
-      {/* ── Volunteer Pro (braço separado) — só quando módulo ativo ── */}
-      {enabledModules['volunteer-pro'] === true && (
+      {/* ── Volunteer Pro (braço separado) — módulo ativo E role autorizado ── */}
+      {enabledModules['volunteer-pro'] === true && roleFilteredVolunteerItems.length > 0 && (
         <>
           <p className="text-[9px] font-bold uppercase tracking-[0.15em] px-3 mb-1 mt-4"
             style={{ color: 'var(--text-tertiary)' }}>
             Volunteer Pro
           </p>
-          {VOLUNTEER_PRO_NAV.map(({ path, label, Icon }) => (
+          {roleFilteredVolunteerItems.map(({ path, label, Icon }) => (
             <NavLink
               key={path}
               to={path}
