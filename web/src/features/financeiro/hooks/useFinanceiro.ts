@@ -944,7 +944,7 @@ export function useFluxoCaixa(churchId: string) {
           .reduce((s, r) => s + Number(r.amount), 0)
         const entradas = entDoacoes + entRecebidos
         const saidas = expenses
-          .filter(e => e.expense_date.slice(0, 7) === mes)
+          .filter(e => e.expense_date && e.expense_date.slice(0, 7) === mes)
           .reduce((s, e) => s + Number(e.amount), 0)
         return { mes, label: monthLabel(mes), entradas, saidas, resultado: entradas - saidas }
       })
@@ -1332,7 +1332,7 @@ export function useApuracaoCultos(churchId: string) {
 
       const map = new Map<string, ApuracaoCultoRow>()
       for (const row of raw) {
-        const data_dia = (row.donation_date ?? row.created_at).slice(0, 10)
+        const data_dia = (row.donation_date ?? row.created_at ?? '').slice(0, 10)
         const key = `${data_dia}__${row.culto_type}`
         const existing = map.get(key) ?? {
           data: data_dia,

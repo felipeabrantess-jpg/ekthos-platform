@@ -61,6 +61,17 @@ import type { DonationType, DonationStatus, PaymentMethod, FinancialCampaign } f
 
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
 
+function fmtDonationDate(donationDate: unknown, createdAt: string): string {
+  if (typeof donationDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(donationDate)) {
+    return `${donationDate.slice(8, 10)}/${donationDate.slice(5, 7)}/${donationDate.slice(0, 4)}`
+  }
+  try {
+    const d = new Date(String(createdAt ?? '').replace(' ', 'T'))
+    if (!isNaN(d.getTime())) return d.toLocaleDateString('pt-BR')
+  } catch { /* ignore */ }
+  return '—'
+}
+
 type BadgeVariant = 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple'
 
 function statusBadgeVariant(status: DonationStatus): BadgeVariant {
@@ -2262,8 +2273,9 @@ function ApuracaoCultosSection({ rows }: { rows: ApuracaoCultoRow[] }) {
             <option value="">Todos os meses</option>
             {meses.map(m => {
               const [y, mo] = m.split('-')
-              const label = new Date(Number(y), Number(mo) - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-              return <option key={m} value={m}>{label.charAt(0).toUpperCase() + label.slice(1)}</option>
+              const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+              const label = `${MONTHS_PT[Number(mo) - 1] ?? mo} de ${y}`
+              return <option key={m} value={m}>{label}</option>
             })}
           </select>
         )}
@@ -2854,11 +2866,7 @@ export default function Financeiro() {
                       <Badge label={statusLabel(d.status as DonationStatus)} variant={statusBadgeVariant(d.status as DonationStatus)} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {(() => {
-                        const dd = (d as typeof d & { donation_date?: string | null }).donation_date
-                        if (dd) return dd.split('-').reverse().join('/')
-                        return new Date(d.created_at).toLocaleDateString('pt-BR')
-                      })()}
+                      {fmtDonationDate((d as any).donation_date, d.created_at)}
                     </td>
                     <td className="px-4 py-3">
                       {d.status === 'pending' && (
