@@ -17,7 +17,7 @@ export function useFinanceiroStats(churchId: string) {
     queryKey: ['financeiro-stats', churchId],
     queryFn: async (): Promise<FinanceiroStats> => {
       const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
 
       const [allDonationsConfirmedRes, thisMonthRes, campaignsRes, campaignRaisedRes, pendingRes] = await Promise.all([
         // Todos os confirmados all-time (para totalConfirmedAllTime e byType)
@@ -32,7 +32,7 @@ export function useFinanceiroStats(churchId: string) {
           .select('amount, type')
           .eq('church_id', churchId)
           .eq('status', 'confirmed')
-          .gte('created_at', startOfMonth),
+          .gte('donation_date', startOfMonth),
         // Campanhas ativas
         supabase
           .from('financial_campaigns')
@@ -880,10 +880,10 @@ export function useFluxoCaixa(churchId: string) {
         // Entradas realizadas: donations confirmed nos últimos 6 meses
         supabase
           .from('donations')
-          .select('created_at, amount')
+          .select('donation_date, amount')
           .eq('church_id', churchId)
           .eq('status', 'confirmed')
-          .gte('created_at', sixMonthsAgo),
+          .gte('donation_date', sixMonthsAgo),
         // Saídas realizadas: expenses paga nos últimos 6 meses
         supabase
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -922,7 +922,7 @@ export function useFluxoCaixa(churchId: string) {
       if (projecaoExpRes.error) throw new Error(projecaoExpRes.error.message)
       if (projecaoRecRes.error) throw new Error(projecaoRecRes.error.message)
 
-      type DonRow = { created_at: string; amount: number }
+      type DonRow = { donation_date: string | null; amount: number }
       type ExpRow = { expense_date: string; amount: number }
       type RecRow = { received_date: string | null; amount: number }
       type AmtRow = { amount: number }
@@ -937,7 +937,7 @@ export function useFluxoCaixa(churchId: string) {
 
       const meses: FluxoMes[] = months.map(mes => {
         const entDoacoes = donations
-          .filter(d => d.created_at.slice(0, 7) === mes)
+          .filter(d => d.donation_date && d.donation_date.slice(0, 7) === mes)
           .reduce((s, d) => s + Number(d.amount), 0)
         const entRecebidos = receivables
           .filter(r => r.received_date && r.received_date.slice(0, 7) === mes)
@@ -1038,8 +1038,8 @@ export function useDRE(churchId: string, startDate: string, endDate: string) {
           .select('type, amount')
           .eq('church_id', churchId)
           .eq('status', 'confirmed')
-          .gte('created_at', startDate)
-          .lte('created_at', endDate + 'T23:59:59'),
+          .gte('donation_date', startDate)
+          .lte('donation_date', endDate),
 
         // Receitas realizadas complementares: receivables recebido no período
         supabase
@@ -1315,14 +1315,15 @@ export function useApuracaoCultos(churchId: string) {
     queryFn: async (): Promise<ApuracaoCultoRow[]> => {
       const { data, error } = await (supabase as any)
         .from('donations')
-        .select('created_at, culto_type, type, amount')
+        .select('donation_date, created_at, culto_type, type, amount')
         .eq('church_id', churchId)
         .not('culto_type', 'is', null)
-        .order('created_at', { ascending: false })
+        .order('donation_date', { ascending: false })
 
       if (error) throw new Error((error as { message: string }).message)
 
       const raw = (data ?? []) as Array<{
+        donation_date: string | null
         created_at: string
         culto_type: string
         type: string
@@ -1331,7 +1332,7 @@ export function useApuracaoCultos(churchId: string) {
 
       const map = new Map<string, ApuracaoCultoRow>()
       for (const row of raw) {
-        const data_dia = row.created_at.slice(0, 10)
+        const data_dia = (row.donation_date ?? row.created_at).slice(0, 10)
         const key = `${data_dia}__${row.culto_type}`
         const existing = map.get(key) ?? {
           data: data_dia,
