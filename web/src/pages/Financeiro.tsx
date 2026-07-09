@@ -35,6 +35,7 @@ import {
   useReconciliation,
   useToggleReconciled,
   useApuracaoCultos,
+  useRelatorioMensal,
   uploadReceipt,
   deleteReceipt,
   getSignedReceiptUrl,
@@ -47,6 +48,7 @@ import {
   type DREData,
   type ReconciliationItem,
   type ApuracaoCultoRow,
+  type RelatorioMensalData,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
@@ -1480,6 +1482,230 @@ function DRETotalLinha({ label, valor, color }: { label: string; valor: number; 
   )
 }
 
+// ── Relatório Mensal (F3-C) ──────────────────────────────────────────────────
+
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+function fmtDateRel(d: string): string {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return '—'
+  return `${d.slice(8, 10)}/${d.slice(5, 7)}`
+}
+
+function RelatorioMensalSection({ churchId }: { churchId: string }) {
+  const today = new Date()
+  const todayMes = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+  // Todos os hooks ANTES de qualquer return condicional
+  const [mes, setMes] = useState(todayMes)
+  const [unitId, setUnitId] = useState<string | null>(null)
+
+  const { data: units = [] } = useChurchUnits(churchId)
+  const { data: relatorio, isLoading, isError } = useRelatorioMensal(churchId, unitId, mes)
+
+  const unitLabel = unitId
+    ? (units.find(u => u.id === unitId)?.name ?? unitId)
+    : 'Todas as Unidades'
+  const [mesY, mesM] = mes.split('-')
+  const mesLabel = `${MESES_PT[parseInt(mesM, 10) - 1] ?? mesM}/${mesY}`
+
+  function handlePrint() {
+    if (!relatorio) return
+    const f = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+    const fmtFull = (d: string) => {
+      if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return '—'
+      return `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`
+    }
+
+    const rows = relatorio.linhas.map(l =>
+      `<tr>
+        <td>${fmtFull(l.data)}</td>
+        <td>${l.historico}</td>
+        <td class="money">${l.entrada !== null ? f(l.entrada) : ''}</td>
+        <td class="money">${l.saida !== null ? f(l.saida) : ''}</td>
+      </tr>`
+    ).join('')
+
+    const prevLastDayPrint = new Date(parseInt(mesY, 10), parseInt(mesM, 10) - 1, 0).getDate()
+    const prevMonthNumPrint = parseInt(mesM, 10) === 1 ? 12 : parseInt(mesM, 10) - 1
+    const prevYearPrint = parseInt(mesM, 10) === 1 ? parseInt(mesY, 10) - 1 : parseInt(mesY, 10)
+    const saldoAntDateStr = `${String(prevLastDayPrint).padStart(2, '0')}/${String(prevMonthNumPrint).padStart(2, '0')}/${prevYearPrint}`
+
+    const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Relatório ${unitLabel} — ${mesLabel}</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{font-family:system-ui,sans-serif;margin:0;padding:2cm;font-size:11px;color:#111}
+h1{font-size:14px;font-weight:700;margin:0 0 2px;text-transform:uppercase;text-align:center}
+.sub{font-size:10px;color:#555;text-align:center;margin:0 0 16px}
+table{width:100%;border-collapse:collapse}
+th{background:#f3f4f6;font-size:9px;text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;text-align:left;border-bottom:2px solid #d1d5db}
+td{padding:4px 8px;border-bottom:1px solid #e5e7eb;font-size:11px}
+.money{text-align:right;font-variant-numeric:tabular-nums}
+tr.saldo-ant td{background:#eff6ff;font-weight:600}
+tr.total td{border-top:2px solid #374151;font-weight:700;background:#f9fafb}
+tr.saldo-final td{background:#ecfdf5;font-weight:700;font-size:12px}
+.assinaturas{display:flex;gap:60px;margin-top:40px;justify-content:center}
+.ass-box{text-align:center;min-width:180px}
+.ass-line{border-top:1px solid #374151;padding-top:6px;font-size:10px;font-weight:600;text-transform:uppercase}
+@media print{@page{margin:1.5cm}body{padding:0}}
+</style></head><body>
+<h1>IGV ${unitLabel} — Relatório Financeiro</h1>
+<p class="sub">Período: ${mesLabel}</p>
+<table>
+<thead><tr><th>Data</th><th>Histórico</th><th class="money">Entrada</th><th class="money">Saída</th></tr></thead>
+<tbody>
+<tr class="saldo-ant"><td>${saldoAntDateStr}</td>
+  <td>SALDO ANTERIOR</td><td class="money">${f(relatorio.saldo_anterior)}</td><td></td></tr>
+${rows}
+<tr class="total"><td colspan="2">TOTAL ENTRADA</td><td class="money">${f(relatorio.total_entrada)}</td><td></td></tr>
+<tr class="total"><td colspan="2">TOTAL SAÍDA</td><td></td><td class="money">${f(relatorio.total_saida)}</td></tr>
+<tr class="saldo-final"><td colspan="2">SALDO FINAL</td><td class="money" colspan="2">${f(relatorio.saldo_final)}</td></tr>
+</tbody></table>
+<div class="assinaturas">
+  <div class="ass-box"><div style="height:50px"></div><div class="ass-line">Tesoureiro</div></div>
+  <div class="ass-box"><div style="height:50px"></div><div class="ass-line">Pr. Titular</div></div>
+</div>
+</body></html>`
+
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:850px;height:600px;border:none'
+    document.body.appendChild(iframe)
+    const iDoc = iframe.contentDocument ?? iframe.contentWindow?.document
+    if (!iDoc) { document.body.removeChild(iframe); return }
+    iDoc.open(); iDoc.write(html); iDoc.close()
+    const remove = () => { if (document.body.contains(iframe)) document.body.removeChild(iframe) }
+    iframe.contentWindow?.focus()
+    setTimeout(() => {
+      iframe.contentWindow?.print()
+      if (iframe.contentWindow) iframe.contentWindow.onafterprint = remove
+      setTimeout(remove, 30000)
+    }, 250)
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700">Relatório Mensal</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Extrato dia a dia · {unitLabel} · {mesLabel}</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Seletor de unidade */}
+          <select
+            value={unitId ?? ''}
+            onChange={e => setUnitId(e.target.value || null)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="">Todas</option>
+            {units.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+
+          {/* Seletor de mês */}
+          <input
+            type="month"
+            value={mes}
+            onChange={e => setMes(e.target.value)}
+            className="rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          {/* Imprimir */}
+          <button
+            type="button"
+            onClick={handlePrint}
+            disabled={!relatorio}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Imprimir / PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Body */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : isError ? (
+        <div className="px-5 py-8 text-center text-sm text-red-500">Não foi possível carregar o relatório. Tente recarregar a página.</div>
+      ) : !relatorio ? null : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-20">Data</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Histórico</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-green-600 uppercase tracking-wide w-36">Entrada</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-red-500 uppercase tracking-wide w-36">Saída</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Saldo anterior */}
+              <tr className="bg-blue-50 border-b border-blue-100 font-semibold">
+                <td className="px-4 py-2.5 text-sm text-blue-700">
+                  {(() => {
+                    const prev = parseInt(mesM, 10) === 1
+                      ? `${parseInt(mesY, 10) - 1}-12`
+                      : `${mesY}-${String(parseInt(mesM, 10) - 1).padStart(2, '0')}`
+                    const ld = new Date(parseInt(mesY, 10), parseInt(mesM, 10) - 1, 0).getDate()
+                    return `${String(ld).padStart(2, '0')}/${prev.slice(5, 7)}`
+                  })()}
+                </td>
+                <td className="px-4 py-2.5 text-sm text-blue-700">Saldo Anterior</td>
+                <td className="px-4 py-2.5 text-sm text-right text-blue-700 font-mono">{BRL.format(relatorio.saldo_anterior)}</td>
+                <td className="px-4 py-2.5" />
+              </tr>
+
+              {/* Linhas do mês */}
+              {relatorio.linhas.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">
+                    Nenhum lançamento realizado neste período.
+                  </td>
+                </tr>
+              ) : relatorio.linhas.map((l, i) => (
+                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="px-4 py-2.5 text-sm text-gray-500">{fmtDateRel(l.data)}</td>
+                  <td className="px-4 py-2.5 text-sm text-gray-700">{l.historico}</td>
+                  <td className="px-4 py-2.5 text-sm text-right text-green-600 font-mono">
+                    {l.entrada !== null ? BRL.format(l.entrada) : ''}
+                  </td>
+                  <td className="px-4 py-2.5 text-sm text-right text-red-500 font-mono">
+                    {l.saida !== null ? BRL.format(l.saida) : ''}
+                  </td>
+                </tr>
+              ))}
+
+              {/* Totais */}
+              <tr className="bg-gray-50 border-t-2 border-gray-200 font-semibold">
+                <td colSpan={2} className="px-4 py-3 text-sm text-gray-700 text-right">Total Entrada</td>
+                <td className="px-4 py-3 text-sm text-right text-green-600 font-mono font-bold">{BRL.format(relatorio.total_entrada)}</td>
+                <td className="px-4 py-3" />
+              </tr>
+              <tr className="bg-gray-50 border-b border-gray-200 font-semibold">
+                <td colSpan={2} className="px-4 py-3 text-sm text-gray-700 text-right">Total Saída</td>
+                <td className="px-4 py-3" />
+                <td className="px-4 py-3 text-sm text-right text-red-500 font-mono font-bold">{BRL.format(relatorio.total_saida)}</td>
+              </tr>
+              <tr className={`font-bold ${relatorio.saldo_final >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                <td colSpan={2} className={`px-4 py-3 text-sm text-right ${relatorio.saldo_final >= 0 ? 'text-green-700' : 'text-red-700'}`}>Saldo Final</td>
+                <td className={`px-4 py-3 text-sm text-right font-mono font-bold text-lg ${relatorio.saldo_final >= 0 ? 'text-green-700' : 'text-red-700'}`} colSpan={2}>
+                  {BRL.format(relatorio.saldo_final)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface DRESectionProps {
   churchId: string
   startDate: string
@@ -2443,6 +2669,9 @@ export default function Financeiro() {
         endDate={dreEnd}
         onChangePeriod={(s, e) => { setDreStart(s); setDreEnd(e) }}
       />
+
+      {/* Relatório Mensal — F3-C */}
+      <RelatorioMensalSection churchId={churchId} />
 
       {/* Conciliação Bancária — 2D-1 */}
       <ConciliacaoSection
