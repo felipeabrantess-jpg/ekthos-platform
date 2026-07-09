@@ -1354,3 +1354,158 @@ export function useApuracaoCultos(churchId: string) {
     enabled: Boolean(churchId),
   })
 }
+
+// ── Relatório Mensal (F3-C) ───────────────────────────────────────────────────
+
+export interface RelatorioMensalLinha {
+  data: string        // 'YYYY-MM-DD' ou '' se nulo
+  historico: string
+  entrada: number | null
+  saida: number | null
+}
+
+export interface RelatorioMensalData {
+  saldo_anterior: number
+  linhas: RelatorioMensalLinha[]
+  total_entrada: number
+  total_saida: number
+  saldo_final: number
+}
+
+const DON_LABEL_REL: Record<string, string> = {
+  dizimo: 'Dízimo', oferta: 'Oferta', campanha: 'Campanha',
+  missoes: 'Missões', construcao: 'Construção',
+}
+
+export function useRelatorioMensal(
+  churchId: string,
+  unitId: string | null,   // null = sem filtro de unidade ("Todas")
+  mes: string,             // 'YYYY-MM'
+) {
+  return useQuery({
+    queryKey: ['relatorio-mensal', churchId, unitId, mes],
+    queryFn: async (): Promise<RelatorioMensalData> => {
+      const [y, m] = mes.split('-')
+      const year  = parseInt(y, 10)
+      const month = parseInt(m, 10)
+
+      // Último dia do mês selecionado (aritmética de calendário — não é data de banco)
+      const lastDayOfMonth = new Date(year, month, 0).getDate()
+      const startOfMonth   = `${mes}-01`
+      const endOfMonth     = `${mes}-${String(lastDayOfMonth).padStart(2, '0')}`
+
+      // Último dia do mês anterior
+      const prevYear     = month === 1 ? year - 1 : year
+      const prevMonthNum = month === 1 ? 12 : month - 1
+      const prevMonthStr = `${prevYear}-${String(prevMonthNum).padStart(2, '0')}`
+      const lastDayOfPrev = new Date(year, month - 1, 0).getDate()
+      const endOfPrevMonth = `${prevMonthStr}-${String(lastDayOfPrev).padStart(2, '0')}`
+
+      // Helper: adiciona filtro de unidade apenas quando selecionada
+      const addUnit = (q: any) => unitId ? q.eq('unit_id', unitId) : q
+
+      const [
+        bankRes,
+        donPrevRes, recPrevRes, expPrevRes,
+        donCurRes,  recCurRes,  expCurRes,
+      ] = await Promise.all([
+        // Saldo inicial das contas (bank_accounts não tem unit_id — inclui todas)
+        supabase
+          .from('bank_accounts' as any)
+          .select('initial_balance')
+          .eq('church_id', churchId)
+          .eq('is_active', true),
+
+        // Entradas até fim do mês anterior (para saldo anterior)
+        addUnit(supabase.from('donations')
+          .select('amount').eq('church_id', churchId)
+          .eq('status', 'confirmed').lte('donation_date', endOfPrevMonth)),
+
+        addUnit(supabase.from('receivables' as any)
+          .select('amount').eq('church_id', churchId)
+          .eq('status', 'recebido').not('received_date', 'is', null)
+          .lte('received_date', endOfPrevMonth)),
+
+        addUnit(supabase.from('expenses' as any)
+          .select('amount').eq('church_id', churchId)
+          .eq('status', 'paga').lte('expense_date', endOfPrevMonth)),
+
+        // Doações do mês
+        addUnit(supabase.from('donations')
+          .select('donation_date, type, amount')
+          .eq('church_id', churchId).eq('status', 'confirmed')
+          .gte('donation_date', startOfMonth).lte('donation_date', endOfMonth)
+          .order('donation_date', { ascending: true })),
+
+        // Recebíveis do mês
+        addUnit(supabase.from('receivables' as any)
+          .select('received_date, description, amount')
+          .eq('church_id', churchId).eq('status', 'recebido')
+          .not('received_date', 'is', null)
+          .gte('received_date', startOfMonth).lte('received_date', endOfMonth)
+          .order('received_date', { ascending: true })),
+
+        // Despesas do mês
+        addUnit(supabase.from('expenses' as any)
+          .select('expense_date, description, amount')
+          .eq('church_id', churchId).eq('status', 'paga')
+          .gte('expense_date', startOfMonth).lte('expense_date', endOfMonth)
+          .order('expense_date', { ascending: true })),
+      ])
+
+      if (donPrevRes.error) throw new Error(donPrevRes.error.message)
+      if (recPrevRes.error) throw new Error(recPrevRes.error.message)
+      if (expPrevRes.error) throw new Error(expPrevRes.error.message)
+      if (donCurRes.error)  throw new Error(donCurRes.error.message)
+      if (recCurRes.error)  throw new Error(recCurRes.error.message)
+      if (expCurRes.error)  throw new Error(expCurRes.error.message)
+
+      // Saldo anterior: saldo inicial das contas + entradas acumuladas - saídas acumuladas
+      const bankInitial = !bankRes.error
+        ? ((bankRes.data ?? []) as any[]).reduce((s, b) => s + Number(b.initial_balance ?? 0), 0)
+        : 0
+      const donPrevTotal = ((donPrevRes.data ?? []) as any[]).reduce((s, d) => s + Number(d.amount), 0)
+      const recPrevTotal = ((recPrevRes.data ?? []) as any[]).reduce((s, r) => s + Number(r.amount), 0)
+      const expPrevTotal = ((expPrevRes.data ?? []) as any[]).reduce((s, e) => s + Number(e.amount), 0)
+      const saldo_anterior = bankInitial + donPrevTotal + recPrevTotal - expPrevTotal
+
+      // Linhas do mês
+      const entradas: RelatorioMensalLinha[] = [
+        ...((donCurRes.data ?? []) as any[]).map(d => ({
+          data: String(d.donation_date ?? ''),
+          historico: DON_LABEL_REL[String(d.type ?? '')] ?? String(d.type ?? 'Doação'),
+          entrada: Number(d.amount),
+          saida: null,
+        })),
+        ...((recCurRes.data ?? []) as any[]).map(r => ({
+          data: String(r.received_date ?? ''),
+          historico: String(r.description ?? 'Recebível'),
+          entrada: Number(r.amount),
+          saida: null,
+        })),
+      ]
+
+      const saidas: RelatorioMensalLinha[] = ((expCurRes.data ?? []) as any[]).map(e => ({
+        data: String(e.expense_date ?? ''),
+        historico: String(e.description ?? 'Despesa'),
+        entrada: null,
+        saida: Number(e.amount),
+      }))
+
+      // Ordenar por data (string compare — sem new Date pra evitar timezone)
+      const linhas = [...entradas, ...saidas].sort((a, b) => {
+        const ad = a.data || '9999-99-99'
+        const bd = b.data || '9999-99-99'
+        return ad.localeCompare(bd)
+      })
+
+      const total_entrada = entradas.reduce((s, l) => s + (l.entrada ?? 0), 0)
+      const total_saida   = saidas.reduce((s, l) => s + (l.saida ?? 0), 0)
+      const saldo_final   = saldo_anterior + total_entrada - total_saida
+
+      return { saldo_anterior, linhas, total_entrada, total_saida, saldo_final }
+    },
+    enabled: Boolean(churchId) && Boolean(mes),
+  })
+}
+
