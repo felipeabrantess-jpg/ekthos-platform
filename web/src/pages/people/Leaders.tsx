@@ -308,6 +308,7 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
         .select('id, name, email')
         .eq('church_id', churchId)
         .is('deleted_at', null)
+        .is('left_at', null)
         .limit(8)
       if (personSearch.trim().length > 0) {
         q = q.ilike('name', `%${personSearch}%`)
@@ -486,6 +487,7 @@ export default function Leaders() {
         .from('people')
         .select('id, name, email, phone, avatar_url')
         .in('id', Array.from(personIds))
+        .is('left_at', null)
 
       if (!people) return []
 

@@ -537,6 +537,7 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
         .eq('church_id', churchId)
         .ilike('name', `%${personSearch}%`)
         .is('deleted_at', null)
+        .is('left_at', null)
         .limit(8)
       return (data ?? []) as PersonResult[]
     },
@@ -725,7 +726,7 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
     queryFn: async () => {
       if (responsibleSearch.trim().length < 2) return []
       const { data } = await supabase.from('people').select('id, name, email, phone')
-        .eq('church_id', churchId).ilike('name', `%${responsibleSearch}%`).is('deleted_at', null).limit(8)
+        .eq('church_id', churchId).ilike('name', `%${responsibleSearch}%`).is('deleted_at', null).is('left_at', null).limit(8)
       return (data ?? []) as PersonResult[]
     },
     enabled: responsibleSearch.trim().length >= 2,
