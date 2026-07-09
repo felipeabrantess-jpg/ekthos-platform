@@ -2854,7 +2854,11 @@ export default function Financeiro() {
                       <Badge label={statusLabel(d.status as DonationStatus)} variant={statusBadgeVariant(d.status as DonationStatus)} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {new Date(d.created_at).toLocaleDateString('pt-BR')}
+                      {(() => {
+                        const dd = (d as typeof d & { donation_date?: string | null }).donation_date
+                        if (dd) return dd.split('-').reverse().join('/')
+                        return new Date(d.created_at).toLocaleDateString('pt-BR')
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       {d.status === 'pending' && (
