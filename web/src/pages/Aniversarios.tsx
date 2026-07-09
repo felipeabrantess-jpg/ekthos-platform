@@ -2,23 +2,33 @@
 // Aniversários — próximos 30 dias (nascimento, casamento, batismo)
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Gift } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
-import { useAuth } from '@/hooks/useAuth'
-import Spinner from '@/components/ui/Spinner'
-import EmptyState from '@/components/ui/EmptyState'
-import ErrorState from '@/components/ui/ErrorState'
+import { useState }                from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Gift }                    from 'lucide-react'
+import { supabase }                from '@/lib/supabase'
+import { useAuth }                 from '@/hooks/useAuth'
+import Spinner                     from '@/components/ui/Spinner'
+import EmptyState                  from '@/components/ui/EmptyState'
+import ErrorState                  from '@/components/ui/ErrorState'
+import PersonModal                 from '@/features/people/components/PersonModal'
+import type { Person }             from '@/lib/types/joins'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface StageInfo {
+  id:    string
+  name:  string
+  slug:  string
+  color: string | null
+}
+
 interface AnniversaryPerson {
-  id: string
-  name: string | null
-  birth_date: string | null
-  wedding_date: string | null
-  baptism_date: string | null
+  id:            string
+  name:          string | null
+  birth_date:    string | null
+  wedding_date:  string | null
+  baptism_date:  string | null
+  person_pipeline?: Array<{ pipeline_stages: StageInfo | null }>
 }
 
 type DateField = 'birth_date' | 'wedding_date' | 'baptism_date'
@@ -90,23 +100,42 @@ function DaysBadge({ days }: { days: number }) {
   )
 }
 
+function StageBadge({ stage }: { stage: StageInfo | null | undefined }) {
+  if (!stage) return null
+  return (
+    <span
+      className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap shrink-0"
+      style={{
+        backgroundColor: stage.color ? `${stage.color}22` : 'rgba(0,0,0,0.07)',
+        color:           stage.color ?? 'var(--color-text-secondary, #5A5A5A)',
+      }}
+    >
+      {stage.name}
+    </span>
+  )
+}
+
 function PersonCard({
   person,
   field,
+  onNameClick,
 }: {
-  person: PersonWithDays
-  field: DateField
+  person:      PersonWithDays
+  field:       DateField
+  onNameClick: (id: string) => void
 }) {
   const isToday = person.daysUntil === 0
+  const stage   = person.person_pipeline?.[0]?.pipeline_stages ?? null
+
   return (
     <div
-      className={`bg-cream-light rounded-2xl border shadow-sm p-4 flex items-center gap-4 transition-shadow hover:shadow-md ${
+      className={`bg-cream-light rounded-xl border shadow-sm p-3 flex items-center gap-3 transition-shadow hover:shadow-md ${
         isToday ? 'border-brand-200 bg-brand-50/30' : 'border-cream-dark/50'
       }`}
     >
       {/* Avatar */}
       <div
-        className="h-11 w-11 rounded-full flex items-center justify-center shrink-0 text-base font-bold text-white"
+        className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
         style={{ background: 'var(--church-primary, var(--color-primary))' }}
       >
         {getInitial(person.name)}
@@ -114,12 +143,19 @@ function PersonCard({
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-ekthos-black truncate">
+        <button
+          type="button"
+          onClick={() => onNameClick(person.id)}
+          className="text-sm font-semibold text-ekthos-black hover:text-brand-600 truncate text-left w-full transition-colors leading-tight"
+        >
           {person.name ?? '—'}
-        </p>
-        <p className="text-xs text-ekthos-black/40 mt-0.5">
-          {formatDateShort(person[field]!)}
-        </p>
+        </button>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <p className="text-xs text-ekthos-black/40 shrink-0">
+            {formatDateShort(person[field]!)}
+          </p>
+          <StageBadge stage={stage} />
+        </div>
       </div>
 
       {/* Days badge */}
@@ -144,9 +180,12 @@ function useAnniversaries(churchId: string) {
   return useQuery({
     queryKey: ['aniversarios', churchId],
     queryFn: async (): Promise<AnniversaryPerson[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('people')
-        .select('id, name, birth_date, wedding_date, baptism_date')
+        .select(`
+          id, name, birth_date, wedding_date, baptism_date,
+          person_pipeline ( pipeline_stages ( id, name, slug, color ) )
+        `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
       if (error) throw error
@@ -160,9 +199,27 @@ function useAnniversaries(churchId: string) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Aniversarios() {
-  const { churchId } = useAuth()
-  const [activeTab, setActiveTab] = useState<Tab>('birth')
+  const { churchId }  = useAuth()
+  const queryClient   = useQueryClient()
+
+  // Todos os hooks antes de qualquer return condicional
+  const [activeTab,     setActiveTab]     = useState<Tab>('birth')
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null)
+  const [modalOpen,     setModalOpen]     = useState(false)
+
   const { data: people, isLoading, isError, refetch } = useAnniversaries(churchId ?? '')
+
+  async function handleEditPerson(personId: string) {
+    const { data } = await supabase
+      .from('people')
+      .select('*')
+      .eq('id', personId)
+      .single()
+    if (data) {
+      setEditingPerson(data as Person)
+      setModalOpen(true)
+    }
+  }
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -219,12 +276,28 @@ export default function Aniversarios() {
           description="Certifique-se de que as datas estão cadastradas nos perfis das pessoas."
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="flex flex-col gap-2 max-w-lg">
           {list.map(p => (
-            <PersonCard key={p.id} person={p} field={tab.field} />
+            <PersonCard
+              key={p.id}
+              person={p}
+              field={tab.field}
+              onNameClick={handleEditPerson}
+            />
           ))}
         </div>
       )}
+
+      <PersonModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false)
+          setEditingPerson(null)
+          void queryClient.invalidateQueries({ queryKey: ['aniversarios', churchId] })
+        }}
+        churchId={churchId}
+        person={editingPerson}
+      />
     </div>
   )
 }
