@@ -227,6 +227,8 @@ export default function CampanhaBlast() {
       .from('people')
       .select('id, name, phone')
       .eq('church_id', churchId)
+      .is('deleted_at', null)
+      .is('left_at', null)
       .not('phone', 'is', null)
       .neq('phone', '')
       .order('name', { ascending: true })

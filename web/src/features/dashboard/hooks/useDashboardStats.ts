@@ -42,7 +42,8 @@ export function useDashboardStats(churchId: string) {
           .from('people')
           .select('*', { count: 'exact', head: true })
           .eq('church_id', churchId)
-          .is('deleted_at', null),
+          .is('deleted_at', null)
+          .is('left_at', null),
 
         // Novos este mês
         supabase
@@ -50,6 +51,7 @@ export function useDashboardStats(churchId: string) {
           .select('*', { count: 'exact', head: true })
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .gte('created_at', firstDayOfMonth),
 
         // Pessoas por stage (pipeline summary)

@@ -114,7 +114,8 @@ export function usePastoralDashboard(churchId: string) {
           .from('people')
           .select('person_stage')
           .eq('church_id', churchId)
-          .is('deleted_at', null),
+          .is('deleted_at', null)
+          .is('left_at', null),
 
         // W1: novos visitantes dos últimos 30 dias — first_visit_date OU (null + created_at)
         // Mesmo critério da lista /pessoas?tab=novos&periodo=30 para garantir consistência.
@@ -124,6 +125,7 @@ export function usePastoralDashboard(churchId: string) {
           .select('id', { count: 'exact', head: true })
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .eq('person_stage', 'visitante')
           .or(`first_visit_date.gte.${thirtyDaysAgo.toISOString().slice(0, 10)},and(first_visit_date.is.null,created_at.gte.${thirtyDaysAgo.toISOString()})`),
 
@@ -145,6 +147,7 @@ export function usePastoralDashboard(churchId: string) {
           .select('celula_id')
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .not('celula_id', 'is', null),
 
         // W8: voluntários ativos por ministério
@@ -160,6 +163,7 @@ export function usePastoralDashboard(churchId: string) {
           .select('id', { count: 'exact', head: true })
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .eq('baptized', true)
           .gte('baptism_date', quarterStart.toISOString().slice(0, 10)),
 
@@ -177,6 +181,7 @@ export function usePastoralDashboard(churchId: string) {
           .select('id, name, first_name, last_name, person_stage, last_contact_at')
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .in('person_stage', ['frequentador', 'consolidado', 'discipulo', 'lider'])
           .or(`last_contact_at.lt.${fourteenDaysAgo.toISOString()},last_contact_at.is.null`)
           .order('last_contact_at', { ascending: true, nullsFirst: true })
@@ -188,6 +193,7 @@ export function usePastoralDashboard(churchId: string) {
           .select('id, name, first_name, last_name, created_at')
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .eq('person_stage', 'visitante')
           .lt('created_at', oneDayAgo.toISOString())
           .order('created_at', { ascending: true })
@@ -199,6 +205,7 @@ export function usePastoralDashboard(churchId: string) {
           .select('created_at')
           .eq('church_id', churchId)
           .is('deleted_at', null)
+          .is('left_at', null)
           .not('person_stage', 'eq', 'visitante')
           .gte('created_at', twelveMonthsAgo.toISOString()),
 

@@ -113,6 +113,7 @@ interface ParsedRow {
 interface ImportResult {
   batchId:     string
   inserted:    number
+  reativadas:  number
   duplicates:  number
   discarded:   number
   errorRows:   { name: string; reason: string }[]
@@ -402,21 +403,42 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
       const phonesToCheck = [...new Set(
         afterIntra.filter(r => r.phone && !r.isDiscarded && !r.isDuplicate).map(r => r.phone!),
       )]
-      const existingPhones = new Set<string>()
+      const activePhones      = new Set<string>()
+      const desligadasByPhone = new Map<string, string>() // phone → id
       for (let i = 0; i < phonesToCheck.length; i += 100) {
         const { data: dbRows } = await supabase
           .from('people')
-          .select('phone')
+          .select('id, phone, left_at')
           .eq('church_id', churchId)
           .is('deleted_at', null)
           .in('phone', phonesToCheck.slice(i, i + 100))
-        ;(dbRows ?? []).forEach(p => { if (p.phone) existingPhones.add(p.phone) })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(dbRows ?? []).forEach((p: any) => {
+          if (!p.phone) return
+          if (p.left_at !== null) desligadasByPhone.set(p.phone, p.id)
+          else activePhones.add(p.phone)
+        })
+      }
+
+      // Religar desligadas encontradas na planilha
+      let reativadas = 0
+      const reativatedPhones = new Set<string>(desligadasByPhone.keys())
+      if (desligadasByPhone.size > 0) {
+        setProcLabel('Reativando pessoas desligadas…')
+        const { error: relErr } = await supabase
+          .from('people')
+          .update({ left_at: null } as Record<string, unknown>)
+          .eq('church_id', churchId)
+          .in('id', Array.from(desligadasByPhone.values()))
+        if (!relErr) reativadas = desligadasByPhone.size
       }
 
       const deduped: ParsedRow[] = afterIntra.map(row => {
         if (row.isDiscarded || row.isDuplicate) return row
-        if (row.phone && existingPhones.has(row.phone))
+        if (row.phone && activePhones.has(row.phone))
           return { ...row, isDuplicate: true, dupReason: `Telefone já cadastrado: ${row.phone}` }
+        if (row.phone && reativatedPhones.has(row.phone))
+          return { ...row, isDuplicate: true, dupReason: `Pessoa reativada: ${row.phone}` }
         return row
       })
 
@@ -487,7 +509,8 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
       setResult({
         batchId,
         inserted,
-        duplicates: deduped.filter(r => r.isDuplicate).length,
+        reativadas,
+        duplicates: deduped.filter(r => r.isDuplicate && !reativatedPhones.has(r.phone ?? '')).length,
         discarded:  deduped.filter(r => r.isDiscarded).length,
         errorRows,
         warningRows,
@@ -639,8 +662,9 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
                 <p className="text-lg font-bold text-green-700">{result.inserted} pessoas adicionadas</p>
                 <p className="text-sm text-green-600 mt-0.5">
                   {[
-                    result.duplicates > 0 ? `${result.duplicates} duplicadas e ignoradas` : null,
-                    result.discarded > 0  ? `${result.discarded} descartadas por falta de nome ou telefone` : null,
+                    result.reativadas > 0 ? `${result.reativadas} reativadas`                               : null,
+                    result.duplicates > 0 ? `${result.duplicates} duplicadas e ignoradas`                   : null,
+                    result.discarded > 0  ? `${result.discarded} descartadas por falta de nome ou telefone`  : null,
                   ].filter(Boolean).join(' · ') || 'Sem duplicatas nem descartes'}
                 </p>
               </div>

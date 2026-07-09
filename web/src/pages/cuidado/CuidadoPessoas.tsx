@@ -42,6 +42,7 @@ function usePeopleForCuidado(churchId: string, search: string, period: Period, o
         .select('id, name, phone, name_sort, conversion_date, created_at')
         .eq('church_id', churchId)
         .is('deleted_at', null)
+        .is('left_at', null)
         .order('name_sort', { ascending: true })
         .range(offset, offset + PAGE_SIZE - 1)
 

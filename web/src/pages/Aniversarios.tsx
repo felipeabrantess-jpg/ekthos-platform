@@ -188,6 +188,7 @@ function useAnniversaries(churchId: string) {
         `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
+        .is('left_at', null)
       if (error) throw error
       return (data ?? []) as AnniversaryPerson[]
     },

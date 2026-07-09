@@ -12,7 +12,7 @@ export function useVoluntarios(churchId: string, ministryId?: string) {
         .from('volunteers')
         .select(`
           *,
-          people!person_id ( id, name, phone, name_sort ),
+          people!person_id ( id, name, phone, name_sort, left_at ),
           ministries ( id, name )
         `)
         .eq('church_id', churchId)
@@ -26,7 +26,9 @@ export function useVoluntarios(churchId: string, ministryId?: string) {
       const { data, error } = await query
 
       if (error) throw new Error(error.message)
-      return (data ?? []) as VolunteerWithPerson[]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const active = (data ?? []).filter(v => (v.people as any)?.left_at == null)
+      return active as unknown as VolunteerWithPerson[]
     },
     enabled: Boolean(churchId),
   })
