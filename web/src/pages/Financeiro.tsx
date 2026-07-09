@@ -1495,7 +1495,7 @@ function DRESection({ churchId, startDate, endDate, onChangePeriod }: DRESection
   const [dataInicio, setDataInicio] = useState(startDate)
   const [dataFim, setDataFim] = useState(endDate)
 
-  const { data: dre, isLoading } = useDRE(churchId, startDate, endDate)
+  const { data: dre, isLoading, isError: dreError } = useDRE(churchId, startDate, endDate)
 
   function aplicarMes(mes: string) {
     setMesSelecionado(mes)
@@ -1696,6 +1696,8 @@ function DRESection({ churchId, startDate, endDate, onChangePeriod }: DRESection
 
       {isLoading ? (
         <div className="flex justify-center items-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+      ) : dreError ? (
+        <div className="px-5 py-8 text-center text-sm text-red-500">Não foi possível carregar o DRE. Tente recarregar a página.</div>
       ) : !dre ? null : (
         <div className="p-5 space-y-0 print:p-4">
           {/* Cabeçalho para impressão */}
