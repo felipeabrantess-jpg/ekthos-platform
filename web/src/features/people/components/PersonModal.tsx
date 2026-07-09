@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Camera } from 'lucide-react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
@@ -141,6 +142,10 @@ function FieldRow({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 gap-3">{children}</div>
 }
 
+function formatLeftDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // PersonModal
 // ──────────────────────────────────────────────────────────────────────
@@ -170,6 +175,10 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const [cepLoading, setCepLoading] = useState(false)
   const [cepError, setCepError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const queryClient = useQueryClient()
+  const [showDesligarConfirm, setShowDesligarConfirm] = useState(false)
+  const [desligarReason, setDesligarReason] = useState('')
+  const [isToggling, setIsToggling] = useState(false)
 
   // Tabs visíveis para o role atual
   const visibleTabs = TABS.filter((t) => !t.gated || t.gated(role as AppRoleDB | null))
@@ -180,6 +189,8 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     setAvatarUrl((person as any)?.avatar_url ?? null)
     setActiveTab('pessoal')
     setError(null)
+    setShowDesligarConfirm(false)
+    setDesligarReason('')
   }, [person?.id, open])
 
   // ── Vínculos familiares ── todos os hooks ANTES de qualquer return ──
@@ -238,6 +249,11 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     setForm((f) => ({ ...f, [key]: val }))
 
   const isPending = createPerson.isPending || updatePerson.isPending
+
+  const canToggleLeft = role === 'admin' || role === 'secretary' || role === 'cell_leader'
+  const isDesligado   = isEdit && Boolean((person as any)?.left_at)
+  const leftAt        = ((person as any)?.left_at  ?? null) as string | null
+  const leftReason    = ((person as any)?.left_reason ?? null) as string | null
 
   // Normaliza telefone para +55XXXXXXXXXXX
   function normalizePhone(raw: string): string | null {
@@ -348,6 +364,51 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     }
   }
 
+  async function handleDesligar() {
+    if (!person?.id) return
+    setIsToggling(true)
+    try {
+      const { data, error } = await supabase
+        .from('people')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ left_at: new Date().toISOString(), left_reason: desligarReason.trim() || null } as any)
+        .eq('id', person.id)
+        .eq('church_id', churchId)
+        .select('id')
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Sem permissão para desligar esta pessoa.')
+      void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+      setShowDesligarConfirm(false)
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao desligar pessoa.')
+    } finally {
+      setIsToggling(false)
+    }
+  }
+
+  async function handleReligar() {
+    if (!person?.id) return
+    setIsToggling(true)
+    try {
+      const { data, error } = await supabase
+        .from('people')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ left_at: null } as any)
+        .eq('id', person.id)
+        .eq('church_id', churchId)
+        .select('id')
+      if (error) throw error
+      if (!data || data.length === 0) throw new Error('Sem permissão para religar esta pessoa.')
+      void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao religar pessoa.')
+    } finally {
+      setIsToggling(false)
+    }
+  }
+
   return (
     <Modal
       open={open}
@@ -356,6 +417,21 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Banner — pessoa desligada */}
+        {isEdit && isDesligado && leftAt && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <svg className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <span className="font-semibold">Pessoa desligada em {formatLeftDate(leftAt)}</span>
+              {leftReason && (
+                <span className="block text-amber-700 text-xs mt-0.5">Motivo: {leftReason}</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-1 border-b border-gray-100 -mx-6 px-6 pb-0">
           {visibleTabs.map((tab) => (
@@ -858,16 +934,84 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
         )}
 
+        {/* Confirmação de desligamento */}
+        {showDesligarConfirm && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 space-y-3">
+            <p className="text-sm font-semibold text-red-800">Confirmar desligamento</p>
+            <p className="text-xs text-red-700">
+              Essa pessoa não aparecerá mais nas listas de acompanhamento, mas o cadastro fica guardado.
+            </p>
+            <div>
+              <label className="block text-xs font-medium text-red-700 mb-1">
+                Motivo (opcional)
+              </label>
+              <textarea
+                value={desligarReason}
+                onChange={(e) => setDesligarReason(e.target.value)}
+                rows={2}
+                placeholder="Ex: mudou de cidade, transferido para outra igreja..."
+                className="block w-full rounded-lg border border-red-200 px-3 py-2 text-sm placeholder-red-300 bg-white focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => { setShowDesligarConfirm(false); setDesligarReason('') }}
+                disabled={isToggling}
+              >
+                Cancelar
+              </Button>
+              <button
+                type="button"
+                onClick={() => void handleDesligar()}
+                disabled={isToggling}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {isToggling ? 'Desligando…' : 'Confirmar desligamento'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Ações */}
         <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-          <p className="text-xs text-gray-400">
-            {visibleTabs.indexOf(visibleTabs.find((t) => t.id === activeTab)!) + 1} / {visibleTabs.length}
-          </p>
+          {/* Esquerda: desligar/religar — só em edição, só papéis autorizados, oculto durante confirmação */}
+          {isEdit && canToggleLeft && !showDesligarConfirm ? (
+            isDesligado ? (
+              <button
+                type="button"
+                onClick={() => void handleReligar()}
+                disabled={isToggling}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 hover:text-green-800 disabled:opacity-50 transition-colors"
+              >
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} className="shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Religar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowDesligarConfirm(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-red-600 transition-colors"
+              >
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className="shrink-0">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Desligar da Igreja
+              </button>
+            )
+          ) : (
+            <p className="text-xs text-gray-400">
+              {visibleTabs.indexOf(visibleTabs.find((t) => t.id === activeTab)!) + 1} / {visibleTabs.length}
+            </p>
+          )}
           <div className="flex gap-3">
-            <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isPending || isToggling}>
               Cancelar
             </Button>
-            <Button type="submit" loading={isPending}>
+            <Button type="submit" loading={isPending} disabled={showDesligarConfirm || isToggling}>
               {isEdit ? 'Salvar' : 'Criar Membro'}
             </Button>
           </div>
