@@ -159,6 +159,8 @@ interface CreateDonationInput {
   campaign_id?: string | null
   bank_account_id?: string | null
   culto_type?: string | null
+  donation_date?: string | null
+  unit_id?: string | null
 }
 
 export function useCreateDonation() {
@@ -183,6 +185,8 @@ export function useCreateDonation() {
           receipt_sent: false,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           culto_type: (input.culto_type ?? null) as any,
+          donation_date: input.donation_date ?? null,
+          unit_id: (input.unit_id ?? null) as any,
         } as any)
         .select()
         .single()
@@ -477,6 +481,7 @@ export interface Expense {
   church_id: string
   category_id: string | null
   bank_account_id: string | null
+  unit_id: string | null
   amount: number
   description: string
   supplier: string | null
@@ -493,6 +498,7 @@ interface ExpenseInput {
   church_id: string
   category_id?: string | null
   bank_account_id?: string | null
+  unit_id?: string | null
   amount: number
   description: string
   supplier?: string | null
@@ -542,6 +548,7 @@ export function useCreateExpense() {
           status: input.status ?? 'a_pagar',
           payment_method: input.payment_method ?? null,
           receipt_path: input.receipt_path ?? null,
+          unit_id: (input.unit_id ?? null) as any,
         } as any)
         .select()
         .single()
@@ -574,6 +581,7 @@ export function useUpdateExpense() {
           status: updates.status ?? 'a_pagar',
           payment_method: updates.payment_method ?? null,
           receipt_path: updates.receipt_path !== undefined ? updates.receipt_path : undefined,
+          unit_id: (updates.unit_id ?? null) as any,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', id)
@@ -631,6 +639,7 @@ export interface Receivable {
   category_id: string | null
   receipt_path: string | null
   notes: string | null
+  unit_id: string | null
   created_at: string
   updated_at: string
 }
@@ -648,6 +657,7 @@ interface ReceivableInput {
   category_id?: string | null
   receipt_path?: string | null
   notes?: string | null
+  unit_id?: string | null
 }
 
 export function useReceivables(churchId: string) {
@@ -690,6 +700,7 @@ export function useCreateReceivable() {
           category_id: input.category_id ?? null,
           receipt_path: input.receipt_path ?? null,
           notes: input.notes ?? null,
+          unit_id: (input.unit_id ?? null) as any,
         } as any)
         .select()
         .single()
@@ -723,6 +734,7 @@ export function useUpdateReceivable() {
           category_id: updates.category_id ?? null,
           receipt_path: updates.receipt_path !== undefined ? updates.receipt_path : undefined,
           notes: updates.notes ?? null,
+          unit_id: (updates.unit_id ?? null) as any,
           updated_at: new Date().toISOString(),
         } as any)
         .eq('id', id)

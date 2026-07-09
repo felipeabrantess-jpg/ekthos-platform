@@ -49,6 +49,7 @@ import {
   type ApuracaoCultoRow,
 } from '@/features/financeiro/hooks/useFinanceiro'
 import { usePeople } from '@/features/people/hooks/usePeople'
+import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
@@ -212,6 +213,8 @@ interface CreateDonationModalProps {
 function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAccounts = [] }: CreateDonationModalProps) {
   const createDonation = useCreateDonation()
   const { data: peopleList } = usePeople(churchId, {})
+  const { data: churchUnits = [] } = useChurchUnits(churchId)
+  const todayISO = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
     personId: '',
     type: 'dizimo' as DonationType,
@@ -222,6 +225,8 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAcco
     campaign_id: '',
     bank_account_id: '',
     culto_type: '',
+    donation_date: todayISO,
+    unit_id: '',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -247,6 +252,8 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAcco
         campaign_id: form.campaign_id || null,
         bank_account_id: form.bank_account_id || null,
         culto_type: form.culto_type || null,
+        donation_date: form.donation_date || null,
+        unit_id: form.unit_id || null,
       })
       onClose()
     } catch (err) {
@@ -298,6 +305,30 @@ function CreateDonationModal({ open, onClose, churchId, campaigns = [], bankAcco
               placeholder="0,00"
               required
             />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Data <span className="text-gray-400 font-normal">(data real)</span></label>
+            <input
+              type="date"
+              value={form.donation_date}
+              onChange={(e) => setForm((p) => ({ ...p, donation_date: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unidade <span className="text-gray-400 font-normal">(opcional)</span></label>
+            <select
+              value={form.unit_id}
+              onChange={(e) => setForm((p) => ({ ...p, unit_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Não informado</option>
+              {churchUnits.filter(u => u.is_active).map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
@@ -407,6 +438,7 @@ interface ExpenseModalProps {
 function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccounts }: ExpenseModalProps) {
   const createExpense = useCreateExpense()
   const updateExpense = useUpdateExpense()
+  const { data: churchUnits = [] } = useChurchUnits(churchId)
   const isEdit = Boolean(expense)
 
   const todayISO = new Date().toISOString().split('T')[0]
@@ -417,6 +449,7 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
     supplier: expense?.supplier ?? '',
     category_id: expense?.category_id ?? '',
     bank_account_id: expense?.bank_account_id ?? '',
+    unit_id: expense?.unit_id ?? '',
     expense_date: expense?.expense_date ?? todayISO,
     due_date: expense?.due_date ?? '',
     status: (expense?.status ?? 'a_pagar') as 'paga' | 'a_pagar',
@@ -473,6 +506,7 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
         supplier: form.supplier.trim() || null,
         category_id: form.category_id || null,
         bank_account_id: form.bank_account_id || null,
+        unit_id: form.unit_id || null,
         expense_date: form.expense_date,
         due_date: form.due_date || null,
         status: form.status,
@@ -551,6 +585,21 @@ function ExpenseModal({ open, onClose, churchId, expense, categories, bankAccoun
             </select>
           </div>
         </div>
+        {churchUnits.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unidade <span className="text-gray-400 font-normal">(opcional)</span></label>
+            <select
+              value={form.unit_id}
+              onChange={(e) => setForm((p) => ({ ...p, unit_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Não informado</option>
+              {churchUnits.filter(u => u.is_active).map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
@@ -780,6 +829,7 @@ interface ReceivableModalProps {
 function ReceivableModal({ open, onClose, churchId, receivable, categories, bankAccounts }: ReceivableModalProps) {
   const createReceivable = useCreateReceivable()
   const updateReceivable = useUpdateReceivable()
+  const { data: churchUnits = [] } = useChurchUnits(churchId)
   const isEdit = Boolean(receivable)
 
   const [form, setForm] = useState({
@@ -788,6 +838,7 @@ function ReceivableModal({ open, onClose, churchId, receivable, categories, bank
     payer_name: receivable?.payer_name ?? '',
     category_id: receivable?.category_id ?? '',
     bank_account_id: receivable?.bank_account_id ?? '',
+    unit_id: receivable?.unit_id ?? '',
     due_date: receivable?.due_date ?? '',
     notes: receivable?.notes ?? '',
   })
@@ -809,6 +860,7 @@ function ReceivableModal({ open, onClose, churchId, receivable, categories, bank
         payer_name: form.payer_name.trim() || null,
         category_id: form.category_id || null,
         bank_account_id: form.bank_account_id || null,
+        unit_id: form.unit_id || null,
         due_date: form.due_date || null,
         notes: form.notes.trim() || null,
       }
@@ -884,6 +936,21 @@ function ReceivableModal({ open, onClose, churchId, receivable, categories, bank
             </select>
           </div>
         </div>
+        {churchUnits.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unidade <span className="text-gray-400 font-normal">(opcional)</span></label>
+            <select
+              value={form.unit_id}
+              onChange={(e) => setForm((p) => ({ ...p, unit_id: e.target.value }))}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Não informado</option>
+              {churchUnits.filter(u => u.is_active).map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Vencimento</label>
           <input
