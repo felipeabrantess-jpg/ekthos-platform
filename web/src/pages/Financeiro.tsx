@@ -1633,7 +1633,11 @@ ${rows}
         </div>
       ) : isError ? (
         <div className="px-5 py-8 text-center text-sm text-red-500">Não foi possível carregar o relatório. Tente recarregar a página.</div>
-      ) : !relatorio ? null : (
+      ) : !relatorio ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
