@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, ChevronDown, ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import type { ChurchUnit } from '@/features/people/hooks/useChurchUnits'
@@ -17,6 +17,9 @@ import {
   useAllCellNeighborhoods,
   useCreateCellNeighborhood,
   useUpdateCellNeighborhood,
+  useCellAttendance,
+  useUpsertAttendance,
+  getOrCreateMeetingId,
 } from '@/features/celulas/hooks/useGroups'
 import type { CellNeighborhood } from '@/features/celulas/hooks/useGroups'
 import CellReports from '@/components/cells/CellReports'
@@ -260,6 +263,223 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// F4-B: helpers de data (sem risco de fuso)
+// ──────────────────────────────────────────────────────────────────────
+function todayLocal(): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function fmtDateBR(dateStr: string): string {
+  // dateStr = YYYY-MM-DD  →  DD/MM/YYYY
+  const [y, mo, d] = dateStr.split('-')
+  return `${d}/${mo}/${y}`
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// F4-B: Modal de chamada nominal
+// ──────────────────────────────────────────────────────────────────────
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+interface AttendanceSheetProps {
+  group: Group
+  churchId: string
+  userId: string
+  onClose: () => void
+}
+
+function AttendanceSheet({ group, churchId, userId, onClose }: AttendanceSheetProps) {
+  // ── TODOS os hooks antes de qualquer return ───────────────────────
+  const [date, setDate] = useState(todayLocal())
+  const [meetingId, setMeetingId] = useState<string | null>(null)
+  const [meetingLoading, setMeetingLoading] = useState(false)
+  const [meetingError, setMeetingError] = useState<string | null>(null)
+  const [savingMap, setSavingMap] = useState<Record<string, SaveStatus>>({})
+
+  const { data: members, isLoading: membersLoading } = useCellMembers(group.id)
+  const { data: attendanceData, isLoading: attendanceLoading } = useCellAttendance(meetingId)
+  const upsertAttendance = useUpsertAttendance()
+
+  // Carrega (ou cria) o cell_meeting toda vez que a data muda
+  useEffect(() => {
+    if (!date) return
+    let cancelled = false
+    setMeetingLoading(true)
+    setMeetingError(null)
+    setMeetingId(null)
+    setSavingMap({})
+
+    getOrCreateMeetingId(churchId, group.id, date)
+      .then(id => { if (!cancelled) setMeetingId(id) })
+      .catch(err => {
+        if (!cancelled) setMeetingError(err instanceof Error ? err.message : 'Erro ao carregar reunião')
+      })
+      .finally(() => { if (!cancelled) setMeetingLoading(false) })
+
+    return () => { cancelled = true }
+  }, [date, churchId, group.id])
+
+  // ── dados derivados ───────────────────────────────────────────────
+  const activeMembers = (members ?? []).filter((m: any) => m.left_at === null)
+
+  const attendanceMap: Record<string, 'present' | 'absent'> = {}
+  for (const a of (attendanceData ?? [])) {
+    attendanceMap[(a as any).person_id] = (a as any).status as 'present' | 'absent'
+  }
+
+  const presentCount = Object.values(attendanceMap).filter(s => s === 'present').length
+  const absentCount  = Object.values(attendanceMap).filter(s => s === 'absent').length
+  const unmarked     = activeMembers.length - presentCount - absentCount
+
+  // ── handlers ─────────────────────────────────────────────────────
+  async function handleSetStatus(personId: string, newStatus: 'present' | 'absent') {
+    if (!meetingId || savingMap[personId] === 'saving') return
+    setSavingMap(prev => ({ ...prev, [personId]: 'saving' }))
+    try {
+      await upsertAttendance.mutateAsync({
+        meeting_id: meetingId,
+        person_id: personId,
+        church_id: churchId,
+        status: newStatus,
+        marked_by: userId || null,
+      })
+      setSavingMap(prev => ({ ...prev, [personId]: 'saved' }))
+      setTimeout(() => setSavingMap(prev =>
+        prev[personId] === 'saved' ? { ...prev, [personId]: 'idle' } : prev
+      ), 1500)
+    } catch {
+      // Falha explícita — NÃO mostrar sucesso
+      setSavingMap(prev => ({ ...prev, [personId]: 'error' }))
+    }
+  }
+
+  // ── render ────────────────────────────────────────────────────────
+  const bodyLoading = membersLoading || meetingLoading || (Boolean(meetingId) && attendanceLoading)
+
+  return (
+    <ModalPortal>
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl flex flex-col max-h-[88vh]">
+
+          {/* Cabeçalho */}
+          <div className="px-5 py-4 border-b border-border-default flex items-center justify-between shrink-0">
+            <div>
+              <h2 className="font-display text-base font-semibold text-text-primary">Chamada</h2>
+              <p className="text-sm text-text-secondary">{group.name}</p>
+            </div>
+            <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-bg-hover transition-all">
+              <X size={18} strokeWidth={1.75} />
+            </button>
+          </div>
+
+          {/* Seletor de data */}
+          <div className="px-5 pt-4 pb-2 shrink-0">
+            <label className="block text-xs font-medium text-text-secondary mb-1">Data da reunião</label>
+            <input
+              type="date"
+              value={date}
+              max={todayLocal()}
+              onChange={e => setDate(e.target.value)}
+              className="block w-full rounded-xl border border-black/10 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          {/* Corpo */}
+          <div className="flex-1 overflow-y-auto px-5 py-2">
+            {meetingError && (
+              <div className="mb-3 py-2.5 px-3 rounded-xl bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">Erro: {meetingError}</p>
+              </div>
+            )}
+
+            {bodyLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Spinner size="md" />
+              </div>
+            ) : activeMembers.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-sm font-medium text-text-primary">Nenhum membro vinculado</p>
+                <p className="text-xs text-text-tertiary mt-1">Vincule pessoas à célula na aba de detalhes antes de fazer a chamada.</p>
+              </div>
+            ) : (
+              <ul className="space-y-2 py-2">
+                {activeMembers.map((member: any) => {
+                  const personId: string = member.person_id
+                  const name: string     = member.people?.name ?? 'Membro'
+                  const current          = attendanceMap[personId]
+                  const saveStatus       = savingMap[personId] ?? 'idle'
+                  const isSaving         = saveStatus === 'saving'
+                  const hasError         = saveStatus === 'error'
+                  const justSaved        = saveStatus === 'saved'
+
+                  return (
+                    <li key={personId} className="flex items-center gap-3 py-2.5 px-3 rounded-xl border border-border-default">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">{name}</p>
+                        {hasError && (
+                          <p className="text-xs text-red-500 mt-0.5">Erro ao salvar — tente de novo</p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {justSaved && <span className="text-xs text-green-600 font-medium">✓</span>}
+                        {isSaving  && <Spinner size="sm" />}
+
+                        <button
+                          onClick={() => void handleSetStatus(personId, 'present')}
+                          disabled={isSaving || !meetingId}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 ${
+                            current === 'present'
+                              ? 'bg-green-500 text-white'
+                              : 'bg-bg-hover text-text-tertiary hover:bg-green-100 hover:text-green-700'
+                          }`}
+                        >
+                          ✓
+                        </button>
+
+                        <button
+                          onClick={() => void handleSetStatus(personId, 'absent')}
+                          disabled={isSaving || !meetingId}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 ${
+                            current === 'absent'
+                              ? 'bg-red-400 text-white'
+                              : 'bg-bg-hover text-text-tertiary hover:bg-red-100 hover:text-red-600'
+                          }`}
+                        >
+                          ✗
+                        </button>
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Rodapé com contadores */}
+          {!bodyLoading && activeMembers.length > 0 && (
+            <div className="px-5 py-3 border-t border-border-default shrink-0">
+              <p className="text-xs text-text-tertiary text-center">
+                <span className="text-green-600 font-medium">{presentCount} pres.</span>
+                {' · '}
+                <span className="text-red-500 font-medium">{absentCount} aus.</span>
+                {' · '}
+                <span className="text-text-tertiary">{unmarked} não marcado{unmarked !== 1 ? 's' : ''}</span>
+                {' · '}
+                {fmtDateBR(date)}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </ModalPortal>
+  )
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // Painel de detalhes (inalterado)
 // ──────────────────────────────────────────────────────────────────────
 interface CellDetailPanelProps {
@@ -269,6 +489,8 @@ interface CellDetailPanelProps {
 }
 
 function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
+  // ── TODOS os hooks antes de qualquer return ───────────────────────
+  const { role, user } = useAuth() as { role: string | null; user: { id: string } | null }
   const { data: members, isLoading: membersLoading } = useCellMembers(group.id)
   const { data: meetings, isLoading: meetingsLoading } = useCellMeetings(group.id)
   const addMember = useAddCellMember()
@@ -280,6 +502,11 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
   const [addingMeeting, setAddingMeeting] = useState(false)
   const [memberError, setMemberError] = useState<string | null>(null)
   const [meetingError, setMeetingError] = useState<string | null>(null)
+  const [attendanceOpen, setAttendanceOpen] = useState(false)
+
+  const ATTENDANCE_ROLES = new Set(['admin', 'cell_leader', 'secretary', 'pastor_celulas'])
+  const canTakeAttendance = Boolean(role && ATTENDANCE_ROLES.has(role))
+  const userId = user?.id ?? ''
 
   async function handleAddMember() {
     if (!newPersonId.trim()) return
@@ -310,6 +537,7 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
   }
 
   return (
+    <>
     <ModalPortal>
     <div className="fixed inset-0 z-40 flex">
       <div className="absolute inset-0 bg-black/20" onClick={onClose} />
@@ -323,9 +551,20 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
               </p>
             )}
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-bg-hover transition-all">
-            <X size={18} strokeWidth={1.75} />
-          </button>
+          <div className="flex items-center gap-2">
+            {canTakeAttendance && (
+              <button
+                onClick={() => setAttendanceOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary text-white hover:opacity-90 transition-opacity"
+              >
+                <ClipboardList size={14} strokeWidth={1.75} />
+                Chamada
+              </button>
+            )}
+            <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-bg-hover transition-all">
+              <X size={18} strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
@@ -390,6 +629,16 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
       </div>
     </div>
     </ModalPortal>
+
+    {attendanceOpen && (
+      <AttendanceSheet
+        group={group}
+        churchId={churchId}
+        userId={userId}
+        onClose={() => setAttendanceOpen(false)}
+      />
+    )}
+    </>
   )
 }
 

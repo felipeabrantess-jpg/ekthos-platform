@@ -488,3 +488,90 @@ export function useChangeCellMember() {
     },
   })
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// F4-B: Chamada nominal — presença por reunião
+// ──────────────────────────────────────────────────────────────────────
+
+// Get-or-create: retorna o id da cell_meeting para (group, date).
+// SELECT-first para evitar duplicatas (cell_meetings não tem UNIQUE em group+date).
+export async function getOrCreateMeetingId(
+  churchId: string,
+  groupId: string,
+  meetingDate: string,
+): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: existing } = await (supabase as any)
+    .from('cell_meetings')
+    .select('id')
+    .eq('group_id', groupId)
+    .eq('meeting_date', meetingDate)
+    .maybeSingle()
+
+  if (existing?.id) return existing.id as string
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: created, error } = await (supabase as any)
+    .from('cell_meetings')
+    .insert({ church_id: churchId, group_id: groupId, meeting_date: meetingDate })
+    .select('id')
+    .single()
+
+  if (error) throw new Error(error.message)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (created as any).id as string
+}
+
+export interface AttendanceRecord {
+  id: string
+  meeting_id: string
+  person_id: string
+  status: 'present' | 'absent'
+  church_id: string | null
+  marked_by: string | null
+  created_at: string
+}
+
+export function useCellAttendance(meetingId: string | null) {
+  return useQuery({
+    queryKey: ['cell_attendance', meetingId],
+    queryFn: async (): Promise<AttendanceRecord[]> => {
+      if (!meetingId) return []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_attendance')
+        .select('*')
+        .eq('meeting_id', meetingId)
+      if (error) throw new Error(error.message)
+      return (data ?? []) as AttendanceRecord[]
+    },
+    enabled: Boolean(meetingId),
+  })
+}
+
+interface UpsertAttendanceInput {
+  meeting_id: string
+  person_id: string
+  church_id: string
+  status: 'present' | 'absent'
+  marked_by: string | null
+}
+
+export function useUpsertAttendance() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: UpsertAttendanceInput) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_attendance')
+        .upsert(input, { onConflict: 'meeting_id,person_id' })
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    onSuccess: (_data, { meeting_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['cell_attendance', meeting_id] })
+    },
+  })
+}
