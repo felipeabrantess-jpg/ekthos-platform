@@ -236,3 +236,61 @@ export function useCreateCellMeeting() {
     },
   })
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Célula de uma pessoa (para a ficha — leitura única, sem polling)
+// ──────────────────────────────────────────────────────────────────────
+
+interface PersonCellData {
+  id: string
+  name: string
+  meeting_day: string | null
+  meeting_time: string | null
+  leader_id: string | null
+  leader_name: string | null
+}
+
+export function usePersonCell(celulaId: string | null) {
+  return useQuery({
+    queryKey: ['person_cell', celulaId],
+    queryFn: async (): Promise<PersonCellData | null> => {
+      if (!celulaId) return null
+
+      const { data: group, error: groupErr } = await supabase
+        .from('groups')
+        .select('id, name, meeting_day, meeting_time, leader_id')
+        .eq('id', celulaId)
+        .maybeSingle()
+
+      if (groupErr) throw new Error(groupErr.message)
+      if (!group) return null
+
+      let leaderName: string | null = null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const leaderId = (group as any).leader_id as string | null
+      if (leaderId) {
+        const { data: leader } = await supabase
+          .from('people')
+          .select('name')
+          .eq('id', leaderId)
+          .maybeSingle()
+        leaderName = leader?.name ?? null
+      }
+
+      return {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        id: (group as any).id as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        name: (group as any).name as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        meeting_day: (group as any).meeting_day as string | null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        meeting_time: (group as any).meeting_time as string | null,
+        leader_id: leaderId,
+        leader_name: leaderName,
+      }
+    },
+    enabled: Boolean(celulaId),
+    staleTime: 60_000,
+  })
+}

@@ -22,6 +22,7 @@ import {
   useCreateVolunteer,
   type PersonVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
+import { usePersonCell } from '@/features/celulas/hooks/useGroups'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useAppointments } from '@/features/gabinete/hooks/useAppointments'
 
@@ -413,6 +414,11 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
   const { churchId } = useAuth()
   const { data: allTags = [] } = useTags(churchId ?? '')
 
+  // Hook de célula — DEVE ficar antes de qualquer return (regra de hooks React)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const celulaId = ((person as any)?.celula_id as string | null | undefined) ?? null
+  const { data: cellData, isLoading: cellLoading } = usePersonCell(celulaId)
+
   if (!person) return null
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -632,7 +638,6 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
           {/* 5. Vida Espiritual */}
           <InfoCard title="Vida Espiritual">
             <BoolField label="Em discipulado" value={person.in_discipleship} />
-            <BoolField label="Tem célula" value={person.has_cell} />
             <BoolField label="Serve em ministério" value={person.serves_ministry} />
             <BoolField label="Escola de consolidação" value={person.consolidation_school} />
             <BoolField label="Encontro com Deus" value={person.encounter_with_god} />
@@ -661,6 +666,36 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
                   ?? p.experiencia_lideranca
                 }
               />
+            )}
+          </InfoCard>
+
+          {/* 5.5 Célula */}
+          <InfoCard title="Célula">
+            {!celulaId ? (
+              <div className="py-1">
+                <p className="text-xs text-ekthos-black/30 italic">Não vinculada a nenhuma célula</p>
+              </div>
+            ) : cellLoading ? (
+              <div className="flex items-center gap-2 py-1">
+                <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-ekthos-black/40">Carregando...</span>
+              </div>
+            ) : !cellData ? (
+              <div className="py-1">
+                <p className="text-xs text-ekthos-black/30 italic">Vínculo com célula não encontrado</p>
+              </div>
+            ) : (
+              <>
+                <Field label="Célula" value={cellData.name} />
+                {(cellData.meeting_day || cellData.meeting_time) && (
+                  <Field
+                    label="Reunião"
+                    value={[cellData.meeting_day, cellData.meeting_time].filter(Boolean).join(' às ')}
+                  />
+                )}
+                <Field label="Líder" value={cellData.leader_name} />
+                {p.network ? <Field label="Rede" value={p.network} /> : null}
+              </>
             )}
           </InfoCard>
 
