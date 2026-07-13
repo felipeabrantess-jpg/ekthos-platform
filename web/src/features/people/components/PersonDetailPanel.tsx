@@ -22,7 +22,7 @@ import {
   useCreateVolunteer,
   type PersonVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
-import { usePersonCell, useChangeCellMember, useGroups } from '@/features/celulas/hooks/useGroups'
+import { usePersonCell, useChangeCellMember, useGroups, usePersonCellHistory } from '@/features/celulas/hooks/useGroups'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useAppointments } from '@/features/gabinete/hooks/useAppointments'
 
@@ -46,6 +46,14 @@ function formatPhone(p: string | null | undefined): string {
 function daysAgo(iso: string | null | undefined): number | null {
   if (!iso) return null
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+}
+
+const MONTH_ABBR = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']
+function formatMonthYear(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return '—'
+  return `${MONTH_ABBR[d.getUTCMonth()]} ${d.getUTCFullYear()}`
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -424,8 +432,13 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
   const [selectedNewGroupId, setSelectedNewGroupId] = useState<string>('')
   const { data: allGroups = [] } = useGroups(churchId ?? '')
   const { mutate: changeCell, isPending: changingCell, error: changeCellError, reset: resetChangeCell } = useChangeCellMember()
+  const { data: cellHistory = [] } = usePersonCellHistory(person?.id ?? null)
 
   if (!person) return null
+
+  // Derivado do histórico — seguro cálcular após o guard pois hooks já foram chamados
+  const previousEntries = cellHistory.filter(e => e.left_at !== null)
+  const currentHistoryEntry = cellHistory.find(e => e.left_at === null)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const p = person as any  // acesso aos campos extras (wedding_date, baptism_type, church_role)
@@ -712,6 +725,40 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
                 )}
                 <Field label="Líder" value={cellData.leader_name} />
                 {p.network ? <Field label="Rede" value={p.network} /> : null}
+
+                {/* Histórico de células — só exibido se há pelo menos 1 entrada anterior */}
+                {previousEntries.length > 0 && (
+                  <div className="pt-2.5 pb-1">
+                    <p className="text-[10px] font-semibold text-ekthos-black/30 uppercase tracking-widest mb-2">
+                      Histórico
+                    </p>
+                    <div className="space-y-2">
+                      {currentHistoryEntry && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-700 shrink-0">
+                            Atual
+                          </span>
+                          <span className="text-xs text-ekthos-black flex-1 truncate">
+                            {currentHistoryEntry.group_name ?? '(célula removida)'}
+                          </span>
+                          <span className="text-[11px] text-ekthos-black/40 shrink-0">
+                            desde {formatMonthYear(currentHistoryEntry.joined_at)}
+                          </span>
+                        </div>
+                      )}
+                      {previousEntries.map(entry => (
+                        <div key={entry.id} className="flex items-start gap-2">
+                          <span className="text-xs text-ekthos-black/60 flex-1 truncate">
+                            {entry.group_name ?? '(célula removida)'}
+                          </span>
+                          <span className="text-[11px] text-ekthos-black/40 shrink-0 text-right">
+                            {formatMonthYear(entry.joined_at)} → {formatMonthYear(entry.left_at)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </InfoCard>
