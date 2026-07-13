@@ -294,3 +294,90 @@ export function usePersonCell(celulaId: string | null) {
     staleTime: 60_000,
   })
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// Histórico de células de uma pessoa (linha do tempo completa)
+// ──────────────────────────────────────────────────────────────────────
+
+interface CellHistoryEntry {
+  id: string
+  group_id: string
+  group_name: string | null  // null if group was deleted
+  joined_at: string
+  left_at: string | null
+}
+
+export function usePersonCellHistory(personId: string | null) {
+  return useQuery({
+    queryKey: ['person_cell_history', personId],
+    queryFn: async (): Promise<CellHistoryEntry[]> => {
+      if (!personId) return []
+
+      const { data, error } = await supabase
+        .from('cell_members')
+        .select('id, group_id, joined_at, left_at, groups!left(name)')
+        .eq('person_id', personId)
+        .order('joined_at', { ascending: false })
+
+      if (error) throw new Error(error.message)
+
+      return (data ?? []).map((row) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        id: (row as any).id as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        group_id: (row as any).group_id as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        group_name: ((row as any).groups as { name: string } | null)?.name ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        joined_at: (row as any).joined_at as string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        left_at: (row as any).left_at as string | null,
+      }))
+    },
+    enabled: Boolean(personId),
+    staleTime: 60_000,
+  })
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Troca de célula — encerra vínculo anterior, cria novo, sincroniza
+// people.celula_id e registra auditoria, tudo em uma transação (RPC).
+// ──────────────────────────────────────────────────────────────────────
+
+interface ChangeCellResult {
+  ok: boolean
+  old_group_id: string | null
+  new_group_id: string
+}
+
+export function useChangeCellMember() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      personId,
+      newGroupId,
+    }: {
+      personId: string
+      newGroupId: string
+    }): Promise<ChangeCellResult> => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('change_person_cell', {
+        p_person_id:    personId,
+        p_new_group_id: newGroupId,
+      })
+      if (error) throw new Error(error.message)
+      return data as ChangeCellResult
+    },
+    onSuccess: (result, { personId }) => {
+      if (result?.old_group_id) {
+        void queryClient.invalidateQueries({ queryKey: ['cell_members', result.old_group_id] })
+        void queryClient.invalidateQueries({ queryKey: ['person_cell', result.old_group_id] })
+      }
+      void queryClient.invalidateQueries({ queryKey: ['cell_members', result?.new_group_id] })
+      void queryClient.invalidateQueries({ queryKey: ['person_cell', result?.new_group_id] })
+      void queryClient.invalidateQueries({ queryKey: ['person_cell_history', personId] })
+      void queryClient.invalidateQueries({ queryKey: ['people'] })
+    },
+  })
+}
