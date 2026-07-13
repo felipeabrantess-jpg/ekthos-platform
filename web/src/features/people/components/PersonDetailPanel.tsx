@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { X, Pencil, Phone, Mail, Link, MapPin, Calendar, Church, HandHeart, Plus, Trash2 } from 'lucide-react'
+import { X, Pencil, Phone, Mail, Link, MapPin, Calendar, Church, HandHeart, Plus, Trash2, ArrowLeftRight } from 'lucide-react'
 import type { PersonWithStage } from '@/lib/types/joins'
 import { useAuth } from '@/hooks/useAuth'
 import { useTags } from '@/features/people/hooks/useTags'
@@ -22,7 +22,7 @@ import {
   useCreateVolunteer,
   type PersonVolunteer,
 } from '@/features/voluntarios/hooks/useVoluntarios'
-import { usePersonCell } from '@/features/celulas/hooks/useGroups'
+import { usePersonCell, useChangeCellMember, useGroups } from '@/features/celulas/hooks/useGroups'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useAppointments } from '@/features/gabinete/hooks/useAppointments'
 
@@ -50,11 +50,12 @@ function daysAgo(iso: string | null | undefined): number | null {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function InfoCard({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoCard({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-cream-dark/50 overflow-hidden">
-      <div className="px-5 py-3 border-b border-cream-dark/40 bg-cream-dark/20">
+      <div className="px-5 py-3 border-b border-cream-dark/40 bg-cream-dark/20 flex items-center justify-between">
         <h3 className="font-display text-sm font-semibold text-ekthos-black">{title}</h3>
+        {action}
       </div>
       <div className="px-5 py-3 divide-y divide-cream-dark/30">
         {children}
@@ -411,13 +412,18 @@ interface PersonDetailPanelProps {
 }
 
 export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDetailPanelProps) {
-  const { churchId } = useAuth()
+  const { churchId, role } = useAuth()
   const { data: allTags = [] } = useTags(churchId ?? '')
 
-  // Hook de célula — DEVE ficar antes de qualquer return (regra de hooks React)
+  // Hooks de célula — TODOS antes de qualquer return (regra de hooks React)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const celulaId = ((person as any)?.celula_id as string | null | undefined) ?? null
   const { data: cellData, isLoading: cellLoading } = usePersonCell(celulaId)
+  const canChangeCell = role === 'admin' || role === 'secretary' || role === 'cell_leader'
+  const [showCellModal, setShowCellModal] = useState(false)
+  const [selectedNewGroupId, setSelectedNewGroupId] = useState<string>('')
+  const { data: allGroups = [] } = useGroups(churchId ?? '')
+  const { mutate: changeCell, isPending: changingCell, error: changeCellError, reset: resetChangeCell } = useChangeCellMember()
 
   if (!person) return null
 
@@ -670,7 +676,18 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
           </InfoCard>
 
           {/* 5.5 Célula */}
-          <InfoCard title="Célula">
+          <InfoCard
+            title="Célula"
+            action={canChangeCell ? (
+              <button
+                onClick={() => { setSelectedNewGroupId(''); resetChangeCell(); setShowCellModal(true) }}
+                className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+              >
+                <ArrowLeftRight size={11} strokeWidth={2} />
+                {celulaId ? 'Trocar' : 'Vincular'}
+              </button>
+            ) : undefined}
+          >
             {!celulaId ? (
               <div className="py-1">
                 <p className="text-xs text-ekthos-black/30 italic">Não vinculada a nenhuma célula</p>
@@ -698,6 +715,67 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
               </>
             )}
           </InfoCard>
+
+          {/* Modal trocar / vincular célula */}
+          {showCellModal && (
+            <ModalPortal>
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowCellModal(false)} />
+                <div className="relative bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
+                  <h3 className="font-display text-base font-semibold text-ekthos-black mb-1">
+                    {celulaId ? 'Trocar de célula' : 'Vincular a uma célula'}
+                  </h3>
+                  <p className="text-xs text-ekthos-black/50 mb-4">
+                    {celulaId
+                      ? `Célula atual: ${cellData?.name ?? '...'}`
+                      : 'Selecione a célula para vincular esta pessoa.'}
+                  </p>
+
+                  <select
+                    className="w-full text-sm border border-cream-dark rounded-xl px-3 py-2 bg-cream-light text-ekthos-black focus:outline-none focus:ring-2 focus:ring-brand-600/30 mb-4"
+                    value={selectedNewGroupId}
+                    onChange={e => setSelectedNewGroupId(e.target.value)}
+                  >
+                    <option value="">Selecione uma célula...</option>
+                    {allGroups
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      .filter(g => g.id !== celulaId && (g as any).status !== 'inactive')
+                      .map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                  </select>
+
+                  {changeCellError && (
+                    <p className="text-xs text-red-500 mb-3">
+                      {(changeCellError as Error).message}
+                    </p>
+                  )}
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowCellModal(false)}
+                      className="flex-1 text-sm font-medium px-4 py-2 rounded-xl border border-cream-dark text-ekthos-black hover:bg-cream-dark/40 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      disabled={!selectedNewGroupId || changingCell}
+                      onClick={() => {
+                        if (!selectedNewGroupId) return
+                        changeCell(
+                          { personId: person.id, newGroupId: selectedNewGroupId },
+                          { onSuccess: () => setShowCellModal(false) }
+                        )
+                      }}
+                      className="flex-1 text-sm font-semibold px-4 py-2 rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 transition-colors"
+                    >
+                      {changingCell ? 'Salvando...' : 'Confirmar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </ModalPortal>
+          )}
 
           {/* 6. Pastoral (admin only — mostrado se houver dados) */}
           {(p.observacoes_pastorais || p.is_dizimista != null || person.invited_by || person.responsible_id) && (
