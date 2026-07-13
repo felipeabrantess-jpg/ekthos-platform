@@ -34,6 +34,7 @@ interface CreateGroupInput {
   location?: string
   notes?: string
   unit_id?: string
+  neighborhood_id?: string
 }
 
 export function useCreateGroup() {
@@ -70,6 +71,7 @@ interface UpdateGroupInput {
   notes?: string
   status?: string
   unit_id?: string | null
+  neighborhood_id?: string | null
 }
 
 export function useUpdateGroup() {
@@ -336,6 +338,111 @@ export function usePersonCellHistory(personId: string | null) {
     },
     enabled: Boolean(personId),
     staleTime: 60_000,
+  })
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Bairros / Regiões de células (cell_neighborhoods)
+// ──────────────────────────────────────────────────────────────────────
+
+export interface CellNeighborhood {
+  id: string
+  church_id: string
+  unit_id: string
+  name: string
+  is_active: boolean
+  created_at: string
+}
+
+export function useCellNeighborhoods(churchId: string) {
+  return useQuery({
+    queryKey: ['cell_neighborhoods', churchId, 'active'],
+    queryFn: async (): Promise<CellNeighborhood[]> => {
+      if (!churchId) return []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_neighborhoods')
+        .select('*')
+        .eq('church_id', churchId)
+        .eq('is_active', true)
+        .order('name', { ascending: true })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as CellNeighborhood[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+// Retorna TODOS os bairros (ativos e inativos) — usado na tela de gestão (F3-C)
+export function useAllCellNeighborhoods(churchId: string) {
+  return useQuery({
+    queryKey: ['cell_neighborhoods', churchId, 'all'],
+    queryFn: async (): Promise<CellNeighborhood[]> => {
+      if (!churchId) return []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_neighborhoods')
+        .select('*')
+        .eq('church_id', churchId)
+        .order('name', { ascending: true })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as CellNeighborhood[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+interface CreateNeighborhoodInput {
+  church_id: string
+  unit_id: string
+  name: string
+}
+
+export function useCreateCellNeighborhood() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: CreateNeighborhoodInput) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_neighborhoods')
+        .insert({ ...input, is_active: true })
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data as CellNeighborhood
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['cell_neighborhoods', church_id] })
+    },
+  })
+}
+
+interface UpdateNeighborhoodInput {
+  id: string
+  church_id: string
+  name?: string
+  unit_id?: string
+  is_active?: boolean
+}
+
+export function useUpdateCellNeighborhood() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, church_id, ...updates }: UpdateNeighborhoodInput) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_neighborhoods')
+        .update(updates)
+        .eq('id', id)
+        .eq('church_id', church_id)
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data as CellNeighborhood
+    },
+    onSuccess: (_data, { church_id }) => {
+      void queryClient.invalidateQueries({ queryKey: ['cell_neighborhoods', church_id] })
+    },
   })
 }
 
