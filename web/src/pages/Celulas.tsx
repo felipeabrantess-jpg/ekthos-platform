@@ -1,16 +1,8 @@
-/**
- * Celulas.tsx — Fase 2: tabs de categorias
- *
- * Tabs:
- *  - Visão geral   → cards com agrupamento ativo/inativo (default)
- *  - Lista         → tabela compacta de todas as células
- *  - Relatórios    → TODO Fase 3 (placeholder)
- */
-
 import { useState } from 'react'
 import { X, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
+import type { ChurchUnit } from '@/features/people/hooks/useChurchUnits'
 import {
   useGroups,
   useCreateGroup,
@@ -22,7 +14,11 @@ import {
   useCellMeetings,
   useCreateCellMeeting,
   useCellNeighborhoods,
+  useAllCellNeighborhoods,
+  useCreateCellNeighborhood,
+  useUpdateCellNeighborhood,
 } from '@/features/celulas/hooks/useGroups'
+import type { CellNeighborhood } from '@/features/celulas/hooks/useGroups'
 import CellReports from '@/components/cells/CellReports'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -35,16 +31,10 @@ import PersonSelect from '@/components/ui/PersonSelect'
 import type { Group, CellMeeting } from '@/lib/types/joins'
 import ModalPortal from '@/components/ui/ModalPortal'
 
-type CelulasTab = 'geral' | 'lista' | 'relatorios'
-
-const TABS: { id: CelulasTab; label: string }[] = [
-  { id: 'geral',      label: 'Visão geral' },
-  { id: 'lista',      label: 'Lista'       },
-  { id: 'relatorios', label: 'Relatórios'  },
-]
+type CelulasTab = 'geral' | 'lista' | 'relatorios' | 'regioes'
 
 // ──────────────────────────────────────────────────────────────────────
-// Formulário de grupo
+// Formulário de grupo (F3-B: neighborhood_id + unit_id derivado)
 // ──────────────────────────────────────────────────────────────────────
 interface GroupFormData {
   name: string
@@ -60,7 +50,9 @@ interface GroupFormData {
 }
 
 const emptyGroupForm: GroupFormData = {
-  name: '', leader_id: '', co_leader_id: '', description: '', meeting_day: '', meeting_time: '', location: '', notes: '', unit_id: '', neighborhood_id: '',
+  name: '', leader_id: '', co_leader_id: '', description: '',
+  meeting_day: '', meeting_time: '', location: '', notes: '',
+  unit_id: '', neighborhood_id: '',
 }
 
 interface GroupModalProps {
@@ -268,7 +260,7 @@ function GroupModal({ open, onClose, churchId, editing }: GroupModalProps) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Painel de detalhes
+// Painel de detalhes (inalterado)
 // ──────────────────────────────────────────────────────────────────────
 interface CellDetailPanelProps {
   group: Group
@@ -402,7 +394,7 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Card de célula
+// Card de célula (inalterado)
 // ──────────────────────────────────────────────────────────────────────
 interface GroupCardProps {
   group: Group
@@ -456,7 +448,7 @@ function GroupCard({ group, onEdit, onView, onDelete }: GroupCardProps) {
   )
 }
 
-// ── Tab: Lista compacta ──────────────────────────────────────────────
+// ── Tab: Lista compacta (inalterada) ─────────────────────────────────
 function ListaTab({ groups, onEdit, onView, onDelete }: { groups: Group[]; onEdit: (g: Group) => void; onView: (g: Group) => void; onDelete: (g: Group) => void }) {
   if (groups.length === 0) {
     return <EmptyState title="Nenhuma célula cadastrada" description="Crie a primeira célula pelo botão 'Nova Célula'." />
@@ -499,7 +491,7 @@ function ListaTab({ groups, onEdit, onView, onDelete }: { groups: Group[]; onEdi
   )
 }
 
-// ── Tab: Relatórios — seleção de célula + relatórios reais ─────────
+// ── Tab: Relatórios (inalterada) ──────────────────────────────────────
 function RelatoriosTab({ groups }: { groups: Group[] }) {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
     groups.length > 0 ? groups[0].id : null
@@ -515,7 +507,6 @@ function RelatoriosTab({ groups }: { groups: Group[] }) {
 
   return (
     <div className="space-y-4">
-      {/* Seletor de célula */}
       <div className="flex gap-2 items-center flex-wrap">
         <span className="text-sm text-text-secondary shrink-0">Célula:</span>
         <select
@@ -528,8 +519,200 @@ function RelatoriosTab({ groups }: { groups: Group[] }) {
           ))}
         </select>
       </div>
-
       {selectedGroupId && <CellReports groupId={selectedGroupId} />}
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// F3-C: Modal de bairro (criar/editar)
+// ──────────────────────────────────────────────────────────────────────
+interface NeighborhoodModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  churchUnits: ChurchUnit[]
+  editing: CellNeighborhood | null
+}
+
+function NeighborhoodModal({ open, onClose, churchId, churchUnits, editing }: NeighborhoodModalProps) {
+  const createNeighborhood = useCreateCellNeighborhood()
+  const updateNeighborhood = useUpdateCellNeighborhood()
+  const [name, setName] = useState(editing?.name ?? '')
+  const [unitId, setUnitId] = useState(editing?.unit_id ?? (churchUnits[0]?.id ?? ''))
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim() || !unitId) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      if (editing) {
+        await updateNeighborhood.mutateAsync({ id: editing.id, church_id: churchId, name: name.trim(), unit_id: unitId })
+      } else {
+        await createNeighborhood.mutateAsync({ church_id: churchId, unit_id: unitId, name: name.trim() })
+      }
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar bairro')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={editing ? 'Editar Bairro' : 'Novo Bairro'}>
+      <form onSubmit={e => { void handleSubmit(e) }} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-text-secondary mb-1">Nome do bairro *</label>
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Camboinhas" required />
+        </div>
+        {churchUnits.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Unidade *</label>
+            <select
+              value={unitId}
+              onChange={e => setUnitId(e.target.value)}
+              required
+              className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">Selecione a unidade</option>
+              {churchUnits.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" onClick={onClose}>Cancelar</Button>
+          <Button type="submit" disabled={submitting || !name.trim() || !unitId}>
+            {submitting ? 'Salvando...' : editing ? 'Salvar' : 'Criar'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ── Tabela de bairros (auxiliar para RegioesTab) ──────────────────────
+interface NeighborhoodTableProps {
+  items: CellNeighborhood[]
+  onEdit: (n: CellNeighborhood) => void
+  onToggle: (n: CellNeighborhood) => Promise<void>
+  togglingId: string | null
+}
+
+function NeighborhoodTable({ items, onEdit, onToggle, togglingId }: NeighborhoodTableProps) {
+  return (
+    <div className="bg-bg-surface rounded-2xl border border-border-default shadow-sm overflow-hidden">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="bg-bg-hover border-b border-border-default">
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Bairro</th>
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Status</th>
+            <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border-default">
+          {items.map(n => (
+            <tr key={n.id} className="hover:bg-bg-hover transition-colors">
+              <td className="px-4 py-3 text-sm font-medium text-text-primary">{n.name}</td>
+              <td className="px-4 py-3">
+                <Badge label={n.is_active ? 'Ativo' : 'Inativo'} variant={n.is_active ? 'green' : 'gray'} />
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex gap-3">
+                  <button onClick={() => onEdit(n)} className="text-xs text-primary font-medium">
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => void onToggle(n)}
+                    disabled={togglingId === n.id}
+                    className="text-xs text-text-secondary hover:text-text-primary font-medium disabled:opacity-50"
+                  >
+                    {togglingId === n.id ? '...' : n.is_active ? 'Desativar' : 'Reativar'}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Tab: Regiões — F3-C (admin only) ─────────────────────────────────
+function RegioesTab({ churchId, churchUnits }: { churchId: string; churchUnits: ChurchUnit[] }) {
+  const { data: allNeighborhoods = [] } = useAllCellNeighborhoods(churchId)
+  const updateNeighborhood = useUpdateCellNeighborhood()
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingNbh, setEditingNbh] = useState<CellNeighborhood | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
+
+  async function handleToggle(n: CellNeighborhood) {
+    setTogglingId(n.id)
+    try {
+      await updateNeighborhood.mutateAsync({ id: n.id, church_id: churchId, is_active: !n.is_active })
+    } finally {
+      setTogglingId(null)
+    }
+  }
+
+  function openNew() { setEditingNbh(null); setModalOpen(true) }
+  function openEdit(n: CellNeighborhood) { setEditingNbh(n); setModalOpen(true) }
+
+  const byUnit = churchUnits.map(u => ({
+    unit: u,
+    items: allNeighborhoods.filter(n => n.unit_id === u.id),
+  })).filter(g => g.items.length > 0)
+
+  const orphaned = allNeighborhoods.filter(n => !churchUnits.some(u => u.id === n.unit_id))
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-text-secondary">
+          {allNeighborhoods.length} bairro{allNeighborhoods.length !== 1 ? 's' : ''} cadastrado{allNeighborhoods.length !== 1 ? 's' : ''}
+        </p>
+        <Button onClick={openNew}>+ Novo Bairro</Button>
+      </div>
+
+      {allNeighborhoods.length === 0 ? (
+        <EmptyState
+          title="Nenhum bairro cadastrado"
+          description="Crie o primeiro bairro para organizar as células por região."
+          action={<Button onClick={openNew}>+ Novo Bairro</Button>}
+        />
+      ) : (
+        <div className="space-y-6">
+          {byUnit.map(({ unit, items }) => (
+            <div key={unit.id}>
+              <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">{unit.name}</h2>
+              <NeighborhoodTable items={items} onEdit={openEdit} onToggle={handleToggle} togglingId={togglingId} />
+            </div>
+          ))}
+          {orphaned.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Sem unidade</h2>
+              <NeighborhoodTable items={orphaned} onEdit={openEdit} onToggle={handleToggle} togglingId={togglingId} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {modalOpen && (
+        <NeighborhoodModal
+          open={modalOpen}
+          onClose={() => { setModalOpen(false); setEditingNbh(null) }}
+          churchId={churchId}
+          churchUnits={churchUnits}
+          editing={editingNbh}
+        />
+      )}
     </div>
   )
 }
@@ -538,20 +721,31 @@ function RelatoriosTab({ groups }: { groups: Group[] }) {
 // Página principal
 // ──────────────────────────────────────────────────────────────────────
 export default function Celulas() {
-  const { churchId } = useAuth()
-  const [activeTab, setActiveTab] = useState<CelulasTab>('geral')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editing, setEditing]     = useState<Group | null>(null)
-  const [viewing, setViewing]     = useState<Group | null>(null)
-  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null)
-  const [unitFilter, setUnitFilter] = useState<string>('')
-  const [unitDropOpen, setUnitDropOpen] = useState(false)
+  const { churchId, role } = useAuth() as { churchId: string | null; role: string | null }
+  const isAdmin = role === 'admin'
 
+  const [activeTab, setActiveTab] = useState<CelulasTab>('geral')
+  const [modalOpen, setModalOpen]         = useState(false)
+  const [editing, setEditing]             = useState<Group | null>(null)
+  const [viewing, setViewing]             = useState<Group | null>(null)
+  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null)
+  const [unitFilter, setUnitFilter]       = useState<string>('')
+  const [unitDropOpen, setUnitDropOpen]   = useState(false)
+
+  // ── Todos os hooks ANTES de qualquer return condicional ──
   const { data: groups, isLoading, isError, refetch } = useGroups(churchId ?? '')
-  const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
+  const { data: churchUnits = [] }  = useChurchUnits(churchId ?? '')
+  const { data: neighborhoods = [] } = useCellNeighborhoods(churchId ?? '')
   const deleteGroup = useDeleteGroup()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
+
+  const tabs: { id: CelulasTab; label: string }[] = [
+    { id: 'geral',      label: 'Visão geral' },
+    { id: 'lista',      label: 'Lista'       },
+    { id: 'relatorios', label: 'Relatórios'  },
+    ...(isAdmin ? [{ id: 'regioes' as CelulasTab, label: 'Regiões' }] : []),
+  ]
 
   function handleEdit(g: Group) { setEditing(g); setModalOpen(true) }
   function handleNew()          { setEditing(null); setModalOpen(true) }
@@ -568,6 +762,102 @@ export default function Celulas() {
   const activeGroups   = filteredByUnit.filter(g => g.status === 'active')
   const inactiveGroups = filteredByUnit.filter(g => g.status !== 'active')
   const allGroups      = filteredByUnit
+
+  // ── F3-D: visão geral hierárquica (Unidade → Bairro → Células) ─────
+  function renderGeralTab() {
+    if (allGroups.length === 0) {
+      return (
+        <EmptyState
+          title="Nenhuma célula cadastrada"
+          description="Crie a primeira célula clicando em 'Nova Célula'."
+          action={<Button onClick={handleNew}>+ Nova Célula</Button>}
+        />
+      )
+    }
+
+    // Sem bairros: comportamento original (Ativas / Inativas)
+    if (neighborhoods.length === 0) {
+      return (
+        <div className="space-y-6">
+          {activeGroups.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Ativas</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
+              </div>
+            </div>
+          )}
+          {inactiveGroups.length > 0 && (
+            <div>
+              <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Inativas</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {inactiveGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Com bairros: hierarquia Unidade → Bairro → Células
+    const activeWithNbh    = activeGroups.filter(g => (g as any).neighborhood_id)
+    const activeWithoutNbh = activeGroups.filter(g => !(g as any).neighborhood_id)
+
+    const nbhSections = neighborhoods.map(n => ({
+      neighborhood: n,
+      unit: churchUnits.find(u => u.id === n.unit_id) ?? null,
+      cells: activeWithNbh.filter(g => (g as any).neighborhood_id === n.id),
+    }))
+
+    const unitSections = churchUnits.map(u => ({
+      unit: u,
+      neighborhoods: nbhSections.filter(s => s.neighborhood.unit_id === u.id && s.cells.length > 0),
+    })).filter(s => s.neighborhoods.length > 0)
+
+    return (
+      <div className="space-y-8">
+        {unitSections.map(({ unit, neighborhoods: unitNbhs }) => (
+          <div key={unit.id}>
+            <h2 className="text-sm font-bold text-text-primary uppercase tracking-widest mb-4">{unit.name}</h2>
+            <div className="space-y-5">
+              {unitNbhs.map(({ neighborhood, cells }) => (
+                <div key={neighborhood.id}>
+                  <h3 className="text-xs font-semibold text-text-secondary tracking-widest mb-3 pl-1">
+                    ↳ {neighborhood.name}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {cells.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {activeWithoutNbh.length > 0 && (
+          <div>
+            <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Sem região</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeWithoutNbh.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
+            </div>
+          </div>
+        )}
+
+        {activeGroups.length === 0 && (
+          <p className="text-sm text-text-tertiary text-center py-8">Nenhuma célula ativa.</p>
+        )}
+
+        {inactiveGroups.length > 0 && (
+          <div>
+            <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Inativas</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {inactiveGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -625,9 +915,9 @@ export default function Celulas() {
         </div>
       )}
 
-      {/* ── Tabs ─────────────────────────────────────────────────── */}
+      {/* Tabs */}
       <div className="flex gap-1 border-b border-border-default -mb-2">
-        {TABS.map(tab => (
+        {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -642,43 +932,19 @@ export default function Celulas() {
         ))}
       </div>
 
-      {/* Content por tab */}
+      {/* Conteúdo por tab */}
       {isLoading ? (
         <div className="flex items-center justify-center h-48"><Spinner size="lg" /></div>
       ) : isError ? (
         <ErrorState message="Não foi possível carregar as células." onRetry={() => void refetch()} />
+      ) : activeTab === 'regioes' && isAdmin ? (
+        <RegioesTab churchId={churchId} churchUnits={churchUnits} />
       ) : activeTab === 'relatorios' ? (
         <RelatoriosTab groups={allGroups.filter(g => g.status === 'active')} />
       ) : activeTab === 'lista' ? (
         <ListaTab groups={allGroups} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />
       ) : (
-        // Visão geral — cards com agrupamento
-        allGroups.length === 0 ? (
-          <EmptyState
-            title="Nenhuma célula cadastrada"
-            description="Crie a primeira célula clicando em 'Nova Célula'."
-            action={<Button onClick={handleNew}>+ Nova Célula</Button>}
-          />
-        ) : (
-          <div className="space-y-6">
-            {activeGroups.length > 0 && (
-              <div>
-                <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Ativas</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {activeGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
-                </div>
-              </div>
-            )}
-            {inactiveGroups.length > 0 && (
-              <div>
-                <h2 className="text-xs font-semibold text-text-tertiary uppercase tracking-widest mb-3">Inativas</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {inactiveGroups.map(g => <GroupCard key={g.id} group={g} onEdit={handleEdit} onView={setViewing} onDelete={setDeletingGroup} />)}
-                </div>
-              </div>
-            )}
-          </div>
-        )
+        renderGeralTab()
       )}
 
       {modalOpen && (
@@ -693,7 +959,7 @@ export default function Celulas() {
         <CellDetailPanel group={viewing} churchId={churchId} onClose={() => setViewing(null)} />
       )}
 
-      {/* Delete confirmation modal */}
+      {/* Modal de confirmação de exclusão */}
       {deletingGroup && (
         <ModalPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

@@ -356,7 +356,7 @@ export interface CellNeighborhood {
 
 export function useCellNeighborhoods(churchId: string) {
   return useQuery({
-    queryKey: ['cell_neighborhoods', churchId],
+    queryKey: ['cell_neighborhoods', churchId, 'active'],
     queryFn: async (): Promise<CellNeighborhood[]> => {
       if (!churchId) return []
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -365,6 +365,25 @@ export function useCellNeighborhoods(churchId: string) {
         .select('*')
         .eq('church_id', churchId)
         .eq('is_active', true)
+        .order('name', { ascending: true })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as CellNeighborhood[]
+    },
+    enabled: Boolean(churchId),
+  })
+}
+
+// Retorna TODOS os bairros (ativos e inativos) — usado na tela de gestão (F3-C)
+export function useAllCellNeighborhoods(churchId: string) {
+  return useQuery({
+    queryKey: ['cell_neighborhoods', churchId, 'all'],
+    queryFn: async (): Promise<CellNeighborhood[]> => {
+      if (!churchId) return []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .from('cell_neighborhoods')
+        .select('*')
+        .eq('church_id', churchId)
         .order('name', { ascending: true })
       if (error) throw new Error(error.message)
       return (data ?? []) as CellNeighborhood[]
