@@ -35,6 +35,17 @@ export interface ChurchEventFull {
   created_by: string | null
   created_at: string
   updated_at: string
+  // Pastoral fields (F1-A)
+  is_pastoral: boolean
+  assigned_pastor_id: string | null
+  person_ids: string[]
+  pastoral_category: string | null
+  pastoral_notes: string | null
+  cancelled_at: string | null
+  cancelled_reason: string | null
+  alert_minutes_before: number[]
+  alert_pastor_whatsapp: boolean
+  alert_summary_include: boolean
 }
 
 export interface EventOccurrence {
@@ -121,6 +132,8 @@ export function useEventOccurrences(
       if (ministryId) {
         rows = rows.filter(o => o.church_events?.ministry_id === ministryId)
       }
+      // Exclude pastoral events from the public calendar — they belong in /agenda-pastoral only
+      rows = rows.filter(o => o.church_events?.is_pastoral !== true)
       return rows
     },
     enabled: Boolean(churchId),

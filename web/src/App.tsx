@@ -57,7 +57,8 @@ const Pipeline    = lazy(() => import('@/pages/Pipeline'))
 const Ministerios = lazy(() => import('@/pages/Ministerios'))
 const Escalas     = lazy(() => import('@/pages/Escalas'))
 const Financeiro  = lazy(() => import('@/pages/Financeiro'))
-const Agenda      = lazy(() => import('@/pages/Agenda'))
+const Agenda          = lazy(() => import('@/pages/Agenda'))
+const AgendaPastoral  = lazy(() => import('@/pages/AgendaPastoral'))
 const Gabinete             = lazy(() => import('@/pages/Gabinete'))
 const GabineteAgendamentos = lazy(() => import('@/pages/GabineteAgendamentos'))
 const Celulas        = lazy(() => import('@/pages/Celulas'))
@@ -432,8 +433,9 @@ export default function App() {
             }
           >
             <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></ErrorBoundary>} />
-            <Route path="agenda"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
-            <Route path="eventos"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EventsList /></Suspense></ErrorBoundary>} />
+            <Route path="agenda"          element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
+            <Route path="agenda-pastoral" element={<ErrorBoundary><RoleRoute path="agenda-pastoral"><Suspense fallback={<PageLoader />}><AgendaPastoral /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="eventos"         element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EventsList /></Suspense></ErrorBoundary>} />
             <Route path="cursos"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CursosPage /></Suspense></ErrorBoundary>} />
             <Route path="empresarios"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmpresariosPage /></Suspense></ErrorBoundary>} />
             <Route path="oracao"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><OracaoPage /></Suspense></ErrorBoundary>} />
