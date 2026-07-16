@@ -119,9 +119,10 @@ export function useEventOccurrences(
     queryFn: async (): Promise<EventOccurrence[]> => {
       const { data, error } = await supabase
         .from('event_occurrences')
-        .select('*, church_events(*)')
+        .select('*, church_events!inner(*)')
         .eq('church_id', churchId)
         .eq('is_cancelled', false)
+        .eq('church_events.is_pastoral', false)
         .gte('start_datetime', from.toISOString())
         .lte('start_datetime', to.toISOString())
         .order('start_datetime', { ascending: true })
