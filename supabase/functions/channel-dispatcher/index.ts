@@ -27,7 +27,7 @@ interface NormalizedInbound {
   from_phone: string; text: string; provider_message_id: string;
   timestamp: string;  instance_id: string;
 }
-interface SendResult { ok: boolean; message_id?: string; error?: string }
+interface SendResult { ok: boolean; message_id?: string; wa_delivered?: boolean; error?: string }
 interface ChannelAdapter {
   send(params: {
     instance_id: string; token: string; to_phone: string; text: string
@@ -55,7 +55,15 @@ const ZApiAdapter: ChannelAdapter = {
       )
       const body = await res.json().catch(() => ({})) as Record<string, unknown>
       // Z-API retorna { zaapId, messageId, id } — preferir messageId
-      if (res.ok) return { ok: true, message_id: (body.messageId ?? body.zaapId ?? body.id ?? '') as string }
+      if (res.ok) {
+        const waId = body.messageId as string | undefined
+        const qId  = body.zaapId   as string | undefined
+        return {
+          ok:           true,
+          message_id:   waId ?? qId ?? (body.id as string) ?? '',
+          wa_delivered: typeof waId === 'string' && waId.startsWith('3EB'),
+        }
+      }
       return { ok: false, error: `Z-API ${res.status}: ${JSON.stringify(body)}` }
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : String(err) }
@@ -244,11 +252,12 @@ Deno.serve(async (req) => {
       results.push({ id: item.id, result: r })
     }
 
-    const sent   = results.filter(r => r.result === 'sent').length
-    const failed = results.filter(r => r.result === 'failed').length
-    const retry  = results.filter(r => r.result === 'rescheduled').length
-    console.log(`[channel-dispatcher] sent=${sent} failed=${failed} rescheduled=${retry}`)
-    return resp({ ok: true, processed: items.length, sent, failed, rescheduled: retry })
+    const sent            = results.filter(r => r.result === 'sent').length
+    const pendingDelivery = results.filter(r => r.result === 'pending_delivery').length
+    const failed          = results.filter(r => r.result === 'failed').length
+    const retry           = results.filter(r => r.result === 'rescheduled').length
+    console.log(`[channel-dispatcher] sent=${sent} pending_delivery=${pendingDelivery} failed=${failed} rescheduled=${retry}`)
+    return resp({ ok: true, processed: items.length, sent, pending_delivery: pendingDelivery, failed, rescheduled: retry })
 
   } catch (err) {
     console.error('[channel-dispatcher] unhandled:', err)
@@ -320,17 +329,19 @@ async function processQueueItem(
   const now = new Date().toISOString()
 
   if (result.ok) {
+    const qStatus = result.wa_delivered ? 'sent' : 'pending_delivery'
     await Promise.all([
       sb.from('channel_dispatch_queue').update({
-        status: 'sent', attempt_count: item.attempt_count + 1,
-        processed_at: now, provider_response: { message_id: result.message_id },
+        status: qStatus, attempt_count: item.attempt_count + 1,
+        processed_at: now,
+        provider_response: { message_id: result.message_id, wa_delivered: result.wa_delivered ?? false },
       }).eq('id', queueId),
       sb.from('conversation_messages').update({
         status: 'sent', provider_message_id: result.message_id ?? null,
       }).eq('id', item.message_id),
     ])
-    console.log(`[channel-dispatcher] ${queueId} → sent (id: ${result.message_id})`)
-    return 'sent'
+    console.log(`[channel-dispatcher] ${queueId} → ${qStatus} (id: ${result.message_id}, wa_delivered: ${result.wa_delivered ?? false})`)
+    return qStatus
   }
 
   return await markFailed(sb, item, result.error ?? 'provider error')
