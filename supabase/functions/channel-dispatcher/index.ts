@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: channel-dispatcher  v9 — Z-API principal
+// Edge Function: channel-dispatcher  v10 — Meta Cloud API + Z-API
 // Única função que conhece providers de canal.
 //
 // Fluxo:
@@ -9,10 +9,11 @@
 //   4. Sucesso: status=sent | Falha: backoff / failed
 //
 // Providers suportados:
-//   zapi      → Z-API REST (Client-Token via ZAPI_CLIENT_TOKEN env secret)
-//   chatpro   → chatpro-send EF (credenciais via Secrets)
-//   mock      → MockAdapter (log fake)
-//   meta_cloud → stub (futuro)
+//   zapi       → Z-API REST (Client-Token via ZAPI_CLIENT_TOKEN env secret)
+//   chatpro    → chatpro-send EF (credenciais via Secrets)
+//   mock       → MockAdapter (log fake)
+//   meta_cloud → Meta Cloud API v25.0 (token via META_CLOUD_ACCESS_TOKEN env ou coluna meta_access_token)
+//   n8n        → webhook n8n (feature-flagged N8N_OUTBOUND_ENABLED)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -121,9 +122,90 @@ const ChatProAdapter: ChannelAdapter = {
 }
 
 // ── MetaAdapter ───────────────────────────────────────────────
+// Cloud API v25.0 — endpoint: https://graph.facebook.com/v25.0/{phone_number_id}/messages
+// instance_id = meta_phone_number_id, token = access_token (System User ou env META_CLOUD_ACCESS_TOKEN)
+//
+// Modo template (business-initiated — caso padrão IGV, sempre fora da janela 24h):
+//   content JSON: { "type":"template","name":"igv_boas_vindas","language":"pt_BR","params":[{"type":"text","text":"João"}] }
+// Modo texto livre (janela 24h aberta):
+//   content = qualquer string não-JSON ou JSON sem type:"template"
 const MetaAdapter: ChannelAdapter = {
-  async send() { return { ok: false, error: 'MetaAdapter not implemented yet' } },
-  parseWebhook() { return null },
+  async send({ instance_id, token, to_phone, text }) {
+    const digits = to_phone.replace(/\D/g, '')
+    const phone  = digits.startsWith('55') ? digits : `55${digits}`
+
+    // Detecta modo template: content = JSON com { type:"template", name, language?, params? }
+    let body: Record<string, unknown>
+    try {
+      const spec = JSON.parse(text) as Record<string, unknown>
+      if (spec.type === 'template' && typeof spec.name === 'string') {
+        body = {
+          messaging_product: 'whatsapp',
+          to:   phone,
+          type: 'template',
+          template: {
+            name:     spec.name,
+            language: { code: (spec.language as string | undefined) ?? 'pt_BR' },
+            components: Array.isArray(spec.params) && spec.params.length > 0
+              ? [{ type: 'body', parameters: spec.params }]
+              : [],
+          },
+        }
+      } else {
+        throw new Error('not a template spec')
+      }
+    } catch {
+      // Texto livre
+      body = {
+        messaging_product: 'whatsapp',
+        to:   phone,
+        type: 'text',
+        text: { body: text, preview_url: false },
+      }
+    }
+
+    // Env META_CLOUD_ACCESS_TOKEN tem prioridade sobre coluna do banco (mais seguro para System User Token)
+    const accessToken = Deno.env.get('META_CLOUD_ACCESS_TOKEN') || token
+
+    try {
+      const res = await fetch(
+        `https://graph.facebook.com/v25.0/${instance_id}/messages`,
+        {
+          method:  'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body:   JSON.stringify(body),
+          signal: AbortSignal.timeout(15_000),
+        }
+      )
+      const payload = await res.json().catch(() => ({})) as Record<string, unknown>
+
+      if (res.ok) {
+        // Meta retorna: { messaging_product:"whatsapp", contacts:[...], messages:[{ id:"wamid.xxx" }] }
+        const messages = payload.messages as Array<{ id: string }> | undefined
+        const wamid    = messages?.[0]?.id ?? ''
+        return { ok: true, message_id: wamid, wa_delivered: Boolean(wamid) }
+      }
+
+      // Meta retorna: { error: { code, type, message, fbtrace_id } }
+      const metaErr = payload.error as Record<string, unknown> | undefined
+      const code    = metaErr?.code    ?? res.status
+      const errType = metaErr?.type    ?? 'unknown'
+      const message = metaErr?.message ?? JSON.stringify(payload)
+      console.error(`[MetaAdapter] ✗ ${code} ${errType}: ${message}`)
+      return { ok: false, error: `meta_cloud ${code} ${errType}: ${message}` }
+
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) }
+    }
+  },
+
+  parseWebhook() {
+    // Fatia 3 — webhook-receiver Meta (delivery status + inbound). Por ora retorna null.
+    return null
+  },
 }
 
 // ── MockAdapter ───────────────────────────────────────────────
@@ -234,6 +316,24 @@ Deno.serve(async (req) => {
       return resp({ ok: true, result })
     }
 
+    // ── Smoke test Meta Cloud API ─────────────────────────────────
+    // Dispara direto ao MetaAdapter, bypassa fila — não afeta produção.
+    // Requer Authorization: Bearer {SERVICE_ROLE_KEY}.
+    if (body.trigger === 'meta_smoke_test') {
+      const authHeader = req.headers.get('Authorization') ?? ''
+      if (authHeader !== `Bearer ${SERVICE_ROLE_KEY}`) {
+        return resp({ ok: false, error: 'unauthorized' }, 401)
+      }
+      const smokeResult = await MetaAdapter.send({
+        instance_id: String((body as Record<string, unknown>).phone_number_id ?? ''),
+        token:       String((body as Record<string, unknown>).access_token    ?? ''),
+        to_phone:    String((body as Record<string, unknown>).to_phone        ?? ''),
+        text:        String((body as Record<string, unknown>).text            ?? 'Ekthos Meta Cloud API smoke test'),
+      })
+      console.log('[channel-dispatcher] meta_smoke_test →', JSON.stringify(smokeResult))
+      return resp({ ok: true, smoke: smokeResult })
+    }
+
     const { data: items, error: fetchErr } = await sb
       .from('channel_dispatch_queue')
       .select('id')
@@ -277,7 +377,8 @@ async function processQueueItem(
       id, message_id, to_phone, content, church_id,
       attempt_count, max_attempts, status, channel_id,
       church_whatsapp_channels!channel_id (
-        channel_type, zapi_instance_id, zapi_token, active, session_status
+        channel_type, zapi_instance_id, zapi_token, active, session_status,
+        meta_phone_number_id, meta_access_token
       )
     `)
     .eq('id', queueId)
@@ -297,6 +398,7 @@ async function processQueueItem(
     channel_type: string; zapi_instance_id: string | null;
     zapi_token: string | null;
     active: boolean; session_status: string;
+    meta_phone_number_id: string | null; meta_access_token: string | null;
   } | null
 
   if (!channel || !channel.active) return await markFailed(sb, item, 'Canal inativo ou não encontrado')
@@ -307,17 +409,21 @@ async function processQueueItem(
   const isChatPro = channel.channel_type === 'chatpro'
   const isMock    = channel.channel_type === 'mock'
   const isN8n     = channel.channel_type === 'n8n'
+  const isMeta    = channel.channel_type === 'meta_cloud'
 
   // ZApi: precisa de credenciais na linha do canal
-  // ChatPro, Mock e N8n não usam zapi_instance_id/token diretamente
-  if (!isMock && !isChatPro && !isN8n && (!channel.zapi_instance_id || !channel.zapi_token)) {
+  // ChatPro, Mock, N8n e Meta não usam zapi_instance_id/token diretamente
+  if (!isMock && !isChatPro && !isN8n && !isMeta && (!channel.zapi_instance_id || !channel.zapi_token)) {
     return await markFailed(sb, item, 'Credenciais Z-API ausentes no canal')
+  }
+  if (isMeta && !channel.meta_phone_number_id) {
+    return await markFailed(sb, item, 'meta_phone_number_id ausente no canal')
   }
 
   const adapter = resolveAdapter(channel.channel_type ?? 'zapi')
   const result  = await adapter.send({
-    instance_id: channel.zapi_instance_id ?? 'mock',
-    token:       channel.zapi_token       ?? 'mock',
+    instance_id: isMeta ? (channel.meta_phone_number_id ?? '') : (channel.zapi_instance_id ?? 'mock'),
+    token:       isMeta ? (channel.meta_access_token    ?? '') : (channel.zapi_token       ?? 'mock'),
     to_phone:    item.to_phone,
     text:        item.content,
     // Contexto para N8nAdapter buscar credenciais no Supabase
