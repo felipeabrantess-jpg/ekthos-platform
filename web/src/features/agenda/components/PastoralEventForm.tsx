@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -10,6 +11,8 @@ import {
   useCreatePastoralEvent,
   useUpdatePastoralEvent,
   useCancelPastoralEvent,
+  type CreatePastoralEventInput,
+  type UpdatePastoralEventInput,
 } from '@/features/agenda/hooks/usePastoralEventMutations'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -44,6 +47,87 @@ function todayDate(): string {
   const d = new Date()
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+// ── F1-D: Conflict detection types & helpers ──────────────────────────────────
+
+interface ConflictEvent {
+  id: string
+  title: string
+  start_datetime: string
+  end_datetime: string | null
+  all_day: boolean
+}
+
+interface ConflictInfo {
+  title: string
+  timeLabel: string
+}
+
+type PendingPayload =
+  | { mode: 'create'; data: CreatePastoralEventInput }
+  | { mode: 'update'; data: UpdatePastoralEventInput }
+
+function effectiveRange(ev: ConflictEvent): { start: Date; end: Date } {
+  if (ev.all_day) {
+    const d = toLocalDate(ev.start_datetime)
+    return {
+      start: new Date(`${d}T00:00:00`),
+      end:   new Date(`${d}T23:59:59`),
+    }
+  }
+  const start = new Date(ev.start_datetime)
+  const end   = ev.end_datetime
+    ? new Date(ev.end_datetime)
+    : new Date(start.getTime() + 60 * 60 * 1000)
+  return { start, end }
+}
+
+function conflictTimeLabel(ev: ConflictEvent): string {
+  if (ev.all_day) return 'o dia todo'
+  const s = new Date(ev.start_datetime)
+  const p = (n: number) => String(n).padStart(2, '0')
+  const startStr = `${p(s.getHours())}:${p(s.getMinutes())}`
+  if (ev.end_datetime) {
+    const e = new Date(ev.end_datetime)
+    return `${startStr}–${p(e.getHours())}:${p(e.getMinutes())}`
+  }
+  return startStr
+}
+
+async function fetchConflicts(
+  churchId: string,
+  assignedPastorId: string | null,
+  myEffStart: Date,
+  myEffEnd: Date,
+  excludeId?: string,
+): Promise<ConflictInfo[]> {
+  if (!assignedPastorId) return []
+
+  const windowStart = new Date(myEffStart.getTime() - 24 * 3600 * 1000).toISOString()
+  const windowEnd   = new Date(myEffEnd.getTime()   + 24 * 3600 * 1000).toISOString()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from('church_events') as any)
+    .select('id, title, start_datetime, end_datetime, all_day')
+    .eq('church_id', churchId)
+    .eq('is_pastoral', true)
+    .eq('active', true)
+    .eq('assigned_pastor_id', assignedPastorId)
+    .gte('start_datetime', windowStart)
+    .lte('start_datetime', windowEnd)
+
+  if (error || !data) return []
+
+  const myRange = { start: myEffStart, end: myEffEnd }
+
+  return (data as ConflictEvent[])
+    .filter(ev => ev.id !== excludeId)
+    .filter(ev => {
+      const r = effectiveRange(ev)
+      return myRange.start < r.end && myRange.end > r.start
+    })
+    .map(ev => ({ title: ev.title, timeLabel: conflictTimeLabel(ev) }))
 }
 
 // ── Form state ────────────────────────────────────────────────────────────────
@@ -95,16 +179,20 @@ const inputStyle = {
   color: 'var(--text-primary)',
 }
 
-const labelStyle = {
-  color: 'var(--text-secondary)',
-} as const
+const labelStyle = { color: 'var(--text-secondary)' } as const
 
 export default function PastoralEventForm({ open, onClose, editEvent, churchId }: Props) {
   const { user } = useAuth()
+
+  // Form state
   const [form, setForm] = useState<FormState>(() => buildInitial(editEvent))
   const [error, setError] = useState<string | null>(null)
   const [showCancelSection, setShowCancelSection] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+
+  // F1-D: conflict state
+  const [conflictWarning, setConflictWarning] = useState<ConflictInfo | null>(null)
+  const [pendingPayload,  setPendingPayload]  = useState<PendingPayload | null>(null)
 
   const createMut = useCreatePastoralEvent()
   const updateMut = useUpdatePastoralEvent()
@@ -116,6 +204,8 @@ export default function PastoralEventForm({ open, onClose, editEvent, churchId }
       setError(null)
       setShowCancelSection(false)
       setCancelReason('')
+      setConflictWarning(null)
+      setPendingPayload(null)
     }
   }, [open, editEvent])
 
@@ -139,50 +229,114 @@ export default function PastoralEventForm({ open, onClose, editEvent, churchId }
     setForm(prev => ({ ...prev, personIds: [...prev.personIds, ''] }))
   }
 
+  // ── F1-D: save helpers ──────────────────────────────────────────────────────
+
+  async function doSave(payload: PendingPayload) {
+    if (payload.mode === 'create') {
+      await createMut.mutateAsync(payload.data)
+    } else {
+      await updateMut.mutateAsync(payload.data)
+    }
+  }
+
+  async function handleConfirmSave() {
+    if (!pendingPayload) return
+    setError(null)
+    try {
+      await doSave(pendingPayload)
+      onClose()
+    } catch (err) {
+      setConflictWarning(null)
+      setPendingPayload(null)
+      setError(err instanceof Error ? err.message : 'Erro ao salvar compromisso.')
+    }
+  }
+
+  // ── Submit (with conflict check) ────────────────────────────────────────────
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     if (!form.title.trim()) return setError('Título é obrigatório.')
-    if (!form.date) return setError('Data é obrigatória.')
+    if (!form.date)         return setError('Data é obrigatória.')
     if (!form.allDay && !form.startTime) return setError('Horário de início é obrigatório.')
 
     const startISO = form.allDay ? toISO(form.date, '00:00') : toISO(form.date, form.startTime)
     const endISO   = !form.allDay && form.endTime ? toISO(form.date, form.endTime) : null
     const cleanIds = form.personIds.filter(id => id.trim() !== '')
 
+    // Effective range for overlap check (not persisted — only used for comparison)
+    let myEffStart: Date
+    let myEffEnd: Date
+    if (form.allDay) {
+      myEffStart = new Date(`${form.date}T00:00:00`)
+      myEffEnd   = new Date(`${form.date}T23:59:59`)
+    } else {
+      myEffStart = new Date(startISO)
+      myEffEnd   = endISO
+        ? new Date(endISO)
+        : new Date(myEffStart.getTime() + 60 * 60 * 1000)
+    }
+
+    const assignedPastorId = editEvent
+      ? (editEvent.assigned_pastor_id ?? user?.id ?? null)
+      : (user?.id ?? null)
+
+    const payload: PendingPayload = editEvent
+      ? {
+          mode: 'update',
+          data: {
+            id:                editEvent.id,
+            church_id:         churchId,
+            title:             form.title.trim(),
+            start_datetime:    startISO,
+            end_datetime:      endISO,
+            all_day:           form.allDay,
+            location:          form.location.trim() || null,
+            pastoral_category: form.category || null,
+            person_ids:        cleanIds,
+            pastoral_notes:    form.notes.trim() || null,
+          },
+        }
+      : {
+          mode: 'create',
+          data: {
+            church_id:          churchId,
+            assigned_pastor_id: user?.id ?? null,
+            title:              form.title.trim(),
+            start_datetime:     startISO,
+            end_datetime:       endISO,
+            all_day:            form.allDay,
+            location:           form.location.trim() || null,
+            pastoral_category:  form.category || null,
+            person_ids:         cleanIds,
+            pastoral_notes:     form.notes.trim() || null,
+          },
+        }
+
     try {
-      if (editEvent) {
-        await updateMut.mutateAsync({
-          id:                editEvent.id,
-          church_id:         churchId,
-          title:             form.title.trim(),
-          start_datetime:    startISO,
-          end_datetime:      endISO,
-          all_day:           form.allDay,
-          location:          form.location.trim() || null,
-          pastoral_category: form.category || null,
-          person_ids:        cleanIds,
-          pastoral_notes:    form.notes.trim() || null,
-        })
-      } else {
-        await createMut.mutateAsync({
-          church_id:          churchId,
-          assigned_pastor_id: user?.id ?? null,
-          title:              form.title.trim(),
-          start_datetime:     startISO,
-          end_datetime:       endISO,
-          all_day:            form.allDay,
-          location:           form.location.trim() || null,
-          pastoral_category:  form.category || null,
-          person_ids:         cleanIds,
-          pastoral_notes:     form.notes.trim() || null,
-        })
+      const conflicts = await fetchConflicts(
+        churchId,
+        assignedPastorId,
+        myEffStart,
+        myEffEnd,
+        editEvent?.id,
+      )
+
+      if (conflicts.length > 0) {
+        setConflictWarning(conflicts[0])
+        setPendingPayload(payload)
+        return
       }
+
+      await doSave(payload)
       onClose()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar compromisso.')
     }
   }
+
+  // ── Cancel pastoral event ───────────────────────────────────────────────────
 
   async function handleCancel() {
     if (!editEvent) return
@@ -199,7 +353,7 @@ export default function PastoralEventForm({ open, onClose, editEvent, churchId }
     }
   }
 
-  const isPending   = createMut.isPending || updateMut.isPending
+  const isPending    = createMut.isPending || updateMut.isPending
   const isCancelling = cancelMut.isPending
 
   if (!open) return null
@@ -455,6 +609,29 @@ export default function PastoralEventForm({ open, onClose, editEvent, churchId }
               </div>
             )}
 
+            {/* F1-D: Aviso de conflito de horário */}
+            {conflictWarning && (
+              <div
+                className="rounded-xl p-4"
+                style={{ background: '#FFFBEB', border: '1px solid #FDE68A' }}
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} />
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: '#92400E' }}>
+                      Conflito de horário detectado
+                    </p>
+                    <p className="text-sm mt-1" style={{ color: '#78350F' }}>
+                      Já existe{' '}
+                      <span className="font-semibold">"{conflictWarning.title}"</span>{' '}
+                      nesse período ({conflictWarning.timeLabel}).
+                      Deseja salvar mesmo assim?
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Erro geral */}
             {error && (
               <p className="text-sm font-medium" style={{ color: '#e13500' }}>
@@ -463,21 +640,43 @@ export default function PastoralEventForm({ open, onClose, editEvent, churchId }
             )}
           </div>
 
-          {/* ── Footer ── */}
+          {/* ── Footer — normal ou confirmação de conflito ── */}
           <div
             className="p-4 flex-shrink-0 flex items-center justify-end gap-2"
             style={{ borderTop: '1px solid var(--border-default)' }}
           >
-            <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending
-                ? 'Salvando...'
-                : editEvent
-                  ? 'Salvar alterações'
-                  : 'Criar compromisso'}
-            </Button>
+            {conflictWarning ? (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => { setConflictWarning(null); setPendingPayload(null) }}
+                  disabled={isPending}
+                >
+                  Voltar ao formulário
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleConfirmSave}
+                  disabled={isPending}
+                >
+                  {isPending ? 'Salvando...' : 'Salvar mesmo assim'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button type="button" variant="secondary" onClick={onClose} disabled={isPending}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending
+                    ? 'Salvando...'
+                    : editEvent
+                      ? 'Salvar alterações'
+                      : 'Criar compromisso'}
+                </Button>
+              </>
+            )}
           </div>
         </form>
       </div>
