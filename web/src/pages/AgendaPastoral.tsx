@@ -10,6 +10,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import PastoralEventForm from '@/features/agenda/components/PastoralEventForm'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -124,7 +125,8 @@ export default function AgendaPastoral() {
   )
   const [calendarRange, setCalendarRange] = useState(initialRange)
   const [selectedEvent, setSelectedEvent] = useState<ChurchEventFull | null>(null)
-  const [showComingSoon, setShowComingSoon] = useState(false)
+  const [showForm, setShowForm]           = useState(false)
+  const [editingEvent, setEditingEvent]   = useState<ChurchEventFull | null>(null)
 
   const { data: pastoralEvents = [], isLoading } = usePastoralEvents(
     churchId ?? '',
@@ -196,7 +198,7 @@ export default function AgendaPastoral() {
           </div>
         </div>
 
-        <Button onClick={() => setShowComingSoon(true)}>
+        <Button onClick={() => { setEditingEvent(null); setShowForm(true) }}>
           <Plus className="w-4 h-4 mr-1" />
           <span className="hidden sm:inline">Novo compromisso</span>
           <span className="sm:hidden">Novo</span>
@@ -430,7 +432,7 @@ export default function AgendaPastoral() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => setShowComingSoon(true)}
+                onClick={() => { setEditingEvent(selectedEvent); setShowForm(true) }}
               >
                 Editar compromisso
               </Button>
@@ -439,28 +441,13 @@ export default function AgendaPastoral() {
         </>
       )}
 
-      {/* ── "Coming soon" toast ── */}
-      {showComingSoon && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg"
-          style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border-default)',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
-            Criação de compromissos disponível na próxima etapa (F1-C)
-          </span>
-          <button
-            onClick={() => setShowComingSoon(false)}
-            className="p-0.5 rounded flex-shrink-0"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      {/* ── Pastoral Event Form (F1-C) ── */}
+      <PastoralEventForm
+        open={showForm}
+        onClose={() => { setShowForm(false); setEditingEvent(null) }}
+        editEvent={editingEvent}
+        churchId={churchId}
+      />
     </div>
   )
 }
