@@ -119,6 +119,23 @@ Deno.serve(async (req: Request) => {
     const email         = typeof payload.email           === 'string' ? payload.email.trim()           : null
     const invitedByName = typeof payload.invited_by_name === 'string' ? payload.invited_by_name.trim() : null
 
+    // Tipo de pessoa enviado pelo formulário (retrocompatível: ausente → 'visitante')
+    const VALID_TYPES = ['visitante', 'novo_convertido', 'reconciliado', 'membro'] as const
+    type PersonType = typeof VALID_TYPES[number]
+    const rawType    = typeof payload.person_type === 'string' ? payload.person_type.trim() : ''
+    const personType: PersonType = (VALID_TYPES as readonly string[]).includes(rawType)
+      ? rawType as PersonType
+      : 'visitante'
+
+    // Mapeamento tipo → person_stage (enum existente) + membership_status + slug do pipeline
+    const TYPE_MAP: Record<PersonType, { stage: string; status: string; pipelineSlug: string }> = {
+      visitante:       { stage: 'visitante',    status: 'visitor',     pipelineSlug: 'visitante'    },
+      novo_convertido: { stage: 'frequentador', status: 'new_convert', pipelineSlug: 'frequentador' },
+      reconciliado:    { stage: 'frequentador', status: 'reconciled',  pipelineSlug: 'reconciliado' },
+      membro:          { stage: 'frequentador', status: 'member',      pipelineSlug: 'membro'       },
+    }
+    const typeConfig = TYPE_MAP[personType]
+
     if (!slug || !name || name.length < 3 || !phone) {
       return new Response(JSON.stringify({ error: 'Campos obrigatórios inválidos' }), { status: 400, headers: json })
     }
@@ -207,6 +224,9 @@ Deno.serve(async (req: Request) => {
       if (!existing.first_visit_date) {
         updates.first_visit_date = new Date().toISOString().split('T')[0]
       }
+      // Atualiza membership_status se o tipo for mais específico que 'visitor'
+      // NÃO toca person_stage nem pipeline_stage_id — sem regressão de estágio
+      if (personType !== 'visitante') updates.membership_status = typeConfig.status
 
       const { error: updErr } = await supabase.from('people').update(updates).eq('id', existing.id)
       if (updErr) console.warn('[visitor-capture] UPDATE person falhou (não crítico):', updErr.message)
@@ -226,7 +246,8 @@ Deno.serve(async (req: Request) => {
           observacoes_pastorais: invitedByName ? 'Convidado por: ' + invitedByName : null,
           first_visit_date:      new Date().toISOString().split('T')[0],
           last_contact_at:       new Date().toISOString(),
-          person_stage:          'visitante',
+          person_stage:          typeConfig.stage,
+          membership_status:     typeConfig.status,
           // LGPD: consentimento explícito coletado no formulário QR Code.
           // O visitante submete o formulário com checkbox ou texto de aceite visível.
           // lgpd_consent_at registra o momento exato da captura para fins de auditoria.
@@ -255,6 +276,25 @@ Deno.serve(async (req: Request) => {
     })
     if (pipelineErr) {
       console.warn('[visitor-capture] Pipeline RPC falhou (não crítico):', pipelineErr.message)
+    }
+
+    // Para tipos não-visitante: reclassifica pipeline_stage_id para o estágio correto.
+    // O RPC acima fixou 'Visitante' como padrão; aqui corrigimos se necessário.
+    if (personType !== 'visitante' && !existing?.id) {
+      const { data: stageRow } = await supabase
+        .from('pipeline_stages')
+        .select('id')
+        .eq('church_id', churchId)
+        .eq('slug', typeConfig.pipelineSlug)
+        .maybeSingle()
+      if (stageRow?.id) {
+        await supabase.from('people')
+          .update({ pipeline_stage_id: stageRow.id })
+          .eq('id', personId)
+        console.log(`[visitor-capture] Pipeline corrigido → ${typeConfig.pipelineSlug} (${stageRow.id})`)
+      } else {
+        console.warn(`[visitor-capture] Stage slug '${typeConfig.pipelineSlug}' não encontrado para church ${churchId} — mantendo Visitante`)
+      }
     }
 
     // ── 7. Contador atômico de scans ──────────────────────
