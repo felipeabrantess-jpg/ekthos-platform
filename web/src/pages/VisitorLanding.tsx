@@ -62,6 +62,7 @@ export default function VisitorLanding() {
   const [submitted, setSubmitted] = useState(false)
   const [submitting,setSubmitting]= useState(false)
   const [errors,    setErrors]    = useState<Partial<FormState>>({})
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const [form, setForm] = useState<FormState>({
     name:            '',
@@ -112,6 +113,7 @@ export default function VisitorLanding() {
     const value = field === 'phone' ? maskPhone(raw) : raw
     setForm(prev => ({ ...prev, [field]: value }))
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }))
+    if (submitError) setSubmitError(null)
   }
 
   function validate(): boolean {
@@ -133,6 +135,7 @@ export default function VisitorLanding() {
     if (!validate() || submitting) return
 
     setSubmitting(true)
+    setSubmitError(null)
     try {
       await fetch(`${EF_BASE}/visitor-capture`, {
         method:  'POST',
@@ -149,8 +152,7 @@ export default function VisitorLanding() {
       // A EF sempre retorna 200, independente do resultado interno
       setSubmitted(true)
     } catch {
-      // Mesmo em erro de rede, mostramos sucesso (melhor UX + segurança)
-      setSubmitted(true)
+      setSubmitError('Sem conexão com a internet. Verifique sua rede e tente novamente.')
     } finally {
       setSubmitting(false)
     }
@@ -408,6 +410,12 @@ export default function VisitorLanding() {
                 style={{ fontSize: '16px' }}
               />
             </div>
+
+            {submitError && (
+              <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                <p className="text-sm text-red-600 text-center">{submitError}</p>
+              </div>
+            )}
 
             {/* Botão submit */}
             <button

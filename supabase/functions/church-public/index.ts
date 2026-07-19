@@ -14,18 +14,24 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-const ALLOWED_ORIGINS = [
+const ALLOWED_ORIGINS_EXACT = [
   'https://ekthos-platform.vercel.app',
   'https://www.ekthosai.com',
   'https://ekthosai.com',
   'https://ekthosai.net',
   'https://www.ekthosai.net',
 ]
+// Aceita subdomínios *.ekthoschurch.com (ex: igrejagraca.ekthoschurch.com)
+const ALLOWED_ORIGIN_CHURCH_RE = /^https:\/\/[a-z0-9-]+\.ekthoschurch\.com$/
+
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS_EXACT.includes(origin)) return true
+  return ALLOWED_ORIGIN_CHURCH_RE.test(origin)
+}
 
 function corsHeaders(origin: string | null): Record<string, string> {
-  const allowed = origin && ALLOWED_ORIGINS.includes(origin)
-    ? origin
-    : ALLOWED_ORIGINS[0]
+  const allowed = isOriginAllowed(origin) ? origin! : ALLOWED_ORIGINS_EXACT[0]
   return {
     'Access-Control-Allow-Origin':  allowed,
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
