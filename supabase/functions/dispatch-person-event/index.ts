@@ -128,7 +128,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 1c. Criar jornada de acolhimento (Sprint 2) ───────
     // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
-    if (person.person_stage === 'visitante' && person.is_bulk_import !== true) {
+    if ((person.person_stage === 'visitante' || person.source === 'qr_code') && person.is_bulk_import !== true) {
       // ═══════════════════════════════════════════════════════
       // R-PREMIUM-GUARD v34 — verifica contratação ativa
       // de agent-acolhimento antes de criar journey.

@@ -23,11 +23,14 @@ interface ChurchPublicData {
 }
 
 interface FormState {
-  name:           string
-  phone:          string
-  email:          string
+  name:            string
+  phone:           string
+  email:           string
   invited_by_name: string
+  person_type:     string   // 'visitante' | 'novo_convertido' | 'reconciliado' | 'membro'
 }
+
+const VALID_PERSON_TYPES = ['visitante', 'novo_convertido', 'reconciliado', 'membro'] as const
 
 // ── Constantes ───────────────────────────────────────────────
 
@@ -65,6 +68,7 @@ export default function VisitorLanding() {
     phone:           '',
     email:           '',
     invited_by_name: '',
+    person_type:     'visitante',
   })
 
   // ── Buscar dados públicos da church ──────────────────────
@@ -118,6 +122,8 @@ export default function VisitorLanding() {
       errs.phone = 'Telefone inválido. Ex: (11) 98765-4321'
     if (form.email && !EMAIL_REGEX.test(form.email))
       errs.email = 'Email inválido'
+    if (!(VALID_PERSON_TYPES as readonly string[]).includes(form.person_type))
+      errs.person_type = 'Selecione como você está chegando'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -137,6 +143,7 @@ export default function VisitorLanding() {
           phone:           form.phone,
           email:           form.email.trim() || undefined,
           invited_by_name: form.invited_by_name.trim() || undefined,
+          person_type:     form.person_type,
         }),
       })
       // A EF sempre retorna 200, independente do resultado interno
@@ -335,6 +342,31 @@ export default function VisitorLanding() {
               />
               {errors.phone && (
                 <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+              )}
+            </div>
+
+            {/* Como você está chegando */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Como você está chegando? <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={form.person_type}
+                onChange={e => handleChange('person_type', e.target.value)}
+                className={`w-full h-12 px-4 rounded-xl border text-base bg-white focus:outline-none focus:ring-2 transition-colors ${
+                  errors.person_type
+                    ? 'border-red-300 focus:ring-red-200'
+                    : 'border-gray-200 focus:ring-indigo-100 focus:border-indigo-300'
+                }`}
+                style={{ fontSize: '16px' }}
+              >
+                <option value="visitante">Visitante — primeira vez aqui</option>
+                <option value="novo_convertido">Novo convertido</option>
+                <option value="reconciliado">Reconciliado — retornando à fé</option>
+                <option value="membro">Membro ativo</option>
+              </select>
+              {errors.person_type && (
+                <p className="text-xs text-red-500 mt-1">{errors.person_type}</p>
               )}
             </div>
 
