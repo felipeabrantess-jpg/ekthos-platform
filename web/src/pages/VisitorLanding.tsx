@@ -363,7 +363,7 @@ export default function VisitorLanding() {
                 <option value="visitante">Visitante — primeira vez aqui</option>
                 <option value="novo_convertido">Novo convertido</option>
                 <option value="reconciliado">Reconciliado — retornando à fé</option>
-                <option value="membro">Membro ativo</option>
+                <option value="membro">Novo membro</option>
               </select>
               {errors.person_type && (
                 <p className="text-xs text-red-500 mt-1">{errors.person_type}</p>
