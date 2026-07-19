@@ -45,11 +45,14 @@ const ALLOWED_ORIGINS_EXACT = [
 ]
 // E1: aceita preview deployments Vercel (ex: ekthos-platform-abc123.vercel.app)
 const ALLOWED_ORIGIN_PREVIEW_RE = /^https:\/\/ekthos-platform(-[a-z0-9]+)*\.vercel\.app$/
+// E2: aceita subdomínios white-label das igrejas (ex: igreja-gerando-vencedores.ekthoschurch.com)
+const ALLOWED_ORIGIN_CHURCH_RE  = /^https:\/\/[a-z0-9-]+\.ekthoschurch\.com$/
 
 function isOriginAllowed(origin: string | null): boolean {
   if (!origin) return false
   if (ALLOWED_ORIGINS_EXACT.includes(origin)) return true
-  return ALLOWED_ORIGIN_PREVIEW_RE.test(origin)
+  if (ALLOWED_ORIGIN_PREVIEW_RE.test(origin)) return true
+  return ALLOWED_ORIGIN_CHURCH_RE.test(origin)
 }
 
 function corsHeaders(origin: string | null): Record<string, string> {
