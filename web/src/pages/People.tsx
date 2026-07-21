@@ -192,7 +192,7 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirth
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? '—'}</p>
+              <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? 'Visitante sem nome'}</p>
               {bdayDay !== null && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                   🎂 dia {bdayDay}
@@ -273,7 +273,7 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: 
           )}
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-medium text-text-primary">{person.name ?? '—'}</p>
+              <p className="text-sm font-medium text-text-primary">{person.name ?? 'Visitante sem nome'}</p>
               {bdayDay !== null && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                   🎂 dia {bdayDay}
@@ -385,7 +385,7 @@ function BirthdayContactCard({ person, contact, churchId, monthRef, onNameClick 
           className="font-medium text-text-primary hover:text-brand-600 truncate text-left w-full transition-colors leading-tight"
           style={{ fontSize: 16 }}
         >
-          {person.name ?? '—'}
+          {person.name ?? 'Visitante sem nome'}
         </button>
         {stage && (
           <span
