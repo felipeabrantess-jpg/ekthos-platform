@@ -48,13 +48,6 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
 
-function formatPhone(phone: string): string {
-  const d = phone.replace(/\D/g, '')
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
-  return phone
-}
-
 function displayName(name: string | null | undefined, phone: string | null | undefined): string {
   if (name) return name
   if (phone) return `Visitante · ${formatPhone(phone)}`
