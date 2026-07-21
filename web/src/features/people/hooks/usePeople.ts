@@ -60,13 +60,13 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         .is('deleted_at', null)
         .is('left_at', null)
 
-      // Ordenação: dia do aniversário quando filtrando por mês, senão alfabético
+      // Ordenação: dia do aniversário quando filtrando por mês, senão mais recente primeiro
       if (isBirthday) {
         query = query
           .order('birth_day',   { ascending: true })
           .order('name_sort',   { ascending: true })
       } else {
-        query = query.order('name_sort', { ascending: true })
+        query = query.order('created_at', { ascending: false })
       }
 
       query = query.range(from, to)
