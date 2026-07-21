@@ -43,7 +43,7 @@ function usePeopleForCuidado(churchId: string, search: string, period: Period, o
         .eq('church_id', churchId)
         .is('deleted_at', null)
         .is('left_at', null)
-        .order('name_sort', { ascending: true })
+        .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1)
 
       if (trimmed)   q = q.ilike('name', `%${trimmed}%`)
