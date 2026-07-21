@@ -48,6 +48,19 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
 
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, '')
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return phone
+}
+
+function displayName(name: string | null | undefined, phone: string | null | undefined): string {
+  if (name) return name
+  if (phone) return `Visitante · ${formatPhone(phone)}`
+  return 'Visitante sem nome'
+}
+
 const TABS: { id: PeopleTab; label: string }[] = [
   { id: 'geral',         label: 'Visão geral'        },
   { id: 'aniversarios',  label: 'Aniversários'       },
@@ -192,7 +205,7 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirth
           )}
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-sm font-semibold text-text-primary truncate">{person.name ?? 'Visitante sem nome'}</p>
+              <p className="text-sm font-semibold text-text-primary truncate">{displayName(person.name, person.phone)}</p>
               {bdayDay !== null && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                   🎂 dia {bdayDay}
@@ -273,7 +286,7 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: 
           )}
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="text-sm font-medium text-text-primary">{person.name ?? 'Visitante sem nome'}</p>
+              <p className="text-sm font-medium text-text-primary">{displayName(person.name, person.phone)}</p>
               {bdayDay !== null && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
                   🎂 dia {bdayDay}
@@ -385,7 +398,7 @@ function BirthdayContactCard({ person, contact, churchId, monthRef, onNameClick 
           className="font-medium text-text-primary hover:text-brand-600 truncate text-left w-full transition-colors leading-tight"
           style={{ fontSize: 16 }}
         >
-          {person.name ?? 'Visitante sem nome'}
+          {displayName(person.name, person.phone)}
         </button>
         {stage && (
           <span
