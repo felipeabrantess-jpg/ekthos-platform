@@ -18,11 +18,15 @@ CREATE TABLE IF NOT EXISTS church_feature_flags (
 
 CREATE INDEX IF NOT EXISTS idx_cff_church ON church_feature_flags (church_id);
 
+DROP TRIGGER IF EXISTS set_updated_at_church_feature_flags ON church_feature_flags;
 CREATE TRIGGER set_updated_at_church_feature_flags
   BEFORE UPDATE ON church_feature_flags
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
 
 ALTER TABLE church_feature_flags ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS cff_select  ON church_feature_flags;
+DROP POLICY IF EXISTS cff_service ON church_feature_flags;
 
 CREATE POLICY cff_select ON church_feature_flags
   FOR SELECT TO authenticated

@@ -84,6 +84,7 @@ CREATE INDEX IF NOT EXISTS idx_person_journey_next_step_due
   WHERE next_step_due_at IS NOT NULL AND closed_at IS NULL;
 
 -- updated_at automático
+DROP TRIGGER IF EXISTS set_updated_at_person_journey ON person_journey;
 CREATE TRIGGER set_updated_at_person_journey
   BEFORE UPDATE ON person_journey
   FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
@@ -93,6 +94,11 @@ CREATE TRIGGER set_updated_at_person_journey
 -- Padrão canônico: auth_church_id() (igual a care_contacts, church_units)
 -- ──────────────────────────────────────────────────────────────
 ALTER TABLE person_journey ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS pj_select  ON person_journey;
+DROP POLICY IF EXISTS pj_insert  ON person_journey;
+DROP POLICY IF EXISTS pj_update  ON person_journey;
+DROP POLICY IF EXISTS pj_service ON person_journey;
 
 -- Membros autenticados lêem jornadas da própria church
 CREATE POLICY pj_select ON person_journey
@@ -151,6 +157,10 @@ CREATE INDEX IF NOT EXISTS idx_journey_events_church_created
 -- ──────────────────────────────────────────────────────────────
 ALTER TABLE journey_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS je_select  ON journey_events;
+DROP POLICY IF EXISTS je_insert  ON journey_events;
+DROP POLICY IF EXISTS je_service ON journey_events;
+
 CREATE POLICY je_select ON journey_events
   FOR SELECT TO authenticated
   USING (church_id = auth_church_id());
@@ -167,5 +177,6 @@ REVOKE UPDATE, DELETE ON journey_events FROM authenticated;
 REVOKE UPDATE, DELETE ON journey_events FROM anon;
 
 -- Service role (Edge Functions) — acesso completo incluindo reparos operacionais
+-- DROP já feito acima junto com je_select/je_insert
 CREATE POLICY je_service ON journey_events
   FOR ALL USING (auth.role() = 'service_role');
