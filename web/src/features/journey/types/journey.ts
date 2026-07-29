@@ -7,7 +7,8 @@ export interface PersonJourney {
   id: string
   church_id: string
   person_id: string
-  stage_id: string | null
+  stage_id: string
+  pipeline_id: string | null
   owner_id: string | null
   ministry_id: string | null
   version: number

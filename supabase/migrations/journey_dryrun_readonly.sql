@@ -88,10 +88,19 @@ GROUP BY person_id
 HAVING COUNT(*) > 1
 LIMIT 10;
 
--- ── REGRA DE DESEMPATE PROPOSTA (com base nos dados esperados) ──
+-- ── REGRA DE DESEMPATE (confirmada com dados reais, 2026-07-29) ──
 -- 1. SE person_pipeline existe → stage_id de person_pipeline (fonte mais fresca)
--- 2. SE não tem person_pipeline, mas people.pipeline_stage_id != NULL → usar esse
--- 3. SE nenhum dos dois → stage_id = NULL, journey nasce sem stage
+-- 2. SE não tem person_pipeline, mas people.pipeline_stage_id IS NOT NULL → usar esse
+-- 3. SE acolhimento_journey ativa (status NOT IN completed/cancelled) e sem os dois acima
+--    → stage_id = entry point da igreja (e7d0d735-... para IGV)
+--    RESULTADO IGV: 0 pessoas se enquadram (Q-B=0), regra 3 não cria jornadas na IGV
+-- 4. NÃO CRIA jornada — pessoa sem estado de nenhum tipo fica fora do backfill
+--    RESULTADO IGV: 5.487 pessoas ficam fora
+--
+-- Notas de dados (IGV, 2026-07-29):
+-- • pipelines table: 0 linhas para church_id IGV (stages legacy têm pipeline_id=NULL)
+-- • person_journey.pipeline_id será NULL para todas jornadas da IGV no backfill
+-- • Total jornadas projetadas: 481 (469 regra-1 + 12 regra-2) — abaixo do limite 600 ✅
 -- Conflitos (Q6): usar person_pipeline.stage_id (mais confiável que espelho denormalizado)
 
 -- ── Q10: pipeline_stages disponíveis na IGV ─────────────────

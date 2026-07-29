@@ -330,8 +330,17 @@ END;
 $$;
 
 -- ──────────────────────────────────────────────────────────────
--- GRANTS — apenas authenticated (nunca anon)
+-- GRANTS — apenas authenticated (nunca anon ou public)
+-- PostgreSQL cria funções com EXECUTE para PUBLIC por padrão;
+-- revogar explicitamente antes de conceder ao authenticated.
 -- ──────────────────────────────────────────────────────────────
+REVOKE EXECUTE ON FUNCTION journey_advance          FROM anon, public;
+REVOKE EXECUTE ON FUNCTION journey_assign           FROM anon, public;
+REVOKE EXECUTE ON FUNCTION journey_register_touch   FROM anon, public;
+REVOKE EXECUTE ON FUNCTION journey_transfer         FROM anon, public;
+REVOKE EXECUTE ON FUNCTION journey_update_next_step FROM anon, public;
+REVOKE EXECUTE ON FUNCTION journey_close            FROM anon, public;
+
 GRANT EXECUTE ON FUNCTION journey_advance          TO authenticated;
 GRANT EXECUTE ON FUNCTION journey_assign           TO authenticated;
 GRANT EXECUTE ON FUNCTION journey_register_touch   TO authenticated;

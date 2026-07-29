@@ -17,7 +17,13 @@ CREATE TABLE IF NOT EXISTS person_journey (
   person_id         UUID        NOT NULL REFERENCES people(id)            ON DELETE CASCADE,
 
   -- estado no funil
-  stage_id          UUID                 REFERENCES pipeline_stages(id)   ON DELETE SET NULL,
+  -- NOT NULL: só cria jornada se a pessoa tem stage (regra 4 do backfill = NÃO CRIA)
+  -- ON DELETE RESTRICT: impede deletar stage com jornadas ativas
+  stage_id          UUID        NOT NULL REFERENCES pipeline_stages(id)   ON DELETE RESTRICT,
+
+  -- pipeline que originou o stage (nullable: IGV legado tem stages sem pipeline_id)
+  -- FK fraca: stages da IGV têm pipeline_stages.pipeline_id=NULL, pipelines table sem linha IGV
+  pipeline_id       UUID                 REFERENCES pipelines(id)         ON DELETE SET NULL,
 
   -- responsabilidade pastoral
   owner_id          UUID                 REFERENCES auth.users(id)        ON DELETE SET NULL,
@@ -60,8 +66,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_person_journey_active
   WHERE closed_at IS NULL;
 
 -- Índices para acesso eficiente
-CREATE INDEX IF NOT EXISTS idx_person_journey_church_stage
-  ON person_journey (church_id, stage_id);
+-- Índice Kanban: (church_id, pipeline_id, stage_id)
+-- pipeline_id nullable: igrejas legado (IGV) terão pipeline_id=NULL neste índice
+CREATE INDEX IF NOT EXISTS idx_person_journey_kanban
+  ON person_journey (church_id, pipeline_id, stage_id);
 
 CREATE INDEX IF NOT EXISTS idx_person_journey_person
   ON person_journey (person_id);
