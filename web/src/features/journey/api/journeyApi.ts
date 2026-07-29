@@ -59,7 +59,6 @@ export function createJourneyApi(supabase: SupabaseClient) {
         p_journey_id:       params.journeyId,
         p_expected_version: params.expectedVersion,
         p_new_stage_id:     params.newStageId,
-        p_actor_id:         params.actorId,
         p_note:             params.note ?? null,
       })
 
@@ -77,7 +76,6 @@ export function createJourneyApi(supabase: SupabaseClient) {
         p_journey_id:       params.journeyId,
         p_expected_version: params.expectedVersion,
         p_owner_id:         params.ownerId,
-        p_actor_id:         params.actorId,
       })
 
       if (error) {
@@ -93,7 +91,6 @@ export function createJourneyApi(supabase: SupabaseClient) {
       const { data, error } = await supabase.rpc('journey_register_touch', {
         p_journey_id: params.journeyId,
         p_touch_type: params.touchType,
-        p_actor_id:   params.actorId,
         p_payload:    params.payload ?? {},
       })
 
@@ -107,7 +104,6 @@ export function createJourneyApi(supabase: SupabaseClient) {
         p_expected_version: params.expectedVersion,
         p_new_owner_id:     params.newOwnerId,
         p_new_ministry_id:  params.newMinistryId ?? null,
-        p_actor_id:         params.actorId ?? null,
         p_note:             params.note ?? null,
       })
 
@@ -126,7 +122,6 @@ export function createJourneyApi(supabase: SupabaseClient) {
         p_expected_version: params.expectedVersion,
         p_next_step:        params.nextStep,
         p_due_date:         params.dueDate ?? null,
-        p_actor_id:         params.actorId ?? null,
       })
 
       if (error) {
@@ -143,7 +138,6 @@ export function createJourneyApi(supabase: SupabaseClient) {
         p_journey_id:       params.journeyId,
         p_expected_version: params.expectedVersion,
         p_outcome:          params.outcome,
-        p_actor_id:         params.actorId ?? null,
         p_note:             params.note ?? null,
       })
 

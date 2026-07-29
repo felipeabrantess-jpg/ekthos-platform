@@ -24,12 +24,15 @@ export interface PersonJourney {
   updated_at: string
 }
 
+export type JourneyActorType = 'human' | 'agent' | 'system'
+
 export interface JourneyEvent {
   id: string
   journey_id: string
   church_id: string
   event_type: JourneyEventType
   actor_id: string | null
+  actor_type: JourneyActorType
   payload: Record<string, unknown>
   created_at: string
 }
@@ -45,11 +48,11 @@ export type JourneyEventType =
   | string // extensível para tipos futuros
 
 // Parâmetros das RPCs
+// actor_id é derivado de auth.uid() no banco — não enviar pelo cliente
 export interface JourneyAdvanceParams {
   journeyId: string
   expectedVersion: number
   newStageId: string
-  actorId: string
   note?: string
 }
 
@@ -57,13 +60,11 @@ export interface JourneyAssignParams {
   journeyId: string
   expectedVersion: number
   ownerId: string
-  actorId: string
 }
 
 export interface JourneyRegisterTouchParams {
   journeyId: string
   touchType: JourneyEventType
-  actorId: string
   payload?: Record<string, unknown>
 }
 
@@ -72,7 +73,6 @@ export interface JourneyTransferParams {
   expectedVersion: number
   newOwnerId: string
   newMinistryId?: string
-  actorId?: string
   note?: string
 }
 
@@ -81,14 +81,12 @@ export interface JourneyUpdateNextStepParams {
   expectedVersion: number
   nextStep: string
   dueDate?: string
-  actorId?: string
 }
 
 export interface JourneyCloseParams {
   journeyId: string
   expectedVersion: number
   outcome: string
-  actorId?: string
   note?: string
 }
 
