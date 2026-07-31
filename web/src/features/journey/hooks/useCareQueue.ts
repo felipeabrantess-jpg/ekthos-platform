@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import type { Json } from '@/lib/database.types'
 
 export interface CareQueueItem {
   journey_id:       string | null
@@ -26,7 +27,7 @@ export function useCareQueue(churchId: string | null | undefined) {
     queryFn: async (): Promise<CareQueueItem[]> => {
       if (!churchId) return []
       const { data, error } = await supabase
-        .from('v_care_queue' as any)
+        .from('v_care_queue')
         .select('*')
         .eq('church_id', churchId)
         .order('priority', { ascending: true })
@@ -45,7 +46,7 @@ export function useCareQueue(churchId: string | null | undefined) {
 interface RegisterTouchArgs {
   journey_id: string
   touch_type: string
-  payload?:   Record<string, unknown>
+  payload?:   Json
 }
 
 export function useRegisterTouch() {
@@ -53,8 +54,8 @@ export function useRegisterTouch() {
   const { churchId } = useAuth()
 
   return useMutation({
-    mutationFn: async ({ journey_id, touch_type, payload = {} }: RegisterTouchArgs) => {
-      const { error } = await (supabase as any).rpc('journey_register_touch', {
+    mutationFn: async ({ journey_id, touch_type, payload }: RegisterTouchArgs) => {
+      const { error } = await supabase.rpc('journey_register_touch', {
         p_journey_id: journey_id,
         p_touch_type: touch_type,
         p_payload:    payload,
@@ -81,7 +82,7 @@ export function useJourneyAssign() {
 
   return useMutation({
     mutationFn: async ({ journey_id, expected_version, owner_id }: AssignArgs) => {
-      const { error } = await (supabase as any).rpc('journey_assign', {
+      const { error } = await supabase.rpc('journey_assign', {
         p_journey_id:       journey_id,
         p_expected_version: expected_version,
         p_owner_id:         owner_id,
@@ -109,11 +110,11 @@ export function useJourneyOpen() {
 
   return useMutation({
     mutationFn: async ({ person_id, stage_id, next_step, due_at }: JourneyOpenArgs) => {
-      const { error } = await (supabase as any).rpc('journey_open', {
+      const { error } = await supabase.rpc('journey_open', {
         p_person_id: person_id,
         p_stage_id:  stage_id,
-        p_next_step: next_step ?? null,
-        p_due_at:    due_at ?? null,
+        p_next_step: next_step,
+        p_due_at:    due_at,
       })
       if (error) throw new Error(error.message)
     },
@@ -130,6 +131,7 @@ interface AdvanceArgs {
   expected_version: number
   new_stage_id:     string
   note?:            string
+  owner_id?:        string
 }
 
 export function useJourneyAdvance() {
@@ -137,12 +139,13 @@ export function useJourneyAdvance() {
   const { churchId } = useAuth()
 
   return useMutation({
-    mutationFn: async ({ journey_id, expected_version, new_stage_id, note }: AdvanceArgs) => {
-      const { error } = await (supabase as any).rpc('journey_advance', {
+    mutationFn: async ({ journey_id, expected_version, new_stage_id, note, owner_id }: AdvanceArgs) => {
+      const { error } = await supabase.rpc('journey_advance', {
         p_journey_id:       journey_id,
         p_expected_version: expected_version,
         p_new_stage_id:     new_stage_id,
-        p_note:             note ?? null,
+        p_note:             note,
+        p_owner_id:         owner_id,
       })
       if (error) throw new Error(error.message)
     },

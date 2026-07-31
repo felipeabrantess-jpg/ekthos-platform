@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Heart, AlertTriangle, Clock, ChevronRight, Loader2, Users, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -174,9 +174,11 @@ function CareCard({ item, stages, onToast }: CareCardProps) {
         onToast(`${item.person_name.split(' ')[0]} adicionado(a) à jornada.`, 'success')
       } else if (item.version != null) {
         await journeyAdvance.mutateAsync({
-          journey_id: item.journey_id,
+          journey_id:       item.journey_id,
           expected_version: item.version,
-          new_stage_id: stageId,
+          new_stage_id:     stageId,
+          // Quem classifica, assume: auto-assign quando não há dono
+          owner_id: item.owner_id === null ? user?.id : undefined,
         })
         onToast(`${item.person_name.split(' ')[0]} avançou de etapa.`, 'success')
       }
