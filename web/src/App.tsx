@@ -88,6 +88,8 @@ const CuidadoPainel       = lazy(() => import('@/pages/cuidado/Painel'))
 const CuidadoDuplicados   = lazy(() => import('@/pages/cuidado/Duplicados'))
 const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
 const CuidadoPessoas      = lazy(() => import('@/pages/cuidado/CuidadoPessoas'))
+// Fase 3 — Atendimento Pastoral
+const AtendimentoPage     = lazy(() => import('@/pages/pessoas/AtendimentoPage'))
 
 // Kids Check-in — páginas públicas (sem auth, sem Layout CRM)
 const KidsCheckin = lazy(() => import('@/pages/kids/KidsCheckin'))
@@ -443,6 +445,8 @@ export default function App() {
 
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pessoas/flags"  element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><PeopleFlags /></Suspense></RoleRoute></ErrorBoundary>} />
+            {/* Fase 3 — Atendimento Pastoral Conectado */}
+            <Route path="pessoas/:id/atendimento" element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><AtendimentoPage /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />

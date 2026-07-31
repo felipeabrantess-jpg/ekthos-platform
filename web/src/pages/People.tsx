@@ -13,7 +13,7 @@ import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone } from 'lucide-react'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone, Heart } from 'lucide-react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
@@ -166,10 +166,11 @@ interface PersonCardMobileProps {
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
   onDelete: (p: Person) => void
+  onAtend: (p: PersonWithStage) => void
   showBirthday?: boolean
 }
 
-function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirthday }: PersonCardMobileProps) {
+function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday }: PersonCardMobileProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -220,6 +221,13 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, showBirth
           </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <button
+              onClick={() => onAtend(person)}
+              className="p-2 rounded-lg text-text-tertiary active:text-primary active:bg-bg-hover transition-all"
+              title="Atender"
+            >
+              <Heart size={15} strokeWidth={1.75} />
+            </button>
+            <button
               onClick={() => onEdit(person)}
               className="p-2 rounded-lg text-text-tertiary active:text-primary-text active:bg-bg-hover transition-all"
               title="Editar"
@@ -248,10 +256,11 @@ interface PersonRowProps {
   onView: (p: PersonWithStage) => void
   onEdit: (p: Person) => void
   onDelete: (p: Person) => void
+  onAtend: (p: PersonWithStage) => void
   showBirthday?: boolean
 }
 
-function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: PersonRowProps) {
+function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday }: PersonRowProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -303,6 +312,13 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, showBirthday }: 
       </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => onAtend(person)}
+            title="Atender"
+            className="p-1.5 rounded-lg text-text-tertiary hover:text-primary hover:bg-bg-hover transition-all"
+          >
+            <Heart size={14} strokeWidth={1.75} />
+          </button>
           <button
             onClick={() => onEdit(person)}
             title="Editar"
@@ -643,6 +659,7 @@ export default function People() {
   function handleView(person: PersonWithStage)  { setSelectedPerson(person) }
   function handleEdit(person: Person)           { setEditingPerson(person); setModalOpen(true) }
   function handleNewPerson()                    { setEditingPerson(null); setModalOpen(true) }
+  function handleAtend(person: PersonWithStage) { navigate(`/pessoas/${person.id}/atendimento`) }
 
   // A2: abre modal em vez de window.confirm
   function handleDelete(person: Person) { setPersonToDelete(person); setDeleteError(null) }
@@ -1002,6 +1019,7 @@ export default function People() {
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onAtend={handleAtend}
                     showBirthday={false}
                   />
                 ))}
@@ -1029,6 +1047,7 @@ export default function People() {
                           onView={handleView}
                           onEdit={handleEdit}
                           onDelete={handleDelete}
+                          onAtend={handleAtend}
                           showBirthday={false}
                         />
                       ))}

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { X, AlertTriangle, Settings2, ArrowUpDown, ListChecks } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
+import { useJourneyFlag } from '@/features/journey/hooks/useJourneyFlag'
+import { supabase } from '@/lib/supabase'
 import { PipelineStagesModal } from '@/features/pipeline/components/PipelineStagesModal'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
@@ -343,6 +345,7 @@ export default function Pipeline() {
   const { data: stages, isLoading: stagesLoading, isError: stagesError, refetch: refetchStages } = usePipelineStages(churchId ?? '')
   const { data: board, isLoading: boardLoading, isError: boardError, refetch: refetchBoard } = usePipelineBoard(churchId ?? '')
   const movePersonToStage = useMovePersonToStage()
+  const { data: journeyFlagOn = false } = useJourneyFlag()
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -376,11 +379,21 @@ export default function Pipeline() {
       setDragging(null)
       return
     }
+    // Atualiza person_pipeline (fonte de dados do Kanban)
     void movePersonToStage.mutateAsync({
       personId: dragging.personId,
       newStageId: toStageId,
       churchId,
     })
+    // Flag ON: sincroniza person_journey em paralelo (fire-and-forget)
+    if (journeyFlagOn) {
+      void supabase.rpc('journey_register_attendance', {
+        p_person_id:       dragging.personId,
+        p_contact_channel: 'kanban',
+        p_contact_result:  'etapa_movida',
+        p_new_stage_id:    toStageId,
+      })
+    }
     setDragging(null)
   }
 
