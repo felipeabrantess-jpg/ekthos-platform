@@ -9,6 +9,7 @@ export function useJourneyFlag() {
     queryKey: ['feature-flag', 'journey_unification', churchId],
     queryFn: async (): Promise<boolean> => {
       if (!churchId) return false
+      // @ts-expect-error -- church_feature_flags added in migration 20260731; types pending regen
       const { data } = await supabase
         .from('church_feature_flags')
         .select('enabled')

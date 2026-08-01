@@ -85,6 +85,7 @@ export function usePersonJourney(personId: string | undefined) {
     queryKey: ['person-journey', personId],
     queryFn: async (): Promise<JourneyAtendimento | null> => {
       if (!personId) return null
+      // @ts-expect-error -- person_journey added in migration 20260731; types pending regen
       const { data, error } = await supabase
         .from('person_journey')
         .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at')
@@ -106,6 +107,7 @@ export function usePersonJourneyEvents(journeyId: string | undefined) {
     queryKey: ['journey-events', journeyId],
     queryFn: async (): Promise<JourneyEventItem[]> => {
       if (!journeyId) return []
+      // @ts-expect-error -- journey_events added in migration 20260731; types pending regen
       const { data, error } = await supabase
         .from('journey_events')
         .select('id, event_type, actor_id, actor_type, payload, created_at')
@@ -125,6 +127,7 @@ export function usePersonCareContact(personId: string | undefined, churchId: str
     queryKey: ['care-contact', personId],
     queryFn: async (): Promise<CareContactItem | null> => {
       if (!personId || !churchId) return null
+      // @ts-expect-error -- care_contacts added in migration 20260731; types pending regen
       const { data, error } = await supabase
         .from('care_contacts')
         .select('contacted, notes, contacted_by_name, contacted_at')
@@ -145,6 +148,7 @@ export function useSuggestStage(personId: string | undefined, context: Record<st
     queryKey: ['stage-suggestion', personId, context],
     queryFn: async (): Promise<StageSuggestion | null> => {
       if (!personId) return null
+      // @ts-expect-error -- journey_suggest_stage added in migration 20260731; types pending regen
       const { data, error } = await supabase.rpc('journey_suggest_stage', {
         p_person_id: personId,
         p_context:   context,
@@ -178,6 +182,7 @@ export function useRegisterAttendance() {
 
   return useMutation({
     mutationFn: async (args: RegisterArgs) => {
+      // @ts-expect-error -- journey_register_attendance added in migration 20260731; types pending regen
       const { data, error } = await supabase.rpc('journey_register_attendance', {
         p_person_id:        args.person_id,
         p_expected_version: args.expected_version ?? null,
