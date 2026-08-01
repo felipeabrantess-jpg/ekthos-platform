@@ -53,7 +53,9 @@ const PaymentPending        = lazy(() => import('@/pages/PaymentPending'))
 const Dashboard   = lazy(() => import('@/pages/Dashboard'))
 const People      = lazy(() => import('@/pages/People'))
 const PeopleFlags = lazy(() => import('@/pages/PeopleFlags'))
-const Pipeline    = lazy(() => import('@/pages/Pipeline'))
+const Pipeline           = lazy(() => import('@/pages/Pipeline'))
+// E4: Kanban preservado — rollback = trocar rota de volta para <Pipeline />
+const DiscipuladoPainel  = lazy(() => import('@/pages/DiscipuladoPainel'))
 const Ministerios = lazy(() => import('@/pages/Ministerios'))
 const Escalas     = lazy(() => import('@/pages/Escalas'))
 const Financeiro  = lazy(() => import('@/pages/Financeiro'))
@@ -451,7 +453,7 @@ export default function App() {
             <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Pipeline /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><DiscipuladoPainel /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="celulas"     element={<ErrorBoundary><RoleRoute path="celulas"><Suspense fallback={<PageLoader />}><Celulas /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="ministerios" element={<ErrorBoundary><RoleRoute path="ministerios"><Suspense fallback={<PageLoader />}><Ministerios /></Suspense></RoleRoute></ErrorBoundary>} />
             {/* ── Ministério Kids — painel admin (check-in/check-out, links, salas) ── */}
