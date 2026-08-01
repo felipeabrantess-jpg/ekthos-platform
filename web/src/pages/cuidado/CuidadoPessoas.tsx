@@ -238,6 +238,16 @@ function PersonCareRow({ person, contact, churchId, conversaId, onEditPerson }: 
           </a>
         )}
 
+        {/* Atender — abre ficha de atendimento pastoral */}
+        <button
+          onClick={e => { e.stopPropagation(); navigate(`/pessoas/${person.id}/atendimento`) }}
+          className="flex items-center justify-center rounded-lg shrink-0 hover:bg-primary/10 hover:text-primary text-text-tertiary transition-colors"
+          style={{ width: 28, height: 28 }}
+          title="Atender esta pessoa"
+        >
+          <Heart size={15} strokeWidth={1.75} />
+        </button>
+
         {/* Expand toggle */}
         <button
           onClick={handleToggleExpand}
