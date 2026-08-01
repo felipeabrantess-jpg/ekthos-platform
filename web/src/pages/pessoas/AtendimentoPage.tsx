@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Phone, MapPin, Calendar, Heart, MessageCircle,
   ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Clock,
-  User, Sparkles, Loader2,
+  Sparkles, Loader2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
@@ -246,16 +246,17 @@ function BlocoHistorico({
                 <p className="font-medium text-text-primary">
                   {EVENT_TYPE_LABEL[ev.event_type] ?? ev.event_type}
                 </p>
-                {ev.event_type === 'pastoral_contact' && ev.payload.channel && (
-                  <p className="text-text-secondary">
-                    {CHANNEL_LABELS[ev.payload.channel as string] ?? String(ev.payload.channel)}
-                    {ev.payload.result && ` · ${RESULT_LABELS[ev.payload.result as string] ?? String(ev.payload.result)}`}
-                  </p>
-                )}
-                {ev.event_type === 'pastoral_contact' && ev.payload.notes && (
-                  <p className="text-text-secondary mt-0.5 italic">"{String(ev.payload.notes)}"</p>
-                )}
-                {ev.event_type === 'stage_advance' && ev.payload.to_stage_id && (
+                {ev.event_type === 'pastoral_contact' && (() => {
+                  const p = ev.payload as Record<string, string | undefined>
+                  return p.channel ? (
+                    <p className="text-text-secondary">
+                      {CHANNEL_LABELS[p.channel] ?? p.channel}
+                      {p.result ? ` · ${RESULT_LABELS[p.result] ?? p.result}` : ''}
+                      {p.notes ? <span className="block mt-0.5 italic">"{p.notes}"</span> : null}
+                    </p>
+                  ) : null
+                })()}
+                {ev.event_type === 'stage_advance' && (ev.payload as Record<string, unknown>).to_stage_id && (
                   <p className="text-text-secondary">Nova etapa registrada</p>
                 )}
                 <p className="text-text-secondary mt-0.5">{formatDateTime(ev.created_at)}</p>

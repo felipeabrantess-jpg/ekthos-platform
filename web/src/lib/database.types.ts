@@ -1511,6 +1511,54 @@ export type Database = {
         }
         Relationships: []
       }
+      care_contacts: {
+        Row: {
+          id: string
+          person_id: string
+          church_id: string
+          contacted: boolean
+          notes: string | null
+          contacted_by: string | null
+          contacted_by_name: string
+          contacted_at: string
+          created_at: string
+          next_followup_at: string | null
+          next_followup_note: string | null
+          next_followup_by: string | null
+          next_followup_by_name: string | null
+        }
+        Insert: {
+          id?: string
+          person_id: string
+          church_id: string
+          contacted?: boolean
+          notes?: string | null
+          contacted_by?: string | null
+          contacted_by_name?: string
+          contacted_at?: string
+          created_at?: string
+          next_followup_at?: string | null
+          next_followup_note?: string | null
+          next_followup_by?: string | null
+          next_followup_by_name?: string | null
+        }
+        Update: {
+          id?: string
+          person_id?: string
+          church_id?: string
+          contacted?: boolean
+          notes?: string | null
+          contacted_by?: string | null
+          contacted_by_name?: string
+          contacted_at?: string
+          created_at?: string
+          next_followup_at?: string | null
+          next_followup_note?: string | null
+          next_followup_by?: string | null
+          next_followup_by_name?: string | null
+        }
+        Relationships: []
+      }
       cell_attendance: {
         Row: {
           id: string
@@ -2503,6 +2551,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      church_feature_flags: {
+        Row: {
+          id: string
+          church_id: string
+          flag_key: string
+          enabled: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          church_id: string
+          flag_key: string
+          enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          church_id?: string
+          flag_key?: string
+          enabled?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       church_followup_config: {
         Row: {
@@ -4633,6 +4708,39 @@ export type Database = {
           },
         ]
       }
+      journey_events: {
+        Row: {
+          id: string
+          journey_id: string
+          church_id: string
+          event_type: string
+          actor_id: string | null
+          actor_type: string
+          payload: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          journey_id: string
+          church_id: string
+          event_type: string
+          actor_id?: string | null
+          actor_type?: string
+          payload?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          journey_id?: string
+          church_id?: string
+          event_type?: string
+          actor_id?: string | null
+          actor_type?: string
+          payload?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       lead_capture_rate_limits: {
         Row: {
           block_reason: string | null
@@ -5984,6 +6092,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      person_journey: {
+        Row: {
+          id: string
+          church_id: string
+          person_id: string
+          stage_id: string
+          pipeline_id: string | null
+          owner_id: string | null
+          ministry_id: string | null
+          version: number
+          agent_locked_at: string | null
+          confidentiality: string
+          opened_at: string
+          closed_at: string | null
+          outcome: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          church_id: string
+          person_id: string
+          stage_id: string
+          pipeline_id?: string | null
+          owner_id?: string | null
+          ministry_id?: string | null
+          version?: number
+          agent_locked_at?: string | null
+          confidentiality?: string
+          opened_at?: string
+          closed_at?: string | null
+          outcome?: string | null
+          next_step?: string | null
+          next_step_due_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          church_id?: string
+          person_id?: string
+          stage_id?: string
+          pipeline_id?: string | null
+          owner_id?: string | null
+          ministry_id?: string | null
+          version?: number
+          agent_locked_at?: string | null
+          confidentiality?: string
+          opened_at?: string
+          closed_at?: string | null
+          outcome?: string | null
+          next_step?: string | null
+          next_step_due_at?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       person_pipeline: {
         Row: {
@@ -7937,6 +8108,25 @@ export type Database = {
         Returns: undefined
       }
       is_ekthos_admin: { Args: never; Returns: boolean }
+      journey_register_attendance: {
+        Args: {
+          p_person_id: string
+          p_expected_version?: number | null
+          p_people_updates?: Json
+          p_contact_channel?: string
+          p_contact_result?: string
+          p_contact_notes?: string | null
+          p_contact_date?: string
+          p_new_stage_id?: string | null
+          p_next_step?: string | null
+          p_next_step_due_at?: string | null
+        }
+        Returns: Json
+      }
+      journey_suggest_stage: {
+        Args: { p_person_id: string; p_context?: Json }
+        Returns: Json
+      }
       list_church_channels: {
         Args: { p_church_id: string }
         Returns: {
