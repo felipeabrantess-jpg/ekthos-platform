@@ -7,7 +7,6 @@ import {
   useDiscipuladoStagePeople,
   type DiscipuladoStage,
 } from '@/features/pipeline/hooks/useDiscipulado'
-import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
 // ── Helpers ────────────────────────────────────────────────────

@@ -53,8 +53,9 @@ const PaymentPending        = lazy(() => import('@/pages/PaymentPending'))
 const Dashboard   = lazy(() => import('@/pages/Dashboard'))
 const People      = lazy(() => import('@/pages/People'))
 const PeopleFlags = lazy(() => import('@/pages/PeopleFlags'))
-const Pipeline           = lazy(() => import('@/pages/Pipeline'))
 // E4: Kanban preservado — rollback = trocar rota de volta para <Pipeline />
+// @ts-expect-error -- E4: kept for one-line rollback; not rendered in current route
+const Pipeline           = lazy(() => import('@/pages/Pipeline'))
 const DiscipuladoPainel  = lazy(() => import('@/pages/DiscipuladoPainel'))
 const Ministerios = lazy(() => import('@/pages/Ministerios'))
 const Escalas     = lazy(() => import('@/pages/Escalas'))

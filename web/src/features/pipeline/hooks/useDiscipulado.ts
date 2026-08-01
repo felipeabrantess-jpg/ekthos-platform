@@ -30,7 +30,7 @@ export function useDiscipuladoOverview(churchId: string, periodDays = 30) {
         p_period_days: periodDays,
       })
       if (error) throw new Error(error.message)
-      return (data ?? []) as DiscipuladoStage[]
+      return (data ?? []) as unknown as DiscipuladoStage[]
     },
     enabled: Boolean(churchId),
   })
@@ -54,7 +54,7 @@ export function useDiscipuladoStagePeople(
         p_search:    search ?? null,
       })
       if (error) throw new Error(error.message)
-      return (data ?? []) as DiscipuladoPerson[]
+      return (data ?? []) as unknown as DiscipuladoPerson[]
     },
     enabled: Boolean(churchId) && Boolean(stageId),
   })
