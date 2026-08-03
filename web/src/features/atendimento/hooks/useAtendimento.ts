@@ -85,10 +85,11 @@ export function usePersonJourney(personId: string | undefined) {
     queryKey: ['person-journey', personId],
     queryFn: async (): Promise<JourneyAtendimento | null> => {
       if (!personId) return null
-      // OPS-DEBT: database.types.ts column mismatch — regen pending
-      const { data, error } = await (supabase as unknown as any)
+      const { data, error } = await supabase
+        // @ts-expect-error -- person_journey not in database.types.ts; regen pending (OPS-DEBT)
         .from('person_journey')
         .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at')
+        // @ts-expect-error -- type cascade from missing table above
         .eq('person_id', personId)
         .is('closed_at', null)
         .order('opened_at', { ascending: false })
@@ -107,10 +108,11 @@ export function usePersonJourneyEvents(journeyId: string | undefined) {
     queryKey: ['journey-events', journeyId],
     queryFn: async (): Promise<JourneyEventItem[]> => {
       if (!journeyId) return []
-      // OPS-DEBT: database.types.ts column mismatch — regen pending
-      const { data, error } = await (supabase as unknown as any)
+      const { data, error } = await supabase
+        // @ts-expect-error -- journey_events not in database.types.ts; regen pending (OPS-DEBT)
         .from('journey_events')
         .select('id, event_type, actor_id, actor_type, payload, created_at')
+        // @ts-expect-error -- type cascade from missing table above
         .eq('journey_id', journeyId)
         .order('created_at', { ascending: false })
         .limit(30)
@@ -127,11 +129,13 @@ export function usePersonCareContact(personId: string | undefined, churchId: str
     queryKey: ['care-contact', personId],
     queryFn: async (): Promise<CareContactItem | null> => {
       if (!personId || !churchId) return null
-      // OPS-DEBT: database.types.ts column mismatch — regen pending
-      const { data, error } = await (supabase as unknown as any)
+      const { data, error } = await supabase
+        // @ts-expect-error -- care_contacts not in database.types.ts; regen pending (OPS-DEBT)
         .from('care_contacts')
         .select('contacted, notes, contacted_by_name, contacted_at')
+        // @ts-expect-error -- type cascade from missing table above
         .eq('person_id', personId)
+        // @ts-expect-error -- type cascade from missing table above
         .eq('church_id', churchId)
         .maybeSingle()
       if (error) throw new Error(error.message)
