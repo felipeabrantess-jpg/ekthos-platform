@@ -161,6 +161,40 @@ export function useSuggestStage(personId: string | undefined, context: Record<st
   })
 }
 
+// ── Timeline unificada ────────────────────────────────────────
+
+export interface TimelineItem {
+  event_at:    string
+  source:      'journey_event' | 'message' | 'acolhimento'
+  actor_type:  string
+  actor_name:  string
+  event_kind:  string
+  summary:     string | null
+  raw_payload: Record<string, unknown> | null
+}
+
+export function usePersonTimeline(
+  personId: string | undefined,
+  opts: { limit?: number } = {}
+) {
+  const { limit = 10 } = opts
+  return useQuery({
+    queryKey: ['person-timeline', personId, limit],
+    queryFn: async (): Promise<TimelineItem[]> => {
+      if (!personId) return []
+      // @ts-expect-error -- get_person_timeline added in migration 20260801; types pending regen
+      const { data, error } = await supabase.rpc('get_person_timeline', {
+        p_person_id: personId,
+        p_limit:     limit,
+      })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as TimelineItem[]
+    },
+    enabled: !!personId,
+    staleTime: 15_000,
+  })
+}
+
 // ── Mutation ─────────────────────────────────────────────────
 
 interface RegisterArgs {
@@ -201,6 +235,7 @@ export function useRegisterAttendance() {
     onSuccess: (_data, args) => {
       void queryClient.invalidateQueries({ queryKey: ['person-atendimento',  args.person_id] })
       void queryClient.invalidateQueries({ queryKey: ['person-journey',      args.person_id] })
+      void queryClient.invalidateQueries({ queryKey: ['person-timeline',     args.person_id] })
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board',      churchId] })
       void queryClient.invalidateQueries({ queryKey: ['care-queue',          churchId] })
     },
