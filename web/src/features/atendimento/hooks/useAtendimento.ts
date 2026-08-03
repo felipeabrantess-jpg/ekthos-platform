@@ -85,7 +85,6 @@ export function usePersonJourney(personId: string | undefined) {
     queryKey: ['person-journey', personId],
     queryFn: async (): Promise<JourneyAtendimento | null> => {
       if (!personId) return null
-      // @ts-expect-error -- person_journey added in migration 20260731; types pending regen
       const { data, error } = await supabase
         .from('person_journey')
         .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at')
@@ -95,7 +94,7 @@ export function usePersonJourney(personId: string | undefined) {
         .limit(1)
         .maybeSingle()
       if (error) throw new Error(error.message)
-      return data as JourneyAtendimento | null
+      return data as unknown as JourneyAtendimento | null
     },
     enabled: !!personId,
     staleTime: 15_000,
@@ -107,7 +106,6 @@ export function usePersonJourneyEvents(journeyId: string | undefined) {
     queryKey: ['journey-events', journeyId],
     queryFn: async (): Promise<JourneyEventItem[]> => {
       if (!journeyId) return []
-      // @ts-expect-error -- journey_events added in migration 20260731; types pending regen
       const { data, error } = await supabase
         .from('journey_events')
         .select('id, event_type, actor_id, actor_type, payload, created_at')
@@ -115,7 +113,7 @@ export function usePersonJourneyEvents(journeyId: string | undefined) {
         .order('created_at', { ascending: false })
         .limit(30)
       if (error) throw new Error(error.message)
-      return (data ?? []) as JourneyEventItem[]
+      return (data ?? []) as unknown as JourneyEventItem[]
     },
     enabled: !!journeyId,
     staleTime: 15_000,
@@ -127,7 +125,6 @@ export function usePersonCareContact(personId: string | undefined, churchId: str
     queryKey: ['care-contact', personId],
     queryFn: async (): Promise<CareContactItem | null> => {
       if (!personId || !churchId) return null
-      // @ts-expect-error -- care_contacts added in migration 20260731; types pending regen
       const { data, error } = await supabase
         .from('care_contacts')
         .select('contacted, notes, contacted_by_name, contacted_at')
@@ -135,7 +132,7 @@ export function usePersonCareContact(personId: string | undefined, churchId: str
         .eq('church_id', churchId)
         .maybeSingle()
       if (error) throw new Error(error.message)
-      return data as CareContactItem | null
+      return data as unknown as CareContactItem | null
     },
     enabled: !!personId && !!churchId,
     staleTime: 30_000,
@@ -148,7 +145,6 @@ export function useSuggestStage(personId: string | undefined, context: Record<st
     queryKey: ['stage-suggestion', personId, context],
     queryFn: async (): Promise<StageSuggestion | null> => {
       if (!personId) return null
-      // @ts-expect-error -- journey_suggest_stage added in migration 20260731; types pending regen
       const { data, error } = await supabase.rpc('journey_suggest_stage', {
         p_person_id: personId,
         p_context:   context,
@@ -158,6 +154,39 @@ export function useSuggestStage(personId: string | undefined, context: Record<st
     },
     enabled: !!personId && hasSignal,
     staleTime: 60_000,
+  })
+}
+
+// ── Timeline unificada ────────────────────────────────────────
+
+export interface TimelineItem {
+  event_at:    string
+  source:      'journey_event' | 'message' | 'acolhimento'
+  actor_type:  string
+  actor_name:  string
+  event_kind:  string
+  summary:     string | null
+  raw_payload: Record<string, unknown> | null
+}
+
+export function usePersonTimeline(
+  personId: string | undefined,
+  opts: { limit?: number } = {}
+) {
+  const { limit = 10 } = opts
+  return useQuery({
+    queryKey: ['person-timeline', personId, limit],
+    queryFn: async (): Promise<TimelineItem[]> => {
+      if (!personId) return []
+      const { data, error } = await supabase.rpc('get_person_timeline', {
+        p_person_id: personId,
+        p_limit:     limit,
+      })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as TimelineItem[]
+    },
+    enabled: !!personId,
+    staleTime: 15_000,
   })
 }
 
@@ -182,18 +211,17 @@ export function useRegisterAttendance() {
 
   return useMutation({
     mutationFn: async (args: RegisterArgs) => {
-      // @ts-expect-error -- journey_register_attendance added in migration 20260731; types pending regen
       const { data, error } = await supabase.rpc('journey_register_attendance', {
         p_person_id:        args.person_id,
-        p_expected_version: args.expected_version ?? null,
+        p_expected_version: args.expected_version ?? undefined,
         p_people_updates:   args.people_updates   ?? {},
         p_contact_channel:  args.contact_channel,
         p_contact_result:   args.contact_result,
-        p_contact_notes:    args.contact_notes    ?? null,
+        p_contact_notes:    args.contact_notes    ?? undefined,
         p_contact_date:     args.contact_date     ?? new Date().toISOString(),
-        p_new_stage_id:     args.new_stage_id     ?? null,
-        p_next_step:        args.next_step         ?? null,
-        p_next_step_due_at: args.next_step_due_at ?? null,
+        p_new_stage_id:     args.new_stage_id     ?? undefined,
+        p_next_step:        args.next_step         ?? undefined,
+        p_next_step_due_at: args.next_step_due_at ?? undefined,
       })
       if (error) throw new Error(error.message)
       return data
@@ -201,6 +229,7 @@ export function useRegisterAttendance() {
     onSuccess: (_data, args) => {
       void queryClient.invalidateQueries({ queryKey: ['person-atendimento',  args.person_id] })
       void queryClient.invalidateQueries({ queryKey: ['person-journey',      args.person_id] })
+      void queryClient.invalidateQueries({ queryKey: ['person-timeline',     args.person_id] })
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board',      churchId] })
       void queryClient.invalidateQueries({ queryKey: ['care-queue',          churchId] })
     },
