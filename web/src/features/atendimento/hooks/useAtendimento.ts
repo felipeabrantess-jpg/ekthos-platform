@@ -85,8 +85,8 @@ export function usePersonJourney(personId: string | undefined) {
     queryKey: ['person-journey', personId],
     queryFn: async (): Promise<JourneyAtendimento | null> => {
       if (!personId) return null
-      // @ts-expect-error -- person_journey added in migration 20260731; types pending regen
-      const { data, error } = await supabase
+      // OPS-DEBT: database.types.ts column mismatch — regen pending
+      const { data, error } = await (supabase as unknown as any)
         .from('person_journey')
         .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at')
         .eq('person_id', personId)
@@ -95,7 +95,7 @@ export function usePersonJourney(personId: string | undefined) {
         .limit(1)
         .maybeSingle()
       if (error) throw new Error(error.message)
-      return data as JourneyAtendimento | null
+      return data as unknown as JourneyAtendimento | null
     },
     enabled: !!personId,
     staleTime: 15_000,
@@ -107,15 +107,15 @@ export function usePersonJourneyEvents(journeyId: string | undefined) {
     queryKey: ['journey-events', journeyId],
     queryFn: async (): Promise<JourneyEventItem[]> => {
       if (!journeyId) return []
-      // @ts-expect-error -- journey_events added in migration 20260731; types pending regen
-      const { data, error } = await supabase
+      // OPS-DEBT: database.types.ts column mismatch — regen pending
+      const { data, error } = await (supabase as unknown as any)
         .from('journey_events')
         .select('id, event_type, actor_id, actor_type, payload, created_at')
         .eq('journey_id', journeyId)
         .order('created_at', { ascending: false })
         .limit(30)
       if (error) throw new Error(error.message)
-      return (data ?? []) as JourneyEventItem[]
+      return (data ?? []) as unknown as JourneyEventItem[]
     },
     enabled: !!journeyId,
     staleTime: 15_000,
@@ -127,15 +127,15 @@ export function usePersonCareContact(personId: string | undefined, churchId: str
     queryKey: ['care-contact', personId],
     queryFn: async (): Promise<CareContactItem | null> => {
       if (!personId || !churchId) return null
-      // @ts-expect-error -- care_contacts added in migration 20260731; types pending regen
-      const { data, error } = await supabase
+      // OPS-DEBT: database.types.ts column mismatch — regen pending
+      const { data, error } = await (supabase as unknown as any)
         .from('care_contacts')
         .select('contacted, notes, contacted_by_name, contacted_at')
         .eq('person_id', personId)
         .eq('church_id', churchId)
         .maybeSingle()
       if (error) throw new Error(error.message)
-      return data as CareContactItem | null
+      return data as unknown as CareContactItem | null
     },
     enabled: !!personId && !!churchId,
     staleTime: 30_000,
