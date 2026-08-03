@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -101,6 +101,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "access_grants_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_grants_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "access_grants_converted_to_subscription_id_fkey"
             columns: ["converted_to_subscription_id"]
             isOneToOne: false
@@ -198,6 +212,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acolhimento_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acolhimento_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "acolhimento_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "acolhimento_journey_person_id_fkey"
@@ -345,6 +380,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "admin_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "admin_events_impersonated_church_id_fkey"
             columns: ["impersonated_church_id"]
             isOneToOne: false
@@ -357,6 +406,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonated_church_id_fkey"
+            columns: ["impersonated_church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_impersonated_church_id_fkey"
+            columns: ["impersonated_church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "admin_events_impersonation_session_id_fkey"
@@ -421,6 +484,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_tasks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_tasks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -548,6 +625,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_conversions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_conversions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "affiliate_conversions_coupon_id_fkey"
@@ -784,6 +875,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agent_chat_sessions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_chat_sessions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       agent_conversations: {
@@ -834,6 +939,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_conversations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -1006,6 +1125,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       agent_grants: {
@@ -1079,6 +1212,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agent_grants_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_grants_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       agent_message_pending_approval: {
@@ -1138,6 +1285,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_message_pending_approval_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_message_pending_approval_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "agent_message_pending_approval_conversation_id_fkey"
@@ -1341,6 +1502,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "audit_logs_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       automation_logs: {
@@ -1396,11 +1571,252 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "automation_logs_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_logs_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "automation_logs_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "automation_logs_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_accounts: {
+        Row: {
+          account_type: string
+          bank_name: string | null
+          church_id: string
+          created_at: string
+          id: string
+          initial_balance: number
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          account_type?: string
+          bank_name?: string | null
+          church_id: string
+          created_at?: string
+          id?: string
+          initial_balance?: number
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          bank_name?: string | null
+          church_id?: string
+          created_at?: string
+          id?: string
+          initial_balance?: number
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_accounts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      birthday_contacts: {
+        Row: {
+          church_id: string
+          contacted_at: string
+          contacted_by: string
+          contacted_by_name: string
+          created_at: string
+          id: string
+          month_ref: string
+          notes: string | null
+          person_id: string
+        }
+        Insert: {
+          church_id: string
+          contacted_at?: string
+          contacted_by: string
+          contacted_by_name?: string
+          created_at?: string
+          id?: string
+          month_ref: string
+          notes?: string | null
+          person_id: string
+        }
+        Update: {
+          church_id?: string
+          contacted_at?: string
+          contacted_by?: string
+          contacted_by_name?: string
+          created_at?: string
+          id?: string
+          month_ref?: string
+          notes?: string | null
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birthday_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birthday_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birthday_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "birthday_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "birthday_contacts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "birthday_contacts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cabinet_slots: {
+        Row: {
+          appointment_id: string | null
+          cabinet_pastor_id: string
+          church_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          slot_datetime: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          cabinet_pastor_id: string
+          church_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          slot_datetime: string
+        }
+        Update: {
+          appointment_id?: string | null
+          cabinet_pastor_id?: string
+          church_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          slot_datetime?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cabinet_slots_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "pastoral_appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cabinet_slots_cabinet_pastor_id_fkey"
+            columns: ["cabinet_pastor_id"]
+            isOneToOne: false
+            referencedRelation: "pastoral_cabinet"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cabinet_slots_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cabinet_slots_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cabinet_slots_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cabinet_slots_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -1511,29 +1927,235 @@ export type Database = {
         }
         Relationships: []
       }
-      cell_attendance: {
+      care_contacts: {
         Row: {
+          church_id: string
+          contacted: boolean
+          contacted_at: string
+          contacted_by: string | null
+          contacted_by_name: string
+          created_at: string
           id: string
-          meeting_id: string
+          next_followup_at: string | null
+          next_followup_by: string | null
+          next_followup_by_name: string | null
+          next_followup_note: string | null
+          notes: string | null
           person_id: string
         }
         Insert: {
+          church_id: string
+          contacted?: boolean
+          contacted_at?: string
+          contacted_by?: string | null
+          contacted_by_name?: string
+          created_at?: string
           id?: string
-          meeting_id: string
+          next_followup_at?: string | null
+          next_followup_by?: string | null
+          next_followup_by_name?: string | null
+          next_followup_note?: string | null
+          notes?: string | null
           person_id: string
         }
         Update: {
+          church_id?: string
+          contacted?: boolean
+          contacted_at?: string
+          contacted_by?: string | null
+          contacted_by_name?: string
+          created_at?: string
           id?: string
-          meeting_id?: string
+          next_followup_at?: string | null
+          next_followup_by?: string | null
+          next_followup_by_name?: string | null
+          next_followup_note?: string | null
+          notes?: string | null
           person_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "care_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_contacts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "care_contacts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "care_contacts_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_responsibles: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string | null
+          region: string | null
+          token: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          region?: string | null
+          token?: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          region?: string | null
+          token?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_responsibles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_responsibles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_responsibles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_responsibles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      cell_attendance: {
+        Row: {
+          church_id: string | null
+          created_at: string
+          id: string
+          marked_by: string | null
+          meeting_id: string
+          person_id: string
+          status: string
+        }
+        Insert: {
+          church_id?: string | null
+          created_at?: string
+          id?: string
+          marked_by?: string | null
+          meeting_id: string
+          person_id: string
+          status?: string
+        }
+        Update: {
+          church_id?: string | null
+          created_at?: string
+          id?: string
+          marked_by?: string | null
+          meeting_id?: string
+          person_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_attendance_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_attendance_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_attendance_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_attendance_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
           {
             foreignKeyName: "cell_attendance_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "cell_meetings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_attendance_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "cell_attendance_person_id_fkey"
@@ -1577,6 +2199,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_leader_assignments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_leader_assignments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "cell_leader_assignments_group_id_fkey"
@@ -1640,6 +2276,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cell_meetings_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_meetings_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "cell_meetings_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -1654,6 +2304,8 @@ export type Database = {
           created_at: string
           group_id: string
           id: string
+          joined_at: string
+          left_at: string | null
           person_id: string
           role: Database["public"]["Enums"]["cell_role"]
         }
@@ -1662,6 +2314,8 @@ export type Database = {
           created_at?: string
           group_id: string
           id?: string
+          joined_at?: string
+          left_at?: string | null
           person_id: string
           role?: Database["public"]["Enums"]["cell_role"]
         }
@@ -1670,6 +2324,8 @@ export type Database = {
           created_at?: string
           group_id?: string
           id?: string
+          joined_at?: string
+          left_at?: string | null
           person_id?: string
           role?: Database["public"]["Enums"]["cell_role"]
         }
@@ -1689,6 +2345,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cell_members_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_members_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "cell_members_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -1699,7 +2369,77 @@ export type Database = {
             foreignKeyName: "cell_members_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "cell_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cell_neighborhoods: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          unit_id: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          unit_id: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_neighborhoods_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_neighborhoods_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_neighborhoods_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_neighborhoods_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "cell_neighborhoods_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "church_units"
             referencedColumns: ["id"]
           },
         ]
@@ -1730,6 +2470,13 @@ export type Database = {
           report_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cell_report_people_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
           {
             foreignKeyName: "cell_report_people_person_id_fkey"
             columns: ["person_id"]
@@ -1827,6 +2574,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "cell_reports_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_reports_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "cell_reports_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "cell_reports_leader_id_fkey"
             columns: ["leader_id"]
             isOneToOne: false
@@ -1910,6 +2678,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "channel_dispatch_queue_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_dispatch_queue_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "channel_dispatch_queue_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
@@ -1964,6 +2746,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_channel_routing_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_channel_routing_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -2121,6 +2917,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "church_agent_credits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_credits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       church_agent_subscriptions: {
@@ -2174,6 +2984,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_agent_subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "church_agent_subscriptions_plan_slug_fkey"
@@ -2251,6 +3075,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "church_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       church_courses: {
@@ -2319,69 +3157,134 @@ export type Database = {
             foreignKeyName: "church_courses_church_id_fkey"
             columns: ["church_id"]
             isOneToOne: false
-            referencedRelation: "churches"
+            referencedRelation: "admin_churches_overview"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      prayer_requests: {
-        Row: {
-          church_id:    string
-          created_at:   string
-          id:           string
-          is_test:      boolean
-          name:         string
-          person_id:    string | null
-          phone:        string
-          request_text: string
-          status:       string
-          updated_at:   string
-        }
-        Insert: {
-          church_id:    string
-          created_at?:  string
-          id?:          string
-          is_test?:     boolean
-          name:         string
-          person_id?:   string | null
-          phone:        string
-          request_text: string
-          status?:      string
-          updated_at?:  string
-        }
-        Update: {
-          church_id?:   string
-          created_at?:  string
-          id?:          string
-          is_test?:     boolean
-          name?:        string
-          person_id?:   string | null
-          phone?:       string
-          request_text?: string
-          status?:      string
-          updated_at?:  string
-        }
-        Relationships: [
           {
-            foreignKeyName: "prayer_requests_church_id_fkey"
+            foreignKeyName: "church_courses_church_id_fkey"
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "prayer_requests_person_id_fkey"
-            columns: ["person_id"]
+            foreignKeyName: "church_courses_church_id_fkey"
+            columns: ["church_id"]
             isOneToOne: false
-            referencedRelation: "people"
+            referencedRelation: "churches_public"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_courses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      church_empresarios: {
+        Row: {
+          active: boolean
+          authorized_at: string | null
+          authorized_by: string | null
+          authorized_public: boolean
+          categoria: string
+          church_id: string
+          created_at: string
+          descricao: string | null
+          email: string | null
+          foto_url: string | null
+          id: string
+          instagram: string | null
+          lgpd_consent: boolean
+          nome: string
+          nome_contato: string | null
+          site: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          authorized_at?: string | null
+          authorized_by?: string | null
+          authorized_public?: boolean
+          categoria: string
+          church_id: string
+          created_at?: string
+          descricao?: string | null
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          instagram?: string | null
+          lgpd_consent?: boolean
+          nome: string
+          nome_contato?: string | null
+          site?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          authorized_at?: string | null
+          authorized_by?: string | null
+          authorized_public?: boolean
+          categoria?: string
+          church_id?: string
+          created_at?: string
+          descricao?: string | null
+          email?: string | null
+          foto_url?: string | null
+          id?: string
+          instagram?: string | null
+          lgpd_consent?: boolean
+          nome?: string
+          nome_contato?: string | null
+          site?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_empresarios_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_empresarios_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_empresarios_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_empresarios_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
       church_events: {
         Row: {
           active: boolean
+          alert_minutes_before: number[]
+          alert_pastor_whatsapp: boolean
+          alert_summary_include: boolean
           all_day: boolean
+          assigned_pastor_id: string | null
+          cancelled_at: string | null
+          cancelled_reason: string | null
           church_id: string
           color: string | null
           created_at: string
@@ -2391,11 +3294,15 @@ export type Database = {
           event_type: string
           id: string
           is_online: boolean
+          is_pastoral: boolean
           is_public: boolean
           leader_id: string | null
           location: string | null
           ministry_id: string | null
           online_link: string | null
+          pastoral_category: string | null
+          pastoral_notes: string | null
+          person_ids: string[]
           recurrence: Json | null
           recurrence_count: number | null
           recurrence_day_of_week: number[] | null
@@ -2410,7 +3317,13 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          alert_minutes_before?: number[]
+          alert_pastor_whatsapp?: boolean
+          alert_summary_include?: boolean
           all_day?: boolean
+          assigned_pastor_id?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
           church_id: string
           color?: string | null
           created_at?: string
@@ -2420,11 +3333,15 @@ export type Database = {
           event_type?: string
           id?: string
           is_online?: boolean
+          is_pastoral?: boolean
           is_public?: boolean
           leader_id?: string | null
           location?: string | null
           ministry_id?: string | null
           online_link?: string | null
+          pastoral_category?: string | null
+          pastoral_notes?: string | null
+          person_ids?: string[]
           recurrence?: Json | null
           recurrence_count?: number | null
           recurrence_day_of_week?: number[] | null
@@ -2439,7 +3356,13 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          alert_minutes_before?: number[]
+          alert_pastor_whatsapp?: boolean
+          alert_summary_include?: boolean
           all_day?: boolean
+          assigned_pastor_id?: string | null
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
           church_id?: string
           color?: string | null
           created_at?: string
@@ -2449,11 +3372,15 @@ export type Database = {
           event_type?: string
           id?: string
           is_online?: boolean
+          is_pastoral?: boolean
           is_public?: boolean
           leader_id?: string | null
           location?: string | null
           ministry_id?: string | null
           online_link?: string | null
+          pastoral_category?: string | null
+          pastoral_notes?: string | null
+          person_ids?: string[]
           recurrence?: Json | null
           recurrence_count?: number | null
           recurrence_day_of_week?: number[] | null
@@ -2482,11 +3409,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "church_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "church_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "church_events_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_events_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "church_events_leader_id_fkey"
@@ -2501,6 +3456,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ministries"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_feature_flags: {
+        Row: {
+          church_id: string
+          created_at: string
+          enabled: boolean
+          flag_key: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          enabled?: boolean
+          flag_key: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          enabled?: boolean
+          flag_key?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_feature_flags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_feature_flags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_feature_flags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_feature_flags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -2568,6 +3579,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "church_followup_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_followup_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       church_notes: {
@@ -2612,6 +3637,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_notes_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_notes_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -2660,6 +3699,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_pastoral_profile_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_pastoral_profile_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -2727,6 +3780,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "church_settings_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_settings_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       church_sites: {
@@ -2774,6 +3841,76 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_sites_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_sites_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      church_units: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          slug: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          slug: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_units_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_units_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_units_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_units_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -2876,6 +4013,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_whatsapp_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_whatsapp_channels_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -3009,6 +4160,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "churches_parent_church_id_fkey"
+            columns: ["parent_church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "churches_parent_church_id_fkey"
+            columns: ["parent_church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       contact_requests: {
@@ -3084,6 +4249,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contact_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       contractors: {
@@ -3156,6 +4335,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contractors_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractors_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       contributions: {
@@ -3206,6 +4399,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contributions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contributions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "contributions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "contributions_person_id_fkey"
@@ -3267,6 +4481,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "conversation_events_conversation_id_fkey"
@@ -3337,6 +4565,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_messages_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_messages_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "conversation_messages_conversation_id_fkey"
@@ -3481,6 +4723,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "conversations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "conversations_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -3582,6 +4845,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_redemptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "coupon_redemptions_coupon_id_fkey"
@@ -3822,8 +5099,29 @@ export type Database = {
             foreignKeyName: "course_enrollments_church_id_fkey"
             columns: ["church_id"]
             isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "course_enrollments_course_id_fkey"
@@ -3831,6 +5129,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "church_courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_enrollments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "course_enrollments_person_id_fkey"
@@ -3933,6 +5238,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "credit_topup_purchases_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_topup_purchases_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "credit_topup_purchases_package_slug_fkey"
             columns: ["package_slug"]
             isOneToOne: false
@@ -3968,11 +5287,14 @@ export type Database = {
       donations: {
         Row: {
           amount: number
+          bank_account_id: string | null
           campaign_id: string | null
           church_id: string
           confirmed_at: string | null
           created_at: string
+          culto_type: string | null
           currency: string
+          donation_date: string | null
           gateway: string | null
           gateway_transaction_id: string | null
           id: string
@@ -3981,17 +5303,23 @@ export type Database = {
           person_id: string | null
           receipt_sent: boolean
           receipt_sent_at: string | null
+          reconciled: boolean
+          reconciled_at: string | null
           status: string
           type: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
           amount: number
+          bank_account_id?: string | null
           campaign_id?: string | null
           church_id: string
           confirmed_at?: string | null
           created_at?: string
+          culto_type?: string | null
           currency?: string
+          donation_date?: string | null
           gateway?: string | null
           gateway_transaction_id?: string | null
           id?: string
@@ -4000,17 +5328,23 @@ export type Database = {
           person_id?: string | null
           receipt_sent?: boolean
           receipt_sent_at?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
           status?: string
           type?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
           amount?: number
+          bank_account_id?: string | null
           campaign_id?: string | null
           church_id?: string
           confirmed_at?: string | null
           created_at?: string
+          culto_type?: string | null
           currency?: string
+          donation_date?: string | null
           gateway?: string | null
           gateway_transaction_id?: string | null
           id?: string
@@ -4019,11 +5353,21 @@ export type Database = {
           person_id?: string | null
           receipt_sent?: boolean
           receipt_sent_at?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
           status?: string
           type?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "donations_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "donations_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -4046,10 +5390,38 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "donations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "donations_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "donations_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "church_units"
             referencedColumns: ["id"]
           },
         ]
@@ -4113,6 +5485,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_occurrences_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_occurrences_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "event_occurrences_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -4170,6 +5556,214 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "event_templates_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_templates_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          category_id: string | null
+          church_id: string
+          created_at: string
+          description: string
+          due_date: string | null
+          expense_date: string
+          id: string
+          payment_method: string | null
+          receipt_path: string | null
+          reconciled: boolean
+          reconciled_at: string | null
+          status: string
+          supplier: string | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          category_id?: string | null
+          church_id: string
+          created_at?: string
+          description: string
+          due_date?: string | null
+          expense_date?: string
+          id?: string
+          payment_method?: string | null
+          receipt_path?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          status?: string
+          supplier?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          category_id?: string | null
+          church_id?: string
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          expense_date?: string
+          id?: string
+          payment_method?: string | null
+          receipt_path?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          status?: string
+          supplier?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "expenses_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "church_units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_relationships: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          person_id: string
+          related_person_id: string
+          relationship_type: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          person_id: string
+          related_person_id: string
+          relationship_type: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          person_id?: string
+          related_person_id?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_relationships_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_relationships_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_relationships_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_relationships_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "family_relationships_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "family_relationships_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_relationships_related_person_id_fkey"
+            columns: ["related_person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "family_relationships_related_person_id_fkey"
+            columns: ["related_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
         ]
       }
       financial_campaigns: {
@@ -4224,6 +5818,82 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "financial_campaigns_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_campaigns_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      financial_categories: {
+        Row: {
+          church_id: string
+          color: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          type: string
+        }
+        Insert: {
+          church_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          type?: string
+        }
+        Update: {
+          church_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_categories_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_categories_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_categories_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_categories_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       groups: {
@@ -4238,8 +5908,10 @@ export type Database = {
           meeting_day: string | null
           meeting_time: string | null
           name: string
+          neighborhood_id: string | null
           notes: string | null
           status: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -4253,8 +5925,10 @@ export type Database = {
           meeting_day?: string | null
           meeting_time?: string | null
           name: string
+          neighborhood_id?: string | null
           notes?: string | null
           status?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -4268,8 +5942,10 @@ export type Database = {
           meeting_day?: string | null
           meeting_time?: string | null
           name?: string
+          neighborhood_id?: string | null
           notes?: string | null
           status?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -4288,6 +5964,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "groups_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "groups_co_leader_id_fkey"
+            columns: ["co_leader_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "groups_co_leader_id_fkey"
             columns: ["co_leader_id"]
             isOneToOne: false
@@ -4298,7 +5995,28 @@ export type Database = {
             foreignKeyName: "groups_leader_id_fkey"
             columns: ["leader_id"]
             isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "groups_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "cell_neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "church_units"
             referencedColumns: ["id"]
           },
         ]
@@ -4342,6 +6060,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_scores_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_scores_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "health_scores_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "health_scores_person_id_fkey"
@@ -4398,6 +6137,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "impersonate_sessions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impersonate_sessions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       integrations: {
@@ -4439,6 +6192,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integrations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integrations_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -4496,6 +6263,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interactions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "interactions_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "interactions_person_id_fkey"
@@ -4571,6 +6359,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "internal_notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internal_notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "internal_notifications_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
@@ -4630,6 +6432,491 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      journey_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          church_id: string
+          created_at: string
+          event_type: string
+          id: string
+          journey_id: string
+          payload: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string
+          church_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          journey_id: string
+          payload?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          church_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          journey_id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "journey_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "person_journey"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_access_tokens: {
+        Row: {
+          church_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          revoked_at: string | null
+          room_id: string | null
+          token: string
+          token_role: string
+          valid_date: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          revoked_at?: string | null
+          room_id?: string | null
+          token: string
+          token_role: string
+          valid_date: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          revoked_at?: string | null
+          room_id?: string | null
+          token?: string
+          token_role?: string
+          valid_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_access_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_access_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_access_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_access_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "kids_access_tokens_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "kids_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_checkins: {
+        Row: {
+          checked_in_by: string | null
+          checked_out_by: string | null
+          checkin_time: string
+          checkout_time: string | null
+          child_id: string
+          church_id: string
+          created_at: string
+          event_date: string
+          guardian_verified: boolean
+          id: string
+          lgpd_consent: boolean
+          lgpd_consent_at: string | null
+          notes: string | null
+          room_id: string
+          wristband_number: string
+        }
+        Insert: {
+          checked_in_by?: string | null
+          checked_out_by?: string | null
+          checkin_time?: string
+          checkout_time?: string | null
+          child_id: string
+          church_id: string
+          created_at?: string
+          event_date?: string
+          guardian_verified?: boolean
+          id?: string
+          lgpd_consent?: boolean
+          lgpd_consent_at?: string | null
+          notes?: string | null
+          room_id: string
+          wristband_number: string
+        }
+        Update: {
+          checked_in_by?: string | null
+          checked_out_by?: string | null
+          checkin_time?: string
+          checkout_time?: string | null
+          child_id?: string
+          church_id?: string
+          created_at?: string
+          event_date?: string
+          guardian_verified?: boolean
+          id?: string
+          lgpd_consent?: boolean
+          lgpd_consent_at?: string | null
+          notes?: string | null
+          room_id?: string
+          wristband_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_checkins_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "kids_children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "kids_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_children: {
+        Row: {
+          active: boolean
+          birth_date: string | null
+          church_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          person_id: string | null
+          photo_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          birth_date?: string | null
+          church_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          person_id?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          birth_date?: string | null
+          church_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          person_id?: string | null
+          photo_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_children_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_children_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_children_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_children_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "kids_children_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "kids_children_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_guardians: {
+        Row: {
+          child_id: string
+          church_id: string
+          created_at: string
+          id: string
+          is_primary: boolean
+          name: string
+          person_id: string | null
+          phone: string
+          relationship: string | null
+        }
+        Insert: {
+          child_id: string
+          church_id: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name: string
+          person_id?: string | null
+          phone: string
+          relationship?: string | null
+        }
+        Update: {
+          child_id?: string
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          name?: string
+          person_id?: string | null
+          phone?: string
+          relationship?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_guardians_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "kids_children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_guardians_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_guardians_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_guardians_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_guardians_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "kids_guardians_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "kids_guardians_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_rooms: {
+        Row: {
+          active: boolean
+          age_range: string | null
+          church_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          age_range?: string | null
+          church_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          age_range?: string | null
+          church_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_rooms_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_rooms_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_rooms_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_rooms_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -4713,11 +7000,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leaders_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaders_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "leaders_ministry_id_fk"
             columns: ["ministry_id"]
             isOneToOne: false
             referencedRelation: "ministries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaders_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "leaders_person_id_fkey"
@@ -4835,6 +7143,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "member_profiles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_profiles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "member_profiles_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "member_profiles_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -4944,6 +7273,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "message_outbox_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_outbox_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "message_outbox_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "message_outbox_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -4991,6 +7341,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_templates_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_templates_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -5042,6 +7406,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_config_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -5095,6 +7473,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ministries_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministries_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "ministries_leader_id_people_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "ministries_leader_id_people_fkey"
             columns: ["leader_id"]
             isOneToOne: false
@@ -5144,11 +7543,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ministry_members_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministry_members_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "ministry_members_ministry_id_fkey"
             columns: ["ministry_id"]
             isOneToOne: false
             referencedRelation: "ministries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministry_members_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "ministry_members_person_id_fkey"
@@ -5208,6 +7628,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "n8n_webhooks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "n8n_webhooks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       notifications: {
@@ -5264,6 +7698,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "notifications_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "notifications_person_id_fkey"
@@ -5336,6 +7791,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "onboarding_sessions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_sessions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "onboarding_sessions_plan_slug_fkey"
             columns: ["plan_slug"]
             isOneToOne: false
@@ -5400,6 +7869,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "onboarding_steps_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_steps_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "onboarding_steps_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -5410,55 +7893,58 @@ export type Database = {
       }
       pastoral_appointments: {
         Row: {
-          appointment_type:         string
-          cabinet_pastor_id:        string | null
-          church_id:                string
-          created_at:               string
-          id:                       string
-          is_test:                  boolean
-          notes:                    string | null
-          pastor_id:                string | null
-          person_id:                string
-          preferred_datetime_text:  string | null
-          scheduled_at:             string
-          source:                   string
-          status:                   string
-          theme:                    string | null
-          updated_at:               string
+          appointment_type: string
+          cabinet_pastor_id: string | null
+          church_id: string
+          created_at: string
+          id: string
+          is_test: boolean
+          notes: string | null
+          pastor_id: string | null
+          person_id: string
+          preferred_datetime_text: string | null
+          scheduled_at: string
+          slot_id: string | null
+          source: string
+          status: string
+          theme: string | null
+          updated_at: string
         }
         Insert: {
-          appointment_type:         string
-          cabinet_pastor_id?:       string | null
-          church_id:                string
-          created_at?:              string
-          id?:                      string
-          is_test?:                 boolean
-          notes?:                   string | null
-          pastor_id?:               string | null
-          person_id:                string
+          appointment_type: string
+          cabinet_pastor_id?: string | null
+          church_id: string
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          notes?: string | null
+          pastor_id?: string | null
+          person_id: string
           preferred_datetime_text?: string | null
-          scheduled_at:             string
-          source?:                  string
-          status?:                  string
-          theme?:                   string | null
-          updated_at?:              string
+          scheduled_at: string
+          slot_id?: string | null
+          source?: string
+          status?: string
+          theme?: string | null
+          updated_at?: string
         }
         Update: {
-          appointment_type?:        string
-          cabinet_pastor_id?:       string | null
-          church_id?:               string
-          created_at?:              string
-          id?:                      string
-          is_test?:                 boolean
-          notes?:                   string | null
-          pastor_id?:               string | null
-          person_id?:               string
+          appointment_type?: string
+          cabinet_pastor_id?: string | null
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          notes?: string | null
+          pastor_id?: string | null
+          person_id?: string
           preferred_datetime_text?: string | null
-          scheduled_at?:            string
-          source?:                  string
-          status?:                  string
-          theme?:                   string | null
-          updated_at?:              string
+          scheduled_at?: string
+          slot_id?: string | null
+          source?: string
+          status?: string
+          theme?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -5483,11 +7969,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pastoral_appointments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_appointments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "pastoral_appointments_pastor_id_fkey"
             columns: ["pastor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_appointments_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "pastoral_appointments_person_id_fkey"
@@ -5551,6 +8058,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pastoral_cabinet_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_cabinet_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "pastoral_cabinet_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "pastoral_cabinet_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -5601,6 +8129,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_goals_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pastoral_goals_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -5659,6 +8201,20 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "pending_addons_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_addons_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
       people: {
@@ -5672,7 +8228,13 @@ export type Database = {
           baptized: boolean | null
           batismo_status: string | null
           birth_date: string | null
+          birth_day: number | null
+          birth_month: number | null
           calling: string | null
+          care_next_step: string | null
+          care_observation: string | null
+          care_status: string | null
+          care_updated_at: string | null
           celula_id: string | null
           children_count: number | null
           children_info: string | null
@@ -5708,6 +8270,8 @@ export type Database = {
           last_contact_at: string | null
           last_name: string | null
           latitude: number | null
+          left_at: string | null
+          left_reason: string | null
           lgpd_consent: boolean | null
           lgpd_consent_at: string | null
           longitude: number | null
@@ -5716,6 +8280,7 @@ export type Database = {
           membership_status: string | null
           ministry_interest: string[] | null
           name: string | null
+          name_sort: string | null
           neighborhood: string | null
           network: string | null
           observacoes_pastorais: string | null
@@ -5739,6 +8304,7 @@ export type Database = {
           street: string | null
           street_number: string | null
           tags: string[]
+          unit_id: string | null
           updated_at: string
           wedding_date: string | null
           zip_code: string | null
@@ -5753,7 +8319,13 @@ export type Database = {
           baptized?: boolean | null
           batismo_status?: string | null
           birth_date?: string | null
+          birth_day?: number | null
+          birth_month?: number | null
           calling?: string | null
+          care_next_step?: string | null
+          care_observation?: string | null
+          care_status?: string | null
+          care_updated_at?: string | null
           celula_id?: string | null
           children_count?: number | null
           children_info?: string | null
@@ -5789,6 +8361,8 @@ export type Database = {
           last_contact_at?: string | null
           last_name?: string | null
           latitude?: number | null
+          left_at?: string | null
+          left_reason?: string | null
           lgpd_consent?: boolean | null
           lgpd_consent_at?: string | null
           longitude?: number | null
@@ -5797,6 +8371,7 @@ export type Database = {
           membership_status?: string | null
           ministry_interest?: string[] | null
           name?: string | null
+          name_sort?: string | null
           neighborhood?: string | null
           network?: string | null
           observacoes_pastorais?: string | null
@@ -5820,6 +8395,7 @@ export type Database = {
           street?: string | null
           street_number?: string | null
           tags?: string[]
+          unit_id?: string | null
           updated_at?: string
           wedding_date?: string | null
           zip_code?: string | null
@@ -5834,7 +8410,13 @@ export type Database = {
           baptized?: boolean | null
           batismo_status?: string | null
           birth_date?: string | null
+          birth_day?: number | null
+          birth_month?: number | null
           calling?: string | null
+          care_next_step?: string | null
+          care_observation?: string | null
+          care_status?: string | null
+          care_updated_at?: string | null
           celula_id?: string | null
           children_count?: number | null
           children_info?: string | null
@@ -5870,6 +8452,8 @@ export type Database = {
           last_contact_at?: string | null
           last_name?: string | null
           latitude?: number | null
+          left_at?: string | null
+          left_reason?: string | null
           lgpd_consent?: boolean | null
           lgpd_consent_at?: string | null
           longitude?: number | null
@@ -5878,6 +8462,7 @@ export type Database = {
           membership_status?: string | null
           ministry_interest?: string[] | null
           name?: string | null
+          name_sort?: string | null
           neighborhood?: string | null
           network?: string | null
           observacoes_pastorais?: string | null
@@ -5901,6 +8486,7 @@ export type Database = {
           street?: string | null
           street_number?: string | null
           tags?: string[]
+          unit_id?: string | null
           updated_at?: string
           wedding_date?: string | null
           zip_code?: string | null
@@ -5928,10 +8514,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "people_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "people_pipeline_stage_id_fkey"
             columns: ["pipeline_stage_id"]
             isOneToOne: false
             referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "church_units"
             referencedColumns: ["id"]
           },
         ]
@@ -5977,10 +8584,236 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "person_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_events_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_events_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "person_events_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
             referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_health_info: {
+        Row: {
+          allergies: string | null
+          child_id: string
+          church_id: string
+          created_at: string
+          emergency_medication: string | null
+          id: string
+          lgpd_consent: boolean
+          lgpd_consent_at: string | null
+          medical_notes: string | null
+          syndrome: string | null
+          updated_at: string
+        }
+        Insert: {
+          allergies?: string | null
+          child_id: string
+          church_id: string
+          created_at?: string
+          emergency_medication?: string | null
+          id?: string
+          lgpd_consent?: boolean
+          lgpd_consent_at?: string | null
+          medical_notes?: string | null
+          syndrome?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allergies?: string | null
+          child_id?: string
+          church_id?: string
+          created_at?: string
+          emergency_medication?: string | null
+          id?: string
+          lgpd_consent?: boolean
+          lgpd_consent_at?: string | null
+          medical_notes?: string | null
+          syndrome?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_health_info_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "kids_children"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_health_info_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_health_info_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_health_info_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_health_info_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      person_journey: {
+        Row: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          agent_locked_at?: string | null
+          church_id: string
+          closed_at?: string | null
+          confidentiality?: string
+          created_at?: string
+          id?: string
+          ministry_id?: string | null
+          next_step?: string | null
+          next_step_due_at?: string | null
+          notes?: string | null
+          opened_at?: string
+          outcome?: string | null
+          owner_id?: string | null
+          person_id: string
+          pipeline_id?: string | null
+          stage_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          agent_locked_at?: string | null
+          church_id?: string
+          closed_at?: string | null
+          confidentiality?: string
+          created_at?: string
+          id?: string
+          ministry_id?: string | null
+          next_step?: string | null
+          next_step_due_at?: string | null
+          notes?: string | null
+          opened_at?: string
+          outcome?: string | null
+          owner_id?: string | null
+          person_id?: string
+          pipeline_id?: string | null
+          stage_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_journey_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "person_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -6038,6 +8871,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "person_pipeline_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "person_pipeline_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -6089,6 +8943,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_roles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_roles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_roles_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "person_roles_person_id_fkey"
@@ -6145,6 +9020,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_tags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_tags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_tags_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "person_tags_person_id_fkey"
@@ -6212,11 +9108,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pipeline_history_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_history_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "pipeline_history_from_stage_id_fkey"
             columns: ["from_stage_id"]
             isOneToOne: false
             referencedRelation: "pipeline_stages"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_history_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "pipeline_history_person_id_fkey"
@@ -6247,6 +9164,7 @@ export type Database = {
           is_active: boolean
           is_entry_point: boolean
           is_terminal: boolean
+          ministry_id: string | null
           name: string
           order_index: number
           pipeline_id: string | null
@@ -6265,6 +9183,7 @@ export type Database = {
           is_active?: boolean
           is_entry_point?: boolean
           is_terminal?: boolean
+          ministry_id?: string | null
           name: string
           order_index: number
           pipeline_id?: string | null
@@ -6283,6 +9202,7 @@ export type Database = {
           is_active?: boolean
           is_entry_point?: boolean
           is_terminal?: boolean
+          ministry_id?: string | null
           name?: string
           order_index?: number
           pipeline_id?: string | null
@@ -6302,6 +9222,27 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: false
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_stages_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_stages_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "pipeline_stages_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
             referencedColumns: ["id"]
           },
           {
@@ -6346,6 +9287,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipelines_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipelines_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -6400,12 +9355,95 @@ export type Database = {
         }
         Relationships: []
       }
+      prayer_requests: {
+        Row: {
+          church_id: string
+          created_at: string
+          id: string
+          is_test: boolean
+          name: string
+          person_id: string | null
+          phone: string
+          request_text: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          name: string
+          person_id?: string | null
+          phone: string
+          request_text: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          name?: string
+          person_id?: string | null
+          phone?: string
+          request_text?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "prayer_requests_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "prayer_requests_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           church_id: string
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
           lgpd_consent: boolean | null
           lgpd_consent_at: string | null
@@ -6418,6 +9456,7 @@ export type Database = {
           church_id: string
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           lgpd_consent?: boolean | null
           lgpd_consent_at?: string | null
@@ -6430,6 +9469,7 @@ export type Database = {
           church_id?: string
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           lgpd_consent?: boolean | null
           lgpd_consent_at?: string | null
@@ -6451,6 +9491,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -6495,6 +9549,98 @@ export type Database = {
             columns: ["church_id"]
             isOneToOne: true
             referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      receivables: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          category_id: string | null
+          church_id: string
+          created_at: string
+          description: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          payer_name: string | null
+          person_id: string | null
+          receipt_path: string | null
+          received_date: string | null
+          reconciled: boolean
+          reconciled_at: string | null
+          status: string
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          category_id?: string | null
+          church_id: string
+          created_at?: string
+          description: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          payer_name?: string | null
+          person_id?: string | null
+          receipt_path?: string | null
+          received_date?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          status?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          category_id?: string | null
+          church_id?: string
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          payer_name?: string | null
+          person_id?: string | null
+          receipt_path?: string | null
+          received_date?: string | null
+          reconciled?: boolean
+          reconciled_at?: string | null
+          status?: string
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receivables_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receivables_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "church_units"
             referencedColumns: ["id"]
           },
         ]
@@ -6573,6 +9719,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reengagement_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reengagement_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "reengagement_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "reengagement_journey_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -6598,6 +9765,233 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      service_report_area_counts: {
+        Row: {
+          area_name: string
+          church_id: string
+          id: string
+          kids_count: number | null
+          report_id: string
+          volunteer_count: number
+        }
+        Insert: {
+          area_name: string
+          church_id: string
+          id?: string
+          kids_count?: number | null
+          report_id: string
+          volunteer_count?: number
+        }
+        Update: {
+          area_name?: string
+          church_id?: string
+          id?: string
+          kids_count?: number | null
+          report_id?: string
+          volunteer_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_report_area_counts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_report_area_counts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_report_area_counts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_report_area_counts_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "service_report_area_counts_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "service_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_report_reporters: {
+        Row: {
+          church_id: string
+          created_at: string
+          fill_token: string
+          id: string
+          is_active: boolean
+          name: string
+          sede: string
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          fill_token?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sede?: string
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          fill_token?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sede?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_report_reporters_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_report_reporters_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_report_reporters_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_report_reporters_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      service_reports: {
+        Row: {
+          church_id: string
+          created_at: string
+          guest_pastor_name: string | null
+          id: string
+          is_guest_pastor: boolean
+          notes: string | null
+          pastor_name: string | null
+          reporter_id: string | null
+          sede: string
+          sermon_topic: string | null
+          service_date: string | null
+          service_type: string
+          service_type_other: string | null
+          status: string
+          submitted_at: string | null
+          total_people: number | null
+          total_visitors: number | null
+          updated_at: string
+          view_token: string
+          worship_leader: string | null
+        }
+        Insert: {
+          church_id: string
+          created_at?: string
+          guest_pastor_name?: string | null
+          id?: string
+          is_guest_pastor?: boolean
+          notes?: string | null
+          pastor_name?: string | null
+          reporter_id?: string | null
+          sede?: string
+          sermon_topic?: string | null
+          service_date?: string | null
+          service_type?: string
+          service_type_other?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_people?: number | null
+          total_visitors?: number | null
+          updated_at?: string
+          view_token?: string
+          worship_leader?: string | null
+        }
+        Update: {
+          church_id?: string
+          created_at?: string
+          guest_pastor_name?: string | null
+          id?: string
+          is_guest_pastor?: boolean
+          notes?: string | null
+          pastor_name?: string | null
+          reporter_id?: string | null
+          sede?: string
+          sermon_topic?: string | null
+          service_date?: string | null
+          service_type?: string
+          service_type_other?: string | null
+          status?: string
+          submitted_at?: string | null
+          total_people?: number | null
+          total_visitors?: number | null
+          updated_at?: string
+          view_token?: string
+          worship_leader?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_reports_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reports_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reports_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_reports_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "service_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "service_report_reporters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_schedule_assignments: {
         Row: {
@@ -6664,6 +10058,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_schedule_assignments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_schedule_assignments_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "service_schedule_assignments_schedule_id_fkey"
             columns: ["schedule_id"]
             isOneToOne: false
@@ -6725,6 +10133,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_schedule_availability_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_schedule_availability_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "service_schedule_availability_volunteer_id_fkey"
@@ -6800,6 +10222,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_schedule_swap_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_schedule_swap_requests_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "service_schedule_swap_requests_requester_volunteer_id_fkey"
@@ -6890,6 +10326,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_schedules_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_schedules_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "service_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "service_schedules_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -6947,6 +10404,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_tokens_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -7271,6 +10742,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: true
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "subscriptions_plan_slug_fkey"
             columns: ["plan_slug"]
             isOneToOne: false
@@ -7315,6 +10800,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervisor_areas_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supervisor_areas_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
           {
             foreignKeyName: "supervisor_areas_group_id_fkey"
@@ -7367,6 +10866,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -7423,6 +10936,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "tasks_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
             foreignKeyName: "tasks_person_id_fkey"
             columns: ["person_id"]
             isOneToOne: false
@@ -7467,6 +11001,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "churches"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
           },
         ]
       }
@@ -7516,6 +11064,71 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "visitor_capture_rate_limits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "visitor_capture_rate_limits_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+        ]
+      }
+      volunteer_care_logs: {
+        Row: {
+          care_date: string
+          care_type: string
+          church_id: string
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          notes: string | null
+          volunteer_id: string
+        }
+        Insert: {
+          care_date?: string
+          care_type?: string
+          church_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          notes?: string | null
+          volunteer_id: string
+        }
+        Update: {
+          care_date?: string
+          care_type?: string
+          church_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          notes?: string | null
+          volunteer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_care_logs_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_total_points"
+            referencedColumns: ["volunteer_id"]
+          },
+          {
+            foreignKeyName: "volunteer_care_logs_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "volunteers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       volunteer_points: {
@@ -7562,6 +11175,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "volunteer_points_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_points_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "volunteer_points_volunteer_id_fkey"
             columns: ["volunteer_id"]
             isOneToOne: false
@@ -7580,6 +11207,9 @@ export type Database = {
       volunteers: {
         Row: {
           availability: Json
+          care_notes: string | null
+          care_responsible_id: string | null
+          care_status: string
           church_id: string
           created_at: string
           id: string
@@ -7590,11 +11220,16 @@ export type Database = {
           ministry_id: string
           person_id: string
           role: string | null
+          satisfaction: string | null
           skills: string[]
           updated_at: string
+          willingness: string | null
         }
         Insert: {
           availability?: Json
+          care_notes?: string | null
+          care_responsible_id?: string | null
+          care_status?: string
           church_id: string
           created_at?: string
           id?: string
@@ -7605,11 +11240,16 @@ export type Database = {
           ministry_id: string
           person_id: string
           role?: string | null
+          satisfaction?: string | null
           skills?: string[]
           updated_at?: string
+          willingness?: string | null
         }
         Update: {
           availability?: Json
+          care_notes?: string | null
+          care_responsible_id?: string | null
+          care_status?: string
           church_id?: string
           created_at?: string
           id?: string
@@ -7620,10 +11260,26 @@ export type Database = {
           ministry_id?: string
           person_id?: string
           role?: string | null
+          satisfaction?: string | null
           skills?: string[]
           updated_at?: string
+          willingness?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "volunteers_care_responsible_id_fkey"
+            columns: ["care_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "volunteers_care_responsible_id_fkey"
+            columns: ["care_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "volunteers_church_id_fkey"
             columns: ["church_id"]
@@ -7639,11 +11295,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "volunteers_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteers_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
             foreignKeyName: "volunteers_ministry_id_fkey"
             columns: ["ministry_id"]
             isOneToOne: false
             referencedRelation: "ministries"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteers_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
           },
           {
             foreignKeyName: "volunteers_person_id_fkey"
@@ -7716,7 +11393,266 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_executions_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
+      }
+      churches_public: {
+        Row: {
+          id: string | null
+          logo_url: string | null
+          name: string | null
+          slug: string | null
+        }
+        Insert: {
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          slug?: string | null
+        }
+        Update: {
+          id?: string | null
+          logo_url?: string | null
+          name?: string | null
+          slug?: string | null
+        }
+        Relationships: []
+      }
+      journey_audit_missing_spine: {
+        Row: {
+          church_id: string | null
+          entered_at: string | null
+          person_id: string | null
+          person_name: string | null
+          phone: string | null
+          pipeline_stage_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_pipeline_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_stage_id_fkey"
+            columns: ["pipeline_stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_audit_orphan_spine: {
+        Row: {
+          church_id: string | null
+          opened_at: string | null
+          person_id: string | null
+          person_name: string | null
+          stage_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "person_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_stage_conflicts"
+            referencedColumns: ["person_id"]
+          },
+          {
+            foreignKeyName: "person_journey_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_journey_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_audit_reconciliation: {
+        Row: {
+          church_id: string | null
+          church_name: string | null
+          delta_espinha_vs_pipeline: number | null
+          flag_journey_ativa: boolean | null
+          na_espinha_ativa: number | null
+          no_pipeline_legado: number | null
+          total_pessoas: number | null
+        }
+        Insert: {
+          church_id?: string | null
+          church_name?: string | null
+          delta_espinha_vs_pipeline?: never
+          flag_journey_ativa?: never
+          na_espinha_ativa?: never
+          no_pipeline_legado?: never
+          total_pessoas?: never
+        }
+        Update: {
+          church_id?: string | null
+          church_name?: string | null
+          delta_espinha_vs_pipeline?: never
+          flag_journey_ativa?: never
+          na_espinha_ativa?: never
+          no_pipeline_legado?: never
+          total_pessoas?: never
+        }
+        Relationships: []
+      }
+      journey_audit_stage_conflicts: {
+        Row: {
+          church_id: string | null
+          person_id: string | null
+          person_name: string | null
+          stage_em_people: string | null
+          stage_em_pipeline: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "people_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "admin_churches_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "people_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
+          {
+            foreignKeyName: "people_pipeline_stage_id_fkey"
+            columns: ["stage_em_people"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_pipeline_stage_id_fkey"
+            columns: ["stage_em_pipeline"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_care_queue: {
+        Row: {
+          category: string | null
+          church_id: string | null
+          days_overdue: number | null
+          journey_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          opened_at: string | null
+          owner_id: string | null
+          person_id: string | null
+          person_name: string | null
+          phone: string | null
+          priority: number | null
+          stage_id: string | null
+          stage_name: string | null
+          version: number | null
+        }
+        Relationships: []
       }
       volunteer_total_points: {
         Row: {
@@ -7742,11 +11678,54 @@ export type Database = {
             referencedRelation: "churches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "volunteers_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "churches_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteers_church_id_fkey"
+            columns: ["church_id"]
+            isOneToOne: false
+            referencedRelation: "journey_audit_reconciliation"
+            referencedColumns: ["church_id"]
+          },
         ]
       }
     }
     Functions: {
       _is_ekthos_admin: { Args: never; Returns: boolean }
+      _journey_fetch_and_lock: {
+        Args: { p_expected_version: number; p_journey_id: string }
+        Returns: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "person_journey"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       activate_agent: { Args: { p_sa_id: string }; Returns: Json }
       activate_agent_internal: {
         Args: { p_agent_slug: string; p_church_id: string; p_source?: string }
@@ -7795,6 +11774,10 @@ export type Database = {
         Args: { p_church_id: string; p_person_id: string }
         Returns: string
       }
+      change_person_cell: {
+        Args: { p_new_group_id: string; p_person_id: string }
+        Returns: Json
+      }
       check_credit_thresholds: { Args: never; Returns: Json }
       church_has_access: { Args: { p_church_id: string }; Returns: boolean }
       count_remaining_admins: {
@@ -7816,9 +11799,14 @@ export type Database = {
         }
         Returns: Json
       }
+      f_unaccent: { Args: { "": string }; Returns: string }
       generate_event_occurrences: {
         Args: { p_event_id: string }
         Returns: undefined
+      }
+      generate_recurring_occurrences: {
+        Args: { weeks_ahead?: number }
+        Returns: number
       }
       get_agent_acolhimento_dashboard: {
         Args: { p_church_id: string }
@@ -7865,6 +11853,47 @@ export type Database = {
       get_church_onboarding_state: {
         Args: { p_church_id: string }
         Returns: Json
+      }
+      get_discipulado_overview: {
+        Args: { p_church_id: string; p_period_days?: number }
+        Returns: {
+          avancaram: number
+          entraram: number
+          order_index: number
+          parados: number
+          stage_id: string
+          stage_name: string
+          total: number
+        }[]
+      }
+      get_discipulado_stage_people: {
+        Args: {
+          p_church_id: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_stage_id: string
+        }
+        Returns: {
+          atrasado: boolean
+          dias_na_etapa: number
+          nome: string
+          person_id: string
+          responsavel: string
+          telefone: string
+        }[]
+      }
+      get_person_timeline: {
+        Args: { p_limit?: number; p_person_id: string }
+        Returns: {
+          actor_name: string
+          actor_type: string
+          event_at: string
+          event_kind: string
+          raw_payload: Json
+          source: string
+          summary: string
+        }[]
       }
       get_top_volunteers: {
         Args: { p_church_id: string; p_days_back?: number; p_limit?: number }
@@ -7932,11 +11961,295 @@ export type Database = {
         Returns: undefined
       }
       increment_blast_sent: { Args: { p_blast_id: string }; Returns: undefined }
+      increment_course_enrolled: {
+        Args: { p_course_id: string }
+        Returns: undefined
+      }
       increment_qr_scanned_count: {
         Args: { p_church_id: string }
         Returns: undefined
       }
       is_ekthos_admin: { Args: never; Returns: boolean }
+      journey_advance:
+        | {
+            Args: {
+              p_expected_version: number
+              p_journey_id: string
+              p_new_stage_id: string
+              p_note?: string
+            }
+            Returns: {
+              agent_locked_at: string | null
+              church_id: string
+              closed_at: string | null
+              confidentiality: string
+              created_at: string
+              id: string
+              ministry_id: string | null
+              next_step: string | null
+              next_step_due_at: string | null
+              notes: string | null
+              opened_at: string
+              outcome: string | null
+              owner_id: string | null
+              person_id: string
+              pipeline_id: string | null
+              stage_id: string
+              updated_at: string
+              version: number
+            }
+            SetofOptions: {
+              from: "*"
+              to: "person_journey"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_expected_version: number
+              p_journey_id: string
+              p_new_stage_id: string
+              p_note?: string
+              p_owner_id?: string
+            }
+            Returns: {
+              agent_locked_at: string | null
+              church_id: string
+              closed_at: string | null
+              confidentiality: string
+              created_at: string
+              id: string
+              ministry_id: string | null
+              next_step: string | null
+              next_step_due_at: string | null
+              notes: string | null
+              opened_at: string
+              outcome: string | null
+              owner_id: string | null
+              person_id: string
+              pipeline_id: string | null
+              stage_id: string
+              updated_at: string
+              version: number
+            }
+            SetofOptions: {
+              from: "*"
+              to: "person_journey"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      journey_assign: {
+        Args: {
+          p_expected_version: number
+          p_journey_id: string
+          p_owner_id: string
+        }
+        Returns: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "person_journey"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      journey_close: {
+        Args: {
+          p_expected_version: number
+          p_journey_id: string
+          p_note?: string
+          p_outcome: string
+        }
+        Returns: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "person_journey"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      journey_open: {
+        Args: {
+          p_due_at?: string
+          p_ministry_id?: string
+          p_next_step?: string
+          p_notes?: string
+          p_person_id: string
+          p_stage_id: string
+        }
+        Returns: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "person_journey"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      journey_register_attendance: {
+        Args: {
+          p_contact_channel?: string
+          p_contact_date?: string
+          p_contact_notes?: string
+          p_contact_result?: string
+          p_expected_version?: number
+          p_new_stage_id?: string
+          p_next_step?: string
+          p_next_step_due_at?: string
+          p_people_updates?: Json
+          p_person_id: string
+        }
+        Returns: Json
+      }
+      journey_register_touch: {
+        Args: { p_journey_id: string; p_payload?: Json; p_touch_type: string }
+        Returns: {
+          actor_id: string | null
+          actor_type: string
+          church_id: string
+          created_at: string
+          event_type: string
+          id: string
+          journey_id: string
+          payload: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "journey_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      journey_suggest_stage: {
+        Args: { p_context?: Json; p_person_id: string }
+        Returns: Json
+      }
+      journey_transfer: {
+        Args: {
+          p_expected_version: number
+          p_journey_id: string
+          p_new_ministry_id?: string
+          p_new_owner_id: string
+          p_note?: string
+        }
+        Returns: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "person_journey"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      journey_update_next_step: {
+        Args: {
+          p_due_date?: string
+          p_expected_version: number
+          p_journey_id: string
+          p_next_step: string
+        }
+        Returns: {
+          agent_locked_at: string | null
+          church_id: string
+          closed_at: string | null
+          confidentiality: string
+          created_at: string
+          id: string
+          ministry_id: string | null
+          next_step: string | null
+          next_step_due_at: string | null
+          notes: string | null
+          opened_at: string
+          outcome: string | null
+          owner_id: string | null
+          person_id: string
+          pipeline_id: string | null
+          stage_id: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "person_journey"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       list_church_channels: {
         Args: { p_church_id: string }
         Returns: {

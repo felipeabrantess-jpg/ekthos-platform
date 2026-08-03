@@ -86,10 +86,8 @@ export function usePersonJourney(personId: string | undefined) {
     queryFn: async (): Promise<JourneyAtendimento | null> => {
       if (!personId) return null
       const { data, error } = await supabase
-        // @ts-expect-error -- person_journey not in database.types.ts; regen pending (OPS-DEBT)
         .from('person_journey')
         .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at')
-        // @ts-expect-error -- type cascade from missing table above
         .eq('person_id', personId)
         .is('closed_at', null)
         .order('opened_at', { ascending: false })
@@ -109,10 +107,8 @@ export function usePersonJourneyEvents(journeyId: string | undefined) {
     queryFn: async (): Promise<JourneyEventItem[]> => {
       if (!journeyId) return []
       const { data, error } = await supabase
-        // @ts-expect-error -- journey_events not in database.types.ts; regen pending (OPS-DEBT)
         .from('journey_events')
         .select('id, event_type, actor_id, actor_type, payload, created_at')
-        // @ts-expect-error -- type cascade from missing table above
         .eq('journey_id', journeyId)
         .order('created_at', { ascending: false })
         .limit(30)
@@ -130,12 +126,9 @@ export function usePersonCareContact(personId: string | undefined, churchId: str
     queryFn: async (): Promise<CareContactItem | null> => {
       if (!personId || !churchId) return null
       const { data, error } = await supabase
-        // @ts-expect-error -- care_contacts not in database.types.ts; regen pending (OPS-DEBT)
         .from('care_contacts')
         .select('contacted, notes, contacted_by_name, contacted_at')
-        // @ts-expect-error -- type cascade from missing table above
         .eq('person_id', personId)
-        // @ts-expect-error -- type cascade from missing table above
         .eq('church_id', churchId)
         .maybeSingle()
       if (error) throw new Error(error.message)
@@ -152,7 +145,6 @@ export function useSuggestStage(personId: string | undefined, context: Record<st
     queryKey: ['stage-suggestion', personId, context],
     queryFn: async (): Promise<StageSuggestion | null> => {
       if (!personId) return null
-      // @ts-expect-error -- journey_suggest_stage added in migration 20260731; types pending regen
       const { data, error } = await supabase.rpc('journey_suggest_stage', {
         p_person_id: personId,
         p_context:   context,
@@ -186,7 +178,6 @@ export function usePersonTimeline(
     queryKey: ['person-timeline', personId, limit],
     queryFn: async (): Promise<TimelineItem[]> => {
       if (!personId) return []
-      // @ts-expect-error -- get_person_timeline added in migration 20260801; types pending regen
       const { data, error } = await supabase.rpc('get_person_timeline', {
         p_person_id: personId,
         p_limit:     limit,
@@ -220,18 +211,17 @@ export function useRegisterAttendance() {
 
   return useMutation({
     mutationFn: async (args: RegisterArgs) => {
-      // @ts-expect-error -- journey_register_attendance added in migration 20260731; types pending regen
       const { data, error } = await supabase.rpc('journey_register_attendance', {
         p_person_id:        args.person_id,
-        p_expected_version: args.expected_version ?? null,
+        p_expected_version: args.expected_version ?? undefined,
         p_people_updates:   args.people_updates   ?? {},
         p_contact_channel:  args.contact_channel,
         p_contact_result:   args.contact_result,
-        p_contact_notes:    args.contact_notes    ?? null,
+        p_contact_notes:    args.contact_notes    ?? undefined,
         p_contact_date:     args.contact_date     ?? new Date().toISOString(),
-        p_new_stage_id:     args.new_stage_id     ?? null,
-        p_next_step:        args.next_step         ?? null,
-        p_next_step_due_at: args.next_step_due_at ?? null,
+        p_new_stage_id:     args.new_stage_id     ?? undefined,
+        p_next_step:        args.next_step         ?? undefined,
+        p_next_step_due_at: args.next_step_due_at ?? undefined,
       })
       if (error) throw new Error(error.message)
       return data
