@@ -83,13 +83,7 @@ const GabinetePastores    = lazy(() => import('@/pages/GabinetePastores'))
 const ConversationsPage = lazy(() => import('@/pages/conversations/ConversationsPage'))
 const CampanhaBlast     = lazy(() => import('@/pages/campanha/CampanhaBlast'))
 
-// Distribuição de Cuidado — Fase 1
-const CuidadoResponsaveis = lazy(() => import('@/pages/cuidado/Responsaveis'))
-const CuidadoDistribuir   = lazy(() => import('@/pages/cuidado/Distribuir'))
-const CuidadoPainel       = lazy(() => import('@/pages/cuidado/Painel'))
-const CuidadoDuplicados   = lazy(() => import('@/pages/cuidado/Duplicados'))
 const CuidadoLink         = lazy(() => import('@/pages/cuidado/CuidadoLink'))
-const CuidadoPessoas      = lazy(() => import('@/pages/cuidado/CuidadoPessoas'))
 // Fase 3 — Atendimento Pastoral
 const AtendimentoPage     = lazy(() => import('@/pages/pessoas/AtendimentoPage'))
 
@@ -468,13 +462,8 @@ export default function App() {
             <Route path="gabinete/pedidos"      element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePedidosPWA /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="gabinete/pastores"     element={<ErrorBoundary><RoleRoute path="gabinete"><Suspense fallback={<PageLoader />}><GabinetePastores /></Suspense></RoleRoute></ErrorBoundary>} />
 
-            {/* ── Distribuição de Cuidado — Fase 1 ── */}
-            <Route path="cuidado" element={<Navigate to="/cuidado/responsaveis" replace />} />
-            <Route path="cuidado/responsaveis" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoResponsaveis /></Suspense></ErrorBoundary>} />
-            <Route path="cuidado/distribuir"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDistribuir /></Suspense></ErrorBoundary>} />
-            <Route path="cuidado/painel"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoPainel /></Suspense></ErrorBoundary>} />
-            <Route path="cuidado/duplicados"   element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CuidadoDuplicados /></Suspense></ErrorBoundary>} />
-            <Route path="cuidado/pessoas"      element={<ErrorBoundary><RoleRoute path="cuidado/pessoas"><Suspense fallback={<PageLoader />}><CuidadoPessoas /></Suspense></RoleRoute></ErrorBoundary>} />
+            {/* /cuidado/* → redirect para /pessoas (rotas removidas; /cuidado/:token permanece como rota pública) */}
+            <Route path="cuidado/*" element={<Navigate to="/pessoas" replace />} />
 
             {/* ── Registro de Culto — Fatia 3 (CRM autenticado) ── */}
             <Route path="culto/relatorios" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><RelatoriosCulto /></Suspense></ErrorBoundary>} />
