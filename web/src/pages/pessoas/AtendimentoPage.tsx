@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Phone, MapPin, Calendar, Heart, MessageCircle,
   ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Clock,
-  Sparkles, Loader2, Bot, User, ChevronRight,
+  Sparkles, Loader2, Bot, User, ChevronRight, Building2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
@@ -14,6 +14,7 @@ import {
   useSuggestStage,
   useRegisterAttendance,
   usePersonTimeline,
+  useMinistries,
   type TimelineItem,
 } from '@/features/atendimento/hooks/useAtendimento'
 import Button from '@/components/ui/Button'
@@ -47,6 +48,14 @@ const COMO_CONHECEU_LABEL: Record<string, string> = {
   outro:            'Outro',
 }
 
+const MARITAL_STATUS_LABEL: Record<string, string> = {
+  solteiro:       'Solteiro(a)',
+  casado:         'Casado(a)',
+  divorciado:     'Divorciado(a)',
+  viuvo:          'Viúvo(a)',
+  uniao_estavel:  'União estável',
+}
+
 const CHANNEL_LABELS: Record<string, string> = {
   presencial: 'Pessoalmente',
   whatsapp:   'WhatsApp',
@@ -56,11 +65,18 @@ const CHANNEL_LABELS: Record<string, string> = {
 }
 
 const RESULT_LABELS: Record<string, string> = {
-  realizado:   'Contato realizado',
-  sem_resposta:'Sem resposta',
-  reagendado:  'Reagendado',
-  encaminhado: 'Encaminhado',
+  realizado:        'Contato realizado',
+  sem_resposta:     'Sem resposta',
+  reagendado:       'Reagendado',
+  encaminhado:      'Encaminhado',
+  nao_atendeu:      'Não atendeu',
+  numero_errado:    'Número errado',
+  pediu_retorno:    'Pediu retorno',
+  nao_quer_contato: 'Não quer contato (encerra jornada)',
+  mudou_de_igreja:  'Mudou de Igreja (encerra jornada)',
 }
+
+const OUTCOME_CLOSES_JOURNEY = new Set(['nao_quer_contato', 'mudou_de_igreja'])
 
 const EVENT_KIND_LABEL: Record<string, string> = {
   journey_opened:        'Jornada iniciada',
@@ -70,6 +86,7 @@ const EVENT_KIND_LABEL: Record<string, string> = {
   touch:                 'Toque registrado',
   touch_sent:            'Toque enviado',
   conversation_message:  'Mensagem',
+  ministry_referral:     'Encaminhado para ministério',
 }
 
 // ── Toast ─────────────────────────────────────────────────────
@@ -183,12 +200,12 @@ function TimelineIcon({ item }: { item: TimelineItem }) {
   if (item.source === 'acolhimento') {
     return <div className={`${base} bg-purple-50`}><Sparkles size={12} className="text-purple-500" /></div>
   }
-  // journey_event
   const kindMap: Record<string, { bg: string; icon: React.ReactNode }> = {
-    pastoral_contact: { bg: 'bg-blue-50',   icon: <Phone size={12} className="text-blue-500" /> },
-    stage_advance:    { bg: 'bg-emerald-50', icon: <CheckCircle2 size={12} className="text-emerald-500" /> },
-    journey_opened:   { bg: 'bg-purple-50', icon: <Sparkles size={12} className="text-purple-500" /> },
-    journey_assign:   { bg: 'bg-amber-50',  icon: <User size={12} className="text-amber-500" /> },
+    pastoral_contact:  { bg: 'bg-blue-50',   icon: <Phone size={12} className="text-blue-500" /> },
+    stage_advance:     { bg: 'bg-emerald-50', icon: <CheckCircle2 size={12} className="text-emerald-500" /> },
+    journey_opened:    { bg: 'bg-purple-50',  icon: <Sparkles size={12} className="text-purple-500" /> },
+    journey_assign:    { bg: 'bg-amber-50',   icon: <User size={12} className="text-amber-500" /> },
+    ministry_referral: { bg: 'bg-indigo-50',  icon: <Building2 size={12} className="text-indigo-500" /> },
   }
   const style = kindMap[item.event_kind] ?? { bg: 'bg-gray-50', icon: <Clock size={12} className="text-gray-400" /> }
   return <div className={`${base} ${style.bg}`}>{style.icon}</div>
@@ -302,7 +319,7 @@ function BlocoHistorico({ personId }: { personId: string }) {
   )
 }
 
-// ── Bloco 3: O QUE FAZER AGORA (A1 — save fixo) ──────────────
+// ── Bloco 3: O QUE FAZER AGORA ────────────────────────────────
 
 interface BlocoAcoesProps {
   person:   NonNullable<ReturnType<typeof usePerson>['data']>
@@ -312,36 +329,49 @@ interface BlocoAcoesProps {
 }
 
 function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
+  const { churchId } = useAuth()
   const register = useRegisterAttendance()
+  const { data: ministries = [] } = useMinistries(churchId)
 
-  // Sinais de contexto
+  // ── E3: Sinais de contexto (8 sinais alinhados ao funil IGV) ──
   const [acceptedJesus,     setAcceptedJesus]     = useState(false)
   const [querCelula,        setQuerCelula]         = useState(false)
   const [membroOutraIgreja, setMembroOutraIgreja]  = useState(false)
   const [temBatismo,        setTemBatismo]         = useState(false)
+  const [voltouAoCulto,     setVoltouAoCulto]      = useState(false)
+  const [fezConnect,        setFezConnect]         = useState(false)
+  const [querSerMembro,     setQuerSerMembro]      = useState(false)
+  const [querServir,        setQuerServir]         = useState(false)
 
   const context = {
     accepted_jesus:      acceptedJesus,
     quer_celula:         querCelula,
     membro_outra_igreja: membroOutraIgreja,
     tem_batismo:         temBatismo,
+    voltou_ao_culto:     voltouAoCulto,
+    fez_connect:         fezConnect,
+    quer_ser_membro:     querSerMembro,
+    quer_servir:         querServir,
   }
 
   const { data: suggestion, isLoading: suggestLoading } = useSuggestStage(person.id, context)
 
-  // Formulário de atendimento
-  const [channel,  setChannel]  = useState('presencial')
-  const [result,   setResult]   = useState('realizado')
-  const [notes,    setNotes]    = useState('')
-  const [stageId,  setStageId]  = useState<string>(journey?.stage_id ?? '')
-  const [nextStep, setNextStep] = useState('')
-  const [nextDue,  setNextDue]  = useState('')
+  // ── Formulário ─────────────────────────────────────────────
+  const [channel,    setChannel]    = useState('presencial')
+  const [result,     setResult]     = useState('realizado')
+  const [notes,      setNotes]      = useState('')
+  const [stageId,    setStageId]    = useState<string>(journey?.stage_id ?? '')
+  const [nextStep,   setNextStep]   = useState('')
+  const [nextDue,    setNextDue]    = useState('')
+  const [ministryId, setMinistryId] = useState<string>('')
 
-  // Campos faltando da pessoa
-  const [nbhd,  setNbhd]  = useState(person.neighborhood ?? '')
-  const [city,  setCity]  = useState(person.city ?? '')
-  const [phone, setPhone] = useState(person.phone ?? '')
-  const [obs,   setObs]   = useState(person.observacoes_pastorais ?? '')
+  // ── E6: Completar dados ────────────────────────────────────
+  const [nbhd,          setNbhd]          = useState(person.neighborhood     ?? '')
+  const [city,          setCity]          = useState(person.city             ?? '')
+  const [phone,         setPhone]         = useState(person.phone            ?? '')
+  const [obs,           setObs]           = useState(person.observacoes_pastorais ?? '')
+  const [comoConheceu,  setComoConheceu]  = useState(person.como_conheceu    ?? '')
+  const [maritalStatus, setMaritalStatus] = useState(person.marital_status   ?? '')
 
   // Pré-selecionar sugestão quando chega
   useEffect(() => {
@@ -350,24 +380,35 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
     }
   }, [suggestion?.stage_id, stageId])
 
-  // Detectar se há algo a salvar
+  const closingOutcome = OUTCOME_CLOSES_JOURNEY.has(result)
+
+  // ── E2: sem jornada → etapa obrigatória ───────────────────
+  const missingStageForNewJourney = !journey && !stageId
+
+  const anySignal = Object.values(context).some(Boolean)
+
   const hasChanges =
     notes.trim()    !== '' ||
     nextStep.trim() !== '' ||
     nextDue         !== '' ||
+    ministryId      !== '' ||
     (stageId !== '' && stageId !== (journey?.stage_id ?? '')) ||
-    nbhd.trim()  !== (person.neighborhood          ?? '').trim() ||
-    city.trim()  !== (person.city                  ?? '').trim() ||
-    phone.replace(/\D/g, '') !== (person.phone     ?? '').replace(/\D/g, '') ||
-    obs.trim()   !== (person.observacoes_pastorais  ?? '').trim() ||
-    acceptedJesus || querCelula || membroOutraIgreja || temBatismo
+    nbhd.trim()          !== (person.neighborhood          ?? '').trim() ||
+    city.trim()          !== (person.city                  ?? '').trim() ||
+    phone.replace(/\D/g, '') !== (person.phone             ?? '').replace(/\D/g, '') ||
+    obs.trim()           !== (person.observacoes_pastorais  ?? '').trim() ||
+    comoConheceu         !== (person.como_conheceu          ?? '') ||
+    maritalStatus        !== (person.marital_status         ?? '') ||
+    anySignal
 
   async function handleSalvar() {
     const peopleUpdates: Record<string, string> = {}
-    if (nbhd  !== (person.neighborhood          ?? '')) peopleUpdates.neighborhood          = nbhd
-    if (city  !== (person.city                  ?? '')) peopleUpdates.city                  = city
-    if (phone !== (person.phone                 ?? '')) peopleUpdates.phone                 = phone
-    if (obs   !== (person.observacoes_pastorais ?? '')) peopleUpdates.observacoes_pastorais = obs
+    if (nbhd         !== (person.neighborhood          ?? '')) peopleUpdates.neighborhood          = nbhd
+    if (city         !== (person.city                  ?? '')) peopleUpdates.city                  = city
+    if (phone        !== (person.phone                 ?? '')) peopleUpdates.phone                 = phone
+    if (obs          !== (person.observacoes_pastorais ?? '')) peopleUpdates.observacoes_pastorais = obs
+    if (comoConheceu !== (person.como_conheceu         ?? '')) peopleUpdates.como_conheceu         = comoConheceu
+    if (maritalStatus !== (person.marital_status       ?? '')) peopleUpdates.marital_status        = maritalStatus
 
     try {
       await register.mutateAsync({
@@ -380,16 +421,23 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
         new_stage_id:     stageId || null,
         next_step:        nextStep || undefined,
         next_step_due_at: nextDue  || null,
+        ministry_id:      ministryId || null,
+        close_journey:    closingOutcome || undefined,
       })
-      onToast('Atendimento registrado com sucesso.', 'success')
-      // Limpar campos transitórios
+      const closedMsg = closingOutcome ? ' Jornada encerrada.' : ''
+      onToast(`Atendimento registrado com sucesso.${closedMsg}`, 'success')
       setNotes('')
       setNextStep('')
       setNextDue('')
+      setMinistryId('')
       setAcceptedJesus(false)
       setQuerCelula(false)
       setMembroOutraIgreja(false)
       setTemBatismo(false)
+      setVoltouAoCulto(false)
+      setFezConnect(false)
+      setQuerSerMembro(false)
+      setQuerServir(false)
     } catch (err) {
       const msg = String(err)
       if (msg.includes('JOURNEY_VERSION_CONFLICT')) {
@@ -400,19 +448,26 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
     }
   }
 
+  const canSave = hasChanges && !missingStageForNewJourney && !register.isPending
+
   const saveBar = (
     <div className="p-4 bg-white border-t border-border-default rounded-b-2xl">
       <Button
         variant="primary"
         size="md"
         loading={register.isPending}
-        disabled={!hasChanges || register.isPending}
+        disabled={!canSave}
         onClick={handleSalvar}
         className="w-full"
       >
         {register.isPending ? 'Salvando…' : 'Salvar atendimento'}
       </Button>
-      {!hasChanges && !register.isPending && (
+      {missingStageForNewJourney && (
+        <p className="text-center text-xs text-amber-600 font-medium mt-2">
+          Selecione uma etapa para iniciar a jornada
+        </p>
+      )}
+      {!missingStageForNewJourney && !hasChanges && !register.isPending && (
         <p className="text-center text-xs text-text-secondary mt-2">
           Preencha ao menos um campo para salvar
         </p>
@@ -420,14 +475,31 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
     </div>
   )
 
+  // ── Seções que mostram "Completar dados" ──────────────────
+  const needsPhone         = !person.phone
+  const needsLocation      = !person.neighborhood || !person.city
+  const needsComoConheceu  = !person.como_conheceu
+  const needsMarital       = !person.marital_status
+  const showCompletarDados = needsPhone || needsLocation || needsComoConheceu || needsMarital
+
   const formContent = (
     <div className="p-5 space-y-5">
 
-      {/* ── Campos faltando ── */}
-      {(!person.neighborhood || !person.city || !person.phone) && (
+      {/* ── E2: alerta sem jornada ── */}
+      {!journey && (
+        <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <AlertCircle size={14} className="text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-700">
+            Esta pessoa não tem jornada ativa. Selecione uma etapa abaixo para iniciá-la.
+          </p>
+        </div>
+      )}
+
+      {/* ── E6: Completar dados ── */}
+      {showCompletarDados && (
         <div className="space-y-3">
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Completar dados</p>
-          {!person.phone && (
+          {needsPhone && (
             <label className="block">
               <span className="text-xs text-text-secondary">Telefone</span>
               <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
@@ -435,7 +507,7 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
                 className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
             </label>
           )}
-          {(!person.neighborhood || !person.city) && (
+          {needsLocation && (
             <div className="grid grid-cols-2 gap-2">
               {!person.neighborhood && (
                 <label className="block">
@@ -455,10 +527,30 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
               )}
             </div>
           )}
+          {needsComoConheceu && (
+            <label className="block">
+              <span className="text-xs text-text-secondary">Como conheceu a igreja</span>
+              <select value={comoConheceu} onChange={e => setComoConheceu(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                <option value="">Selecionar…</option>
+                {Object.entries(COMO_CONHECEU_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
+          )}
+          {needsMarital && (
+            <label className="block">
+              <span className="text-xs text-text-secondary">Estado civil</span>
+              <select value={maritalStatus} onChange={e => setMaritalStatus(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                <option value="">Selecionar…</option>
+                {Object.entries(MARITAL_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
+          )}
         </div>
       )}
 
-      {/* ── Sinais de contexto ── */}
+      {/* ── E3: Sinais de contexto (8 sinais) ── */}
       <div className="space-y-2">
         <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Sinais desta conversa</p>
         <div className="grid grid-cols-2 gap-2">
@@ -467,6 +559,10 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
             ['quer_celula',         querCelula,         setQuerCelula,         'Quer célula'],
             ['membro_outra_igreja', membroOutraIgreja,  setMembroOutraIgreja,  'Membro transferido'],
             ['tem_batismo',         temBatismo,         setTemBatismo,         'Já foi batizado'],
+            ['voltou_ao_culto',     voltouAoCulto,      setVoltouAoCulto,      'Voltou ao culto'],
+            ['fez_connect',         fezConnect,         setFezConnect,         'Fez o Connect'],
+            ['quer_ser_membro',     querSerMembro,      setQuerSerMembro,      'Quer ser membro'],
+            ['quer_servir',         querServir,         setQuerServir,         'Quer servir'],
           ] as [string, boolean, (v: boolean) => void, string][]).map(([key, val, setter, label]) => (
             <button key={key} onClick={() => setter(!val)}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-colors ${
@@ -481,7 +577,7 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
         </div>
       </div>
 
-      {/* ── Sugestão de etapa ── */}
+      {/* ── E4: Sugestão de etapa (reason já visível) ── */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Etapa sugerida</p>
@@ -497,8 +593,10 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
           </div>
         )}
         <select value={stageId} onChange={e => setStageId(e.target.value)}
-          className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
-          <option value="">Manter etapa atual</option>
+          className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white ${
+            missingStageForNewJourney ? 'border-amber-400' : 'border-border-default'
+          }`}>
+          <option value="">{journey ? 'Manter etapa atual' : 'Selecionar etapa (obrigatório)…'}</option>
           {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
       </div>
@@ -517,11 +615,24 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
           <label className="block">
             <span className="text-xs text-text-secondary">Resultado</span>
             <select value={result} onChange={e => setResult(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+              className={`mt-1 w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white ${
+                closingOutcome ? 'border-red-300 bg-red-50' : 'border-border-default'
+              }`}>
               {Object.entries(RESULT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </label>
         </div>
+
+        {/* E5: aviso de encerramento */}
+        {closingOutcome && (
+          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
+            <AlertCircle size={13} className="text-red-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-red-700">
+              Este resultado vai <strong>encerrar a jornada</strong> desta pessoa.
+            </p>
+          </div>
+        )}
+
         <textarea value={notes} onChange={e => setNotes(e.target.value)}
           placeholder="Anotações sobre esta conversa…"
           rows={3}
@@ -534,15 +645,37 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
         </label>
       </div>
 
+      {/* ── E7: Encaminhar para ministério ── */}
+      {ministries.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide flex items-center gap-1.5">
+            <Building2 size={12} />
+            Encaminhar para ministério
+          </p>
+          <select value={ministryId} onChange={e => setMinistryId(e.target.value)}
+            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+            <option value="">Não encaminhar</option>
+            {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+          {ministryId && (
+            <p className="text-xs text-text-secondary">
+              O líder será notificado ao salvar.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Próximo passo ── */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Próximo passo</p>
-        <input value={nextStep} onChange={e => setNextStep(e.target.value)}
-          placeholder="Ex: Apresentar para a célula"
-          className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-        <input type="date" value={nextDue} onChange={e => setNextDue(e.target.value)}
-          className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-      </div>
+      {!closingOutcome && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Próximo passo</p>
+          <input value={nextStep} onChange={e => setNextStep(e.target.value)}
+            placeholder="Ex: Apresentar para a célula"
+            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          <input type="date" value={nextDue} onChange={e => setNextDue(e.target.value)}
+            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+        </div>
+      )}
 
     </div>
   )
@@ -555,21 +688,25 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
           variant="primary"
           size="md"
           loading={register.isPending}
-          disabled={!hasChanges || register.isPending}
+          disabled={!canSave}
           onClick={handleSalvar}
           className="w-full"
         >
           {register.isPending ? 'Salvando…' : 'Salvar atendimento'}
         </Button>
+        {missingStageForNewJourney && (
+          <p className="text-center text-xs text-amber-600 font-medium mt-1">
+            Selecione uma etapa para iniciar a jornada
+          </p>
+        )}
       </div>
 
-      {/* ── Card (desktop: sticky + save no rodapé do card) ── */}
+      {/* ── Card (desktop: sticky + save no rodapé) ── */}
       <div className="bg-white rounded-2xl border border-border-default shadow-sm md:sticky md:top-4 flex flex-col">
         <div className="md:overflow-y-auto md:max-h-[calc(100vh-9rem)]">
           <h3 className="font-semibold text-ekthos-black text-sm px-5 pt-5">O que fazer agora</h3>
           {formContent}
         </div>
-        {/* Save bar: visível no desktop, escondida no mobile (usa fixed acima) */}
         <div className="hidden md:block">
           {saveBar}
         </div>
@@ -627,9 +764,7 @@ export default function AtendimentoPage() {
   const displayName = [person.first_name, person.last_name].filter(Boolean).join(' ') || person.name
 
   return (
-    // pb-24: espaço para a barra fixa mobile; md:pb-10: desktop normal
     <div className="space-y-4 pb-24 md:pb-10">
-      {/* Cabeçalho */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-bg-hover transition-colors text-text-secondary"
@@ -646,7 +781,6 @@ export default function AtendimentoPage() {
         </div>
       </div>
 
-      {/* 3 colunas em desktop, linear em mobile */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
         <BlocoQuemE person={person} />
         <BlocoHistorico personId={person.id} />
