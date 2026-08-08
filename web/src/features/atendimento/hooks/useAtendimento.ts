@@ -16,6 +16,7 @@ export interface PersonAtendimento {
   city: string | null
   birth_date: string | null
   como_conheceu: string | null
+  marital_status: string | null
   first_visit_date: string | null
   conversion_date: string | null
   person_stage: string | null
@@ -33,6 +34,9 @@ export interface JourneyAtendimento {
   next_step: string | null
   next_step_due_at: string | null
   opened_at: string
+  ministry_id: string | null
+  outcome: string | null
+  closed_at: string | null
 }
 
 export interface JourneyEventItem {
@@ -59,6 +63,14 @@ export interface StageSuggestion {
   reason: string
 }
 
+export interface MinistryItem {
+  id: string
+  name: string
+  leader_id: string | null
+  leader_name: string | null
+  leader_email: string | null
+}
+
 // ── Hooks ─────────────────────────────────────────────────────
 
 export function usePerson(personId: string | undefined) {
@@ -68,7 +80,7 @@ export function usePerson(personId: string | undefined) {
       if (!personId) return null
       const { data, error } = await supabase
         .from('people')
-        .select('id, church_id, name, first_name, last_name, phone, email, neighborhood, city, birth_date, como_conheceu, first_visit_date, conversion_date, person_stage, celula_id, responsible_id, observacoes_pastorais, avatar_url')
+        .select('id, church_id, name, first_name, last_name, phone, email, neighborhood, city, birth_date, como_conheceu, marital_status, first_visit_date, conversion_date, person_stage, celula_id, responsible_id, observacoes_pastorais, avatar_url')
         .eq('id', personId)
         .is('deleted_at', null)
         .maybeSingle()
@@ -87,7 +99,7 @@ export function usePersonJourney(personId: string | undefined) {
       if (!personId) return null
       const { data, error } = await supabase
         .from('person_journey')
-        .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at')
+        .select('id, stage_id, owner_id, version, next_step, next_step_due_at, opened_at, ministry_id, outcome, closed_at')
         .eq('person_id', personId)
         .is('closed_at', null)
         .order('opened_at', { ascending: false })
@@ -157,6 +169,30 @@ export function useSuggestStage(personId: string | undefined, context: Record<st
   })
 }
 
+export function useMinistries(churchId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['ministries', churchId],
+    queryFn: async (): Promise<MinistryItem[]> => {
+      if (!churchId) return []
+      const { data, error } = await supabase
+        .from('ministries')
+        .select('id, name, leader_id, people!ministries_leader_id_people_fkey(name, email)')
+        .eq('church_id', churchId)
+        .order('name', { ascending: true })
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((m: any) => ({
+        id:           m.id,
+        name:         m.name,
+        leader_id:    m.leader_id,
+        leader_name:  m.people?.name  ?? null,
+        leader_email: m.people?.email ?? null,
+      })) as MinistryItem[]
+    },
+    enabled: !!churchId,
+    staleTime: 120_000,
+  })
+}
+
 // ── Timeline unificada ────────────────────────────────────────
 
 export interface TimelineItem {
@@ -193,16 +229,18 @@ export function usePersonTimeline(
 // ── Mutation ─────────────────────────────────────────────────
 
 interface RegisterArgs {
-  person_id:        string
+  person_id:         string
   expected_version?: number | null
-  people_updates?:  Record<string, string>
-  contact_channel:  string
-  contact_result:   string
-  contact_notes?:   string
-  contact_date?:    string
-  new_stage_id?:    string | null
-  next_step?:       string
+  people_updates?:   Record<string, string>
+  contact_channel:   string
+  contact_result:    string
+  contact_notes?:    string
+  contact_date?:     string
+  new_stage_id?:     string | null
+  next_step?:        string
   next_step_due_at?: string | null
+  ministry_id?:      string | null
+  close_journey?:    boolean
 }
 
 export function useRegisterAttendance() {
@@ -222,6 +260,8 @@ export function useRegisterAttendance() {
         p_new_stage_id:     args.new_stage_id     ?? undefined,
         p_next_step:        args.next_step         ?? undefined,
         p_next_step_due_at: args.next_step_due_at ?? undefined,
+        p_ministry_id:      args.ministry_id      ?? null,
+        p_close_journey:    args.close_journey     ?? null,
       })
       if (error) throw new Error(error.message)
       return data
