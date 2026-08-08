@@ -281,3 +281,15 @@ GRANT  EXECUTE ON FUNCTION public.journey_suggest_stage(uuid, jsonb)            
 
 REVOKE ALL ON FUNCTION public.journey_register_attendance(uuid,integer,jsonb,text,text,text,timestamptz,uuid,text,date,uuid,boolean) FROM PUBLIC;
 GRANT  EXECUTE ON FUNCTION public.journey_register_attendance(uuid,integer,jsonb,text,text,text,timestamptz,uuid,text,date,uuid,boolean) TO authenticated;
+
+-- ── Fix: estender notifications_type_check para ministry_referral ────────────
+ALTER TABLE public.notifications
+  DROP CONSTRAINT IF EXISTS notifications_type_check,
+  ADD  CONSTRAINT notifications_type_check
+    CHECK (type = ANY (ARRAY['alert','info','warning','success','ministry_referral']));
+
+-- ── C1: remover overload antigo de 10 params (substituído pela v12 acima) ─────
+-- IF EXISTS: idempotente — em deploy fresh a v10 nunca existiu
+DROP FUNCTION IF EXISTS public.journey_register_attendance(
+  uuid, integer, jsonb, text, text, text, timestamptz, uuid, text, date
+);
