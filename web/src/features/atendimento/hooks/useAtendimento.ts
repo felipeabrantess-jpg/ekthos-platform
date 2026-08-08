@@ -67,6 +67,8 @@ export interface MinistryItem {
   id: string
   name: string
   leader_id: string | null
+  leader_name: string | null
+  leader_email: string | null
 }
 
 // ── Hooks ─────────────────────────────────────────────────────
@@ -174,11 +176,17 @@ export function useMinistries(churchId: string | null | undefined) {
       if (!churchId) return []
       const { data, error } = await supabase
         .from('ministries')
-        .select('id, name, leader_id')
+        .select('id, name, leader_id, people!ministries_leader_id_people_fkey(name, email)')
         .eq('church_id', churchId)
         .order('name', { ascending: true })
       if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as MinistryItem[]
+      return (data ?? []).map((m: any) => ({
+        id:           m.id,
+        name:         m.name,
+        leader_id:    m.leader_id,
+        leader_name:  m.people?.name  ?? null,
+        leader_email: m.people?.email ?? null,
+      })) as MinistryItem[]
     },
     enabled: !!churchId,
     staleTime: 120_000,

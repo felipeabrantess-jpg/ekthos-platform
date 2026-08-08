@@ -657,11 +657,18 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
             <option value="">Não encaminhar</option>
             {ministries.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
-          {ministryId && (
-            <p className="text-xs text-text-secondary">
-              O líder será notificado ao salvar.
-            </p>
-          )}
+          {ministryId && (() => {
+            const sel = ministries.find(m => m.id === ministryId)
+            let msg: string
+            if (!sel?.leader_id) {
+              msg = 'Encaminhamento será registrado. Este ministério ainda não tem líder cadastrado.'
+            } else if (!sel.leader_email) {
+              msg = `Encaminhamento será registrado. ${sel.leader_name ?? 'O líder'} ainda não tem acesso ao sistema.`
+            } else {
+              msg = `${sel.leader_name ?? 'O líder'} será notificado ao salvar.`
+            }
+            return <p className="text-xs text-text-secondary">{msg}</p>
+          })()}
         </div>
       )}
 
