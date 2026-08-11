@@ -5,9 +5,9 @@
 --   authenticated  → church_id SEMPRE do JWT (p_church_id ignorado)
 --   service_role   → usa p_church_id (para agentes)
 --
--- Detecção: session_user = 'service_role'
--- NOTA: dentro de SECURITY DEFINER, current_user = owner da função (postgres).
--- session_user preserva o role original do caller — correto para detectar service_role.
+-- Detecção: auth.jwt()->>'role' = 'service_role'
+-- NOTA: dentro de SECURITY DEFINER, current_user e session_user refletem o owner
+-- da função (postgres), não o caller. O claim JWT é o único campo confiável.
 
 -- ── DROP de versão anterior (idempotência) ─────────────────────────────
 DROP FUNCTION IF EXISTS public.create_person(
@@ -55,7 +55,7 @@ BEGIN
   -- current_user = 'service_role' → chamada de agente/backend
   -- current_user = 'authenticated' → chamada de usuário logado
   -- Qualquer outro role → não deveria chegar aqui por causa dos GRANTs
-  v_is_service := (session_user = 'service_role');
+  v_is_service := coalesce(auth.jwt()->>'role', '') = 'service_role';
 
   IF v_is_service THEN
     v_church_id  := p_church_id;
