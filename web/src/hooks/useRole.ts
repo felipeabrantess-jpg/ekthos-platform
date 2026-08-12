@@ -10,6 +10,7 @@ export type AppRole =
   | 'cell_leader'
   | 'secretary'
   | 'treasurer'
+  | 'ministry_leader'
 
 // Rótulos em português para exibição no frontend
 export const ROLE_LABELS: Record<AppRole, string> = {
@@ -20,6 +21,7 @@ export const ROLE_LABELS: Record<AppRole, string> = {
   cell_leader:       'Líder de Célula',
   secretary:         'Secretária',
   treasurer:         'Tesoureiro',
+  ministry_leader:   'Líder de Ministério',
 }
 
 // Quais roles têm acesso a cada rota
@@ -30,7 +32,7 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/lideres':      ['admin', 'pastor_celulas', 'supervisor'],
   '/consolidacao': ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
   '/pipeline':     ['admin', 'pastor_celulas', 'supervisor', 'cell_leader'],
-  '/ministerios': ['admin', 'admin_departments'],
+  '/ministerios': ['admin', 'admin_departments', 'ministry_leader'],
   '/voluntarios': ['admin', 'admin_departments'],
   '/escalas':     ['admin', 'admin_departments'],
   '/volunteer/voluntarios': ['admin', 'admin_departments'],
@@ -96,5 +98,6 @@ export function isAdminLevel(role: AppRole | null): boolean {
 export function defaultRoute(role: AppRole | null): string {
   if (!role) return '/login'
   if (role === 'treasurer') return '/financeiro'
+  if (role === 'ministry_leader') return '/ministerios'
   return '/dashboard'
 }
