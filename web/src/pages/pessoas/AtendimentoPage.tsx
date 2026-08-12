@@ -460,7 +460,7 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
   const showCompletarDados = needsPhone || needsLocation || needsComoConheceu || needsMarital
 
   const formContent = (
-    <div className="p-5 space-y-5">
+    <div className="p-4 space-y-4">
 
       {/* ── E2: alerta sem jornada ── */}
       {!journey && (
@@ -654,15 +654,17 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
         </div>
       )}
 
-      {/* ── Próximo passo ── */}
+      {/* ── Próximo passo (lado a lado) ── */}
       {!closingOutcome && (
         <div className="space-y-2">
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Próximo passo</p>
-          <input value={nextStep} onChange={e => setNextStep(e.target.value)}
-            placeholder="Ex: Apresentar para a célula"
-            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-          <input type="date" value={nextDue} onChange={e => setNextDue(e.target.value)}
-            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <input value={nextStep} onChange={e => setNextStep(e.target.value)}
+              placeholder="Ex: Apresentar para a célula"
+              className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+            <input type="date" value={nextDue} onChange={e => setNextDue(e.target.value)}
+              className="rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+          </div>
         </div>
       )}
 
@@ -693,7 +695,7 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
       {/* ── Card (desktop: sticky + save no rodapé; E3/E5) ── */}
       <div className="bg-white rounded-2xl border border-border-default shadow-sm lg:sticky lg:top-4 flex flex-col">
         <div className="lg:overflow-y-auto lg:max-h-[calc(100vh-9rem)]">
-          <h3 className="font-semibold text-ekthos-black text-sm px-5 pt-5">O que fazer agora</h3>
+          <h3 className="font-semibold text-ekthos-black text-sm px-4 pt-4">O que fazer agora</h3>
           {formContent}
         </div>
         <div className="hidden md:block">
@@ -763,8 +765,16 @@ export default function AtendimentoPage() {
   const whatsappUrl = person.phone ? `https://wa.me/${person.phone.replace(/\D/g, '')}` : null
 
   return (
-    // E1: -mx-4 md:-mx-6 compensa o px-4/px-6 do Layout, usando largura total do container
-    <div className="-mx-4 md:-mx-6 pb-24 md:pb-8">
+    /*
+     * E1 — Sair do max-w-7xl sem tocar Layout.tsx
+     * Mobile  (<md) : width=100vw, ml=50%-50vw → cancela px-4 (16px) do container
+     * Desktop (≥md) : width=100vw-64px (sidebar), ml=(50%-50vw+32px) → cancela
+     *                 px-6 (24px) + mx-auto (~288px a 1920px) do max-w-7xl
+     * Tolerância scrollbar Windows: ±8px; aceitável.
+     */
+    <div
+      className="pb-24 md:pb-8 w-[100vw] [margin-left:calc(50%-50vw)] md:w-[calc(100vw-64px)] md:[margin-left:calc(50%-50vw+32px)]"
+    >
 
       {/* E6: Mini-header mobile — aparece após 100px de scroll */}
       <div
