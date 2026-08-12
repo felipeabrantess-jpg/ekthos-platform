@@ -765,16 +765,9 @@ export default function AtendimentoPage() {
   const whatsappUrl = person.phone ? `https://wa.me/${person.phone.replace(/\D/g, '')}` : null
 
   return (
-    /*
-     * E1 — Sair do max-w-7xl sem tocar Layout.tsx
-     * Mobile  (<md) : width=100vw, ml=50%-50vw → cancela px-4 (16px) do container
-     * Desktop (≥md) : width=100vw-64px (sidebar), ml=(50%-50vw+32px) → cancela
-     *                 px-6 (24px) + mx-auto (~288px a 1920px) do max-w-7xl
-     * Tolerância scrollbar Windows: ±8px; aceitável.
-     */
-    <div
-      className="pb-24 md:pb-8 w-[100vw] [margin-left:calc(50%-50vw)] md:w-[calc(100vw-64px)] md:[margin-left:calc(50%-50vw+32px)]"
-    >
+    // E1: -mx-4 md:-mx-6 cancela o padding do Layout (px-4/px-6).
+    // Max-w-7xl continua ativo — sair dele exige alterar Layout.tsx (decisão separada).
+    <div className="-mx-4 md:-mx-6 pb-24 md:pb-8">
 
       {/* E6: Mini-header mobile — aparece após 100px de scroll */}
       <div
