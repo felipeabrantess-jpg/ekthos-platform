@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft, Phone, MapPin, Calendar, Heart, MessageCircle,
-  ChevronDown, ChevronUp, CheckCircle2, AlertCircle, Clock,
+  ArrowLeft, Phone, Calendar, MessageCircle,
+  CheckCircle2, AlertCircle, Clock,
   Sparkles, Loader2, Bot, User, ChevronRight, Building2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -21,11 +21,6 @@ import Button from '@/components/ui/Button'
 
 // ── Utilitários ───────────────────────────────────────────────
 
-function idade(birthDate: string | null): string {
-  if (!birthDate) return ''
-  const diff = Date.now() - new Date(birthDate).getTime()
-  return `${Math.floor(diff / (365.25 * 24 * 3600 * 1000))} anos`
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return '—'
@@ -107,83 +102,72 @@ function Toast({ msg, type, onClose }: { msg: string; type: ToastState['type']; 
   )
 }
 
-// ── Bloco 1: QUEM É ───────────────────────────────────────────
+// ── Bloco 1: QUEM É — faixa horizontal (E2) ──────────────────
 
 function BlocoQuemE({ person }: { person: NonNullable<ReturnType<typeof usePerson>['data']> }) {
   const displayName = [person.first_name, person.last_name].filter(Boolean).join(' ') || person.name
   const initials = displayName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
-
-  const whatsappUrl = person.phone
-    ? `https://wa.me/${person.phone.replace(/\D/g, '')}`
-    : null
+  const whatsappUrl = person.phone ? `https://wa.me/${person.phone.replace(/\D/g, '')}` : null
 
   return (
-    <div className="bg-white rounded-2xl border border-border-default shadow-sm overflow-hidden">
-      <div className="flex items-start gap-4 p-5 pb-4">
-        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
-          {person.avatar_url
-            ? <img src={person.avatar_url} alt={displayName} className="w-14 h-14 rounded-full object-cover" />
-            : initials}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h2 className="font-display text-lg font-bold text-ekthos-black leading-tight">{displayName}</h2>
-          {person.person_stage && (
-            <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-[11px] font-semibold rounded-full">
-              {person.person_stage}
-            </span>
-          )}
-        </div>
-        {whatsappUrl && (
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-            className="shrink-0 w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
-            aria-label="WhatsApp">
-            <MessageCircle size={18} strokeWidth={2} />
-          </a>
+    <div className="flex items-center gap-3 md:gap-4 px-4 md:px-5 py-3 md:py-3.5 bg-white rounded-2xl border border-border-default shadow-sm flex-wrap">
+      {/* Avatar */}
+      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+        {person.avatar_url
+          ? <img src={person.avatar_url} alt={displayName} className="w-10 h-10 rounded-full object-cover" />
+          : initials}
+      </div>
+
+      {/* Nome + etapa */}
+      <div className="min-w-0">
+        <h2 className="font-display font-bold text-ekthos-black text-sm leading-tight">{displayName}</h2>
+        {person.person_stage && (
+          <span className="inline-block mt-0.5 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-semibold rounded-full">
+            {person.person_stage}
+          </span>
         )}
       </div>
 
-      <div className="px-5 pb-5 space-y-2 text-sm text-text-primary">
-        {person.phone && (
-          <div className="flex items-center gap-2">
-            <Phone size={13} className="text-text-secondary shrink-0" />
+      {/* Telefone */}
+      {person.phone && (
+        <>
+          <div className="hidden md:block w-px h-5 bg-border-default shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-text-secondary">
+            <Phone size={12} className="shrink-0" />
             <span>{person.phone}</span>
           </div>
-        )}
-        {(person.neighborhood || person.city) && (
-          <div className="flex items-center gap-2">
-            <MapPin size={13} className="text-text-secondary shrink-0" />
-            <span>{[person.neighborhood, person.city].filter(Boolean).join(', ')}</span>
+        </>
+      )}
+
+      {/* Primeira visita */}
+      {person.first_visit_date && (
+        <>
+          <div className="hidden md:block w-px h-5 bg-border-default shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-text-secondary">
+            <Calendar size={12} className="shrink-0" />
+            <span>Primeira visita {formatDate(person.first_visit_date)}</span>
           </div>
-        )}
-        {person.birth_date && (
-          <div className="flex items-center gap-2">
-            <Calendar size={13} className="text-text-secondary shrink-0" />
-            <span>{formatDate(person.birth_date)} · {idade(person.birth_date)}</span>
+        </>
+      )}
+
+      {/* Observação pastoral (truncada) */}
+      {person.observacoes_pastorais && (
+        <>
+          <div className="hidden md:block w-px h-5 bg-border-default shrink-0" />
+          <div className="hidden md:flex items-center gap-1.5 text-xs text-amber-700 min-w-0 max-w-xs">
+            <span className="truncate">{person.observacoes_pastorais}</span>
           </div>
-        )}
-        {person.como_conheceu && (
-          <div className="flex items-center gap-2">
-            <Heart size={13} className="text-text-secondary shrink-0" />
-            <span>{COMO_CONHECEU_LABEL[person.como_conheceu] ?? person.como_conheceu}</span>
-          </div>
-        )}
-        {person.first_visit_date && (
-          <div className="flex items-center gap-2 text-text-secondary">
-            <span className="text-xs">Primeira visita: {formatDate(person.first_visit_date)}</span>
-          </div>
-        )}
-        {person.conversion_date && (
-          <div className="flex items-center gap-2 text-text-secondary">
-            <span className="text-xs text-emerald-600 font-medium">Converteu em {formatDate(person.conversion_date)}</span>
-          </div>
-        )}
-        {person.observacoes_pastorais && (
-          <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-800">
-            <p className="font-semibold mb-0.5">Observação pastoral</p>
-            <p>{person.observacoes_pastorais}</p>
-          </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {/* WA — empurrado para a direita */}
+      {whatsappUrl && (
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+          className="ml-auto shrink-0 w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
+          aria-label="WhatsApp">
+          <MessageCircle size={18} strokeWidth={2} />
+        </a>
+      )}
     </div>
   )
 }
@@ -244,21 +228,18 @@ function TimelineRow({ item }: { item: TimelineItem }) {
 }
 
 function BlocoHistorico({ personId }: { personId: string }) {
-  const [expanded,    setExpanded]    = useState(false)
-  const [showAll,     setShowAll]     = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const limit = showAll ? 50 : 10
 
   const { data: items = [], isLoading, isError, refetch } = usePersonTimeline(personId, { limit })
 
-  const hasHistory   = items.length > 0
+  const hasHistory    = items.length > 0
   const mightHaveMore = items.length === limit && !showAll
 
   return (
     <div className="bg-white rounded-2xl border border-border-default shadow-sm">
-      <button
-        className="w-full flex items-center justify-between p-5 text-left"
-        onClick={() => setExpanded(e => !e)}
-      >
+      {/* Cabeçalho — sempre visível (E3: sem toggle no desktop) */}
+      <div className="flex items-center justify-between p-5 pb-4">
         <div>
           <p className="font-semibold text-ekthos-black text-sm">O que já aconteceu</p>
           <p className="text-xs text-text-secondary mt-0.5">
@@ -269,52 +250,48 @@ function BlocoHistorico({ personId }: { personId: string }) {
                 : 'Nenhuma interação registrada'}
           </p>
         </div>
-        {expanded
-          ? <ChevronUp  size={16} className="text-text-secondary" />
-          : <ChevronDown size={16} className="text-text-secondary" />}
-      </button>
+      </div>
 
-      {expanded && (
-        <div className="border-t border-border-default">
-          {isLoading && (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 size={20} className="animate-spin text-text-secondary" />
-            </div>
-          )}
+      {/* Conteúdo sempre expandido */}
+      <div className="border-t border-border-default">
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 size={20} className="animate-spin text-text-secondary" />
+          </div>
+        )}
 
-          {isError && (
-            <div className="px-5 py-4 text-xs text-red-600 flex items-center gap-2">
-              <AlertCircle size={13} />
-              <span>Não foi possível carregar o histórico.</span>
-              <button onClick={() => void refetch()} className="underline">Tentar novamente</button>
-            </div>
-          )}
+        {isError && (
+          <div className="px-5 py-4 text-xs text-red-600 flex items-center gap-2">
+            <AlertCircle size={13} />
+            <span>Não foi possível carregar o histórico.</span>
+            <button onClick={() => void refetch()} className="underline">Tentar novamente</button>
+          </div>
+        )}
 
-          {!isLoading && !isError && !hasHistory && (
-            <p className="text-xs text-text-secondary text-center py-8 px-5">
-              Nenhuma interação registrada ainda com esta pessoa.
-            </p>
-          )}
+        {!isLoading && !isError && !hasHistory && (
+          <p className="text-xs text-text-secondary text-center py-8 px-5">
+            Nenhuma interação registrada ainda com esta pessoa.
+          </p>
+        )}
 
-          {!isLoading && !isError && hasHistory && (
-            <div className="px-5 pb-5 pt-4 space-y-4">
-              {items.map((item, i) => (
-                <TimelineRow key={`${item.event_at}-${item.source}-${item.event_kind}-${i}`} item={item} />
-              ))}
+        {!isLoading && !isError && hasHistory && (
+          <div className="px-5 pb-5 pt-4 space-y-4">
+            {items.map((item, i) => (
+              <TimelineRow key={`${item.event_at}-${item.source}-${item.event_kind}-${i}`} item={item} />
+            ))}
 
-              {mightHaveMore && (
-                <button
-                  onClick={() => setShowAll(true)}
-                  className="w-full flex items-center justify-center gap-1.5 text-xs text-primary font-medium py-2 rounded-xl hover:bg-primary/5 transition-colors"
-                >
-                  Ver tudo
-                  <ChevronRight size={13} />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+            {mightHaveMore && (
+              <button
+                onClick={() => setShowAll(true)}
+                className="w-full flex items-center justify-center gap-1.5 text-xs text-primary font-medium py-2 rounded-xl hover:bg-primary/5 transition-colors"
+              >
+                Ver tudo
+                <ChevronRight size={13} />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -527,25 +504,30 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
               )}
             </div>
           )}
-          {needsComoConheceu && (
-            <label className="block">
-              <span className="text-xs text-text-secondary">Como conheceu a igreja</span>
-              <select value={comoConheceu} onChange={e => setComoConheceu(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
-                <option value="">Selecionar…</option>
-                {Object.entries(COMO_CONHECEU_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </label>
-          )}
-          {needsMarital && (
-            <label className="block">
-              <span className="text-xs text-text-secondary">Estado civil</span>
-              <select value={maritalStatus} onChange={e => setMaritalStatus(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
-                <option value="">Selecionar…</option>
-                {Object.entries(MARITAL_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </label>
+          {/* Como conheceu + estado civil lado a lado quando os dois faltam (E4) */}
+          {(needsComoConheceu || needsMarital) && (
+            <div className={needsComoConheceu && needsMarital ? 'grid grid-cols-2 gap-2' : ''}>
+              {needsComoConheceu && (
+                <label className="block">
+                  <span className="text-xs text-text-secondary">Como conheceu a igreja</span>
+                  <select value={comoConheceu} onChange={e => setComoConheceu(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                    <option value="">Selecionar…</option>
+                    {Object.entries(COMO_CONHECEU_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </label>
+              )}
+              {needsMarital && (
+                <label className="block">
+                  <span className="text-xs text-text-secondary">Estado civil</span>
+                  <select value={maritalStatus} onChange={e => setMaritalStatus(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary bg-white">
+                    <option value="">Selecionar…</option>
+                    {Object.entries(MARITAL_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </label>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -553,7 +535,7 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
       {/* ── E3: Sinais de contexto (8 sinais) ── */}
       <div className="space-y-2">
         <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Sinais desta conversa</p>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           {([
             ['accepted_jesus',      acceptedJesus,      setAcceptedJesus,      'Aceitou Jesus'],
             ['quer_celula',         querCelula,         setQuerCelula,         'Quer célula'],
@@ -708,9 +690,9 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
         )}
       </div>
 
-      {/* ── Card (desktop: sticky + save no rodapé) ── */}
-      <div className="bg-white rounded-2xl border border-border-default shadow-sm md:sticky md:top-4 flex flex-col">
-        <div className="md:overflow-y-auto md:max-h-[calc(100vh-9rem)]">
+      {/* ── Card (desktop: sticky + save no rodapé; E3/E5) ── */}
+      <div className="bg-white rounded-2xl border border-border-default shadow-sm lg:sticky lg:top-4 flex flex-col">
+        <div className="lg:overflow-y-auto lg:max-h-[calc(100vh-9rem)]">
           <h3 className="font-semibold text-ekthos-black text-sm px-5 pt-5">O que fazer agora</h3>
           {formContent}
         </div>
@@ -729,6 +711,15 @@ export default function AtendimentoPage() {
   const navigate = useNavigate()
   const { churchId } = useAuth()
   const [toast, setToast] = useState<ToastState | null>(null)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const el = document.querySelector('main')
+    if (!el) return
+    const handler = () => setScrolled(el.scrollTop > 100)
+    el.addEventListener('scroll', handler, { passive: true })
+    return () => el.removeEventListener('scroll', handler)
+  }, [])
 
   const { data: person, isLoading: personLoading, error: personError } = usePerson(personId)
   const { data: journey } = usePersonJourney(personId)
@@ -769,10 +760,32 @@ export default function AtendimentoPage() {
   }
 
   const displayName = [person.first_name, person.last_name].filter(Boolean).join(' ') || person.name
+  const whatsappUrl = person.phone ? `https://wa.me/${person.phone.replace(/\D/g, '')}` : null
 
   return (
-    <div className="space-y-4 pb-24 md:pb-10">
-      <div className="flex items-center gap-3">
+    // E1: -mx-4 md:-mx-6 compensa o px-4/px-6 do Layout, usando largura total do container
+    <div className="-mx-4 md:-mx-6 pb-24 md:pb-8">
+
+      {/* E6: Mini-header mobile — aparece após 100px de scroll */}
+      <div
+        className={`md:hidden fixed top-0 inset-x-0 z-50 bg-white border-b border-border-default px-4 py-2 shadow-sm flex items-center gap-3 transition-transform duration-200 ${
+          scrolled ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
+        <button onClick={() => navigate(-1)} className="w-7 h-7 flex items-center justify-center text-text-secondary shrink-0">
+          <ArrowLeft size={16} />
+        </button>
+        <span className="font-semibold text-sm text-ekthos-black truncate flex-1">{displayName}</span>
+        {whatsappUrl && (
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
+            className="shrink-0 w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg">
+            <MessageCircle size={15} strokeWidth={2} />
+          </a>
+        )}
+      </div>
+
+      {/* Header row */}
+      <div className="flex items-center gap-3 px-4 md:px-6 pt-0 pb-3">
         <button onClick={() => navigate(-1)}
           className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-bg-hover transition-colors text-text-secondary"
           aria-label="Voltar">
@@ -788,15 +801,20 @@ export default function AtendimentoPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+      {/* E2: Quem é — faixa horizontal full-width */}
+      <div className="px-4 md:px-6 pb-3">
         <BlocoQuemE person={person} />
-        <BlocoHistorico personId={person.id} />
+      </div>
+
+      {/* E3: Duas colunas — formulário (esq, maior) + histórico (dir, sempre visível) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 px-4 md:px-6 items-start">
         <BlocoAcoes
           person={person}
           journey={journey}
           stages={stages}
           onToast={(msg, type) => setToast({ msg, type, key: Date.now() })}
         />
+        <BlocoHistorico personId={person.id} />
       </div>
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} key={toast.key} />}
