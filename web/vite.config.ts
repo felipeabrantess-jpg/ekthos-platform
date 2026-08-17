@@ -21,6 +21,10 @@ export default defineConfig({
           'vendor-router':   ['react-router-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-charts':   ['recharts'],
+          // @tanstack/react-query ficava no bundle index, criando import circular:
+          // index (lazy→AtendimentoPage) ← AtendimentoPage (static→index para useQuery).
+          // Mover para chunk próprio quebra o ciclo para os hooks TanStack.
+          'vendor-react-query': ['@tanstack/react-query'],
         },
       },
     },
