@@ -27,6 +27,8 @@ interface PeopleFilters {
   firstVisitAfter?: string
   /** Filtra por first_visit_date <= data (ISO date string YYYY-MM-DD). */
   firstVisitBefore?: string
+  /** Filtra por created_at >= ISO timestamp (para filtro de período na aba geral). */
+  createdAfter?: string
 }
 
 // Lista pessoas com stage atual
@@ -114,6 +116,11 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         query = (query as any).lte('first_visit_date', filters.firstVisitBefore)
       }
 
+      if (filters.createdAfter) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).gte('created_at', filters.createdAfter)
+      }
+
       const { data, error } = await query
 
       if (error) throw new Error(error.message)
@@ -124,15 +131,18 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
 }
 
 // Conta total para paginação futura
-export function usePeopleCount(churchId: string) {
+export function usePeopleCount(churchId: string, createdAfter?: string) {
   return useQuery({
-    queryKey: ['people-count', churchId],
+    queryKey: ['people-count', churchId, createdAfter],
     queryFn: async () => {
-      const { count, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let q: any = supabase
         .from('people')
         .select('*', { count: 'exact', head: true })
         .eq('church_id', churchId)
         .is('deleted_at', null)
+      if (createdAfter) q = q.gte('created_at', createdAfter)
+      const { count, error } = await q
       if (error) throw new Error(error.message)
       return count ?? 0
     },

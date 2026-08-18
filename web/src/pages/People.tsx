@@ -47,6 +47,15 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 }
 
 type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
+type PeriodFilter = '7' | '15' | '30' | '365' | 'all'
+
+const PERIOD_CHIPS: { key: PeriodFilter; label: string }[] = [
+  { key: 'all', label: 'Todos'   },
+  { key: '7',   label: '7 dias'  },
+  { key: '15',  label: '15 dias' },
+  { key: '30',  label: '30 dias' },
+  { key: '365', label: '1 ano'   },
+]
 
 function displayName(name: string | null | undefined, phone: string | null | undefined): string {
   if (name) return name
@@ -498,6 +507,7 @@ export default function People() {
   const [tagDropOpen, setTagDropOpen] = useState(false)
   const [unitFilter, setUnitFilter] = useState<string>('')     // unit id | 'none' | ''
   const [unitDropOpen, setUnitDropOpen] = useState(false)
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all')
   const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -525,12 +535,19 @@ export default function People() {
   const now            = new Date()
   const currentMonth   = now.getMonth() + 1  // 1-12
   const monthRef       = `${now.getFullYear()}-${String(currentMonth).padStart(2, '0')}`
+
+  const createdAfter = useMemo(() => {
+    if (isFilteredTab || periodFilter === 'all') return undefined
+    return new Date(Date.now() - Number(periodFilter) * 86_400_000).toISOString()
+  }, [isFilteredTab, periodFilter])
+
   const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', {
     search,
-    page:       isFilteredTab ? 0 : currentPage,
-    pageSize:   isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
-    unitId:     unitFilter || undefined,
-    birthMonth: isBirthdayTab ? currentMonth : undefined,
+    page:         isFilteredTab ? 0 : currentPage,
+    pageSize:     isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
+    unitId:       unitFilter || undefined,
+    birthMonth:   isBirthdayTab ? currentMonth : undefined,
+    createdAfter,
   })
   // Query server-side dedicada para aba novos com filtro de período
   // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
@@ -624,7 +641,7 @@ export default function People() {
     },
   })
 
-  const { data: totalCount } = usePeopleCount(churchId ?? '')
+  const { data: totalCount } = usePeopleCount(churchId ?? '', createdAfter)
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
   const deletePerson = useDeletePerson()
@@ -719,7 +736,9 @@ export default function People() {
           <p className="text-xs md:text-sm text-text-secondary mt-1">
             {people
               ? activeTab === 'geral' && !search
-                ? `${totalCount ?? allPeople.length} cadastradas`
+                ? periodFilter !== 'all'
+                  ? `${totalCount ?? allPeople.length} encontradas`
+                  : `${totalCount ?? allPeople.length} cadastradas`
                 : `${filteredPeople.length} encontradas`
               : 'Carregando...'}
           </p>
@@ -751,7 +770,7 @@ export default function People() {
         {TABS.map(tab => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
+            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0); setPeriodFilter('all') }}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
@@ -833,6 +852,27 @@ export default function People() {
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(0) }}
             className="w-full md:max-w-sm"
           />
+
+          {/* Chips de período — data de cadastro */}
+          <div className="flex gap-1.5 flex-wrap">
+            {PERIOD_CHIPS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => { setPeriodFilter(key); setCurrentPage(0) }}
+                className="shrink-0 rounded-full border font-medium transition-colors"
+                style={{
+                  padding:         '4px 12px',
+                  fontSize:        13,
+                  backgroundColor: periodFilter === key ? 'var(--color-primary)' : 'transparent',
+                  color:           periodFilter === key ? '#fff' : 'var(--text-secondary)',
+                  borderColor:     periodFilter === key ? 'var(--color-primary)' : 'var(--border-default)',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
           {/* Filtro por tag (só aparece se há flags criadas) */}
           {allTags.length > 0 && (
