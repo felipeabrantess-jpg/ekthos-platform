@@ -551,7 +551,6 @@ export default function People() {
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
   const [unitFilter, setUnitFilter] = useState<string>('')     // unit id | 'none' | ''
-  const [unitDropOpen, setUnitDropOpen] = useState(false)
   // R11: filtro de origem (source)
   const [sourceFilter, setSourceFilter] = useState<string>('')  // '' | 'qr_code' | 'manual' | 'import_xlsx'
   const [careFilter, setCareFilter] = useState<CareFilter>('')
@@ -965,73 +964,7 @@ export default function People() {
         </div>
       )}
 
-      {/* R2: Filtro de atendimento */}
-      {activeTab === 'geral' && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
-          {([
-            { value: '', label: 'Todos' },
-            { value: 'nao_atendida',   label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
-            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
-            { value: 'atendida',       label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
-            { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
-          ] as const).map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                careFilter === opt.value
-                  ? 'border-primary text-primary-text bg-bg-hover'
-                  : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
-              }`}
-              style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-            >
-              {opt.label}
-            </button>
-          ))}
-
-          {/* R6: CSV export */}
-          {filteredPeople.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Atendimento', 'Unidade', 'Primeira visita', 'Origem']
-                const rows = filteredPeople.map(p => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const journeys = (p as any).acolhimento_journey as Array<{ status: string }> | null
-                  const badge = getCareStatusBadge(journeys)
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const unitName = churchUnits.find(u => u.id === (p as any).unit_id)?.name ?? ''
-                  return [
-                    p.name ?? '',
-                    p.phone ?? '',
-                    p.email ?? '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).person_stage ?? '',
-                    badge?.label ?? 'Não atendida',
-                    unitName,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).first_visit_date ?? '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).source ?? '',
-                  ]
-                })
-                const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-                const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
-              }}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border-default bg-white hover:bg-bg-hover transition-colors text-text-secondary"
-            >
-              <Download size={12} strokeWidth={1.75} />CSV
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Busca + Filtros */}
+      {/* Linha de filtros: busca + tipo + origem + CSV */}
       {activeTab === 'geral' && (
         <div className="flex flex-wrap gap-2">
           <Input
@@ -1041,7 +974,7 @@ export default function People() {
             className="w-full md:max-w-sm"
           />
 
-          {/* Filtro por tag (só aparece se há flags criadas) */}
+          {/* Filtro por tag */}
           {allTags.length > 0 && (
             <div className="relative">
               <button
@@ -1102,61 +1035,7 @@ export default function People() {
             </div>
           )}
 
-          {/* Filtro por unidade (só aparece se há unidades cadastradas) */}
-          {churchUnits.length > 0 && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setUnitDropOpen((o) => !o)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-              >
-                {unitFilter
-                  ? unitFilter === 'none'
-                    ? 'Não definida'
-                    : (churchUnits.find((u) => u.id === unitFilter)?.name ?? 'Unidade')
-                  : 'Todas as unidades'}
-                <ChevronDown size={12} className={`transition-transform ${unitDropOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {unitDropOpen && (
-                <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '180px' }}>
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => { setUnitFilter(''); setUnitDropOpen(false); setCurrentPage(0) }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${!unitFilter ? 'font-semibold text-text-primary bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
-                    >
-                      Todas as unidades
-                    </button>
-                  </li>
-                  {churchUnits.map((unit) => (
-                    <li key={unit.id}>
-                      <button
-                        type="button"
-                        onClick={() => { setUnitFilter(unit.id); setUnitDropOpen(false); setCurrentPage(0) }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === unit.id ? 'font-semibold bg-bg-hover' : 'hover:bg-bg-hover'}`}
-                      >
-                        {unit.name}
-                        {unitFilter === unit.id && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
-                      </button>
-                    </li>
-                  ))}
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => { setUnitFilter('none'); setUnitDropOpen(false); setCurrentPage(0) }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === 'none' ? 'font-semibold bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
-                    >
-                      Não definida
-                      {unitFilter === 'none' && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
-                    </button>
-                  </li>
-                </ul>
-              )}
-            </div>
-          )}
-
-          {/* R11: Filtro por origem (source) */}
+          {/* Filtro por origem */}
           <select
             value={sourceFilter}
             onChange={e => { setSourceFilter(e.target.value); setCurrentPage(0) }}
@@ -1168,31 +1047,72 @@ export default function People() {
             <option value="import_xlsx">Importação</option>
           </select>
 
-          {/* R13: CSV export */}
-          <button
-            type="button"
-            onClick={() => {
-              const rows = filteredPeople.map(p => [
-                p.name ?? '',
-                p.phone ?? '',
-                p.email ?? '',
-                p.person_stage ?? '',
-                p.first_visit_date ?? '',
-                p.source ?? '',
-              ])
-              const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Primeira visita', 'Origem']
-              const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-              const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url; a.download = 'pessoas.csv'; a.click()
-              URL.revokeObjectURL(url)
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-          >
-            <Download size={13} strokeWidth={1.75} />
-            CSV
-          </button>
+          {/* CSV export (colunas completas: inclui Atendimento e Unidade) */}
+          {filteredPeople.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Atendimento', 'Unidade', 'Primeira visita', 'Origem']
+                const rows = filteredPeople.map(p => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const journeys = (p as any).acolhimento_journey as Array<{ status: string }> | null
+                  const badge = getCareStatusBadge(journeys)
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const unitName = churchUnits.find(u => u.id === (p as any).unit_id)?.name ?? ''
+                  return [
+                    p.name ?? '',
+                    p.phone ?? '',
+                    p.email ?? '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).person_stage ?? '',
+                    badge?.label ?? 'Não atendida',
+                    unitName,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).first_visit_date ?? '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).source ?? '',
+                  ]
+                })
+                const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+                const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+            >
+              <Download size={13} strokeWidth={1.75} />
+              CSV
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Filtro de atendimento */}
+      {activeTab === 'geral' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
+          {([
+            { value: '', label: 'Todos' },
+            { value: 'nao_atendida',   label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
+            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
+            { value: 'atendida',       label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
+            { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                careFilter === opt.value
+                  ? 'border-primary text-primary-text bg-bg-hover'
+                  : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+              }`}
+              style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       )}
 
