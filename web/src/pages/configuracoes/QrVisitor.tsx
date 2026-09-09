@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QrCode, Copy, Check, Download, ToggleLeft, ToggleRight } from 'lucide-react'
+import { QrCode, Copy, Check, Download, ToggleLeft, ToggleRight, MapPin } from 'lucide-react'
 import QRCode from 'qrcode'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -85,11 +85,27 @@ export function QrVisitor() {
     queryFn:  async () => {
       const { data, error } = await supabase
         .from('qr_codes')
-        .select('id, slug, is_active, scanned_count')
+        .select('id, slug, is_active, scanned_count, unit_id')
         .eq('church_id', churchId!)
         .single()
       if (error) throw error
       return data
+    },
+  })
+
+  // ── Unidades disponíveis ───────────────────────────────
+  const { data: units = [] } = useQuery({
+    queryKey: ['church_units', churchId],
+    enabled:  !!churchId,
+    queryFn:  async () => {
+      const { data, error } = await supabase
+        .from('church_units')
+        .select('id, name')
+        .eq('church_id', churchId!)
+        .eq('is_active', true)
+        .order('name')
+      if (error) throw error
+      return data ?? []
     },
   })
 
@@ -126,6 +142,27 @@ export function QrVisitor() {
         .is('deleted_at', null)
         .eq('source', 'qr_code')
       return count ?? 0
+    },
+  })
+
+  // ── Vincular QR a uma unidade (R4) ───────────────────
+  const [selectedUnitId, setSelectedUnitId] = useState<string>('')
+  useEffect(() => {
+    if (qrData?.unit_id !== undefined) {
+      setSelectedUnitId(qrData.unit_id ?? '')
+    }
+  }, [qrData?.unit_id])
+
+  const unitMutation = useMutation({
+    mutationFn: async (unitId: string | null) => {
+      const { error } = await supabase
+        .from('qr_codes')
+        .update({ unit_id: unitId || null })
+        .eq('church_id', churchId!)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['qr_code', churchId] })
     },
   })
 
@@ -312,6 +349,46 @@ export function QrVisitor() {
           <p className="text-xs text-gray-400 mt-0.5 leading-tight">Taxa conversão</p>
         </div>
       </div>
+
+      {/* Vincular QR a uma unidade (R4) */}
+      {units.length > 0 && (
+        <div className="bg-white rounded-2xl border border-black/10 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-brand-600" />
+            <span className="text-sm font-medium text-ekthos-black">Unidade deste QR</span>
+          </div>
+          <p className="text-xs text-ekthos-black/50">
+            Visitantes que escanearem este QR terão a unidade registrada automaticamente.
+          </p>
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedUnitId}
+              onChange={e => setSelectedUnitId(e.target.value)}
+              className="flex-1 rounded-xl border border-black/10 bg-cream px-3 py-2 text-sm text-ekthos-black focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="">Sem unidade</option>
+              {units.map(u => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => unitMutation.mutate(selectedUnitId || null)}
+              disabled={unitMutation.isPending || selectedUnitId === (qrData?.unit_id ?? '')}
+              className="shrink-0 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-40"
+            >
+              {unitMutation.isPending ? <Spinner size="sm" /> : 'Salvar'}
+            </button>
+          </div>
+          {!qrData?.unit_id && (
+            <p className="text-xs text-amber-600 font-medium">
+              ⚠️ Sem unidade configurada — novos visitantes ficarão sem unidade.
+            </p>
+          )}
+          {unitMutation.isSuccess && (
+            <p className="text-xs text-green-600 font-medium">✓ Unidade salva.</p>
+          )}
+        </div>
+      )}
 
       {/* Instruções de uso */}
       <div className="bg-cream rounded-2xl p-4 space-y-2">
