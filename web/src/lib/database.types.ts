@@ -9516,6 +9516,7 @@ export type Database = {
           is_active: boolean
           scanned_count: number
           slug: string
+          unit_id: string | null
           updated_at: string
         }
         Insert: {
@@ -9525,6 +9526,7 @@ export type Database = {
           is_active?: boolean
           scanned_count?: number
           slug: string
+          unit_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -9534,6 +9536,7 @@ export type Database = {
           is_active?: boolean
           scanned_count?: number
           slug?: string
+          unit_id?: string | null
           updated_at?: string
         }
         Relationships: [
