@@ -13,7 +13,7 @@ import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone, Heart } from 'lucide-react'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone, Heart, Download } from 'lucide-react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
@@ -498,6 +498,8 @@ export default function People() {
   const [tagDropOpen, setTagDropOpen] = useState(false)
   const [unitFilter, setUnitFilter] = useState<string>('')     // unit id | 'none' | ''
   const [unitDropOpen, setUnitDropOpen] = useState(false)
+  // R11: filtro de origem (source)
+  const [sourceFilter, setSourceFilter] = useState<string>('')  // '' | 'qr_code' | 'manual' | 'import_xlsx'
   const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -531,6 +533,23 @@ export default function People() {
     pageSize:   isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
     unitId:     unitFilter || undefined,
     birthMonth: isBirthdayTab ? currentMonth : undefined,
+    source:     sourceFilter || undefined,
+  })
+
+  // R12: contadores por unidade (query leve — só counts, sem join)
+  const { data: unitCounts = [] } = useQuery({
+    queryKey: ['people-unit-counts', churchId],
+    enabled:  !!churchId,
+    queryFn:  async () => {
+      const { data, error } = await supabase
+        .from('people')
+        .select('unit_id')
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+      if (error) throw error
+      return data ?? []
+    },
+    staleTime: 60_000,
   })
   // Query server-side dedicada para aba novos com filtro de período
   // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
@@ -948,6 +967,78 @@ export default function People() {
               )}
             </div>
           )}
+
+          {/* R11: Filtro por origem (source) */}
+          <select
+            value={sourceFilter}
+            onChange={e => { setSourceFilter(e.target.value); setCurrentPage(0) }}
+            className="px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+          >
+            <option value="">Todas as origens</option>
+            <option value="qr_code">QR Code</option>
+            <option value="manual">Manual</option>
+            <option value="import_xlsx">Importação</option>
+          </select>
+
+          {/* R13: CSV export */}
+          <button
+            type="button"
+            onClick={() => {
+              const rows = filteredPeople.map(p => [
+                p.name ?? '',
+                p.phone ?? '',
+                p.email ?? '',
+                p.person_stage ?? '',
+                p.first_visit_date ?? '',
+                p.source ?? '',
+              ])
+              const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Primeira visita', 'Origem']
+              const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+              const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url; a.download = 'pessoas.csv'; a.click()
+              URL.revokeObjectURL(url)
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+          >
+            <Download size={13} strokeWidth={1.75} />
+            CSV
+          </button>
+        </div>
+      )}
+
+      {/* R12: contadores por unidade (só na aba geral, se há unidades) */}
+      {activeTab === 'geral' && churchUnits.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {churchUnits.map(unit => {
+            const count = unitCounts.filter((r: { unit_id: string | null }) => r.unit_id === unit.id).length
+            return (
+              <button
+                key={unit.id}
+                type="button"
+                onClick={() => { setUnitFilter(unit.id === unitFilter ? '' : unit.id); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${unitFilter === unit.id ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-bg-hover hover:text-text-primary'}`}
+                style={unitFilter === unit.id ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+              >
+                {unit.name} <span className="font-semibold">{count}</span>
+              </button>
+            )
+          })}
+          {/* R14: sem unidade */}
+          {(() => {
+            const semUnidade = unitCounts.filter((r: { unit_id: string | null }) => r.unit_id === null).length
+            if (semUnidade === 0) return null
+            return (
+              <button
+                type="button"
+                onClick={() => { setUnitFilter(unitFilter === 'none' ? '' : 'none'); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${unitFilter === 'none' ? 'border-amber-400 text-amber-700 bg-amber-50' : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'}`}
+              >
+                Sem unidade <span className="font-semibold">{semUnidade}</span>
+              </button>
+            )
+          })()}
         </div>
       )}
 

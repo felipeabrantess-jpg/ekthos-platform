@@ -27,6 +27,10 @@ interface PeopleFilters {
   firstVisitAfter?: string
   /** Filtra por first_visit_date <= data (ISO date string YYYY-MM-DD). */
   firstVisitBefore?: string
+  /** Filtra por source: 'qr_code' | 'manual' | 'import_xlsx' */
+  source?: string
+  /** Filtra pessoas sem unidade (unit_id IS NULL) — equivale a unitId='none' mas combinável */
+  noUnit?: boolean
 }
 
 // Lista pessoas com stage atual
@@ -112,6 +116,11 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
       if (filters.firstVisitBefore) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query = (query as any).lte('first_visit_date', filters.firstVisitBefore)
+      }
+
+      if (filters.source) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        query = (query as any).eq('source', filters.source)
       }
 
       const { data, error } = await query
