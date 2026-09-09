@@ -592,17 +592,20 @@ export default function People() {
     careStatus: careFilter || undefined,
   })
 
-  // Contadores por unidade via RPC (evita teto de 1.000 linhas do PostgREST)
-  const { data: unitCountRows = [] } = useQuery({
-    queryKey: ['unit-counts-rpc', churchId],
+  // R12: contadores por unidade (query leve — só counts, sem join)
+  const { data: unitCounts = [] } = useQuery({
+    queryKey: ['people-unit-counts', churchId],
     enabled:  !!churchId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('get_unit_counts', { p_church_id: churchId })
+    queryFn:  async () => {
+      const { data, error } = await supabase
+        .from('people')
+        .select('unit_id')
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
       if (error) throw error
-      return (data ?? []) as Array<{ unit_id: string | null; person_stage: string | null; cnt: number }>
+      return data ?? []
     },
+    staleTime: 60_000,
   })
 
   // Query server-side dedicada para aba novos com filtro de período
@@ -701,6 +704,22 @@ export default function People() {
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
 
+  // R1: contadores por unidade + stage breakdown
+  const { data: unitStageRows = [] } = useQuery({
+    queryKey: ['people-unit-stage-counts', churchId],
+    enabled: !!churchId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('people')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .select('unit_id, person_stage')
+        .eq('church_id', churchId!)
+        .is('deleted_at', null) as any
+      if (error) throw error
+      return (data ?? []) as Array<{ unit_id: string | null; person_stage: string | null }>
+    },
+  })
 
   // R2/R5: status de atendimento (ids pré-buscados)
   const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '')
@@ -901,15 +920,19 @@ export default function People() {
         </div>
       )}
 
-      {/* R1: Contadores por unidade + stage breakdown (via RPC, sem teto de 1.000) */}
-      {activeTab === 'geral' && churchUnits.length > 0 && unitCountRows.length > 0 && (
+      {/* R1: Contadores por unidade + stage breakdown */}
+      {activeTab === 'geral' && churchUnits.length > 0 && unitStageRows.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {churchUnits.map(unit => {
-            const rows = unitCountRows.filter(r => r.unit_id === unit.id)
-            const total = rows.reduce((s, r) => s + r.cnt, 0)
-            const stageBreakdown = rows
-              .map(r => [r.person_stage ?? 'sem_stage', r.cnt] as [string, number])
-              .sort(([a], [b]) => a.localeCompare(b))
+            const rows = unitStageRows.filter(r => r.unit_id === unit.id)
+            const total = rows.length
+            const stageBreakdown = Object.entries(
+              rows.reduce<Record<string, number>>((acc, r) => {
+                const s = r.person_stage ?? 'sem_stage'
+                acc[s] = (acc[s] ?? 0) + 1
+                return acc
+              }, {})
+            ).sort(([a], [b]) => a.localeCompare(b))
 
             return (
               <div key={unit.id} className="relative group">
@@ -946,7 +969,7 @@ export default function People() {
             )
           })}
           {(() => {
-            const semUnidade = unitCountRows.filter(r => r.unit_id === null).reduce((s, r) => s + r.cnt, 0)
+            const semUnidade = unitStageRows.filter(r => r.unit_id === null).length
             if (semUnidade === 0) return null
             return (
               <button
@@ -958,7 +981,7 @@ export default function People() {
                     : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'
                 }`}
               >
-                Sem unidade definida <span className="font-semibold">({semUnidade})</span>
+                Sem unidade <span className="font-semibold">{semUnidade}</span>
               </button>
             )
           })()}
@@ -1196,6 +1219,39 @@ export default function People() {
         </div>
       )}
 
+      {/* R12: contadores por unidade (só na aba geral, se há unidades) */}
+      {activeTab === 'geral' && churchUnits.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {churchUnits.map(unit => {
+            const count = unitCounts.filter((r: { unit_id: string | null }) => r.unit_id === unit.id).length
+            return (
+              <button
+                key={unit.id}
+                type="button"
+                onClick={() => { setUnitFilter(unit.id === unitFilter ? '' : unit.id); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${unitFilter === unit.id ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-bg-hover hover:text-text-primary'}`}
+                style={unitFilter === unit.id ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+              >
+                {unit.name} <span className="font-semibold">{count}</span>
+              </button>
+            )
+          })}
+          {/* R14: sem unidade */}
+          {(() => {
+            const semUnidade = unitCounts.filter((r: { unit_id: string | null }) => r.unit_id === null).length
+            if (semUnidade === 0) return null
+            return (
+              <button
+                type="button"
+                onClick={() => { setUnitFilter(unitFilter === 'none' ? '' : 'none'); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${unitFilter === 'none' ? 'border-amber-400 text-amber-700 bg-amber-50' : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'}`}
+              >
+                Sem unidade <span className="font-semibold">{semUnidade}</span>
+              </button>
+            )
+          })()}
+        </div>
+      )}
 
       {/* ── Loading / Error / Empty / Lista ─────────────────────── */}
       {isLoading ? (

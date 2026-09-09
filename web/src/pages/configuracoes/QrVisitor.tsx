@@ -364,16 +364,16 @@ export function QrVisitor() {
             <select
               value={selectedUnitId}
               onChange={e => setSelectedUnitId(e.target.value)}
-              className={`flex-1 rounded-xl border px-3 py-2 text-sm text-ekthos-black focus:outline-none focus:ring-2 focus:ring-brand-500 ${!selectedUnitId ? 'border-amber-300 bg-amber-50' : 'border-black/10 bg-cream'}`}
+              className="flex-1 rounded-xl border border-black/10 bg-cream px-3 py-2 text-sm text-ekthos-black focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
-              <option value="" disabled>— Selecionar unidade (obrigatório) —</option>
+              <option value="">Sem unidade</option>
               {units.map(u => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
             <button
               onClick={() => unitMutation.mutate(selectedUnitId || null)}
-              disabled={unitMutation.isPending || !selectedUnitId || selectedUnitId === (qrData?.unit_id ?? '')}
+              disabled={unitMutation.isPending || selectedUnitId === (qrData?.unit_id ?? '')}
               className="shrink-0 px-4 py-2 rounded-xl bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-40"
             >
               {unitMutation.isPending ? <Spinner size="sm" /> : 'Salvar'}
