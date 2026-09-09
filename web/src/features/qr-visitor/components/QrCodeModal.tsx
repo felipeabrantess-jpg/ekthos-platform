@@ -132,9 +132,11 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
 
   const unitMutation = useMutation({
     mutationFn: async (unitId: string) => {
+      if (!qrData?.id) throw new Error('QR id not loaded')
       const { error } = await supabase
         .from('qr_codes')
         .update({ unit_id: unitId || null })
+        .eq('id', qrData.id)
         .eq('church_id', churchId)
       if (error) throw error
     },
