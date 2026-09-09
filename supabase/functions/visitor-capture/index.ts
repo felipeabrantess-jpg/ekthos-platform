@@ -105,9 +105,11 @@ type EntryType = 'visitante' | 'novo_convertido' | 'reconciliado' | 'vim_de_outr
 const VALID_ENTRY_TYPES: EntryType[] = ['visitante', 'novo_convertido', 'reconciliado', 'vim_de_outra_igreja', 'ja_sou_membro']
 
 // Mapeia entry_type do payload para person_stage no banco
+// Enum person_stage: visitante | contato | frequentador | consolidado | discipulo | lider
+// 'membro' NÃO é valor válido do enum — vim_de_outra_igreja e ja_sou_membro → frequentador
 function entryTypeToStage(t: EntryType): string {
-  if (t === 'vim_de_outra_igreja') return 'membro'
-  if (t === 'ja_sou_membro')       return 'membro'
+  if (t === 'vim_de_outra_igreja') return 'frequentador'
+  if (t === 'ja_sou_membro')       return 'frequentador'
   return 'visitante'  // visitante, novo_convertido, reconciliado
 }
 
@@ -262,7 +264,7 @@ Deno.serve(async (req: Request) => {
             source:           'qr_code',
             first_visit_date: new Date().toISOString().split('T')[0],
             last_contact_at:  new Date().toISOString(),
-            person_stage:     'membro',
+            person_stage:     'frequentador',
             needs_review:     true,
             unit_id:          unitId,
             qr_code_id:       qrId,
