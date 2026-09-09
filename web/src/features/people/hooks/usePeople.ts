@@ -31,7 +31,11 @@ interface PeopleFilters {
   source?: string
   /** Filtra pessoas sem unidade (unit_id IS NULL) — equivale a unitId='none' mas combinável */
   noUnit?: boolean
-  /** Filtro de status de atendimento (Frente 2) — processado server-side via RPC get_people_page */
+  /**
+   * Filtro de status de atendimento (Frente 2).
+   * Quando definido, a query usa a RPC get_people_page (filtro server-side via JOIN no banco).
+   * Nenhuma lista de ID trafega do cliente para o servidor.
+   */
   careStatus?: 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
 }
 
@@ -40,9 +44,31 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
   return useQuery({
     queryKey: ['people', churchId, filters],
     queryFn: async (): Promise<PersonWithStage[]> => {
+      // Quando careStatus está ativo: usa RPC get_people_page (JOIN server-side, sem lista de IDs)
+      if (filters.careStatus) {
+        const page     = filters.page     ?? 0
+        const pageSize = filters.pageSize ?? PEOPLE_PAGE_SIZE
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.rpc as any)('get_people_page', {
+          p_church_id:   churchId,
+          p_care_status: filters.careStatus,
+          p_unit_id:     filters.unitId     ?? null,
+          p_stage:       filters.personStage ?? null,
+          p_source:      filters.source      ?? null,
+          p_search:      filters.search      ?? null,
+          p_date_from:   filters.firstVisitAfter  ?? null,
+          p_date_to:     filters.firstVisitBefore ?? null,
+          p_limit:       pageSize,
+          p_offset:      page * pageSize,
+        })
+        if (error) throw new Error(error.message)
+        return ((data ?? []) as Array<{ row_data: Record<string, unknown> }>)
+          .map(r => r.row_data as unknown as PersonWithStage)
+      }
+
+      // Caso geral: PostgREST direto (sem care filter → sem risco de URL longa)
       const isBirthday = Boolean(filters.birthMonth)
       const page       = filters.page     ?? 0
-      // Quando filtrando por aniversário: busca até 9999 (todos do mês, sem paginação)
       const pageSize   = isBirthday ? 9999 : (filters.pageSize ?? PEOPLE_PAGE_SIZE)
       const from       = page * pageSize
       const to         = from + pageSize - 1
@@ -70,8 +96,8 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
       // Ordenação: dia do aniversário quando filtrando por mês, senão mais recente primeiro
       if (isBirthday) {
         query = query
-          .order('birth_day',   { ascending: true })
-          .order('name_sort',   { ascending: true })
+          .order('birth_day', { ascending: true })
+          .order('name_sort', { ascending: true })
       } else {
         query = query.order('created_at', { ascending: false })
       }

@@ -1,56 +1,32 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 
-export interface AcolhimentoStatus {
-  emAtendimentoIds: string[]   // person_ids com journey status='pending'
-  atendidaIds:      string[]   // person_ids com ao menos 1 pastoral_contact
-  allJourneyIds:    string[]   // todos os person_ids com alguma jornada (para "não atendida")
+export interface AcolhimentoStatusCounts {
+  naoAtendida:   number
+  emAtendimento: number
+  atendida:      number
+  semContato48h: number
 }
 
+/** Busca contadores de atendimento via RPC server-side. Sem lista de IDs. */
 export function useAcolhimentoStatus(churchId: string) {
   return useQuery({
-    queryKey: ['acolhimento-status', churchId],
+    queryKey: ['acolhimento-status-counts', churchId],
     enabled: Boolean(churchId),
     staleTime: 60_000,
-    queryFn: async (): Promise<AcolhimentoStatus> => {
-      // 1. Busca todas as jornadas da igreja: id, person_id, status
-      const { data: journeys } = await supabase
-        .from('acolhimento_journey')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select('id, person_id, status')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq('church_id', churchId) as any
-
-      const journeyRows = (journeys ?? []) as Array<{ id: string; person_id: string; status: string }>
-
-      const journeyIdToPersonId = new Map(journeyRows.map(j => [j.id, j.person_id]))
-
-      const emAtendimentoIds = journeyRows
-        .filter(j => j.status === 'pending')
-        .map(j => j.person_id)
-
-      const allJourneyIds = [...new Set(journeyRows.map(j => j.person_id))]
-
-      // 2. Busca journey_events com pastoral_contact para essa church
-      const { data: events } = await supabase
-        .from('journey_events')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select('journey_id')
-        .eq('church_id', churchId)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq('event_type', 'pastoral_contact') as any
-
-      const eventRows = (events ?? []) as Array<{ journey_id: string }>
-
-      const atendidaIds = [
-        ...new Set(
-          eventRows
-            .map(e => journeyIdToPersonId.get(e.journey_id))
-            .filter(Boolean) as string[]
-        ),
-      ]
-
-      return { emAtendimentoIds, atendidaIds, allJourneyIds }
+    queryFn: async (): Promise<AcolhimentoStatusCounts> => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_care_status_counts', {
+        p_church_id: churchId,
+      })
+      if (error) throw new Error(error.message)
+      const d = (data ?? {}) as Record<string, number>
+      return {
+        naoAtendida:   d.nao_atendida    ?? 0,
+        emAtendimento: d.em_atendimento  ?? 0,
+        atendida:      d.atendida        ?? 0,
+        semContato48h: d.sem_contato_48h ?? 0,
+      }
     },
   })
 }

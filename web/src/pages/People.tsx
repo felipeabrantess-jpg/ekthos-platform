@@ -994,10 +994,10 @@ export default function People() {
           <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
           {([
             { value: '', label: 'Todos' },
-            { value: 'nao_atendida', label: `Não atendida ${careStatusData ? `(${careStatusData.allJourneyIds.length < (totalCount ?? 0) ? (totalCount ?? 0) - careStatusData.allJourneyIds.length : '—'})` : ''}` },
-            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimentoIds.length ?? '—'})` },
-            { value: 'atendida', label: `Atendida (${careStatusData?.atendidaIds.length ?? '—'})` },
-            { value: 'sem_contato_48h', label: 'Sem contato +48h' },
+            { value: 'nao_atendida',   label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
+            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
+            { value: 'atendida',       label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
+            { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
           ] as const).map(opt => (
             <button
               key={opt.value}
