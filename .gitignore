@@ -143,3 +143,10 @@ vite.config.ts.timestamp-*
 web/playwright-report/
 web/test-results/
 web/tests/e2e/.auth.json
+
+# LGPD — dumps de disparo com dados pessoais (phone, name) de membros IGV
+# Gerados localmente para operações em massa, NUNCA devem entrar no repositório
+disparo*.json
+disparo*.txt
+disparo*.js
+fatia*.json
