@@ -113,11 +113,19 @@ function entryTypeToStage(t: EntryType): string {
   return 'visitante'  // visitante, novo_convertido, reconciliado
 }
 
-// Resposta 200 silenciosa — usada em bloqueios e em sucesso real
+// Resposta 200 silenciosa — usada em bloqueios DELIBERADOS e em sucesso real
 function ok200(headers: Record<string, string>): Response {
   return new Response(
     JSON.stringify({ success: true, message: 'Cadastro realizado!' }),
     { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+  )
+}
+
+// Resposta 500 para falhas internas — nunca vaza detalhe do erro ao visitante
+function err500(headers: Record<string, string>): Response {
+  return new Response(
+    JSON.stringify({ error: 'internal' }),
+    { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } }
   )
 }
 
@@ -274,8 +282,11 @@ Deno.serve(async (req: Request) => {
           })
           .select('id')
           .single()
-        if (insertErr) console.warn('[visitor-capture] INSERT membro sem match falhou:', insertErr.message)
-        else console.log('[visitor-capture] Membro sem match criado com needs_review:', (newMembro as { id: string }).id)
+        if (insertErr) {
+          console.error('[visitor-capture] INSERT membro sem match falhou:', insertErr.message)
+          return err500(headers)
+        }
+        console.log('[visitor-capture] Membro sem match criado com needs_review:', (newMembro as { id: string }).id)
       }
       // Independente do branch, incrementa scan e retorna — sem pipeline, sem dispatch
       await supabase.rpc('increment_qr_scanned_count', { p_church_id: churchId })
@@ -353,14 +364,14 @@ Deno.serve(async (req: Request) => {
 
       if (insertErr || !newPerson) {
         console.error('[visitor-capture] INSERT people falhou:', insertErr?.message)
-        return ok200(headers)  // sucesso silencioso — não expor erros internos
+        return err500(headers)
       }
 
       personId = (newPerson as { id: string }).id
       console.log('[visitor-capture] Pessoa criada:', personId, 'entry_type:', entryType)
     }
 
-    if (!personId) return ok200(headers)
+    if (!personId) return err500(headers)
 
     // ── 6. Pipeline entry point ───────────────────────────
     const { error: pipelineErr } = await supabase.rpc('capture_visitor_to_pipeline', {
@@ -368,7 +379,9 @@ Deno.serve(async (req: Request) => {
       p_person_id: personId,
     })
     if (pipelineErr) {
-      console.warn('[visitor-capture] Pipeline RPC falhou (não crítico):', pipelineErr.message)
+      console.warn('[visitor-capture] Pipeline RPC falhou — marcando needs_review:', pipelineErr.message)
+      // Pessoa foi salva, mas não entrou no funil. needs_review=true torna a falha visível na tela.
+      await supabase.from('people').update({ needs_review: true }).eq('id', personId)
     }
 
     // ── 7. Contador atômico de scans ──────────────────────
@@ -401,9 +414,8 @@ Deno.serve(async (req: Request) => {
     return ok200(headers)
 
   } catch (e: unknown) {
-    // Fallback: nunca expor erros internos ao cliente
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[visitor-capture] UNHANDLED EXCEPTION:', msg)
-    return ok200(headers)
+    return err500(headers)
   }
 })
