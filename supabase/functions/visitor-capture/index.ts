@@ -83,11 +83,49 @@ function sanitizePhone(raw: string): string {
   return '+' + digits
 }
 
-// Resposta 200 silenciosa — usada em bloqueios e em sucesso real
+// R8b: gera variante do telefone BR com/sem 9º dígito (números celulares BR)
+// Ex: +5521998765432 (11 dígitos locais) ↔ +552198765432 (10 dígitos locais)
+function phoneVariants(phone: string): string[] {
+  const variants: string[] = [phone]
+  const digits = phone.replace(/\D/g, '')
+  if (!digits.startsWith('55')) return variants
+  const local = digits.slice(2)  // remove código país
+  if (local.length === 11 && local[2] === '9') {
+    // remove 9º dígito: +55DD9XXXXXXXX → +55DDXXXXXXXX
+    variants.push('+55' + local.slice(0, 2) + local.slice(3))
+  } else if (local.length === 10) {
+    // adiciona 9º dígito: +55DDXXXXXXXX → +55DD9XXXXXXXX
+    variants.push('+55' + local.slice(0, 2) + '9' + local.slice(2))
+  }
+  return variants
+}
+
+// Tipos de entrada válidos para o seletor de estágio (R7)
+type EntryType = 'visitante' | 'novo_convertido' | 'reconciliado' | 'vim_de_outra_igreja' | 'ja_sou_membro'
+const VALID_ENTRY_TYPES: EntryType[] = ['visitante', 'novo_convertido', 'reconciliado', 'vim_de_outra_igreja', 'ja_sou_membro']
+
+// Mapeia entry_type do payload para person_stage no banco
+// Enum person_stage: visitante | contato | frequentador | consolidado | discipulo | lider
+// 'membro' NÃO é valor válido do enum — vim_de_outra_igreja e ja_sou_membro → frequentador
+function entryTypeToStage(t: EntryType): string {
+  if (t === 'vim_de_outra_igreja') return 'frequentador'
+  if (t === 'ja_sou_membro')       return 'frequentador'
+  return 'visitante'  // visitante, novo_convertido, reconciliado
+}
+
+// Resposta 200 silenciosa — usada em bloqueios DELIBERADOS e em sucesso real
 function ok200(headers: Record<string, string>): Response {
   return new Response(
     JSON.stringify({ success: true, message: 'Cadastro realizado!' }),
     { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+  )
+}
+
+// Resposta 500 para falhas internas — nunca vaza detalhe do erro ao visitante
+function err500(headers: Record<string, string>): Response {
+  return new Response(
+    JSON.stringify({ error: 'internal' }),
+    { status: 500, headers: { ...headers, 'Content-Type': 'application/json' } }
   )
 }
 
@@ -121,6 +159,11 @@ Deno.serve(async (req: Request) => {
     const phone         = typeof payload.phone           === 'string' ? payload.phone.trim()           : null
     const email         = typeof payload.email           === 'string' ? payload.email.trim()           : null
     const invitedByName = typeof payload.invited_by_name === 'string' ? payload.invited_by_name.trim() : null
+    // R7: tipo de entrada — default 'visitante' para retrocompatibilidade com clientes antigos
+    const rawEntryType  = typeof payload.entry_type      === 'string' ? payload.entry_type             : 'visitante'
+    const entryType: EntryType = VALID_ENTRY_TYPES.includes(rawEntryType as EntryType)
+      ? rawEntryType as EntryType
+      : 'visitante'
 
     if (!slug || !name || name.length < 3 || !phone) {
       return new Response(JSON.stringify({ error: 'Campos obrigatórios inválidos' }), { status: 400, headers: json })
@@ -193,22 +236,75 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 5. Upsert person ──────────────────────────────────
+    // R8b: buscar por variantes do telefone (com/sem 9º dígito BR)
+    const phones = phoneVariants(phoneClean)
     const { data: existingRaw } = await supabase
       .from('people')
-      .select('id, first_visit_date, deleted_at')
+      .select('id, first_visit_date, deleted_at, phone')
       .eq('church_id', churchId)
-      .eq('phone', phoneClean)
+      .in('phone', phones)
+      .limit(1)
       .maybeSingle()
 
     // Pessoa soft-deleted é tratada como nova: cria registro novo, dispara boas-vindas.
     // O registro antigo permanece oculto (deleted_at preenchido) — não é reativado.
     const existing = (existingRaw?.deleted_at == null) ? existingRaw : null
 
+    // ── R8: fluxo "Já sou membro" ──────────────────────
+    if (entryType === 'ja_sou_membro') {
+      if (existing?.id) {
+        // MATCH: registrar presença — nunca criar novo registro, nunca sobrescrever stage
+        const { error: presErr } = await supabase
+          .from('people')
+          .update({ last_contact_at: new Date().toISOString() })
+          .eq('id', existing.id)
+        if (presErr) console.warn('[visitor-capture] UPDATE presença membro falhou (não crítico):', presErr.message)
+        console.log('[visitor-capture] Membro existente — presença registrada:', existing.id)
+      } else {
+        // SEM MATCH: cria com stage 'membro' + needs_review=true para conferência pastoral
+        const { data: newMembro, error: insertErr } = await supabase
+          .from('people')
+          .insert({
+            church_id:        churchId,
+            name:             name,
+            phone:            phoneClean,
+            email:            email ?? null,
+            source:           'qr_code',
+            first_visit_date: new Date().toISOString().split('T')[0],
+            last_contact_at:  new Date().toISOString(),
+            person_stage:     'frequentador',
+            needs_review:     true,
+            unit_id:          unitId,
+            qr_code_id:       qrId,
+            lgpd_consent:     true,
+            lgpd_consent_at:  new Date().toISOString(),
+            is_volunteer:     false,
+          })
+          .select('id')
+          .single()
+        if (insertErr) {
+          console.error('[visitor-capture] INSERT membro sem match falhou:', insertErr.message)
+          return err500(headers)
+        }
+        console.log('[visitor-capture] Membro sem match criado com needs_review:', (newMembro as { id: string }).id)
+      }
+      // Independente do branch, incrementa scan e retorna — sem pipeline, sem dispatch
+      await supabase.rpc('increment_qr_scanned_count', { p_church_id: churchId })
+      await supabase.from('visitor_capture_rate_limits').insert({
+        ip, phone: phoneClean, church_id: churchId, user_agent: userAgent, was_blocked: false,
+      })
+      return ok200(headers)
+    }
+
+    // ── fluxo padrão (visitante, novo_convertido, reconciliado, vim_de_outra_igreja) ──
+
     // Inicializado como string vazia para evitar erro TS de variável não atribuída
     let personId = ''
 
+    const personStage = entryTypeToStage(entryType)
+
     if (existing?.id) {
-      // Pessoa já existe — atualiza metadados de contato
+      // R8b: pessoa já existe (mesmo telefone, variante com/sem 9) — não duplicar
       const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
       // D1: atualiza name se fornecido (novo scan pode ter nome mais completo)
       if (name) updates.name = name
@@ -220,49 +316,62 @@ Deno.serve(async (req: Request) => {
       if (!existing.first_visit_date) {
         updates.first_visit_date = new Date().toISOString().split('T')[0]
       }
+      // Novo convertido: registrar data de conversão se ainda não tiver
+      if (entryType === 'novo_convertido') {
+        updates.conversion_date = new Date().toISOString().split('T')[0]
+      }
 
       const { error: updErr } = await supabase.from('people').update(updates).eq('id', existing.id)
       if (updErr) console.warn('[visitor-capture] UPDATE person falhou (não crítico):', updErr.message)
+      else if (existing.phone !== phoneClean) {
+        console.log('[visitor-capture] Dedup por variante de telefone:', existing.phone, '→', phoneClean)
+      }
       personId = existing.id as string
       console.log('[visitor-capture] Pessoa existente atualizada:', personId)
     } else {
       // Pessoa nova
+      const insertData: Record<string, unknown> = {
+        church_id:             churchId,
+        name:                  name,
+        phone:                 phoneClean,
+        email:                 email ?? null,
+        source:                'qr_code',
+        // como_conheceu não enviado — aceita apenas enum fixo, não texto livre
+        observacoes_pastorais: invitedByName ? 'Convidado por: ' + invitedByName : null,
+        first_visit_date:      new Date().toISOString().split('T')[0],
+        last_contact_at:       new Date().toISOString(),
+        person_stage:          personStage,
+        // Onda 1: rastreabilidade de unidade e QR de origem
+        unit_id:               unitId,
+        qr_code_id:            qrId,
+        // LGPD: consentimento explícito coletado no formulário QR Code.
+        // O visitante submete o formulário com checkbox ou texto de aceite visível.
+        // lgpd_consent_at registra o momento exato da captura para fins de auditoria.
+        lgpd_consent:          true,
+        lgpd_consent_at:       new Date().toISOString(),
+        is_volunteer:          false,
+      }
+      // Novo convertido: registrar data de conversão
+      if (entryType === 'novo_convertido') {
+        insertData.conversion_date = new Date().toISOString().split('T')[0]
+      }
+
       const { data: newPerson, error: insertErr } = await supabase
         .from('people')
-        .insert({
-          church_id:             churchId,
-          name:                  name,
-          phone:                 phoneClean,
-          email:                 email ?? null,
-          source:                'qr_code',
-          // como_conheceu não enviado — aceita apenas enum fixo, não texto livre
-          observacoes_pastorais: invitedByName ? 'Convidado por: ' + invitedByName : null,
-          first_visit_date:      new Date().toISOString().split('T')[0],
-          last_contact_at:       new Date().toISOString(),
-          person_stage:          'visitante',
-          // Onda 1: rastreabilidade de unidade e QR de origem
-          unit_id:               unitId,
-          qr_code_id:            qrId,
-          // LGPD: consentimento explícito coletado no formulário QR Code.
-          // O visitante submete o formulário com checkbox ou texto de aceite visível.
-          // lgpd_consent_at registra o momento exato da captura para fins de auditoria.
-          lgpd_consent:          true,
-          lgpd_consent_at:       new Date().toISOString(),
-          is_volunteer:          false,
-        })
+        .insert(insertData)
         .select('id')
         .single()
 
       if (insertErr || !newPerson) {
         console.error('[visitor-capture] INSERT people falhou:', insertErr?.message)
-        return ok200(headers)  // sucesso silencioso — não expor erros internos
+        return err500(headers)
       }
 
       personId = (newPerson as { id: string }).id
-      console.log('[visitor-capture] Pessoa criada:', personId)
+      console.log('[visitor-capture] Pessoa criada:', personId, 'entry_type:', entryType)
     }
 
-    if (!personId) return ok200(headers)
+    if (!personId) return err500(headers)
 
     // ── 6. Pipeline entry point ───────────────────────────
     const { error: pipelineErr } = await supabase.rpc('capture_visitor_to_pipeline', {
@@ -270,7 +379,9 @@ Deno.serve(async (req: Request) => {
       p_person_id: personId,
     })
     if (pipelineErr) {
-      console.warn('[visitor-capture] Pipeline RPC falhou (não crítico):', pipelineErr.message)
+      console.warn('[visitor-capture] Pipeline RPC falhou — marcando needs_review:', pipelineErr.message)
+      // Pessoa foi salva, mas não entrou no funil. needs_review=true torna a falha visível na tela.
+      await supabase.from('people').update({ needs_review: true }).eq('id', personId)
     }
 
     // ── 7. Contador atômico de scans ──────────────────────
@@ -303,9 +414,8 @@ Deno.serve(async (req: Request) => {
     return ok200(headers)
 
   } catch (e: unknown) {
-    // Fallback: nunca expor erros internos ao cliente
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[visitor-capture] UNHANDLED EXCEPTION:', msg)
-    return ok200(headers)
+    return err500(headers)
   }
 })
