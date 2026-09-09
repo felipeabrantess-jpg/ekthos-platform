@@ -19,6 +19,7 @@ import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
+import { useAcolhimentoStatus, getCareStatusBadge } from '@/features/people/hooks/useAcolhimentoStatus'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
@@ -47,6 +48,25 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 }
 
 type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
+type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
+
+const STAGE_LABELS: Record<string, string> = {
+  visitante:    'Visitante',
+  contato:      'Contato',
+  frequentador: 'Frequentador',
+  consolidado:  'Consolidado',
+  discipulo:    'Discípulo',
+  lider:        'Líder',
+}
+
+const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
+  visitante:    { bg: '#dbeafe', color: '#1e40af' },
+  contato:      { bg: '#ede9fe', color: '#5b21b6' },
+  frequentador: { bg: '#d1fae5', color: '#065f46' },
+  consolidado:  { bg: '#fef3c7', color: '#92400e' },
+  discipulo:    { bg: '#fee2e2', color: '#991b1b' },
+  lider:        { bg: '#f0fdf4', color: '#14532d' },
+}
 
 function displayName(name: string | null | undefined, phone: string | null | undefined): string {
   if (name) return name
@@ -168,9 +188,10 @@ interface PersonCardMobileProps {
   onDelete: (p: Person) => void
   onAtend: (p: PersonWithStage) => void
   showBirthday?: boolean
+  showCareBadge?: boolean
 }
 
-function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday }: PersonCardMobileProps) {
+function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge }: PersonCardMobileProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -205,6 +226,20 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, 
                   🎂 dia {bdayDay}
                 </span>
               )}
+              {showCareBadge && (() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const journeys = (person as any).acolhimento_journey as Array<{ status: string }> | null
+                const badge = getCareStatusBadge(journeys)
+                if (!badge) return null
+                return (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                    style={{ color: badge.color, backgroundColor: badge.bg }}
+                  >
+                    {badge.label}
+                  </span>
+                )
+              })()}
             </div>
             {person.email && (
               <p className="text-xs text-text-secondary truncate mt-0.5">{person.email}</p>
@@ -258,9 +293,10 @@ interface PersonRowProps {
   onDelete: (p: Person) => void
   onAtend: (p: PersonWithStage) => void
   showBirthday?: boolean
+  showCareBadge?: boolean
 }
 
-function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday }: PersonRowProps) {
+function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge }: PersonRowProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -307,6 +343,24 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBir
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
         <TagBadgesCell person={person} allTags={allTags} />
       </td>
+      {showCareBadge && (
+        <td className="px-4 py-3">
+          {(() => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const journeys = (person as any).acolhimento_journey as Array<{ status: string }> | null
+            const badge = getCareStatusBadge(journeys)
+            if (!badge) return <span className="text-xs text-text-tertiary">—</span>
+            return (
+              <span
+                className="text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: badge.bg, color: badge.color }}
+              >
+                {badge.label}
+              </span>
+            )
+          })()}
+        </td>
+      )}
       <td className="px-4 py-3 text-sm text-text-secondary">
         {formatDate(person.created_at)}
       </td>
@@ -500,6 +554,7 @@ export default function People() {
   const [unitDropOpen, setUnitDropOpen] = useState(false)
   // R11: filtro de origem (source)
   const [sourceFilter, setSourceFilter] = useState<string>('')  // '' | 'qr_code' | 'manual' | 'import_xlsx'
+  const [careFilter, setCareFilter] = useState<CareFilter>('')
   const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
   const [modalOpen, setModalOpen]   = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -534,6 +589,7 @@ export default function People() {
     unitId:     unitFilter || undefined,
     birthMonth: isBirthdayTab ? currentMonth : undefined,
     source:     sourceFilter || undefined,
+    careStatus: careFilter || undefined,
   })
 
   // R12: contadores por unidade (query leve — só counts, sem join)
@@ -551,6 +607,7 @@ export default function People() {
     },
     staleTime: 60_000,
   })
+
   // Query server-side dedicada para aba novos com filtro de período
   // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
   const novosDateCutoff = useMemo(() => {
@@ -646,6 +703,26 @@ export default function People() {
   const { data: totalCount } = usePeopleCount(churchId ?? '')
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
+
+  // R1: contadores por unidade + stage breakdown
+  const { data: unitStageRows = [] } = useQuery({
+    queryKey: ['people-unit-stage-counts', churchId],
+    enabled: !!churchId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('people')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .select('unit_id, person_stage')
+        .eq('church_id', churchId!)
+        .is('deleted_at', null) as any
+      if (error) throw error
+      return (data ?? []) as Array<{ unit_id: string | null; person_stage: string | null }>
+    },
+  })
+
+  // R2/R5: status de atendimento (ids pré-buscados)
+  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '')
   const deletePerson = useDeletePerson()
   // Contatos de aniversário do mês — só carrega quando na aba Aniversários
   const { data: contactsData = [] } = useBirthdayContacts(
@@ -839,6 +916,140 @@ export default function People() {
                 className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-bg-hover"
               />
             </div>
+          )}
+        </div>
+      )}
+
+      {/* R1: Contadores por unidade + stage breakdown */}
+      {activeTab === 'geral' && churchUnits.length > 0 && unitStageRows.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {churchUnits.map(unit => {
+            const rows = unitStageRows.filter(r => r.unit_id === unit.id)
+            const total = rows.length
+            const stageBreakdown = Object.entries(
+              rows.reduce<Record<string, number>>((acc, r) => {
+                const s = r.person_stage ?? 'sem_stage'
+                acc[s] = (acc[s] ?? 0) + 1
+                return acc
+              }, {})
+            ).sort(([a], [b]) => a.localeCompare(b))
+
+            return (
+              <div key={unit.id} className="relative group">
+                <button
+                  type="button"
+                  onClick={() => { setUnitFilter(unit.id === unitFilter ? '' : unit.id); setCurrentPage(0) }}
+                  className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
+                    unitFilter === unit.id
+                      ? 'border-primary text-primary-text bg-bg-hover'
+                      : 'border-border-default text-text-secondary bg-bg-hover hover:text-text-primary'
+                  }`}
+                  style={unitFilter === unit.id ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+                >
+                  {unit.name} <span className="font-semibold">{total}</span>
+                </button>
+                {/* Stage breakdown tooltip */}
+                <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover:flex flex-col gap-1 bg-white rounded-xl border border-border-default shadow-lg p-2 min-w-[150px]">
+                  {stageBreakdown.map(([stage, count]) => {
+                    const sc = STAGE_COLORS[stage] ?? { bg: '#f3f4f6', color: '#374151' }
+                    return (
+                    <div key={stage} className="flex items-center justify-between gap-3 text-xs">
+                      <span
+                        className="px-1.5 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: sc.bg, color: sc.color }}
+                      >
+                        {STAGE_LABELS[stage] ?? stage}
+                      </span>
+                      <span className="font-semibold text-text-secondary tabular-nums">{count}</span>
+                    </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+          {(() => {
+            const semUnidade = unitStageRows.filter(r => r.unit_id === null).length
+            if (semUnidade === 0) return null
+            return (
+              <button
+                type="button"
+                onClick={() => { setUnitFilter(unitFilter === 'none' ? '' : 'none'); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
+                  unitFilter === 'none'
+                    ? 'border-amber-400 text-amber-700 bg-amber-50'
+                    : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'
+                }`}
+              >
+                Sem unidade <span className="font-semibold">{semUnidade}</span>
+              </button>
+            )
+          })()}
+        </div>
+      )}
+
+      {/* R2: Filtro de atendimento */}
+      {activeTab === 'geral' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
+          {([
+            { value: '', label: 'Todos' },
+            { value: 'nao_atendida', label: `Não atendida ${careStatusData ? `(${careStatusData.allJourneyIds.length < (totalCount ?? 0) ? (totalCount ?? 0) - careStatusData.allJourneyIds.length : '—'})` : ''}` },
+            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimentoIds.length ?? '—'})` },
+            { value: 'atendida', label: `Atendida (${careStatusData?.atendidaIds.length ?? '—'})` },
+            { value: 'sem_contato_48h', label: 'Sem contato +48h' },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                careFilter === opt.value
+                  ? 'border-primary text-primary-text bg-bg-hover'
+                  : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+              }`}
+              style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+            >
+              {opt.label}
+            </button>
+          ))}
+
+          {/* R6: CSV export */}
+          {filteredPeople.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Atendimento', 'Unidade', 'Primeira visita', 'Origem']
+                const rows = filteredPeople.map(p => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const journeys = (p as any).acolhimento_journey as Array<{ status: string }> | null
+                  const badge = getCareStatusBadge(journeys)
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const unitName = churchUnits.find(u => u.id === (p as any).unit_id)?.name ?? ''
+                  return [
+                    p.name ?? '',
+                    p.phone ?? '',
+                    p.email ?? '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).person_stage ?? '',
+                    badge?.label ?? 'Não atendida',
+                    unitName,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).first_visit_date ?? '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).source ?? '',
+                  ]
+                })
+                const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+                const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
+              }}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border-default bg-white hover:bg-bg-hover transition-colors text-text-secondary"
+            >
+              <Download size={12} strokeWidth={1.75} />CSV
+            </button>
           )}
         </div>
       )}
@@ -1059,6 +1270,20 @@ export default function People() {
         </div>
       ) : (
         <>
+          {/* R5: "Entrou e ninguém falou" — callout para o pastor ver toda segunda */}
+          {activeTab === 'geral' && !careFilter && careStatusData && (
+            <div
+              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 cursor-pointer hover:bg-amber-100 transition-colors"
+              onClick={() => { setCareFilter('sem_contato_48h'); setCurrentPage(0) }}
+            >
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Entrou e ninguém falou</p>
+                <p className="text-xs text-amber-600 mt-0.5">Pessoas cadastradas há mais de 48h sem nenhum contato registrado</p>
+              </div>
+              <span className="text-xs font-medium text-amber-700 shrink-0">Ver lista →</span>
+            </div>
+          )}
+
           {/* ── Birthday CRM: cabeçalho de progresso ────────────────────── */}
           {isBirthdayTab && (
             <div className="space-y-1.5 px-0.5">
@@ -1112,6 +1337,7 @@ export default function People() {
                     onDelete={handleDelete}
                     onAtend={handleAtend}
                     showBirthday={false}
+                    showCareBadge={activeTab === 'geral'}
                   />
                 ))}
               </div>
@@ -1125,6 +1351,7 @@ export default function People() {
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
+                        {activeTab === 'geral' && <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Atendimento</th>}
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
                       </tr>
@@ -1140,6 +1367,7 @@ export default function People() {
                           onDelete={handleDelete}
                           onAtend={handleAtend}
                           showBirthday={false}
+                          showCareBadge={activeTab === 'geral'}
                         />
                       ))}
                     </tbody>

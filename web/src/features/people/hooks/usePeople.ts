@@ -31,6 +31,8 @@ interface PeopleFilters {
   source?: string
   /** Filtra pessoas sem unidade (unit_id IS NULL) — equivale a unitId='none' mas combinável */
   noUnit?: boolean
+  /** Filtro de status de atendimento (Frente 2) — processado server-side via RPC get_people_page */
+  careStatus?: 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
 }
 
 // Lista pessoas com stage atual
@@ -58,7 +60,8 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
           person_tags (
             tag_id,
             tags ( id, name, color, sort_order )
-          )
+          ),
+          acolhimento_journey ( id, status, updated_at, started_at )
         `)
         .eq('church_id', churchId)
         .is('deleted_at', null)
