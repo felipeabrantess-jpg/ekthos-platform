@@ -47,7 +47,7 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   }
 }
 
-type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
+type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'membros' | 'lideres' | 'em-risco'
 type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
 
 const STAGE_LABELS: Record<string, string> = {
@@ -79,6 +79,7 @@ const TABS: { id: PeopleTab; label: string }[] = [
   { id: 'aniversarios',  label: 'Aniversários'       },
   { id: 'novos',         label: 'Novos Visitantes'   },
   { id: 'convertidos',   label: 'Novos Convertidos'  },
+  { id: 'membros',       label: 'Membros'            },
   { id: 'lideres',       label: 'Líderes'            },
   { id: 'em-risco',      label: 'Em Risco'           },
 ]
@@ -551,7 +552,6 @@ export default function People() {
   const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
   const [tagDropOpen, setTagDropOpen] = useState(false)
   const [unitFilter, setUnitFilter] = useState<string>('')     // unit id | 'none' | ''
-  const [unitDropOpen, setUnitDropOpen] = useState(false)
   // R11: filtro de origem (source)
   const [sourceFilter, setSourceFilter] = useState<string>('')  // '' | 'qr_code' | 'manual' | 'import_xlsx'
   const [careFilter, setCareFilter] = useState<CareFilter>('')
@@ -592,20 +592,39 @@ export default function People() {
     careStatus: careFilter || undefined,
   })
 
-  // R12: contadores por unidade (query leve — só counts, sem join)
-  const { data: unitCounts = [] } = useQuery({
-    queryKey: ['people-unit-counts', churchId],
+  // SA-1: contadores de abas via RPC (server-side, zero applyTabFilter)
+  const { data: peopleCountsData } = useQuery({
+    queryKey: ['people-counts-rpc', churchId],
     enabled:  !!churchId,
-    queryFn:  async () => {
-      const { data, error } = await supabase
-        .from('people')
-        .select('unit_id')
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-      if (error) throw error
-      return data ?? []
-    },
     staleTime: 60_000,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_people_counts', { p_church_id: churchId })
+      if (error) throw error
+      return data as {
+        total: number
+        aniversarios: number
+        novos_visitantes: number
+        novos_visitantes_30d: number
+        novos_convertidos: number
+        membros: number
+        lideres: number
+        em_risco: number
+      }
+    },
+  })
+
+  // Contadores por unidade via RPC (evita teto de 1.000 linhas do PostgREST)
+  const { data: unitCountRows = [] } = useQuery({
+    queryKey: ['unit-counts-rpc', churchId],
+    enabled:  !!churchId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_unit_counts', { p_church_id: churchId })
+      if (error) throw error
+      return (data ?? []) as Array<{ unit_id: string | null; person_stage: string | null; cnt: number }>
+    },
   })
 
   // Query server-side dedicada para aba novos com filtro de período
@@ -671,6 +690,84 @@ export default function People() {
     },
   })
 
+  // SA-2: query server-side para aba Líderes (pipeline_stages.slug = 'lider')
+  const { data: lideresServerData } = useQuery({
+    queryKey: ['lideres-server', churchId],
+    enabled: activeTab === 'lideres' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline!inner (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages!inner ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
+          acolhimento_journey ( id, status, updated_at, started_at )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('person_pipeline.pipeline_stages.slug' as any, 'lider')
+        .order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
+  // SA-2: query server-side para aba Em Risco (pipeline_stages.slug = 'frequentador')
+  const { data: emRiscoServerData } = useQuery({
+    queryKey: ['em-risco-server', churchId],
+    enabled: activeTab === 'em-risco' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline!inner (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages!inner ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
+          acolhimento_journey ( id, status, updated_at, started_at )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('person_pipeline.pipeline_stages.slug' as any, 'frequentador')
+        .order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
+  // SA-2: query server-side para aba Membros (pipeline_stages.slug = 'membro')
+  const { data: membrosServerData } = useQuery({
+    queryKey: ['membros-server', churchId],
+    enabled: activeTab === 'membros' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline!inner (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages!inner ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
+          acolhimento_journey ( id, status, updated_at, started_at )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('person_pipeline.pipeline_stages.slug' as any, 'membro')
+        .order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
   // Query server-side dedicada para aba "Novos Convertidos" — evita filtragem client-side
   // sobre os 50 carregados da Visão Geral (pessoa convertida pode não estar na página 1).
   const { data: convertidosServerData } = useQuery({
@@ -704,22 +801,6 @@ export default function People() {
   const { data: allTags = [] } = useTags(churchId ?? '')
   const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
 
-  // R1: contadores por unidade + stage breakdown
-  const { data: unitStageRows = [] } = useQuery({
-    queryKey: ['people-unit-stage-counts', churchId],
-    enabled: !!churchId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('people')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select('unit_id, person_stage')
-        .eq('church_id', churchId!)
-        .is('deleted_at', null) as any
-      if (error) throw error
-      return (data ?? []) as Array<{ unit_id: string | null; person_stage: string | null }>
-    },
-  })
 
   // R2/R5: status de atendimento (ids pré-buscados)
   const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '')
@@ -787,10 +868,19 @@ export default function People() {
     if (activeTab === 'convertidos') {
       return convertidosServerData ?? []
     }
+    if (activeTab === 'membros') {
+      return membrosServerData ?? []
+    }
+    if (activeTab === 'lideres') {
+      return lideresServerData ?? []
+    }
+    if (activeTab === 'em-risco') {
+      return emRiscoServerData ?? []
+    }
     return tagFilter
       ? tabFiltered.filter(p => (p.person_tags ?? []).some(pt => pt.tag_id === tagFilter))
       : tabFiltered
-  }, [activeTab, dateFilter, novosServerData, convertidosServerData, tagFilter, tabFiltered])
+  }, [activeTab, dateFilter, novosServerData, convertidosServerData, membrosServerData, lideresServerData, emRiscoServerData, tagFilter, tabFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
@@ -802,6 +892,7 @@ export default function People() {
     aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
     novos:        { title: 'Nenhum novo visitante', description: 'Visitantes cadastrados nos últimos 30 dias aparecerão aqui.' },
     convertidos:  { title: 'Nenhum novo convertido', description: 'Pessoas com data de conversão nos últimos 30 dias aparecerão aqui.' },
+    membros:      { title: 'Nenhum membro cadastrado', description: 'Pessoas no stage Membro aparecerão aqui.' },
     lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
     'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
   }
@@ -844,32 +935,48 @@ export default function People() {
 
       {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
       <div className="flex gap-1 border-b border-border-default -mb-2 overflow-x-auto scrollbar-none pb-px">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-primary text-primary-text'
-                : 'border-transparent text-text-secondary active:text-text-primary'
-            }`}
-          >
-            {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
-            {tab.label}
-            {people && tab.id !== 'geral' && (
-              <span
-                className={`px-1.5 py-0.5 rounded-full font-semibold ${
-                  activeTab === tab.id
-                    ? 'bg-bg-hover text-primary-text'
-                    : 'bg-bg-hover text-text-tertiary'
-                }`}
-                style={{ fontSize: '10px' }}
-              >
-                {applyTabFilter(tab.id, allPeople).length}
-              </span>
-            )}
-          </button>
-        ))}
+        {TABS.map(tab => {
+          // SA-1: contadores server-side via get_people_counts
+          // "novos" usa janela de 30d (não a base inteira de visitantes)
+          const tabCount: number | null = (() => {
+            if (!peopleCountsData || tab.id === 'geral') return null
+            switch (tab.id) {
+              case 'aniversarios': return peopleCountsData.aniversarios
+              case 'novos':        return peopleCountsData.novos_visitantes_30d ?? peopleCountsData.novos_visitantes
+              case 'convertidos':  return peopleCountsData.novos_convertidos
+              case 'membros':      return peopleCountsData.membros
+              case 'lideres':      return peopleCountsData.lideres
+              case 'em-risco':     return peopleCountsData.em_risco
+              default:             return null
+            }
+          })()
+          return (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-primary text-primary-text'
+                  : 'border-transparent text-text-secondary active:text-text-primary'
+              }`}
+            >
+              {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
+              {tab.label}
+              {tabCount !== null && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full font-semibold ${
+                    activeTab === tab.id
+                      ? 'bg-bg-hover text-primary-text'
+                      : 'bg-bg-hover text-text-tertiary'
+                  }`}
+                  style={{ fontSize: '10px' }}
+                >
+                  {tabCount}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Filtro de período — só na aba novos visitantes */}
@@ -920,19 +1027,15 @@ export default function People() {
         </div>
       )}
 
-      {/* R1: Contadores por unidade + stage breakdown */}
-      {activeTab === 'geral' && churchUnits.length > 0 && unitStageRows.length > 0 && (
+      {/* R1: Contadores por unidade + stage breakdown (via RPC, sem teto de 1.000) */}
+      {activeTab === 'geral' && churchUnits.length > 0 && unitCountRows.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {churchUnits.map(unit => {
-            const rows = unitStageRows.filter(r => r.unit_id === unit.id)
-            const total = rows.length
-            const stageBreakdown = Object.entries(
-              rows.reduce<Record<string, number>>((acc, r) => {
-                const s = r.person_stage ?? 'sem_stage'
-                acc[s] = (acc[s] ?? 0) + 1
-                return acc
-              }, {})
-            ).sort(([a], [b]) => a.localeCompare(b))
+            const rows = unitCountRows.filter(r => r.unit_id === unit.id)
+            const total = rows.reduce((s, r) => s + r.cnt, 0)
+            const stageBreakdown = rows
+              .map(r => [r.person_stage ?? 'sem_stage', r.cnt] as [string, number])
+              .sort(([a], [b]) => a.localeCompare(b))
 
             return (
               <div key={unit.id} className="relative group">
@@ -969,7 +1072,7 @@ export default function People() {
             )
           })}
           {(() => {
-            const semUnidade = unitStageRows.filter(r => r.unit_id === null).length
+            const semUnidade = unitCountRows.filter(r => r.unit_id === null).reduce((s, r) => s + r.cnt, 0)
             if (semUnidade === 0) return null
             return (
               <button
@@ -981,80 +1084,14 @@ export default function People() {
                     : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'
                 }`}
               >
-                Sem unidade <span className="font-semibold">{semUnidade}</span>
+                Sem unidade definida <span className="font-semibold">({semUnidade})</span>
               </button>
             )
           })()}
         </div>
       )}
 
-      {/* R2: Filtro de atendimento */}
-      {activeTab === 'geral' && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
-          {([
-            { value: '', label: 'Todos' },
-            { value: 'nao_atendida',   label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
-            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
-            { value: 'atendida',       label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
-            { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
-          ] as const).map(opt => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                careFilter === opt.value
-                  ? 'border-primary text-primary-text bg-bg-hover'
-                  : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
-              }`}
-              style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-            >
-              {opt.label}
-            </button>
-          ))}
-
-          {/* R6: CSV export */}
-          {filteredPeople.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Atendimento', 'Unidade', 'Primeira visita', 'Origem']
-                const rows = filteredPeople.map(p => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const journeys = (p as any).acolhimento_journey as Array<{ status: string }> | null
-                  const badge = getCareStatusBadge(journeys)
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const unitName = churchUnits.find(u => u.id === (p as any).unit_id)?.name ?? ''
-                  return [
-                    p.name ?? '',
-                    p.phone ?? '',
-                    p.email ?? '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).person_stage ?? '',
-                    badge?.label ?? 'Não atendida',
-                    unitName,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).first_visit_date ?? '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).source ?? '',
-                  ]
-                })
-                const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-                const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
-              }}
-              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border-default bg-white hover:bg-bg-hover transition-colors text-text-secondary"
-            >
-              <Download size={12} strokeWidth={1.75} />CSV
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Busca + Filtros */}
+      {/* Linha de filtros: busca + tipo + origem + CSV */}
       {activeTab === 'geral' && (
         <div className="flex flex-wrap gap-2">
           <Input
@@ -1064,7 +1101,7 @@ export default function People() {
             className="w-full md:max-w-sm"
           />
 
-          {/* Filtro por tag (só aparece se há flags criadas) */}
+          {/* Filtro por tag */}
           {allTags.length > 0 && (
             <div className="relative">
               <button
@@ -1125,61 +1162,7 @@ export default function People() {
             </div>
           )}
 
-          {/* Filtro por unidade (só aparece se há unidades cadastradas) */}
-          {churchUnits.length > 0 && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setUnitDropOpen((o) => !o)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-              >
-                {unitFilter
-                  ? unitFilter === 'none'
-                    ? 'Não definida'
-                    : (churchUnits.find((u) => u.id === unitFilter)?.name ?? 'Unidade')
-                  : 'Todas as unidades'}
-                <ChevronDown size={12} className={`transition-transform ${unitDropOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {unitDropOpen && (
-                <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '180px' }}>
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => { setUnitFilter(''); setUnitDropOpen(false); setCurrentPage(0) }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${!unitFilter ? 'font-semibold text-text-primary bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
-                    >
-                      Todas as unidades
-                    </button>
-                  </li>
-                  {churchUnits.map((unit) => (
-                    <li key={unit.id}>
-                      <button
-                        type="button"
-                        onClick={() => { setUnitFilter(unit.id); setUnitDropOpen(false); setCurrentPage(0) }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === unit.id ? 'font-semibold bg-bg-hover' : 'hover:bg-bg-hover'}`}
-                      >
-                        {unit.name}
-                        {unitFilter === unit.id && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
-                      </button>
-                    </li>
-                  ))}
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => { setUnitFilter('none'); setUnitDropOpen(false); setCurrentPage(0) }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${unitFilter === 'none' ? 'font-semibold bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
-                    >
-                      Não definida
-                      {unitFilter === 'none' && <span className="ml-2 text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
-                    </button>
-                  </li>
-                </ul>
-              )}
-            </div>
-          )}
-
-          {/* R11: Filtro por origem (source) */}
+          {/* Filtro por origem */}
           <select
             value={sourceFilter}
             onChange={e => { setSourceFilter(e.target.value); setCurrentPage(0) }}
@@ -1191,67 +1174,75 @@ export default function People() {
             <option value="import_xlsx">Importação</option>
           </select>
 
-          {/* R13: CSV export */}
-          <button
-            type="button"
-            onClick={() => {
-              const rows = filteredPeople.map(p => [
-                p.name ?? '',
-                p.phone ?? '',
-                p.email ?? '',
-                p.person_stage ?? '',
-                p.first_visit_date ?? '',
-                p.source ?? '',
-              ])
-              const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Primeira visita', 'Origem']
-              const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-              const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-              const url = URL.createObjectURL(blob)
-              const a = document.createElement('a')
-              a.href = url; a.download = 'pessoas.csv'; a.click()
-              URL.revokeObjectURL(url)
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-          >
-            <Download size={13} strokeWidth={1.75} />
-            CSV
-          </button>
+          {/* CSV export (colunas completas: inclui Atendimento e Unidade) */}
+          {filteredPeople.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Atendimento', 'Unidade', 'Primeira visita', 'Origem']
+                const rows = filteredPeople.map(p => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const journeys = (p as any).acolhimento_journey as Array<{ status: string }> | null
+                  const badge = getCareStatusBadge(journeys)
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const unitName = churchUnits.find(u => u.id === (p as any).unit_id)?.name ?? ''
+                  return [
+                    p.name ?? '',
+                    p.phone ?? '',
+                    p.email ?? '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).person_stage ?? '',
+                    badge?.label ?? 'Não atendida',
+                    unitName,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).first_visit_date ?? '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (p as any).source ?? '',
+                  ]
+                })
+                const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+                const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+            >
+              <Download size={13} strokeWidth={1.75} />
+              CSV
+            </button>
+          )}
         </div>
       )}
 
-      {/* R12: contadores por unidade (só na aba geral, se há unidades) */}
-      {activeTab === 'geral' && churchUnits.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {churchUnits.map(unit => {
-            const count = unitCounts.filter((r: { unit_id: string | null }) => r.unit_id === unit.id).length
-            return (
-              <button
-                key={unit.id}
-                type="button"
-                onClick={() => { setUnitFilter(unit.id === unitFilter ? '' : unit.id); setCurrentPage(0) }}
-                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${unitFilter === unit.id ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-bg-hover hover:text-text-primary'}`}
-                style={unitFilter === unit.id ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-              >
-                {unit.name} <span className="font-semibold">{count}</span>
-              </button>
-            )
-          })}
-          {/* R14: sem unidade */}
-          {(() => {
-            const semUnidade = unitCounts.filter((r: { unit_id: string | null }) => r.unit_id === null).length
-            if (semUnidade === 0) return null
-            return (
-              <button
-                type="button"
-                onClick={() => { setUnitFilter(unitFilter === 'none' ? '' : 'none'); setCurrentPage(0) }}
-                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${unitFilter === 'none' ? 'border-amber-400 text-amber-700 bg-amber-50' : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'}`}
-              >
-                Sem unidade <span className="font-semibold">{semUnidade}</span>
-              </button>
-            )
-          })()}
+      {/* Filtro de atendimento */}
+      {activeTab === 'geral' && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
+          {([
+            { value: '', label: 'Todos' },
+            { value: 'nao_atendida',   label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
+            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
+            { value: 'atendida',       label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
+            { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                careFilter === opt.value
+                  ? 'border-primary text-primary-text bg-bg-hover'
+                  : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+              }`}
+              style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       )}
+
 
       {/* ── Loading / Error / Empty / Lista ─────────────────────── */}
       {isLoading ? (
