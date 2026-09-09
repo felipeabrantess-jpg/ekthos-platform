@@ -11,9 +11,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { X, Copy, Check, Download, ExternalLink, MapPin } from 'lucide-react'
+import { X, Copy, Check, Download, ExternalLink } from 'lucide-react'
 import QRCode from 'qrcode'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
@@ -76,13 +76,10 @@ interface QrCodeModalProps {
 }
 
 export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModalProps) {
-  const canvasRef   = useRef<HTMLCanvasElement>(null)
-  const queryClient = useQueryClient()
-  const [copied,    setCopied]    = useState(false)
-  const [dlPng,     setDlPng]     = useState(false)
-  const [dlSvg,     setDlSvg]     = useState(false)
-  const [selUnit,   setSelUnit]   = useState('')
-  const [unitSaved, setUnitSaved] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [copied,  setCopied]  = useState(false)
+  const [dlPng,   setDlPng]   = useState(false)
+  const [dlSvg,   setDlSvg]   = useState(false)
 
   // Fechar com Escape
   useEffect(() => {
@@ -107,48 +104,13 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
     queryFn: async () => {
       const { data, error } = await supabase
         .from('qr_codes')
-        .select('id, slug, is_active, scanned_count, unit_id')
+        .select('id, slug, is_active, scanned_count')
         .eq('church_id', churchId)
         .single()
       if (error) throw error
       return data
     },
   })
-
-  const { data: units = [] } = useQuery({
-    queryKey: ['church_units', churchId],
-    enabled: !!churchId && open,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('church_units')
-        .select('id, name')
-        .eq('church_id', churchId)
-        .eq('is_active', true)
-        .order('name')
-      if (error) throw error
-      return data ?? []
-    },
-  })
-
-  const unitMutation = useMutation({
-    mutationFn: async (unitId: string) => {
-      const { error } = await supabase
-        .from('qr_codes')
-        .update({ unit_id: unitId || null })
-        .eq('church_id', churchId)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      setUnitSaved(true)
-      setTimeout(() => setUnitSaved(false), 3000)
-      void queryClient.invalidateQueries({ queryKey: ['qr_code', churchId] })
-    },
-  })
-
-  // Sync select when qrData loads
-  useEffect(() => {
-    if (qrData?.unit_id !== undefined) setSelUnit(qrData.unit_id ?? '')
-  }, [qrData?.unit_id])
 
   // Renderizar QR no canvas de preview
   useEffect(() => {
@@ -278,42 +240,6 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
                   SVG (vetorial)
                 </button>
               </div>
-
-              {/* Unidade vinculada */}
-              {units.length > 0 && (
-                <div className={`rounded-xl border p-3 space-y-2 ${!qrData.unit_id ? 'border-amber-200 bg-amber-50' : 'border-black/10 bg-white'}`}>
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className={`w-3.5 h-3.5 ${!qrData.unit_id ? 'text-amber-500' : 'text-brand-600'}`} />
-                    <span className={`text-xs font-semibold ${!qrData.unit_id ? 'text-amber-800' : 'text-ekthos-black'}`}>
-                      {!qrData.unit_id ? '⚠️ Unidade não configurada' : 'Unidade vinculada'}
-                    </span>
-                  </div>
-                  {!qrData.unit_id && (
-                    <p className="text-xs text-amber-700">
-                      Visitantes deste QR ficarão sem unidade até você configurar abaixo.
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selUnit}
-                      onChange={e => { setSelUnit(e.target.value); setUnitSaved(false) }}
-                      className="flex-1 rounded-lg border border-black/10 bg-white px-2.5 py-1.5 text-xs text-ekthos-black focus:outline-none focus:ring-1 focus:ring-brand-500"
-                    >
-                      <option value="">— Selecionar unidade —</option>
-                      {units.map(u => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => unitMutation.mutate(selUnit)}
-                      disabled={unitMutation.isPending || !selUnit || selUnit === (qrData.unit_id ?? '')}
-                      className="shrink-0 px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs font-medium hover:bg-brand-700 transition-colors disabled:opacity-40"
-                    >
-                      {unitMutation.isPending ? <Spinner size="sm" /> : unitSaved ? '✓ Salvo' : 'Salvar'}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Stats */}
               {(qrData.scanned_count ?? 0) > 0 && (

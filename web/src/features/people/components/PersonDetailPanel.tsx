@@ -13,9 +13,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTags } from '@/features/people/hooks/useTags'
 import { TagBadgesCell } from './TagBadgesCell'
 import { PipelineStageSelector } from '@/features/pipeline/components/PipelineStageSelector'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import {
   usePersonVolunteers,
   useSetPersonVolunteer,
@@ -423,24 +422,6 @@ interface PersonDetailPanelProps {
 export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDetailPanelProps) {
   const { churchId, role } = useAuth()
   const { data: allTags = [] } = useTags(churchId ?? '')
-  const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
-  const queryClient = useQueryClient()
-  const [unitSaving, setUnitSaving] = useState(false)
-
-  const updateUnit = useMutation({
-    mutationFn: async (unitId: string | null) => {
-      if (!person) return
-      const { error } = await supabase
-        .from('people')
-        .update({ unit_id: unitId })
-        .eq('id', person.id)
-      if (error) throw error
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['people'] })
-      void queryClient.invalidateQueries({ queryKey: ['unit-counts-rpc'] })
-    },
-  })
 
   // Hooks de célula — TODOS antes de qualquer return (regra de hooks React)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -643,30 +624,6 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
 
           {/* 3. Dados Eclesiásticos */}
           <InfoCard title="Dados Eclesiásticos">
-            {churchUnits.length > 0 && (
-              <div className="flex items-center justify-between py-2 border-b border-cream-dark/30">
-                <span className="text-xs text-ekthos-black/40">Unidade</span>
-                <select
-                  value={(person as any).unit_id ?? ''}
-                  disabled={unitSaving}
-                  onChange={async (e) => {
-                    setUnitSaving(true)
-                    try { await updateUnit.mutateAsync(e.target.value || null) }
-                    finally { setUnitSaving(false) }
-                  }}
-                  className={`text-xs rounded-lg border px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-brand-600 ${
-                    !(person as any).unit_id
-                      ? 'border-amber-300 text-amber-700 font-medium'
-                      : 'border-black/10 text-ekthos-black'
-                  }`}
-                >
-                  <option value="">— Sem unidade definida —</option>
-                  {churchUnits.map(u => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             <Field
               label="Vínculo"
               value={RELATIONSHIP_LABELS[person.church_relationship ?? ''] ?? person.church_relationship}

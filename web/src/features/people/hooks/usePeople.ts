@@ -99,9 +99,7 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
           .order('birth_day', { ascending: true })
           .order('name_sort', { ascending: true })
       } else {
-        query = query
-          .order('created_at', { ascending: false })
-          .order('id', { ascending: false })
+        query = query.order('created_at', { ascending: false })
       }
 
       query = query.range(from, to)
