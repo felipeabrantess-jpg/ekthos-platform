@@ -47,7 +47,7 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   }
 }
 
-type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'lideres' | 'em-risco'
+type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'membros' | 'lideres' | 'em-risco'
 type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
 
 const STAGE_LABELS: Record<string, string> = {
@@ -79,6 +79,7 @@ const TABS: { id: PeopleTab; label: string }[] = [
   { id: 'aniversarios',  label: 'Aniversários'       },
   { id: 'novos',         label: 'Novos Visitantes'   },
   { id: 'convertidos',   label: 'Novos Convertidos'  },
+  { id: 'membros',       label: 'Membros'            },
   { id: 'lideres',       label: 'Líderes'            },
   { id: 'em-risco',      label: 'Em Risco'           },
 ]
@@ -604,7 +605,9 @@ export default function People() {
         total: number
         aniversarios: number
         novos_visitantes: number
+        novos_visitantes_30d: number
         novos_convertidos: number
+        membros: number
         lideres: number
         em_risco: number
       }
@@ -739,6 +742,32 @@ export default function People() {
     },
   })
 
+  // SA-2: query server-side para aba Membros (pipeline_stages.slug = 'membro')
+  const { data: membrosServerData } = useQuery({
+    queryKey: ['membros-server', churchId],
+    enabled: activeTab === 'membros' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline!inner (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages!inner ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
+          acolhimento_journey ( id, status, updated_at, started_at )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('person_pipeline.pipeline_stages.slug' as any, 'membro')
+        .order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
   // Query server-side dedicada para aba "Novos Convertidos" — evita filtragem client-side
   // sobre os 50 carregados da Visão Geral (pessoa convertida pode não estar na página 1).
   const { data: convertidosServerData } = useQuery({
@@ -839,6 +868,9 @@ export default function People() {
     if (activeTab === 'convertidos') {
       return convertidosServerData ?? []
     }
+    if (activeTab === 'membros') {
+      return membrosServerData ?? []
+    }
     if (activeTab === 'lideres') {
       return lideresServerData ?? []
     }
@@ -848,7 +880,7 @@ export default function People() {
     return tagFilter
       ? tabFiltered.filter(p => (p.person_tags ?? []).some(pt => pt.tag_id === tagFilter))
       : tabFiltered
-  }, [activeTab, dateFilter, novosServerData, convertidosServerData, lideresServerData, emRiscoServerData, tagFilter, tabFiltered])
+  }, [activeTab, dateFilter, novosServerData, convertidosServerData, membrosServerData, lideresServerData, emRiscoServerData, tagFilter, tabFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
@@ -860,6 +892,7 @@ export default function People() {
     aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
     novos:        { title: 'Nenhum novo visitante', description: 'Visitantes cadastrados nos últimos 30 dias aparecerão aqui.' },
     convertidos:  { title: 'Nenhum novo convertido', description: 'Pessoas com data de conversão nos últimos 30 dias aparecerão aqui.' },
+    membros:      { title: 'Nenhum membro cadastrado', description: 'Pessoas no stage Membro aparecerão aqui.' },
     lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
     'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
   }
@@ -904,19 +937,19 @@ export default function People() {
       <div className="flex gap-1 border-b border-border-default -mb-2 overflow-x-auto scrollbar-none pb-px">
         {TABS.map(tab => {
           // SA-1: contadores server-side via get_people_counts
+          // "novos" usa janela de 30d (não a base inteira de visitantes)
           const tabCount: number | null = (() => {
             if (!peopleCountsData || tab.id === 'geral') return null
             switch (tab.id) {
               case 'aniversarios': return peopleCountsData.aniversarios
-              case 'novos':        return peopleCountsData.novos_visitantes
+              case 'novos':        return peopleCountsData.novos_visitantes_30d ?? peopleCountsData.novos_visitantes
               case 'convertidos':  return peopleCountsData.novos_convertidos
+              case 'membros':      return peopleCountsData.membros
               case 'lideres':      return peopleCountsData.lideres
               case 'em-risco':     return peopleCountsData.em_risco
               default:             return null
             }
           })()
-          // Esconder tabs com 0 registros (exceto aba ativa e geral)
-          if (tabCount === 0 && tab.id !== activeTab && tab.id !== 'geral') return null
           return (
             <button
               key={tab.id}
@@ -929,7 +962,7 @@ export default function People() {
             >
               {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
               {tab.label}
-              {tabCount !== null && tabCount > 0 && (
+              {tabCount !== null && (
                 <span
                   className={`px-1.5 py-0.5 rounded-full font-semibold ${
                     activeTab === tab.id
