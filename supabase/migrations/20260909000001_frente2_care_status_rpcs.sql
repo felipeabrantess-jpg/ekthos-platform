@@ -1,6 +1,9 @@
 -- Frente 2: RPCs de status de atendimento (server-side, sem lista de IDs)
 -- Rollback: DROP FUNCTION IF EXISTS get_care_status_counts(uuid);
 --           DROP FUNCTION IF EXISTS get_people_page(uuid,text,text,text,text,text,date,date,int,int);
+--
+-- NOTA DE SCHEMA: journey_events.journey_id → person_journey (não acolhimento_journey)
+-- pastoral_contact events vivem em person_journey, não em acolhimento_journey.
 
 -- ── RPC 1: contadores por status de atendimento ──────────────────────────────
 CREATE OR REPLACE FUNCTION get_care_status_counts(p_church_id uuid)
@@ -20,12 +23,13 @@ BEGIN
   JOIN people p ON p.id = aj.person_id
   WHERE aj.church_id = p_church_id AND aj.status = 'pending' AND p.deleted_at IS NULL;
 
-  SELECT COUNT(DISTINCT aj.person_id) INTO v_atendida
+  SELECT COUNT(DISTINCT pj.person_id) INTO v_atendida
   FROM journey_events je
-  JOIN acolhimento_journey aj ON aj.id = je.journey_id
-  JOIN people p ON p.id = aj.person_id
-  WHERE aj.church_id = p_church_id AND je.church_id = p_church_id
-    AND je.event_type = 'pastoral_contact' AND p.deleted_at IS NULL;
+  JOIN person_journey pj ON pj.id = je.journey_id
+  JOIN people p ON p.id = pj.person_id
+  WHERE pj.church_id = p_church_id
+    AND je.event_type = 'pastoral_contact'
+    AND p.deleted_at IS NULL;
 
   SELECT COUNT(*) INTO v_nao_atendida
   FROM people p
@@ -38,8 +42,8 @@ BEGIN
     AND p.created_at <= NOW() - INTERVAL '48 hours'
     AND NOT EXISTS (
       SELECT 1 FROM journey_events je
-      JOIN acolhimento_journey aj ON aj.id = je.journey_id
-      WHERE aj.person_id = p.id AND aj.church_id = p_church_id AND je.event_type = 'pastoral_contact');
+      JOIN person_journey pj ON pj.id = je.journey_id
+      WHERE pj.person_id = p.id AND pj.church_id = p_church_id AND je.event_type = 'pastoral_contact');
 
   RETURN jsonb_build_object(
     'nao_atendida',    v_nao_atendida,
@@ -99,14 +103,14 @@ BEGIN
               WHERE aj.person_id = p.id AND aj.church_id = p_church_id AND aj.status = 'pending'))
         OR (p_care_status = 'atendida' AND EXISTS (
               SELECT 1 FROM journey_events je
-              JOIN acolhimento_journey aj ON aj.id = je.journey_id
-              WHERE aj.person_id = p.id AND aj.church_id = p_church_id AND je.event_type = 'pastoral_contact'))
+              JOIN person_journey pj ON pj.id = je.journey_id
+              WHERE pj.person_id = p.id AND pj.church_id = p_church_id AND je.event_type = 'pastoral_contact'))
         OR (p_care_status = 'sem_contato_48h'
               AND p.created_at <= NOW() - INTERVAL '48 hours'
               AND NOT EXISTS (
                 SELECT 1 FROM journey_events je
-                JOIN acolhimento_journey aj ON aj.id = je.journey_id
-                WHERE aj.person_id = p.id AND aj.church_id = p_church_id AND je.event_type = 'pastoral_contact'))
+                JOIN person_journey pj ON pj.id = je.journey_id
+                WHERE pj.person_id = p.id AND pj.church_id = p_church_id AND je.event_type = 'pastoral_contact'))
       )
     ORDER BY p.name_sort ASC
   ),
