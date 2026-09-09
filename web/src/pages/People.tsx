@@ -591,6 +591,26 @@ export default function People() {
     careStatus: careFilter || undefined,
   })
 
+  // SA-1: contadores de abas via RPC (server-side, zero applyTabFilter)
+  const { data: peopleCountsData } = useQuery({
+    queryKey: ['people-counts-rpc', churchId],
+    enabled:  !!churchId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_people_counts', { p_church_id: churchId })
+      if (error) throw error
+      return data as {
+        total: number
+        aniversarios: number
+        novos_visitantes: number
+        novos_convertidos: number
+        lideres: number
+        em_risco: number
+      }
+    },
+  })
+
   // Contadores por unidade via RPC (evita teto de 1.000 linhas do PostgREST)
   const { data: unitCountRows = [] } = useQuery({
     queryKey: ['unit-counts-rpc', churchId],
@@ -662,6 +682,58 @@ export default function People() {
       }
 
       const { data, error } = await q
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
+  // SA-2: query server-side para aba Líderes (pipeline_stages.slug = 'lider')
+  const { data: lideresServerData } = useQuery({
+    queryKey: ['lideres-server', churchId],
+    enabled: activeTab === 'lideres' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline!inner (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages!inner ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
+          acolhimento_journey ( id, status, updated_at, started_at )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('person_pipeline.pipeline_stages.slug' as any, 'lider')
+        .order('created_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as PersonWithStage[]
+    },
+  })
+
+  // SA-2: query server-side para aba Em Risco (pipeline_stages.slug = 'frequentador')
+  const { data: emRiscoServerData } = useQuery({
+    queryKey: ['em-risco-server', churchId],
+    enabled: activeTab === 'em-risco' && Boolean(churchId),
+    queryFn: async (): Promise<PersonWithStage[]> => {
+      const { data, error } = await supabase
+        .from('people')
+        .select(`
+          *,
+          person_pipeline!inner (
+            stage_id, last_activity_at, entered_at,
+            pipeline_stages!inner ( id, name, slug, order_index, color )
+          ),
+          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
+          acolhimento_journey ( id, status, updated_at, started_at )
+        `)
+        .eq('church_id', churchId!)
+        .is('deleted_at', null)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .eq('person_pipeline.pipeline_stages.slug' as any, 'frequentador')
+        .order('created_at', { ascending: false })
       if (error) throw new Error(error.message)
       return (data ?? []) as unknown as PersonWithStage[]
     },
@@ -767,10 +839,16 @@ export default function People() {
     if (activeTab === 'convertidos') {
       return convertidosServerData ?? []
     }
+    if (activeTab === 'lideres') {
+      return lideresServerData ?? []
+    }
+    if (activeTab === 'em-risco') {
+      return emRiscoServerData ?? []
+    }
     return tagFilter
       ? tabFiltered.filter(p => (p.person_tags ?? []).some(pt => pt.tag_id === tagFilter))
       : tabFiltered
-  }, [activeTab, dateFilter, novosServerData, convertidosServerData, tagFilter, tabFiltered])
+  }, [activeTab, dateFilter, novosServerData, convertidosServerData, lideresServerData, emRiscoServerData, tagFilter, tabFiltered])
 
   // A1: paginação só na tab geral
   const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
@@ -824,32 +902,48 @@ export default function People() {
 
       {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
       <div className="flex gap-1 border-b border-border-default -mb-2 overflow-x-auto scrollbar-none pb-px">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-primary text-primary-text'
-                : 'border-transparent text-text-secondary active:text-text-primary'
-            }`}
-          >
-            {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
-            {tab.label}
-            {people && tab.id !== 'geral' && (
-              <span
-                className={`px-1.5 py-0.5 rounded-full font-semibold ${
-                  activeTab === tab.id
-                    ? 'bg-bg-hover text-primary-text'
-                    : 'bg-bg-hover text-text-tertiary'
-                }`}
-                style={{ fontSize: '10px' }}
-              >
-                {applyTabFilter(tab.id, allPeople).length}
-              </span>
-            )}
-          </button>
-        ))}
+        {TABS.map(tab => {
+          // SA-1: contadores server-side via get_people_counts
+          const tabCount: number | null = (() => {
+            if (!peopleCountsData || tab.id === 'geral') return null
+            switch (tab.id) {
+              case 'aniversarios': return peopleCountsData.aniversarios
+              case 'novos':        return peopleCountsData.novos_visitantes
+              case 'convertidos':  return peopleCountsData.novos_convertidos
+              case 'lideres':      return peopleCountsData.lideres
+              case 'em-risco':     return peopleCountsData.em_risco
+              default:             return null
+            }
+          })()
+          // Esconder tabs com 0 registros (exceto aba ativa e geral)
+          if (tabCount === 0 && tab.id !== activeTab && tab.id !== 'geral') return null
+          return (
+            <button
+              key={tab.id}
+              onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'border-primary text-primary-text'
+                  : 'border-transparent text-text-secondary active:text-text-primary'
+              }`}
+            >
+              {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
+              {tab.label}
+              {tabCount !== null && tabCount > 0 && (
+                <span
+                  className={`px-1.5 py-0.5 rounded-full font-semibold ${
+                    activeTab === tab.id
+                      ? 'bg-bg-hover text-primary-text'
+                      : 'bg-bg-hover text-text-tertiary'
+                  }`}
+                  style={{ fontSize: '10px' }}
+                >
+                  {tabCount}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Filtro de período — só na aba novos visitantes */}
