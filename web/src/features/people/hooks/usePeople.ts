@@ -38,14 +38,12 @@ interface PeopleFilters {
    * Nenhuma lista de ID trafega do cliente para o servidor.
    */
   careStatus?: 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
-  /**
-   * Data de corte de unidade (churches.unit_cutoff_date). Pessoas com created_at
-   * anterior são tratadas como sem unidade no filtro unitId. null = sem corte.
-   */
-  unitCutoff?: string | null
 }
 
-// Lista pessoas com stage atual
+/**
+ * @deprecated Em /pessoas use `usePeoplePage` (fonte canônica, lista + contador na mesma
+ * RPC). Mantido apenas para consumidores simples (ex.: seletor em Financeiro).
+ */
 export function usePeople(churchId: string, filters: PeopleFilters = {}) {
   return useQuery({
     queryKey: ['people', churchId, filters],
@@ -133,17 +131,12 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         query = (query as any).eq('celula_id', filters.celulaId)
       }
 
-      const cutoffTs = filters.unitCutoff ? `${filters.unitCutoff}T00:00:00.000Z` : null
       if (filters.unitId === 'none') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        query = cutoffTs
-          ? (query as any).or(`unit_id.is.null,created_at.lt.${cutoffTs}`)
-          : (query as any).is('unit_id', null)
+        query = (query as any).is('unit_id', null)
       } else if (filters.unitId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query = (query as any).eq('unit_id', filters.unitId)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (cutoffTs) query = (query as any).gte('created_at', cutoffTs)
       }
 
       if (filters.personStage) {
@@ -257,6 +250,8 @@ export function useCreatePerson() {
     onSuccess: (data) => {
       if (!data) return
       void queryClient.invalidateQueries({ queryKey: ['people', data.church_id], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ['people-page', data.church_id], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', data.church_id], exact: false })
       void queryClient.invalidateQueries({ queryKey: ['people-count', data.church_id], exact: false })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', data.church_id], exact: false })
     },
@@ -288,6 +283,8 @@ export function useUpdatePerson() {
     onSuccess: (data) => {
       if (!data) return
       void queryClient.invalidateQueries({ queryKey: ['people', data.church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['people-page', data.church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', data.church_id] })
     },
   })
 }
@@ -313,6 +310,8 @@ export function useDeletePerson() {
     },
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['people-page', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['people-count', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', churchId] })
     },

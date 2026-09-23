@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { UNIT_ALL, unitScopeToRpcParam, type UnitScope } from '@/lib/filters/unitScope'
 
 export interface AcolhimentoStatusCounts {
   naoAtendida:   number
@@ -8,16 +9,17 @@ export interface AcolhimentoStatusCounts {
   semContato48h: number
 }
 
-/** Busca contadores de atendimento via RPC server-side. Sem lista de IDs. */
-export function useAcolhimentoStatus(churchId: string) {
+/** Contadores de atendimento via RPC server-side, no mesmo escopo de unidade da lista. */
+export function useAcolhimentoStatus(churchId: string, unit: UnitScope = UNIT_ALL) {
   return useQuery({
-    queryKey: ['acolhimento-status-counts', churchId],
+    queryKey: ['acolhimento-status-counts', churchId, unit],
     enabled: Boolean(churchId),
     staleTime: 60_000,
     queryFn: async (): Promise<AcolhimentoStatusCounts> => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.rpc as any)('get_care_status_counts', {
         p_church_id: churchId,
+        p_unit_id:   unitScopeToRpcParam(unit),
       })
       if (error) throw new Error(error.message)
       const d = (data ?? {}) as Record<string, number>

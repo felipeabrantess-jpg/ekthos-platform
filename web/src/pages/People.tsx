@@ -15,10 +15,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone, Heart, Download } from 'lucide-react'
 import ModalPortal from '@/components/ui/ModalPortal'
-import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
+import { useDeletePerson } from '@/features/people/hooks/usePeople'
+import {
+  usePeoplePage, usePeopleStageCounts, fetchPeoplePage, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE,
+  type PeoplePageFilters,
+} from '@/features/people/hooks/usePeoplePage'
+import { useUnit } from '@/contexts/UnitContext'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
-import { useChurchUnits, useUnitCutoff } from '@/features/people/hooks/useChurchUnits'
 import { useAcolhimentoStatus, getCareStatusBadge } from '@/features/people/hooks/useAcolhimentoStatus'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
@@ -47,44 +51,17 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
   }
 }
 
-type PeopleTab = 'geral' | 'aniversarios' | 'novos' | 'convertidos' | 'membros' | 'lideres' | 'em-risco'
+/** 'geral' | 'aniversarios' | 'stage:<pipeline_stages.stage_key>' (fonte canônica) */
+type PeopleTab = 'geral' | 'aniversarios' | `stage:${string}`
 type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
 
-const STAGE_LABELS: Record<string, string> = {
-  visitante:    'Visitante',
-  contato:      'Contato',
-  frequentador: 'Frequentador',
-  consolidado:  'Consolidado',
-  discipulo:    'Discípulo',
-  lider:        'Líder',
-}
-
-const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
-  visitante:    { bg: '#dbeafe', color: '#1e40af' },
-  contato:      { bg: '#ede9fe', color: '#5b21b6' },
-  frequentador: { bg: '#d1fae5', color: '#065f46' },
-  consolidado:  { bg: '#fef3c7', color: '#92400e' },
-  discipulo:    { bg: '#fee2e2', color: '#991b1b' },
-  lider:        { bg: '#f0fdf4', color: '#14532d' },
-}
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function displayName(name: string | null | undefined, phone: string | null | undefined): string {
   if (name) return name
   if (phone) return `Visitante · ${formatPhone(phone)}`
   return 'Visitante sem nome'
 }
-
-const TABS: { id: PeopleTab; label: string }[] = [
-  { id: 'geral',         label: 'Visão geral'        },
-  { id: 'aniversarios',  label: 'Aniversários'       },
-  { id: 'novos',         label: 'Novos Visitantes'   },
-  { id: 'convertidos',   label: 'Novos Convertidos'  },
-  { id: 'membros',       label: 'Membros'            },
-  { id: 'lideres',       label: 'Líderes'            },
-  { id: 'em-risco',      label: 'Em Risco'           },
-]
-
-// ── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatPhone(phone: string | null) {
   if (!phone) return '—'
@@ -96,40 +73,6 @@ function formatDate(date: string | null) {
   return new Intl.DateTimeFormat('pt-BR').format(new Date(date))
 }
 
-/** Obtém o slug do stage de uma pessoa (considera apenas o primeiro da fila) */
-function getStageSlug(person: PersonWithStage): string | null {
-  return person.person_pipeline?.[0]?.pipeline_stages?.slug ?? null
-}
-
-/** Filtra pessoas pelo stage slug */
-function filterByStage(people: PersonWithStage[], slugs: string[]): PersonWithStage[] {
-  return people.filter(p => {
-    const s = getStageSlug(p)
-    return s !== null && slugs.includes(s)
-  })
-}
-
-/** Filtra aniversariantes do mês atual via campo birth_date */
-function filterBirthdayThisMonth(people: PersonWithStage[]): PersonWithStage[] {
-  const now = new Date()
-  return people.filter(p => {
-    const bday = p.birth_date
-    if (!bday) return false
-    const d = new Date(bday + 'T00:00:00')
-    return d.getMonth() === now.getMonth()
-  })
-}
-
-function applyTabFilter(tab: PeopleTab, people: PersonWithStage[]): PersonWithStage[] {
-  switch (tab) {
-    case 'aniversarios': return filterBirthdayThisMonth(people)
-    case 'novos':        return people.filter(p => p.person_stage === 'visitante')
-    case 'convertidos':  return people.filter(p => Boolean(p.conversion_date))
-    case 'lideres':      return filterByStage(people, ['lider'])
-    case 'em-risco':     return filterByStage(people, ['frequentador'])
-    default:             return people
-  }
-}
 
 // ── ConfirmDeleteModal (A2 — substitui window.confirm) ───────────────────────
 
@@ -558,68 +501,131 @@ function BirthdayContactCard({ person, contact, churchId, monthRef, onNameClick 
 
 // ── Componente principal ─────────────────────────────────────────────────────
 
+/** Aliases de URL antigos (?tab=convertidos etc.) → stage_key canônico */
+const LEGACY_TAB_ALIASES: Record<string, string> = {
+  novos:       'visitante',
+  convertidos: 'novo_convertido',
+  membros:     'membro',
+  lideres:     'lider',
+}
+
+function tabToStageKey(tab: PeopleTab): string | undefined {
+  return tab.startsWith('stage:') ? tab.slice('stage:'.length) : undefined
+}
+
 export default function People() {
   const { churchId } = useAuth()
-  const navigate                            = useNavigate()
-  const [searchParams, setSearchParams]     = useSearchParams()
-  const tabParam                            = searchParams.get('tab') as PeopleTab | null
-  const queryClient                         = useQueryClient()
-  const [activeTab, setActiveTab]           = useState<PeopleTab>(
-    tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'geral'
-  )
-  const [search, setSearch]         = useState('')
-  const [tagFilter, setTagFilter]   = useState<string>('')     // tag id ou '' = todos
-  const [tagDropOpen, setTagDropOpen] = useState(false)
-  const [unitFilter, setUnitFilter] = useState<string>('')     // unit id | 'none' | ''
-  // R11: filtro de origem (source)
-  const [sourceFilter, setSourceFilter] = useState<string>('')  // '' | 'qr_code' | 'manual' | 'import_xlsx'
-  const [careFilter, setCareFilter] = useState<CareFilter>('')
-  const [currentPage, setCurrentPage] = useState(0)           // A1: paginação
-  const [modalOpen, setModalOpen]   = useState(false)
-  const [qrModalOpen, setQrModalOpen] = useState(false)
-  const [importModalOpen, setImportModalOpen] = useState(false)
-  const [editingPerson, setEditingPerson]   = useState<Person | null>(null)
-  const [deletingId, setDeletingId]         = useState<string | null>(null)
-  const [personToDelete, setPersonToDelete] = useState<Person | null>(null) // A2: modal
-  const [deleteError, setDeleteError]       = useState<string | null>(null)
-  const [selectedPerson, setSelectedPerson] = useState<PersonWithStage | null>(null)
+  const { selectedUnit, units: churchUnits, isLoading: unitLoading } = useUnit()
+  const navigate                        = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryClient                     = useQueryClient()
+
+  // ── Aba: 'geral' | 'aniversarios' | 'stage:<stage_key>' (URL ?tab=) ─────
+  const rawTab = searchParams.get('tab')
+  const initialTab: PeopleTab = (() => {
+    if (!rawTab || rawTab === 'geral') return 'geral'
+    if (rawTab === 'aniversarios') return 'aniversarios'
+    const key = LEGACY_TAB_ALIASES[rawTab] ?? rawTab.replace(/^stage:/, '')
+    return `stage:${key}`
+  })()
+  const [activeTab, setActiveTabState] = useState<PeopleTab>(initialTab)
+  const activeStageKey = tabToStageKey(activeTab)
+  const isBirthdayTab  = activeTab === 'aniversarios'
+  const isGeralTab     = activeTab === 'geral'
+
+  function setActiveTab(tab: PeopleTab) {
+    setActiveTabState(tab)
+    setSearch('')
+    setCurrentPage(0)
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      const key = tabToStageKey(tab)
+      next.set('tab', key ?? tab)
+      return next
+    }, { replace: true })
+  }
+
+  // ── Filtros cumulativos (todos server-side) ──────────────────────────────
+  const [search, setSearch]             = useState('')
+  const [tagFilter, setTagFilter]       = useState<string>('')
+  const [tagDropOpen, setTagDropOpen]   = useState(false)
+  const [sourceFilter, setSourceFilter] = useState<string>('')
+  const [careFilter, setCareFilter]     = useState<CareFilter>('')
+  const [createdFrom, setCreatedFrom]   = useState('')
+  const [createdTo, setCreatedTo]       = useState('')
+  const [currentPage, setCurrentPage]   = useState(0)
+
   type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
   const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
   const periodoParam = searchParams.get('periodo') as DateFilter | null
   const [dateFilter, setDateFilter] = useState<DateFilter>(
     periodoParam && validPeriodos.includes(periodoParam) ? periodoParam :
-    // Aba novos sem ?periodo=X abre com 30 dias (evita mostrar 5.824 visitantes sem filtro)
-    tabParam === 'novos' ? '30' : 'all'
+    activeStageKey === 'visitante' ? '30' : 'all'
   )
-  const [customFrom, setCustomFrom] = useState('')
-  const [customTo,   setCustomTo]   = useState('')
+  // Período (só etapa visitante): converte em intervalo de cadastro
+  const periodRange = useMemo(() => {
+    if (activeStageKey !== 'visitante' || dateFilter === 'all') return { from: '', to: '' }
+    if (dateFilter === 'custom') return { from: createdFrom, to: createdTo }
+    const d = new Date(Date.now() - parseInt(dateFilter, 10) * 24 * 60 * 60 * 1000)
+    return { from: d.toISOString().split('T')[0], to: '' }
+  }, [activeStageKey, dateFilter, createdFrom, createdTo])
 
-  // A1: tabs filtradas carregam tudo (client-side); geral pagina no servidor
-  // Aniversários: filtro no servidor via birth_month (coluna gerada) — retorna todos do mês
-  const isFilteredTab  = activeTab !== 'geral'
-  const isBirthdayTab  = activeTab === 'aniversarios'
-  const now            = new Date()
-  const currentMonth   = now.getMonth() + 1  // 1-12
-  const monthRef       = `${now.getFullYear()}-${String(currentMonth).padStart(2, '0')}`
-  // Corte de unidade: cadastros anteriores contam como "sem unidade" (mesma regra dos RPCs)
-  const { data: unitCutoff = null, isLoading: cutoffLoading } = useUnitCutoff(churchId ?? '')
-  const { data: people, isLoading: peopleLoading, isError, refetch } = usePeople(
-    cutoffLoading ? '' : (churchId ?? ''),
-    {
-      search,
-      page:       isFilteredTab ? 0 : currentPage,
-      pageSize:   isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
-      unitId:     unitFilter || undefined,
-      unitCutoff,
-      birthMonth: isBirthdayTab ? currentMonth : undefined,
-      source:     sourceFilter || undefined,
-      careStatus: careFilter || undefined,
-    },
-  )
-  const isLoading = cutoffLoading || peopleLoading
+  // ── Modais / seleção ─────────────────────────────────────────────────────
+  const [modalOpen, setModalOpen]             = useState(false)
+  const [qrModalOpen, setQrModalOpen]         = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
+  const [editingPerson, setEditingPerson]     = useState<Person | null>(null)
+  const [deletingId, setDeletingId]           = useState<string | null>(null)
+  const [personToDelete, setPersonToDelete]   = useState<Person | null>(null)
+  const [deleteError, setDeleteError]         = useState<string | null>(null)
+  const [selectedPerson, setSelectedPerson]   = useState<PersonWithStage | null>(null)
 
-  // Nº de contatos pastorais por pessoa (só ids da página atual)
-  const visibleIds = useMemo(() => (people ?? []).map(p => p.id), [people])
+  const now          = new Date()
+  const currentMonth = now.getMonth() + 1
+  const monthRef     = `${now.getFullYear()}-${String(currentMonth).padStart(2, '0')}`
+
+  // ── ÚNICA query de lista + contador ──────────────────────────────────────
+  const pageFilters: PeoplePageFilters = {
+    unit:        selectedUnit,
+    stageKey:    activeStageKey,
+    careStatus:  careFilter || undefined,
+    source:      sourceFilter || undefined,
+    tagId:       tagFilter || undefined,
+    search:      search || undefined,
+    birthMonth:  isBirthdayTab ? currentMonth : undefined,
+    createdFrom: (activeStageKey === 'visitante' ? periodRange.from : createdFrom) || undefined,
+    createdTo:   (activeStageKey === 'visitante' ? periodRange.to   : createdTo)   || undefined,
+    page:        currentPage,
+    pageSize:    isBirthdayTab ? 500 : PEOPLE_PAGE_SIZE,
+  }
+  const { data: pageData, isLoading: pageLoading, isError, refetch } =
+    usePeoplePage(churchId ?? '', pageFilters, !unitLoading)
+  const isLoading = unitLoading || pageLoading
+  const items = useMemo(() => (pageData?.items ?? []).filter(p => !deletingId || p.id !== deletingId), [pageData, deletingId])
+  const total = pageData?.total ?? 0
+
+  // Badges das abas — mesmos predicados (unidade, deleted, left_at) da lista
+  const { data: stageCounts } = usePeopleStageCounts(churchId ?? '', selectedUnit)
+  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '', selectedUnit)
+  const { data: allTags = [] } = useTags(churchId ?? '')
+  const deletePerson = useDeletePerson()
+
+  const tabs = useMemo(() => {
+    const list: { id: PeopleTab; label: string; count: number | null }[] = [
+      { id: 'geral',        label: 'Visão geral',  count: stageCounts?.total ?? null },
+      { id: 'aniversarios', label: 'Aniversários', count: stageCounts?.aniversarios ?? null },
+    ]
+    for (const s of stageCounts?.stages ?? []) {
+      if (!s.stage_key) continue
+      list.push({ id: `stage:${s.stage_key}`, label: s.name, count: s.cnt })
+    }
+    list.push({ id: `stage:${STAGE_KEY_NONE}`, label: 'Sem etapa', count: stageCounts?.sem_etapa ?? null })
+    return list
+  }, [stageCounts])
+  const activeTabLabel = tabs.find(t => t.id === activeTab)?.label ?? 'Pessoas'
+
+  // Nº de contatos pastorais por pessoa (ids da página atual)
+  const visibleIds = useMemo(() => items.map(p => p.id), [items])
   const { data: contactCounts } = useQuery({
     queryKey: ['contact-counts', churchId, visibleIds],
     enabled:  !!churchId && visibleIds.length > 0,
@@ -636,244 +642,30 @@ export default function People() {
     },
   })
 
-  // SA-1: contadores de abas via RPC (server-side, zero applyTabFilter)
-  const { data: peopleCountsData } = useQuery({
-    queryKey: ['people-counts-rpc', churchId],
-    enabled:  !!churchId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('get_people_counts', { p_church_id: churchId })
-      if (error) throw error
-      return data as {
-        total: number
-        aniversarios: number
-        novos_visitantes: number
-        novos_visitantes_30d: number
-        novos_convertidos: number
-        membros: number
-        lideres: number
-        em_risco: number
-      }
-    },
-  })
+  // Contatos de aniversário do mês — só na aba Aniversários
+  const { data: contactsData = [] } = useBirthdayContacts(isBirthdayTab ? (churchId ?? '') : '', monthRef)
+  const contactByPerson = useMemo(() => new Map(contactsData.map((c) => [c.person_id, c])), [contactsData])
+  const contactedInList = useMemo(() => items.filter(p => contactByPerson.has(p.id)).length, [items, contactByPerson])
 
-  // Contadores por unidade via RPC (evita teto de 1.000 linhas do PostgREST)
-  const { data: unitCountRows = [] } = useQuery({
-    queryKey: ['unit-counts-rpc', churchId],
-    enabled:  !!churchId,
-    staleTime: 60_000,
-    queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('get_unit_counts', { p_church_id: churchId })
-      if (error) throw error
-      return (data ?? []) as Array<{ unit_id: string | null; person_stage: string | null; cnt: number }>
-    },
-  })
-
-  // Query server-side dedicada para aba novos com filtro de período
-  // Roda a mesma lógica que o dashboard usa para contar visitantesSemana
-  const novosDateCutoff = useMemo(() => {
-    if (dateFilter === 'all' || dateFilter === 'custom') return null
-    const d = new Date(Date.now() - parseInt(dateFilter, 10) * 24 * 60 * 60 * 1000)
-    return d.toISOString().split('T')[0]
-  }, [dateFilter])
-
-  const { data: novosServerData } = useQuery({
-    queryKey: ['novos-visitantes-periodo', churchId, dateFilter, customFrom, customTo],
-    enabled: activeTab === 'novos' && dateFilter !== 'all' && Boolean(churchId),
-    queryFn: async (): Promise<PersonWithStage[]> => {
-      let q = supabase
-        .from('people')
-        .select(`
-          *,
-          person_pipeline (
-            stage_id, last_activity_at, entered_at,
-            pipeline_stages ( id, name, slug, order_index, color )
-          ),
-          person_tags ( tag_id, tags ( id, name, color, sort_order ) )
-        `)
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        .eq('person_stage', 'visitante')
-        .order('created_at', { ascending: false })
-
-      if (dateFilter === 'custom') {
-        // Modo personalizado: usa first_visit_date com fallback para created_at
-        const from = customFrom || null
-        const to   = customTo   || null
-        if (from && to) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          q = (q as any).or(
-            `first_visit_date.gte.${from},and(first_visit_date.is.null,created_at.gte.${from}T00:00:00)`
-          ).or(
-            `first_visit_date.lte.${to},and(first_visit_date.is.null,created_at.lte.${to}T23:59:59)`
-          )
-        } else if (from) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          q = (q as any).or(
-            `first_visit_date.gte.${from},and(first_visit_date.is.null,created_at.gte.${from}T00:00:00)`
-          )
-        } else if (to) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          q = (q as any).or(
-            `first_visit_date.lte.${to},and(first_visit_date.is.null,created_at.lte.${to}T23:59:59)`
-          )
-        }
-      } else {
-        // Períodos fixos (7/15/30 dias): first_visit_date OU created_at dentro do período
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        q = (q as any).or(
-          `first_visit_date.gte.${novosDateCutoff},and(first_visit_date.is.null,created_at.gte.${novosDateCutoff}T00:00:00)`
-        )
-      }
-
-      const { data, error } = await q
-      if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as PersonWithStage[]
-    },
-  })
-
-  // SA-2: query server-side para aba Líderes (pipeline_stages.slug = 'lider')
-  const { data: lideresServerData } = useQuery({
-    queryKey: ['lideres-server', churchId],
-    enabled: activeTab === 'lideres' && Boolean(churchId),
-    queryFn: async (): Promise<PersonWithStage[]> => {
-      const { data, error } = await supabase
-        .from('people')
-        .select(`
-          *,
-          person_pipeline!inner (
-            stage_id, last_activity_at, entered_at,
-            pipeline_stages!inner ( id, name, slug, order_index, color )
-          ),
-          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
-          acolhimento_journey ( id, status, updated_at, started_at )
-        `)
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq('person_pipeline.pipeline_stages.slug' as any, 'lider')
-        .order('created_at', { ascending: false })
-      if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as PersonWithStage[]
-    },
-  })
-
-  // SA-2: query server-side para aba Em Risco (pipeline_stages.slug = 'frequentador')
-  const { data: emRiscoServerData } = useQuery({
-    queryKey: ['em-risco-server', churchId],
-    enabled: activeTab === 'em-risco' && Boolean(churchId),
-    queryFn: async (): Promise<PersonWithStage[]> => {
-      const { data, error } = await supabase
-        .from('people')
-        .select(`
-          *,
-          person_pipeline!inner (
-            stage_id, last_activity_at, entered_at,
-            pipeline_stages!inner ( id, name, slug, order_index, color )
-          ),
-          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
-          acolhimento_journey ( id, status, updated_at, started_at )
-        `)
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq('person_pipeline.pipeline_stages.slug' as any, 'frequentador')
-        .order('created_at', { ascending: false })
-      if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as PersonWithStage[]
-    },
-  })
-
-  // SA-2: query server-side para aba Membros (pipeline_stages.slug = 'membro')
-  const { data: membrosServerData } = useQuery({
-    queryKey: ['membros-server', churchId],
-    enabled: activeTab === 'membros' && Boolean(churchId),
-    queryFn: async (): Promise<PersonWithStage[]> => {
-      const { data, error } = await supabase
-        .from('people')
-        .select(`
-          *,
-          person_pipeline!inner (
-            stage_id, last_activity_at, entered_at,
-            pipeline_stages!inner ( id, name, slug, order_index, color )
-          ),
-          person_tags ( tag_id, tags ( id, name, color, sort_order ) ),
-          acolhimento_journey ( id, status, updated_at, started_at )
-        `)
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq('person_pipeline.pipeline_stages.slug' as any, 'membro')
-        .order('created_at', { ascending: false })
-      if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as PersonWithStage[]
-    },
-  })
-
-  // Query server-side dedicada para aba "Novos Convertidos" — evita filtragem client-side
-  // sobre os 50 carregados da Visão Geral (pessoa convertida pode não estar na página 1).
-  const { data: convertidosServerData } = useQuery({
-    queryKey: ['novos-convertidos', churchId],
-    enabled: activeTab === 'convertidos' && Boolean(churchId),
-    queryFn: async (): Promise<PersonWithStage[]> => {
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const cutoff = thirtyDaysAgo.toISOString().split('T')[0]
-      const { data, error } = await supabase
-        .from('people')
-        .select(`
-          *,
-          person_pipeline (
-            stage_id, last_activity_at, entered_at,
-            pipeline_stages ( id, name, slug, order_index, color )
-          ),
-          person_tags ( tag_id, tags ( id, name, color, sort_order ) )
-        `)
-        .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        .not('conversion_date', 'is', null)
-        .gte('conversion_date', cutoff)
-        .order('conversion_date', { ascending: false })
-      if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as PersonWithStage[]
-    },
-  })
-
-  const { data: totalCount } = usePeopleCount(churchId ?? '')
-  const { data: allTags = [] } = useTags(churchId ?? '')
-  const { data: churchUnits = [] } = useChurchUnits(churchId ?? '')
-
-
-  // R2/R5: status de atendimento (ids pré-buscados)
-  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '')
-  const deletePerson = useDeletePerson()
-  // Contatos de aniversário do mês — só carrega quando na aba Aniversários
-  const { data: contactsData = [] } = useBirthdayContacts(
-    isBirthdayTab ? (churchId ?? '') : '',
-    monthRef,
-  )
-  const contactByPerson = useMemo(
-    () => new Map(contactsData.map((c) => [c.person_id, c])),
-    [contactsData],
-  )
-
-  // Abre painel de detalhe diretamente quando URL tem ?person=UUID
-  // Usado pela notificação in-app que navega para /pessoas?person=<id>
+  // Abre painel de detalhe quando URL tem ?person=UUID (notificação in-app)
   useEffect(() => {
     const personParam = searchParams.get('person')
-    if (!personParam || !people) return
-    const found = people.find(p => p.id === personParam)
+    if (!personParam || items.length === 0) return
+    const found = items.find(p => p.id === personParam)
     if (found) {
       setSelectedPerson(found)
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev)
-        next.delete('person')
-        return next
-      }, { replace: true })
+      setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('person'); return next }, { replace: true })
     }
-  }, [searchParams, people, setSearchParams])
+  }, [searchParams, items, setSearchParams])
+
+  // Troca de unidade global → volta à primeira página
+  useEffect(() => { setCurrentPage(0) }, [selectedUnit])
+
+  function invalidatePeople() {
+    void queryClient.invalidateQueries({ queryKey: ['people-page', churchId] })
+    void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', churchId] })
+    void queryClient.invalidateQueries({ queryKey: ['acolhimento-status-counts', churchId] })
+  }
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -881,9 +673,7 @@ export default function People() {
   function handleEdit(person: Person)           { setEditingPerson(person); setModalOpen(true) }
   function handleNewPerson()                    { setEditingPerson(null); setModalOpen(true) }
   function handleAtend(person: PersonWithStage) { navigate(`/pessoas/${person.id}/atendimento`) }
-
-  // A2: abre modal em vez de window.confirm
-  function handleDelete(person: Person) { setPersonToDelete(person); setDeleteError(null) }
+  function handleDelete(person: Person)         { setPersonToDelete(person); setDeleteError(null) }
 
   async function confirmDelete() {
     if (!personToDelete) return
@@ -891,7 +681,8 @@ export default function People() {
     setDeleteError(null)
     try {
       await deletePerson.mutateAsync({ id: personToDelete.id, churchId: churchId! })
-      setPersonToDelete(null) // fecha modal SOMENTE em caso de sucesso
+      setPersonToDelete(null)
+      invalidatePeople()
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Erro ao excluir. Tente novamente.')
     } finally {
@@ -899,47 +690,33 @@ export default function People() {
     }
   }
 
-  const allPeople = (people ?? []).filter((p) => !deletingId || p.id !== deletingId)
-  const tabFiltered = applyTabFilter(activeTab, allPeople)
-  // Para aba novos com período ativo: usa dados do servidor (query dedicada)
-  // Para aba novos sem período (all): usa tagFiltered (query principal)
-  // Para aba convertidos: sempre usa query server-side (não depende dos 50 da paginação geral)
-  // Para todas as outras abas: usa tagFiltered com filtro de tag client-side
-  const filteredPeople = useMemo(() => {
-    if (activeTab === 'novos' && dateFilter !== 'all') {
-      return novosServerData ?? []
-    }
-    if (activeTab === 'convertidos') {
-      return convertidosServerData ?? []
-    }
-    if (activeTab === 'membros') {
-      return membrosServerData ?? []
-    }
-    if (activeTab === 'lideres') {
-      return lideresServerData ?? []
-    }
-    if (activeTab === 'em-risco') {
-      return emRiscoServerData ?? []
-    }
-    return tagFilter
-      ? tabFiltered.filter(p => (p.person_tags ?? []).some(pt => pt.tag_id === tagFilter))
-      : tabFiltered
-  }, [activeTab, dateFilter, novosServerData, convertidosServerData, membrosServerData, lideresServerData, emRiscoServerData, tagFilter, tabFiltered])
-
-  // A1: paginação só na tab geral
-  const showPagination = activeTab === 'geral' && !search && (totalCount ?? 0) > PEOPLE_PAGE_SIZE
-  const totalPages     = Math.ceil((totalCount ?? 0) / PEOPLE_PAGE_SIZE)
-
-  // Mensagens de estado vazio por aba
-  const emptyMessages: Record<PeopleTab, { title: string; description: string }> = {
-    geral:        { title: 'Nenhuma pessoa cadastrada', description: 'Adicione a primeira pessoa clicando em "Nova Pessoa".' },
-    aniversarios: { title: 'Nenhum aniversariante este mês', description: 'Nenhuma pessoa com data de aniversário em ' + new Date().toLocaleString('pt-BR', { month: 'long' }) + '.' },
-    novos:        { title: 'Nenhum novo visitante', description: 'Visitantes cadastrados nos últimos 30 dias aparecerão aqui.' },
-    convertidos:  { title: 'Nenhum novo convertido', description: 'Pessoas com data de conversão nos últimos 30 dias aparecerão aqui.' },
-    membros:      { title: 'Nenhum membro cadastrado', description: 'Pessoas no stage Membro aparecerão aqui.' },
-    lideres:      { title: 'Nenhum líder cadastrado', description: 'Pessoas no stage Líder aparecerão aqui.' },
-    'em-risco':   { title: 'Nenhuma pessoa em risco', description: 'Pessoas inativas ou afastadas aparecerão aqui.' },
+  // CSV: mesmo universo da lista (todos os filtros), sem paginação
+  async function exportCsv() {
+    const { items: all } = await fetchPeoplePage(churchId!, { ...pageFilters, page: 0, pageSize: 5000 })
+    const header = ['Nome', 'Telefone', 'Email', 'Etapa', 'Atendimento', 'Unidade', 'Primeira visita', 'Cadastro', 'Origem']
+    const rows = all.map(p => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const anyP = p as any
+      const badge = getCareStatusBadge(anyP.acolhimento_journey as Array<{ status: string }> | null)
+      const unitName = churchUnits.find(u => u.id === anyP.unit_id)?.name ?? ''
+      return [
+        p.name ?? '', p.phone ?? '', p.email ?? '',
+        p.person_pipeline?.[0]?.pipeline_stages?.name ?? '',
+        badge?.label ?? 'Não atendida', unitName,
+        anyP.first_visit_date ?? '', formatDate(p.created_at), anyP.source ?? '',
+      ]
+    })
+    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
   }
+
+  const pageSize   = isBirthdayTab ? 500 : PEOPLE_PAGE_SIZE
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const showPagination = total > pageSize
+  const showFilters = !isBirthdayTab
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-0">
@@ -948,15 +725,12 @@ export default function People() {
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
           <p className="text-xs md:text-sm text-text-secondary mt-1">
-            {people
-              ? activeTab === 'geral' && !search
-                ? `${totalCount ?? allPeople.length} cadastradas`
-                : `${filteredPeople.length} encontradas`
+            {pageData
+              ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${!isGeralTab ? ` · ${activeTabLabel}` : ''}`
               : 'Carregando...'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* QR de Entrada */}
           <button
             onClick={() => setQrModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
@@ -964,7 +738,6 @@ export default function People() {
             <QrCode size={15} strokeWidth={1.75} />
             <span className="hidden sm:inline">QR de Entrada</span>
           </button>
-          {/* Importar planilha — só desktop */}
           <button
             onClick={() => setImportModalOpen(true)}
             className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
@@ -972,69 +745,48 @@ export default function People() {
             <Upload size={15} strokeWidth={1.75} />
             Importar
           </button>
-          {/* Nova Pessoa — só desktop */}
           <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
         </div>
       </div>
 
-      {/* ── Tabs: scroll horizontal em mobile ───────────────────── */}
+      {/* ── Abas (Visão geral, Aniversários, etapas do pipeline, Sem etapa) ── */}
       <div className="flex gap-1 border-b border-border-default -mb-2 overflow-x-auto scrollbar-none pb-px">
-        {TABS.map(tab => {
-          // SA-1: contadores server-side via get_people_counts
-          // "novos" usa janela de 30d (não a base inteira de visitantes)
-          const tabCount: number | null = (() => {
-            if (!peopleCountsData || tab.id === 'geral') return null
-            switch (tab.id) {
-              case 'aniversarios': return peopleCountsData.aniversarios
-              case 'novos':        return peopleCountsData.novos_visitantes_30d ?? peopleCountsData.novos_visitantes
-              case 'convertidos':  return peopleCountsData.novos_convertidos
-              case 'membros':      return peopleCountsData.membros
-              case 'lideres':      return peopleCountsData.lideres
-              case 'em-risco':     return peopleCountsData.em_risco
-              default:             return null
-            }
-          })()
-          return (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setSearch(''); setCurrentPage(0) }}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-primary text-primary-text'
-                  : 'border-transparent text-text-secondary active:text-text-primary'
-              }`}
-            >
-              {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
-              {tab.label}
-              {tabCount !== null && (
-                <span
-                  className={`px-1.5 py-0.5 rounded-full font-semibold ${
-                    activeTab === tab.id
-                      ? 'bg-bg-hover text-primary-text'
-                      : 'bg-bg-hover text-text-tertiary'
-                  }`}
-                  style={{ fontSize: '10px' }}
-                >
-                  {tabCount}
-                </span>
-              )}
-            </button>
-          )
-        })}
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
+              activeTab === tab.id
+                ? 'border-primary text-primary-text'
+                : 'border-transparent text-text-secondary active:text-text-primary'
+            }`}
+          >
+            {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
+            {tab.label}
+            {tab.count !== null && (
+              <span
+                className={`px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
+                  activeTab === tab.id ? 'bg-bg-hover text-primary-text' : 'bg-bg-hover text-text-tertiary'
+                }`}
+                style={{ fontSize: '10px' }}
+              >
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* Filtro de período — só na aba novos visitantes */}
-      {activeTab === 'novos' && (
+      {/* Período — só etapa Visitante */}
+      {activeStageKey === 'visitante' && (
         <div className="flex flex-wrap items-center gap-2">
           {(['all', '7', '15', '30'] as const).map((v) => (
             <button
               key={v}
               type="button"
-              onClick={() => setDateFilter(v as DateFilter)}
+              onClick={() => { setDateFilter(v as DateFilter); setCurrentPage(0) }}
               className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
-                dateFilter === v
-                  ? 'border-primary text-primary-text bg-bg-hover'
-                  : 'border-border-default text-text-secondary hover:text-text-primary bg-bg-hover'
+                dateFilter === v ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary hover:text-text-primary bg-bg-hover'
               }`}
               style={dateFilter === v ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
             >
@@ -1043,7 +795,7 @@ export default function People() {
           ))}
           <button
             type="button"
-            onClick={() => setDateFilter('custom')}
+            onClick={() => { setDateFilter('custom'); setCurrentPage(0) }}
             className={`px-3 py-1.5 rounded-xl text-sm font-medium border border-border-default bg-bg-hover transition-colors ${
               dateFilter === 'custom' ? 'text-primary-text' : 'text-text-secondary hover:text-text-primary'
             }`}
@@ -1051,92 +803,11 @@ export default function People() {
           >
             Personalizado
           </button>
-          {dateFilter === 'custom' && (
-            <div className="flex items-center gap-2 w-full mt-1">
-              <input
-                type="date"
-                value={customFrom}
-                onChange={e => setCustomFrom(e.target.value)}
-                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-bg-hover"
-              />
-              <span className="text-text-tertiary text-sm">até</span>
-              <input
-                type="date"
-                value={customTo}
-                onChange={e => setCustomTo(e.target.value)}
-                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-bg-hover"
-              />
-            </div>
-          )}
         </div>
       )}
 
-      {/* R1: Contadores por unidade + stage breakdown (via RPC, sem teto de 1.000) */}
-      {activeTab === 'geral' && churchUnits.length > 0 && unitCountRows.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {churchUnits.map(unit => {
-            const rows = unitCountRows.filter(r => r.unit_id === unit.id)
-            const total = rows.reduce((s, r) => s + r.cnt, 0)
-            const stageBreakdown = rows
-              .map(r => [r.person_stage ?? 'sem_stage', r.cnt] as [string, number])
-              .sort(([a], [b]) => a.localeCompare(b))
-
-            return (
-              <div key={unit.id} className="relative group">
-                <button
-                  type="button"
-                  onClick={() => { setUnitFilter(unit.id === unitFilter ? '' : unit.id); setCurrentPage(0) }}
-                  className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
-                    unitFilter === unit.id
-                      ? 'border-primary text-primary-text bg-bg-hover'
-                      : 'border-border-default text-text-secondary bg-bg-hover hover:text-text-primary'
-                  }`}
-                  style={unitFilter === unit.id ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-                >
-                  {unit.name} <span className="font-semibold">{total}</span>
-                </button>
-                {/* Stage breakdown tooltip */}
-                <div className="absolute left-0 top-full mt-1 z-20 hidden group-hover:flex flex-col gap-1 bg-white rounded-xl border border-border-default shadow-lg p-2 min-w-[150px]">
-                  {stageBreakdown.map(([stage, count]) => {
-                    const sc = STAGE_COLORS[stage] ?? { bg: '#f3f4f6', color: '#374151' }
-                    return (
-                    <div key={stage} className="flex items-center justify-between gap-3 text-xs">
-                      <span
-                        className="px-1.5 py-0.5 rounded-full font-medium"
-                        style={{ backgroundColor: sc.bg, color: sc.color }}
-                      >
-                        {STAGE_LABELS[stage] ?? stage}
-                      </span>
-                      <span className="font-semibold text-text-secondary tabular-nums">{count}</span>
-                    </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-          {(() => {
-            const semUnidade = unitCountRows.filter(r => r.unit_id === null).reduce((s, r) => s + r.cnt, 0)
-            if (semUnidade === 0) return null
-            return (
-              <button
-                type="button"
-                onClick={() => { setUnitFilter(unitFilter === 'none' ? '' : 'none'); setCurrentPage(0) }}
-                className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
-                  unitFilter === 'none'
-                    ? 'border-amber-400 text-amber-700 bg-amber-50'
-                    : 'border-amber-200 text-amber-600 bg-amber-50 hover:border-amber-400'
-                }`}
-              >
-                Sem unidade definida <span className="font-semibold">({semUnidade})</span>
-              </button>
-            )
-          })()}
-        </div>
-      )}
-
-      {/* Linha de filtros: busca + tipo + origem + CSV */}
-      {activeTab === 'geral' && (
+      {/* Linha de filtros: busca + tipo + origem + cadastro + CSV */}
+      {showFilters && (
         <div className="flex flex-wrap gap-2">
           <Input
             placeholder="Buscar por nome, telefone ou e-mail..."
@@ -1145,7 +816,6 @@ export default function People() {
             className="w-full md:max-w-sm"
           />
 
-          {/* Filtro por tag */}
           {allTags.length > 0 && (
             <div className="relative">
               <button
@@ -1155,18 +825,11 @@ export default function People() {
               >
                 <span
                   className="h-2 w-2 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: tagFilter
-                      ? (allTags.find((t) => t.id === tagFilter)?.color ?? '#6B7280')
-                      : '#d1d5db',
-                  }}
+                  style={{ backgroundColor: tagFilter ? (allTags.find((t) => t.id === tagFilter)?.color ?? '#6B7280') : '#d1d5db' }}
                 />
-                {tagFilter
-                  ? allTags.find((t) => t.id === tagFilter)?.name
-                  : 'Todos os tipos'}
+                {tagFilter ? allTags.find((t) => t.id === tagFilter)?.name : 'Todos os tipos'}
                 <ChevronDown size={12} className={`transition-transform ${tagDropOpen ? 'rotate-180' : ''}`} />
               </button>
-
               {tagDropOpen && (
                 <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '160px' }}>
                   <li>
@@ -1206,7 +869,6 @@ export default function People() {
             </div>
           )}
 
-          {/* Filtro por origem */}
           <select
             value={sourceFilter}
             onChange={e => { setSourceFilter(e.target.value); setCurrentPage(0) }}
@@ -1218,38 +880,41 @@ export default function People() {
             <option value="import_xlsx">Importação</option>
           </select>
 
-          {/* CSV export (colunas completas: inclui Atendimento e Unidade) */}
-          {filteredPeople.length > 0 && (
+          {(activeStageKey !== 'visitante' || dateFilter === 'custom') && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-text-tertiary whitespace-nowrap">Cadastro:</span>
+              <input
+                type="date"
+                value={createdFrom}
+                onChange={e => { setCreatedFrom(e.target.value); setCurrentPage(0) }}
+                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-white text-text-secondary"
+                title="Data de cadastro — início"
+              />
+              <span className="text-text-tertiary text-xs">–</span>
+              <input
+                type="date"
+                value={createdTo}
+                onChange={e => { setCreatedTo(e.target.value); setCurrentPage(0) }}
+                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-white text-text-secondary"
+                title="Data de cadastro — fim"
+              />
+              {(createdFrom || createdTo) && (
+                <button
+                  type="button"
+                  onClick={() => { setCreatedFrom(''); setCreatedTo(''); setCurrentPage(0) }}
+                  className="text-xs text-text-tertiary hover:text-text-primary px-1.5 py-1 rounded-lg hover:bg-bg-hover transition-colors"
+                  title="Limpar filtro de data"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          )}
+
+          {total > 0 && (
             <button
               type="button"
-              onClick={() => {
-                const header = ['Nome', 'Telefone', 'Email', 'Stage', 'Atendimento', 'Unidade', 'Primeira visita', 'Origem']
-                const rows = filteredPeople.map(p => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const journeys = (p as any).acolhimento_journey as Array<{ status: string }> | null
-                  const badge = getCareStatusBadge(journeys)
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const unitName = churchUnits.find(u => u.id === (p as any).unit_id)?.name ?? ''
-                  return [
-                    p.name ?? '',
-                    p.phone ?? '',
-                    p.email ?? '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).person_stage ?? '',
-                    badge?.label ?? 'Não atendida',
-                    unitName,
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).first_visit_date ?? '',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    (p as any).source ?? '',
-                  ]
-                })
-                const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-                const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-                const url = URL.createObjectURL(blob)
-                const a = document.createElement('a')
-                a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
-              }}
+              onClick={() => void exportCsv()}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
             >
               <Download size={13} strokeWidth={1.75} />
@@ -1259,15 +924,15 @@ export default function People() {
         </div>
       )}
 
-      {/* Filtro de atendimento */}
-      {activeTab === 'geral' && (
+      {/* Filtro de atendimento — contadores no mesmo escopo de unidade da lista */}
+      {showFilters && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
           {([
             { value: '', label: 'Todos' },
-            { value: 'nao_atendida',   label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
-            { value: 'em_atendimento', label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
-            { value: 'atendida',       label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
+            { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
+            { value: 'em_atendimento',  label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
+            { value: 'atendida',        label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
             { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
           ] as const).map(opt => (
             <button
@@ -1275,9 +940,7 @@ export default function People() {
               type="button"
               onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                careFilter === opt.value
-                  ? 'border-primary text-primary-text bg-bg-hover'
-                  : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+                careFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
               }`}
               style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
             >
@@ -1287,7 +950,6 @@ export default function People() {
         </div>
       )}
 
-
       {/* ── Loading / Error / Empty / Lista ─────────────────────── */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16">
@@ -1295,18 +957,17 @@ export default function People() {
         </div>
       ) : isError ? (
         <ErrorState onRetry={() => void refetch()} />
-      ) : filteredPeople.length === 0 ? (
+      ) : items.length === 0 ? (
         <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
           <EmptyState
-            title={search ? 'Nenhuma pessoa encontrada' : emptyMessages[activeTab].title}
-            description={search ? 'Tente buscar por outro nome ou telefone.' : emptyMessages[activeTab].description}
-            action={activeTab === 'geral' && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
+            title={search ? 'Nenhuma pessoa encontrada' : isBirthdayTab ? 'Nenhum aniversariante este mês' : `Nenhuma pessoa em "${activeTabLabel}"`}
+            description={search ? 'Tente buscar por outro nome ou telefone.' : 'Ajuste os filtros ou a unidade selecionada no topo da página.'}
+            action={isGeralTab && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
           />
         </div>
       ) : (
         <>
-          {/* R5: "Entrou e ninguém falou" — callout para o pastor ver toda segunda */}
-          {activeTab === 'geral' && !careFilter && careStatusData && (
+          {isGeralTab && !careFilter && careStatusData && (
             <div
               className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 cursor-pointer hover:bg-amber-100 transition-colors"
               onClick={() => { setCareFilter('sem_contato_48h'); setCurrentPage(0) }}
@@ -1319,7 +980,6 @@ export default function People() {
             </div>
           )}
 
-          {/* ── Birthday CRM: cabeçalho de progresso ────────────────────── */}
           {isBirthdayTab && (
             <div className="space-y-1.5 px-0.5">
               <div className="flex items-center justify-between">
@@ -1327,27 +987,21 @@ export default function People() {
                   Aniversariantes de {now.toLocaleString('pt-BR', { month: 'long' })}
                 </p>
                 <span className="font-semibold text-text-secondary" style={{ fontSize: 13 }}>
-                  {contactsData.length} de {filteredPeople.length} contatados
+                  {contactedInList} de {items.length} contatados
                 </span>
               </div>
               <div className="rounded-full overflow-hidden bg-bg-hover" style={{ height: 6 }}>
                 <div
                   className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: filteredPeople.length > 0
-                      ? `${(contactsData.length / filteredPeople.length) * 100}%`
-                      : '0%',
-                    backgroundColor: '#1D9E75',
-                  }}
+                  style={{ width: items.length > 0 ? `${(contactedInList / items.length) * 100}%` : '0%', backgroundColor: '#1D9E75' }}
                 />
               </div>
             </div>
           )}
 
-          {/* ── Birthday CRM: lista compacta ─────────────────────────────── */}
           {isBirthdayTab ? (
             <div className="flex flex-col gap-2 max-w-lg">
-              {filteredPeople.map((person) => (
+              {items.map((person) => (
                 <BirthdayContactCard
                   key={person.id}
                   person={person}
@@ -1360,9 +1014,8 @@ export default function People() {
             </div>
           ) : (
             <>
-              {/* ── Mobile: cards ─────────────────────────────────── */}
               <div className="md:hidden space-y-2">
-                {filteredPeople.map((person) => (
+                {items.map((person) => (
                   <PersonCardMobile
                     key={person.id}
                     person={person}
@@ -1372,12 +1025,11 @@ export default function People() {
                     onDelete={handleDelete}
                     onAtend={handleAtend}
                     showBirthday={false}
-                    showCareBadge={activeTab === 'geral'}
+                    showCareBadge
                   />
                 ))}
               </div>
 
-              {/* ── Desktop: tabela ───────────────────────────────── */}
               <div className="hidden md:block bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
@@ -1386,14 +1038,14 @@ export default function People() {
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
-                        {activeTab === 'geral' && <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Atendimento</th>}
-                        {activeTab === 'geral' && <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest text-center" title="Contatos pastorais registrados">Contatos</th>}
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Atendimento</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest text-center" title="Contatos pastorais registrados">Contatos</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border-default">
-                      {filteredPeople.map((person) => (
+                      {items.map((person) => (
                         <PersonRow
                           key={person.id}
                           person={person}
@@ -1403,8 +1055,8 @@ export default function People() {
                           onDelete={handleDelete}
                           onAtend={handleAtend}
                           showBirthday={false}
-                          showCareBadge={activeTab === 'geral'}
-                          contactCount={activeTab === 'geral' ? (contactCounts ? (contactCounts.get(person.id) ?? 0) : null) : undefined}
+                          showCareBadge
+                          contactCount={contactCounts ? (contactCounts.get(person.id) ?? 0) : null}
                         />
                       ))}
                     </tbody>
@@ -1416,11 +1068,11 @@ export default function People() {
         </>
       )}
 
-      {/* ── A1: Paginação (só tab Geral, sem busca ativa) ────── */}
+      {/* Paginação — mesmo total da lista */}
       {showPagination && (
         <div className="flex items-center justify-between py-2 px-1">
           <p className="text-xs text-text-tertiary">
-            Página {currentPage + 1} de {totalPages} · {totalCount} pessoas
+            Página {currentPage + 1} de {totalPages} · {total.toLocaleString('pt-BR')} pessoas
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -1443,7 +1095,7 @@ export default function People() {
         </div>
       )}
 
-      {/* ── FAB mobile: adicionar pessoa ─────────────────────── */}
+      {/* FAB mobile */}
       <button
         onClick={handleNewPerson}
         className="md:hidden fixed bottom-6 right-6 z-20 flex items-center justify-center rounded-full shadow-lg active:scale-95 transition-transform"
@@ -1453,15 +1105,13 @@ export default function People() {
         <span className="text-white text-2xl font-bold leading-none">+</span>
       </button>
 
-      {/* Modal */}
       <PersonModal
         open={modalOpen}
-        onClose={() => { setModalOpen(false); setEditingPerson(null) }}
+        onClose={() => { setModalOpen(false); setEditingPerson(null); invalidatePeople() }}
         churchId={churchId}
         person={editingPerson}
       />
 
-      {/* Detail Panel */}
       <PanelErrorBoundary>
         <PersonDetailPanel
           person={selectedPerson}
@@ -1470,14 +1120,8 @@ export default function People() {
         />
       </PanelErrorBoundary>
 
-      {/* QR Code Modal */}
-      <QrCodeModal
-        open={qrModalOpen}
-        onOpenChange={setQrModalOpen}
-        churchId={churchId}
-      />
+      <QrCodeModal open={qrModalOpen} onOpenChange={setQrModalOpen} churchId={churchId} />
 
-      {/* A2: Modal de confirmação de exclusão (substitui window.confirm) */}
       <ConfirmDeleteModal
         person={personToDelete}
         onConfirm={() => { void confirmDelete() }}
@@ -1486,14 +1130,10 @@ export default function People() {
         error={deleteError}
       />
 
-      {/* Importação de membros por planilha */}
       <ImportacaoMembros
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
-        onSuccess={(_count) => {
-          void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
-          void queryClient.invalidateQueries({ queryKey: ['people-count', churchId] })
-        }}
+        onSuccess={(_count) => invalidatePeople()}
       />
     </div>
   )
