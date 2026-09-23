@@ -18,7 +18,7 @@ import ModalPortal from '@/components/ui/ModalPortal'
 import { usePeople, usePeopleCount, useDeletePerson, PEOPLE_PAGE_SIZE } from '@/features/people/hooks/usePeople'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
-import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
+import { useChurchUnits, useUnitCutoff } from '@/features/people/hooks/useChurchUnits'
 import { useAcolhimentoStatus, getCareStatusBadge } from '@/features/people/hooks/useAcolhimentoStatus'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
@@ -295,9 +295,11 @@ interface PersonRowProps {
   onAtend: (p: PersonWithStage) => void
   showBirthday?: boolean
   showCareBadge?: boolean
+  /** undefined = coluna oculta; null = ainda carregando */
+  contactCount?: number | null
 }
 
-function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge }: PersonRowProps) {
+function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge, contactCount }: PersonRowProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -360,6 +362,23 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBir
               </span>
             )
           })()}
+        </td>
+      )}
+      {contactCount !== undefined && (
+        <td className="px-4 py-3 text-center">
+          {contactCount === null ? (
+            <span className="text-xs text-text-tertiary">…</span>
+          ) : contactCount === 0 ? (
+            <span className="text-xs text-text-tertiary">—</span>
+          ) : (
+            <span
+              className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full text-xs font-semibold tabular-nums"
+              style={{ backgroundColor: '#E1F5EE', color: '#0F6E56' }}
+              title={`${contactCount} contato${contactCount === 1 ? '' : 's'} registrado${contactCount === 1 ? '' : 's'}`}
+            >
+              {contactCount}
+            </span>
+          )}
         </td>
       )}
       <td className="px-4 py-3 text-sm text-text-secondary">
@@ -582,14 +601,39 @@ export default function People() {
   const now            = new Date()
   const currentMonth   = now.getMonth() + 1  // 1-12
   const monthRef       = `${now.getFullYear()}-${String(currentMonth).padStart(2, '0')}`
-  const { data: people, isLoading, isError, refetch } = usePeople(churchId ?? '', {
-    search,
-    page:       isFilteredTab ? 0 : currentPage,
-    pageSize:   isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
-    unitId:     unitFilter || undefined,
-    birthMonth: isBirthdayTab ? currentMonth : undefined,
-    source:     sourceFilter || undefined,
-    careStatus: careFilter || undefined,
+  // Corte de unidade: cadastros anteriores contam como "sem unidade" (mesma regra dos RPCs)
+  const { data: unitCutoff = null, isLoading: cutoffLoading } = useUnitCutoff(churchId ?? '')
+  const { data: people, isLoading: peopleLoading, isError, refetch } = usePeople(
+    cutoffLoading ? '' : (churchId ?? ''),
+    {
+      search,
+      page:       isFilteredTab ? 0 : currentPage,
+      pageSize:   isFilteredTab ? 500 : PEOPLE_PAGE_SIZE,
+      unitId:     unitFilter || undefined,
+      unitCutoff,
+      birthMonth: isBirthdayTab ? currentMonth : undefined,
+      source:     sourceFilter || undefined,
+      careStatus: careFilter || undefined,
+    },
+  )
+  const isLoading = cutoffLoading || peopleLoading
+
+  // Nº de contatos pastorais por pessoa (só ids da página atual)
+  const visibleIds = useMemo(() => (people ?? []).map(p => p.id), [people])
+  const { data: contactCounts } = useQuery({
+    queryKey: ['contact-counts', churchId, visibleIds],
+    enabled:  !!churchId && visibleIds.length > 0,
+    staleTime: 30_000,
+    queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_contact_counts', {
+        p_church_id: churchId, p_person_ids: visibleIds,
+      })
+      if (error) throw error
+      const map = new Map<string, number>()
+      for (const r of (data ?? []) as Array<{ person_id: string; cnt: number }>) map.set(r.person_id, Number(r.cnt))
+      return map
+    },
   })
 
   // SA-1: contadores de abas via RPC (server-side, zero applyTabFilter)
@@ -1343,6 +1387,7 @@ export default function People() {
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
                         {activeTab === 'geral' && <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Atendimento</th>}
+                        {activeTab === 'geral' && <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest text-center" title="Contatos pastorais registrados">Contatos</th>}
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
                       </tr>
@@ -1359,6 +1404,7 @@ export default function People() {
                           onAtend={handleAtend}
                           showBirthday={false}
                           showCareBadge={activeTab === 'geral'}
+                          contactCount={activeTab === 'geral' ? (contactCounts ? (contactCounts.get(person.id) ?? 0) : null) : undefined}
                         />
                       ))}
                     </tbody>

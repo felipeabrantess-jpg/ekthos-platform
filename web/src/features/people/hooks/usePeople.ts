@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { normalizeSearch } from '@/lib/normalizeSearch'
 import type { PersonWithStage, Person } from '@/lib/types/joins'
 
 export const PEOPLE_PAGE_SIZE = 50
@@ -37,6 +38,11 @@ interface PeopleFilters {
    * Nenhuma lista de ID trafega do cliente para o servidor.
    */
   careStatus?: 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
+  /**
+   * Data de corte de unidade (churches.unit_cutoff_date). Pessoas com created_at
+   * anterior são tratadas como sem unidade no filtro unitId. null = sem corte.
+   */
+  unitCutoff?: string | null
 }
 
 // Lista pessoas com stage atual
@@ -112,8 +118,9 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
       }
 
       if (filters.search) {
+        const norm = normalizeSearch(filters.search)
         query = query.or(
-          `name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
+          `name_sort.ilike.%${norm}%,phone.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
         )
       }
 
@@ -126,12 +133,17 @@ export function usePeople(churchId: string, filters: PeopleFilters = {}) {
         query = (query as any).eq('celula_id', filters.celulaId)
       }
 
+      const cutoffTs = filters.unitCutoff ? `${filters.unitCutoff}T00:00:00.000Z` : null
       if (filters.unitId === 'none') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        query = (query as any).is('unit_id', null)
+        query = cutoffTs
+          ? (query as any).or(`unit_id.is.null,created_at.lt.${cutoffTs}`)
+          : (query as any).is('unit_id', null)
       } else if (filters.unitId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         query = (query as any).eq('unit_id', filters.unitId)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (cutoffTs) query = (query as any).gte('created_at', cutoffTs)
       }
 
       if (filters.personStage) {

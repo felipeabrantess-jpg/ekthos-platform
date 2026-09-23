@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button'
 import { useCreatePerson, useUpdatePerson } from '../hooks/usePeople'
 import { useGroups } from '@/features/celulas/hooks/useGroups'
 import { useChurchUnits } from '../hooks/useChurchUnits'
+import { useMinisterios } from '@/features/ministerios/hooks/useMinisterios'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
@@ -158,7 +159,8 @@ interface PersonModalProps {
 }
 
 export default function PersonModal({ open, onClose, churchId, person }: PersonModalProps) {
-  const { role } = useAuth()
+  const { role, churchId: authChurchId } = useAuth()
+  const { data: ministriesList = [] } = useMinisterios(authChurchId ?? '')
   const isEdit = Boolean(person)
   const createPerson = useCreatePerson()
   const updatePerson = useUpdatePerson()
@@ -819,13 +821,13 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Departamentos
+                Ministérios
               </label>
+              {ministriesList.length === 0 && (
+                <p className="text-xs text-gray-400">Nenhum ministério cadastrado em Ministérios.</p>
+              )}
               <div className="flex flex-wrap gap-2">
-                {[
-                  'Louvor', 'Infantil', 'Jovens', 'Recepção', 'Mídia/Design',
-                  'Som/Iluminação', 'Intercessão', 'Administração', 'Assistência Social',
-                ].map((dep) => {
+                {ministriesList.map((m) => m.name).map((dep) => {
                   const active = form.ministry_interest.includes(dep)
                   return (
                     <button
