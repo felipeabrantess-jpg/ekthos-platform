@@ -1,13 +1,13 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Settings2, AlertCircle, ChevronRight, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useUnit } from '@/contexts/UnitContext'
 import {
   useDiscipuladoOverview,
   useDiscipuladoStagePeople,
   type DiscipuladoStage,
 } from '@/features/pipeline/hooks/useDiscipulado'
-import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -165,10 +165,13 @@ const PAGE_SIZE = 50
 interface StageListProps {
   churchId: string
   stage: DiscipuladoStage
+  /** Recebe o total da lista (mesmos filtros) para o cabeçalho exibir o mesmo universo */
+  onTotalChange: (total: number | null) => void
 }
 
-function StageList({ churchId, stage }: StageListProps) {
+function StageList({ churchId, stage, onTotalChange }: StageListProps) {
   const navigate = useNavigate()
+  const { selectedUnit } = useUnit()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [offset, setOffset] = useState(0)
@@ -186,11 +189,16 @@ function StageList({ churchId, stage }: StageListProps) {
   const { data, isLoading, isError, refetch } = useDiscipuladoStagePeople(
     churchId,
     stage.stage_id,
+    selectedUnit,
     { limit: PAGE_SIZE, offset, search: debouncedSearch || undefined }
   )
 
-  const people = data ?? []
-  const hasMore = people.length === PAGE_SIZE
+  const people = data?.items ?? []
+  const total  = data?.total ?? 0
+  const hasMore = offset + people.length < total
+
+  useEffect(() => { onTotalChange(data ? total : null) }, [data, total, onTotalChange])
+  useEffect(() => { setOffset(0) }, [selectedUnit, stage.stage_id])
 
   return (
     <div className="space-y-3">
@@ -246,7 +254,7 @@ function StageList({ churchId, stage }: StageListProps) {
             >
               ← Anterior
             </button>
-            <span>{offset + 1}–{offset + people.length}</span>
+            <span>{offset + 1}–{offset + people.length} de {total}</span>
             <button
               disabled={!hasMore}
               onClick={() => setOffset(o => o + PAGE_SIZE)}
@@ -265,10 +273,16 @@ function StageList({ churchId, stage }: StageListProps) {
 
 export default function DiscipuladoPainel() {
   const { churchId } = useAuth()
+  const { selectedUnit, selectedUnitRecord } = useUnit()
   const navigate = useNavigate()
   const [activeStageId, setActiveStageId] = useState<string | null>(null)
+  const [listTotal, setListTotal] = useState<number | null>(null)
+  const handleTotalChange = useCallback((t: number | null) => setListTotal(t), [])
 
-  const { data: stages, isLoading, isError, refetch } = useDiscipuladoOverview(churchId ?? '')
+  const { data: stages, isLoading, isError, refetch } = useDiscipuladoOverview(churchId ?? '', selectedUnit)
+  const unitLabel = selectedUnit === 'all' ? 'Todas as unidades'
+    : selectedUnit === 'none' ? 'Sem unidade definida'
+    : (selectedUnitRecord?.name ?? 'Unidade')
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -306,7 +320,7 @@ export default function DiscipuladoPainel() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-ekthos-black">Caminho de discipulado</h1>
-          <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa</p>
+          <p className="text-xs md:text-sm text-ekthos-black/50 mt-1">Acompanhe a jornada de cada pessoa · {unitLabel}</p>
         </div>
         <button
           onClick={() => navigate('/configuracoes/discipulado')}
@@ -365,9 +379,11 @@ export default function DiscipuladoPainel() {
                 <h2 className="font-display text-base font-semibold text-ekthos-black">
                   {activeStage.stage_name}
                 </h2>
-                <span className="text-sm text-ekthos-black/40">{activeStage.total} pessoas</span>
+                <span className="text-sm text-ekthos-black/40">
+                  {listTotal ?? activeStage.total} pessoas{listTotal !== null && listTotal !== activeStage.total ? ` (de ${activeStage.total} na etapa)` : ''}
+                </span>
               </div>
-              <StageList churchId={churchId} stage={activeStage} />
+              <StageList churchId={churchId} stage={activeStage} onTotalChange={handleTotalChange} />
             </div>
           )}
         </>

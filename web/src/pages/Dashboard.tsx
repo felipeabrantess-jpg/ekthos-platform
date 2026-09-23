@@ -11,8 +11,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, canManageDepartments } from '@/hooks/useRole'
 import type { AppRole } from '@/hooks/useRole'
-import { usePastoralDashboard } from '@/features/dashboard/hooks/usePastoralDashboard'
-import { useConsolidacaoStats, STAGE_COLORS as STAGE_PILL_COLORS } from '@/features/dashboard/hooks/useConsolidacaoStats'
+import { useDashboardPeopleStats } from '@/features/dashboard/hooks/useDashboardPeopleStats'
+import { useUnit } from '@/contexts/UnitContext'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ErrorState from '@/components/ui/ErrorState'
@@ -27,15 +27,6 @@ const STAGE_COLORS = [
   '#0F6E56', '#4CEAD8', '#854F0B', '#C4841D',
   '#185FA5', '#2B6CB0', '#0891B2',
 ]
-
-const STAGE_LABELS: Record<string, string> = {
-  visitante:    'Visitante',
-  contato:      'Contato',
-  frequentador: 'Frequentador',
-  consolidado:  'Consolidado',
-  discipulo:    'Discípulo',
-  lider:        'Líder',
-}
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -232,23 +223,24 @@ function ChartEmptyState({ message = 'Nenhum dado no período' }: { message?: st
 
 export default function Dashboard() {
   const { churchId, role } = useAuth()
-  const { data, isLoading, isError, refetch } = usePastoralDashboard(churchId ?? '')
-  const { data: consolidacao } = useConsolidacaoStats(churchId ?? '')
+  const { selectedUnit, selectedUnitRecord, isLoading: unitLoading } = useUnit()
+  const { data: s, isLoading: statsLoading, isError, refetch } = useDashboardPeopleStats(churchId ?? '', selectedUnit)
 
-  const { data: novosConvertidos = 0 } = useQuery({
-    queryKey: ['novos_convertidos_mes', churchId],
+  // Financeiro: fora do escopo de unidade neste PR (donations.unit_id existe; documentado)
+  const { data: dizimosOfertasMes = 0 } = useQuery({
+    queryKey: ['dashboard-dizimos-mes', churchId],
     enabled: !!churchId,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
-      const now = new Date()
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-        .toISOString().split('T')[0]
-      const { count } = await supabase
-        .from('people')
-        .select('id', { count: 'exact', head: true })
+      const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+      const { data } = await supabase
+        .from('donations')
+        .select('amount')
         .eq('church_id', churchId!)
-        .is('deleted_at', null)
-        .gte('conversion_date', firstDayOfMonth)
-      return count ?? 0
+        .eq('status', 'confirmed')
+        .gte('confirmed_at', firstOfMonth)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (data ?? []).reduce((sum: number, d: any) => sum + (d.amount ?? 0), 0)
     },
   })
 
@@ -256,7 +248,7 @@ export default function Dashboard() {
     return <ErrorState message="Igreja não identificada. Faça login novamente." />
   }
 
-  if (isLoading) {
+  if (unitLoading || statsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Spinner size="lg" />
@@ -264,7 +256,7 @@ export default function Dashboard() {
     )
   }
 
-  if (isError || !data) {
+  if (isError || !s) {
     return <ErrorState onRetry={() => void refetch()} />
   }
 
@@ -272,13 +264,21 @@ export default function Dashboard() {
   const showFinancial   = canManageFinancial(appRole)
   const showDepartments = canManageDepartments(appRole)
 
-  const metaConsolidacao = data.taxaConsolidacao >= 80
-    ? 'Meta atingida (80%)'
-    : data.taxaConsolidacao >= 50
-      ? 'Meta: 80%'
-      : 'Abaixo de 50%'
-
   const now = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date())
+  const unitLabel = selectedUnit === 'all' ? 'Todas as unidades'
+    : selectedUnit === 'none' ? 'Sem unidade definida'
+    : (selectedUnitRecord?.name ?? 'Unidade')
+  const unitQuery = `unidade=${selectedUnit}`
+
+  const caminhoDiscipulado = s.por_etapa.map(e => ({ name: e.name, count: e.cnt }))
+  let acumulado = 0
+  const evolucaoMembros = s.evolucao_12m.map(m => {
+    acumulado += m.novos
+    const [year, month] = m.mes.split('-')
+    const label = new Date(+year, +month - 1, 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    return { mes: label, total: acumulado }
+  })
+  const totalComEtapa = s.total - s.sem_etapa
 
   return (
     <div className="space-y-10 pb-8">
@@ -288,133 +288,133 @@ export default function Dashboard() {
         <h1 className="font-display text-2xl md:text-3xl font-bold text-text-primary">
           Dashboard Pastoral
         </h1>
-        <p className="text-xs md:text-sm text-text-tertiary mt-1 capitalize">{now}</p>
+        <p className="text-xs md:text-sm text-text-tertiary mt-1">
+          <span className="capitalize">{now}</span> · {unitLabel}
+        </p>
       </div>
 
       {/* Alerta critico */}
-      <AlertaCritico items={data.visitantesSemConsolidacao} />
+      <AlertaCritico items={s.visitantes_sem_consolidacao.map(v => ({ id: v.id, nome: v.nome, created_at: v.created_at ?? '' }))} />
 
       {/* Saúde pastoral — linha 1: 3 cards */}
       <section>
-        <SectionTitle title="Saúde Pastoral" sub="Indicadores principais da semana" />
+        <SectionTitle title="Saúde Pastoral" sub={`Indicadores principais · ${unitLabel}`} />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <MetricCard
-            label="Taxa de Consolidação"
-            value={`${data.taxaConsolidacao}%`}
-            meta={metaConsolidacao}
-            alert={data.taxaConsolidacaoAlert}
-            color={data.taxaConsolidacao >= 80 ? 'green' : data.taxaConsolidacaoAlert ? 'red' : 'yellow'}
-            icon={<UserCheck size={18} strokeWidth={1.75} />}
+            label="Pessoas ativas"
+            value={s.total}
+            sub={`${s.sem_etapa} sem etapa no pipeline`}
+            color="purple"
+            icon={<Users size={18} strokeWidth={1.75} />}
+            href={`/pessoas?${unitQuery}`}
           />
           <MetricCard
             label="Novos Visitantes (30 dias)"
-            value={data.visitantesSemana}
-            sub="nos últimos 30 dias"
+            value={s.visitantes_30d}
+            sub="na etapa Visitante, cadastrados há até 30 dias"
             color="blue"
             icon={<UserPlus size={18} strokeWidth={1.75} />}
-            href="/pessoas?tab=novos&periodo=30"
+            href={`/pessoas?tab=visitante&periodo=30&${unitQuery}`}
           />
           <MetricCard
-            label="Membros Ativos"
-            value={data.membrosAtivos}
-            sub="frequentadores ou acima"
-            color="purple"
-            icon={<Users size={18} strokeWidth={1.75} />}
+            label="Membros"
+            value={s.membros}
+            sub="na etapa Membro do pipeline"
+            color="green"
+            icon={<UserCheck size={18} strokeWidth={1.75} />}
+            href={`/pessoas?tab=membro&${unitQuery}`}
           />
         </div>
         {/* linha 2: 2 cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MetricCard
             label="Células Ativas"
-            value={data.celulasAtivas}
-            sub={`de ${data.totalCelulas} cadastradas`}
+            value={s.celulas_ativas}
+            sub={`de ${s.celulas_total} cadastradas`}
             meta="Meta: 45"
-            color={data.celulasAtivas >= 45 ? 'green' : 'default'}
+            color={s.celulas_ativas >= 45 ? 'green' : 'default'}
             icon={<Network size={18} strokeWidth={1.75} />}
           />
           <MetricCard
             label="Batismos no Trimestre"
-            value={data.batismosTrimestre}
+            value={s.batismos_trimestre}
             meta="Meta: 15/tri"
-            color={data.batismosTrimestre >= 15 ? 'green' : 'default'}
+            color={s.batismos_trimestre >= 15 ? 'green' : 'default'}
             icon={<Droplets size={18} strokeWidth={1.75} />}
           />
         </div>
-        {/* Novos Convertidos widget */}
+        {/* Novos Convertidos widget — etapa canônica */}
         <div className="mt-4">
           <MetricCard
-            label="Novos Convertidos (mês)"
-            value={novosConvertidos}
-            sub="com data de conversão neste mês"
-            color={novosConvertidos > 0 ? 'green' : 'default'}
+            label="Novos Convertidos"
+            value={s.novos_convertidos}
+            sub={`na etapa Novo Convertido · ${s.novos_convertidos_30d} entraram nos últimos 30 dias`}
+            color={s.novos_convertidos > 0 ? 'green' : 'default'}
             icon={<Heart size={18} strokeWidth={1.75} />}
-            href="/pessoas?tab=convertidos"
+            href={`/pessoas?tab=novo_convertido&${unitQuery}`}
           />
         </div>
       </section>
 
       {/* Consolidação de Pessoas */}
       <section>
-        <SectionTitle title="Consolidação de Pessoas" sub="Últimos 7, 14 e 90 dias" />
+        <SectionTitle title="Consolidação de Pessoas" sub="Últimos 7 e 90 dias · prazo por etapa" />
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <MetricCard
             label="Novos esta Semana"
-            value={consolidacao?.novosSemana ?? '—'}
-            sub="adicionados nos últimos 7 dias"
+            value={s.novos_semana}
+            sub="cadastrados nos últimos 7 dias"
             color="blue"
             icon={<UserPlus size={18} strokeWidth={1.75} />}
           />
           <MetricCard
-            label="Em Risco"
-            value={consolidacao?.emRisco ?? '—'}
-            sub="frequentadores+ sem presença há 14d"
-            alert={(consolidacao?.emRisco ?? 0) > 0}
-            color={(consolidacao?.emRisco ?? 0) > 0 ? 'red' : 'green'}
+            label="Parados além do prazo"
+            value={s.parados}
+            sub="acima do SLA da etapa atual"
+            alert={s.parados > 0}
+            color={s.parados > 0 ? 'red' : 'green'}
             icon={<AlertTriangle size={18} strokeWidth={1.75} />}
+            href={`/pipeline?${unitQuery}`}
           />
           <MetricCard
             label="Consolidação 90 Dias"
-            value={consolidacao ? `${consolidacao.consolidacao90d}%` : '—'}
-            sub="visitantes/contatos avançados de stage"
+            value={`${s.consolidacao_90d}%`}
+            sub="cadastrados em 90 dias que avançaram além de Visitante"
             meta="Meta: 60%"
-            color={
-              (consolidacao?.consolidacao90d ?? 0) >= 60 ? 'green' :
-              (consolidacao?.consolidacao90d ?? 0) >= 40 ? 'yellow' : 'red'
-            }
+            color={s.consolidacao_90d >= 60 ? 'green' : s.consolidacao_90d >= 40 ? 'yellow' : 'red'}
             icon={<TrendingUp size={18} strokeWidth={1.75} />}
           />
         </div>
 
-        {/* Distribuição por estágio */}
-        {consolidacao && consolidacao.porStage.length > 0 && (
+        {/* Distribuição por etapa do pipeline */}
+        {s.por_etapa.length > 0 && (
           <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm p-5">
             <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: 'var(--text-tertiary)' }}>
-              Distribuição por Estágio
+              Distribuição por Etapa
             </p>
             <div className="space-y-2.5">
-              {consolidacao.porStage.map(({ stage, label, count }) => {
-                const pct = consolidacao.totalPeople > 0
-                  ? Math.round((count / consolidacao.totalPeople) * 100)
-                  : 0
-                const colors = STAGE_PILL_COLORS[stage] ?? {
-                  bg: 'bg-bg-hover', text: 'text-text-secondary', bar: 'var(--border-default)',
-                }
+              {[...s.por_etapa.map(e => ({ key: e.stage_key ?? e.stage_id, label: e.name, count: e.cnt })),
+                { key: '__none', label: 'Sem etapa', count: s.sem_etapa }].map(({ key, label, count }, i) => {
+                const pct = s.total > 0 ? Math.round((count / s.total) * 100) : 0
                 return (
-                  <div key={stage} className="flex items-center gap-3">
-                    <span className={`text-xs font-medium w-24 shrink-0 ${colors.text}`}>{label}</span>
+                  <div key={key} className="flex items-center gap-3">
+                    <span className="text-xs font-medium w-32 shrink-0 truncate text-text-secondary" title={label}>{label}</span>
                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--border-default)' }}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%`, background: colors.bar }}
+                        style={{ width: `${pct}%`, background: key === '__none' ? 'var(--border-default)' : STAGE_COLORS[i % STAGE_COLORS.length] }}
                       />
                     </div>
-                    <span className="text-xs font-mono-ekthos text-text-secondary w-8 text-right shrink-0">
+                    <span className="text-xs font-mono-ekthos text-text-secondary w-12 text-right shrink-0 tabular-nums">
                       {count}
                     </span>
                   </div>
                 )
               })}
             </div>
+            <p className="text-[11px] text-text-tertiary mt-3">
+              {totalComEtapa} com etapa · {s.sem_etapa} sem etapa · total {s.total}
+            </p>
           </div>
         )}
       </section>
@@ -424,17 +424,17 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <MetricCard
             label="Escola da Fé"
-            value={data.alunosEscolaDaFe}
-            sub="alunos ativos no pipeline"
+            value={s.escola_da_fe}
+            sub="na etapa Escola da Fé"
             meta="Meta: 30/turma"
-            color={data.alunosEscolaDaFe >= 30 ? 'green' : 'default'}
+            color={s.escola_da_fe >= 30 ? 'green' : 'default'}
             icon={<GraduationCap size={18} strokeWidth={1.75} />}
           />
           {showFinancial && (
             <MetricCard
               label="Dízimos e Ofertas"
-              value={formatCurrency(data.dizimosOfertasMes)}
-              sub="mês atual (confirmados)"
+              value={formatCurrency(dizimosOfertasMes)}
+              sub="mês atual (confirmados) · toda a igreja"
               color="green"
               icon={<Wallet size={18} strokeWidth={1.75} />}
             />
@@ -442,24 +442,24 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Charts: Caminho de Discipulado + Evolução de Membros */}
+      {/* Charts: Caminho de Discipulado + Evolução */}
       <section>
         <SectionTitle title="Tendências e Crescimento" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           <ChartCard title="Caminho de Discipulado" sub="Pessoas por etapa do pipeline" height={280}>
-            {data.caminhoDiscipulado.length === 0 ? (
+            {caminhoDiscipulado.every(c => c.count === 0) ? (
               <ChartEmptyState />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.caminhoDiscipulado} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+                <BarChart data={caminhoDiscipulado} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
                   <XAxis type="number" tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={120} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   <Tooltip formatter={(v: any) => [v, 'Pessoas']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                   <Bar dataKey="count" radius={[0, 6, 6, 0]} maxBarSize={20}>
-                    {data.caminhoDiscipulado.map((_, i) => (
+                    {caminhoDiscipulado.map((_, i) => (
                       <Cell key={i} fill={STAGE_COLORS[i % STAGE_COLORS.length]} />
                     ))}
                   </Bar>
@@ -468,17 +468,17 @@ export default function Dashboard() {
             )}
           </ChartCard>
 
-          <ChartCard title="Evolução de Membros" sub="Crescimento acumulado — últimos 12 meses" height={280}>
-            {data.evolucaoMembros.every(m => m.total === 0) ? (
+          <ChartCard title="Evolução de Pessoas" sub="Cadastros acumulados — últimos 12 meses" height={280}>
+            {evolucaoMembros.every(m => m.total === 0) ? (
               <ChartEmptyState />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data.evolucaoMembros} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                <LineChart data={evolucaoMembros} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-hover)" />
                   <XAxis dataKey="mes" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={36} />
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <Tooltip formatter={(v: any) => [v, 'Pessoas']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
                   <Line type="monotone" dataKey="total" stroke={BRAND} strokeWidth={2.5} dot={{ fill: BRAND, r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -492,11 +492,11 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           <ChartCard title="Crescimento de Células" sub="Novas células por trimestre (meta: +10%/tri)" height={240}>
-            {data.crescimentoCelulas.length === 0 ? (
+            {s.celulas_por_trimestre.length === 0 ? (
               <ChartEmptyState />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.crescimentoCelulas} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <BarChart data={s.celulas_por_trimestre} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-hover)" vertical={false} />
                   <XAxis dataKey="periodo" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
@@ -509,12 +509,12 @@ export default function Dashboard() {
           </ChartCard>
 
           {showDepartments ? (
-            <ChartCard title="Voluntários por Departamento" sub="Total de voluntários ativos por ministério" height={240}>
-              {data.voluntariosPorDept.length === 0 ? (
+            <ChartCard title="Voluntários por Ministério" sub="Voluntários ativos (pessoas da unidade selecionada)" height={240}>
+              {s.voluntarios_por_ministerio.length === 0 ? (
                 <ChartEmptyState message="Nenhum voluntário cadastrado" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.voluntariosPorDept} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+                  <BarChart data={s.voluntarios_por_ministerio} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
@@ -526,40 +526,14 @@ export default function Dashboard() {
               )}
             </ChartCard>
           ) : (
-            <ChartCard title="Células com Mais Membros" sub="Top células por número de membros cadastrados" height={240}>
-              {data.topCelulas.length === 0 ? (
-                <ChartEmptyState message="Nenhum membro com célula cadastrada" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.topCelulas} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                    <Bar dataKey="membros" fill={BRAND_L} radius={[0, 6, 6, 0]} maxBarSize={20} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </ChartCard>
+            <TopCelulasChart data={s.top_celulas} height={240} />
           )}
         </div>
       </section>
 
-      {showDepartments && data.topCelulas.length > 0 && (
+      {showDepartments && s.top_celulas.length > 0 && (
         <section>
-          <ChartCard title="Células com Mais Membros" sub="Top células por número de membros cadastrados" height={220}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data.topCelulas} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
-                <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-                <Bar dataKey="membros" fill={BRAND_L} radius={[0, 6, 6, 0]} maxBarSize={20} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
+          <TopCelulasChart data={s.top_celulas} height={220} />
         </section>
       )}
 
@@ -570,9 +544,9 @@ export default function Dashboard() {
 
           <AlertaTable
             title="Membros Ausentes"
-            sub="Sem registro de contato há mais de 14 dias"
+            sub="Etapa Membro, sem registro de contato há mais de 14 dias"
             empty="Nenhum membro ausente detectado"
-            data={data.membrosAusentes}
+            data={s.membros_ausentes as unknown as Record<string, unknown>[]}
             columns={[
               {
                 label: 'Nome',
@@ -580,11 +554,11 @@ export default function Dashboard() {
                 render: (v) => <span className="text-sm font-medium text-text-primary">{String(v)}</span>,
               },
               {
-                label: 'Estágio',
-                key: 'person_stage',
+                label: 'Etapa',
+                key: 'etapa',
                 render: (v) => (
                   <span className="text-xs text-primary-text bg-bg-hover px-2 py-0.5 rounded-full font-medium">
-                    {STAGE_LABELS[String(v)] ?? String(v)}
+                    {String(v ?? '—')}
                   </span>
                 ),
               },
@@ -593,7 +567,7 @@ export default function Dashboard() {
                 key: 'last_contact_at',
                 render: (v) => (
                   <span className="text-xs text-primary-text font-semibold text-right block">
-                    {relativeDate(v as string | null)}
+                    {relativeDate((v as string | null) ?? null)}
                   </span>
                 ),
               },
@@ -604,7 +578,7 @@ export default function Dashboard() {
             title="Células em Alerta"
             sub="Células com menos de 3 membros cadastrados"
             empty="Todas as células estão com bom número de membros"
-            data={data.celulasEmAlerta}
+            data={s.celulas_em_alerta as unknown as Record<string, unknown>[]}
             columns={[
               {
                 label: 'Célula',
@@ -630,5 +604,26 @@ export default function Dashboard() {
         </div>
       </section>
     </div>
+  )
+}
+
+function TopCelulasChart({ data, height }: { data: Array<{ name: string; membros: number }>; height: number }) {
+  return (
+    <ChartCard title="Células com Mais Membros" sub="Top células por número de membros cadastrados" height={height}>
+      {data.length === 0 ? (
+        <ChartEmptyState message="Nenhum membro com célula cadastrada" />
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ top: 0, right: 24, left: 8, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--bg-hover)" />
+            <XAxis type="number" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} width={110} />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <Tooltip formatter={(v: any) => [v, 'Membros']} contentStyle={{ fontSize: 12, borderRadius: 12, border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+            <Bar dataKey="membros" fill={BRAND_L} radius={[0, 6, 6, 0]} maxBarSize={20} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </ChartCard>
   )
 }
