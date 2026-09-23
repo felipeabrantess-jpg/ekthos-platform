@@ -7,6 +7,7 @@ import AppHeader from './AppHeader'
 import { useChurch } from '@/hooks/useChurch'
 import { NotificationsProvider } from '@/features/notifications/context/NotificationsContext'
 import { AgentDrawerProvider } from '@/contexts/AgentDrawerContext'
+import { UnitProvider } from '@/contexts/UnitContext'
 import { AgentDrawer } from '@/components/agents/AgentDrawer'
 import { supabase } from '@/lib/supabase'
 
@@ -126,6 +127,7 @@ export default function Layout() {
   return (
     <NotificationsProvider>
       <AgentDrawerProvider>
+      <UnitProvider>
         {/* flex ROW: sidebar esquerda | coluna de conteúdo direita */}
         <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
           <Sidebar isMobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
@@ -153,6 +155,7 @@ export default function Layout() {
 
         {/* Drawer flutuante do Assistente Pastoral — fora do scroll */}
         <AgentDrawer />
+      </UnitProvider>
       </AgentDrawerProvider>
     </NotificationsProvider>
   )
