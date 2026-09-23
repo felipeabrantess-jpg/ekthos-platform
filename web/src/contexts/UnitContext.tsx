@@ -10,7 +10,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useChurchUnits, useUnitCutoff, type ChurchUnit } from '@/features/people/hooks/useChurchUnits'
+import { useChurchUnits, type ChurchUnit } from '@/features/people/hooks/useChurchUnits'
 import {
   UNIT_ALL, UNIT_PARAM, parseUnitScope, unitStorageKey, type UnitScope,
 } from '@/lib/filters/unitScope'
@@ -23,9 +23,7 @@ interface UnitContextValue {
   units: ChurchUnit[]
   /** Unidade selecionada (objeto) quando o escopo é um uuid. */
   selectedUnitRecord: ChurchUnit | null
-  /** churches.unit_cutoff_date ('YYYY-MM-DD') ou null. Regra aplicada só onde já existia. */
-  unitCutoff: string | null
-  /** true enquanto unidades/cutoff ainda não carregaram — queries dependentes devem aguardar. */
+  /** true enquanto as unidades ainda não carregaram — queries dependentes devem aguardar. */
   isLoading: boolean
 }
 
@@ -43,8 +41,8 @@ export function UnitProvider({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
 
+  // Escopo operacional = people.unit_id bruto. churches.unit_cutoff_date fica só como histórico.
   const { data: units = [], isLoading: unitsLoading } = useChurchUnits(churchId ?? '')
-  const { data: unitCutoff = null, isLoading: cutoffLoading } = useUnitCutoff(churchId ?? '')
 
   const unitIds = useMemo(() => units.map(u => u.id), [units])
   const params = useMemo(() => new URLSearchParams(location.search), [location.search])
@@ -79,9 +77,8 @@ export function UnitProvider({ children }: { children: ReactNode }) {
     setSelectedUnit,
     units,
     selectedUnitRecord: units.find(u => u.id === selectedUnit) ?? null,
-    unitCutoff,
-    isLoading: unitsLoading || cutoffLoading,
-  }), [churchId, selectedUnit, setSelectedUnit, units, unitCutoff, unitsLoading, cutoffLoading])
+    isLoading: unitsLoading,
+  }), [churchId, selectedUnit, setSelectedUnit, units, unitsLoading])
 
   return <UnitContext.Provider value={value}>{children}</UnitContext.Provider>
 }
