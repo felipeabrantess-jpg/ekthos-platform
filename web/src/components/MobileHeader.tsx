@@ -10,6 +10,7 @@ import { Menu } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurch } from '@/hooks/useChurch'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
+import UnitSelector from '@/components/UnitSelector'
 
 interface MobileHeaderProps {
   onMenuClick: () => void
@@ -66,6 +67,7 @@ export default function MobileHeader({ onMenuClick }: MobileHeaderProps) {
 
       {/* Direita: sino + avatar */}
       <div className="flex items-center gap-1">
+        <UnitSelector compact />
         <NotificationBell />
         <div
           className="flex items-center justify-center rounded-full text-xs font-bold text-white shrink-0"

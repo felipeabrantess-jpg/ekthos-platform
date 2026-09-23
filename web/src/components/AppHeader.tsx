@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/useAuth'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
+import UnitSelector from '@/components/UnitSelector'
 
 export default function AppHeader() {
   const { user } = useAuth()
@@ -20,8 +21,7 @@ export default function AppHeader() {
         backdropFilter: 'blur(8px)',
       }}
     >
-      {/* Futuro: breadcrumb */}
-      <div />
+      <UnitSelector />
 
       <div className="flex items-center gap-3">
         <NotificationBell />
