@@ -45,7 +45,10 @@ interface PeopleFilters {
   unitCutoff?: string | null
 }
 
-// Lista pessoas com stage atual
+/**
+ * @deprecated Em /pessoas use `usePeoplePage` (fonte canônica, lista + contador na mesma
+ * RPC). Mantido apenas para consumidores simples (ex.: seletor em Financeiro).
+ */
 export function usePeople(churchId: string, filters: PeopleFilters = {}) {
   return useQuery({
     queryKey: ['people', churchId, filters],
@@ -257,6 +260,8 @@ export function useCreatePerson() {
     onSuccess: (data) => {
       if (!data) return
       void queryClient.invalidateQueries({ queryKey: ['people', data.church_id], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ['people-page', data.church_id], exact: false })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', data.church_id], exact: false })
       void queryClient.invalidateQueries({ queryKey: ['people-count', data.church_id], exact: false })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', data.church_id], exact: false })
     },
@@ -288,6 +293,8 @@ export function useUpdatePerson() {
     onSuccess: (data) => {
       if (!data) return
       void queryClient.invalidateQueries({ queryKey: ['people', data.church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['people-page', data.church_id] })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', data.church_id] })
     },
   })
 }
@@ -313,6 +320,8 @@ export function useDeletePerson() {
     },
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['people-page', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['people-count', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', churchId] })
     },
