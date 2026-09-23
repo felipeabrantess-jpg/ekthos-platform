@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Input from '@/components/ui/Input'
 import { supabase } from '@/lib/supabase'
+import { normalizeSearch } from '@/lib/normalizeSearch'
 
 interface Person {
   id: string
@@ -79,8 +80,11 @@ export default function PersonSelect({
     setIsOpen(true)
 
     let q = supabase.from('people').select('id, name, email').is('deleted_at', null).is('left_at', null).limit(8)
-    if (query.length > 0) {
-      q = q.ilike('name', `%${query}%`)
+    const normalized = normalizeSearch(query)
+    if (normalized.length > 0) {
+      // name_sort = unaccent(lower(name)) → busca insensível a acento/caixa/cedilha
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      q = (q as any).ilike('name_sort', `%${normalized}%`)
     }
 
     const { data, error: queryError } = await q

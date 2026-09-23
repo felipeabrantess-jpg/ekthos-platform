@@ -6,6 +6,9 @@ import {
   useCreateMinistry,
   useUpdateMinistry,
   useDeleteMinistry,
+  useMinistryVolunteers,
+  useAddVolunteer,
+  useRemoveVolunteer,
 } from '@/features/ministerios/hooks/useMinisterios'
 import { useMinistryReferrals } from '@/features/ministerios/hooks/useMinistryReferrals'
 import type { MinistryReferral } from '@/features/ministerios/hooks/useMinistryReferrals'
@@ -52,9 +55,11 @@ interface MinistryCardProps {
   ministry: MinistryWithLeader
   onEdit: (m: MinistryWithLeader) => void
   onDelete: (m: MinistryWithLeader) => void
+  onMembers: (m: MinistryWithLeader) => void
+  canManage: boolean
 }
 
-function MinistryCard({ ministry, onEdit, onDelete }: MinistryCardProps) {
+function MinistryCard({ ministry, onEdit, onDelete, onMembers, canManage }: MinistryCardProps) {
   const leaderName = ministry.people?.name ?? null
 
   return (
@@ -80,19 +85,29 @@ function MinistryCard({ ministry, onEdit, onDelete }: MinistryCardProps) {
         </div>
       </div>
 
-      <div className="flex gap-2 pt-1 border-t border-border-default">
+      <div className="flex gap-3 pt-1 border-t border-border-default">
         <button
-          onClick={() => onEdit(ministry)}
+          onClick={() => onMembers(ministry)}
           className="text-xs text-primary hover:text-primary font-medium"
         >
-          Editar
+          Membros
         </button>
-        <button
-          onClick={() => onDelete(ministry)}
-          className="ml-auto text-xs text-red-400 hover:text-red-600 font-medium"
-        >
-          Excluir
-        </button>
+        {canManage && (
+          <>
+            <button
+              onClick={() => onEdit(ministry)}
+              className="text-xs text-text-secondary hover:text-text-primary font-medium"
+            >
+              Editar
+            </button>
+            <button
+              onClick={() => onDelete(ministry)}
+              className="ml-auto text-xs text-red-400 hover:text-red-600 font-medium"
+            >
+              Excluir
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -196,6 +211,108 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           </Button>
         </div>
       </form>
+    </Modal>
+  )
+}
+
+// ── MembersModal — pesquisar / incluir / excluir membros do ministério ─────────
+
+interface MembersModalProps {
+  open: boolean
+  onClose: () => void
+  churchId: string
+  ministry: MinistryWithLeader
+}
+
+function MembersModal({ open, onClose, churchId, ministry }: MembersModalProps) {
+  const { data: volunteers = [], isLoading } = useMinistryVolunteers(churchId, ministry.id)
+  const addVolunteer    = useAddVolunteer()
+  const removeVolunteer = useRemoveVolunteer()
+  const [personId, setPersonId] = useState<string | null>(null)
+  const [selectKey, setSelectKey] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+
+  const alreadyIn = personId ? volunteers.some((v) => v.person_id === personId) : false
+
+  async function handleAdd() {
+    if (!personId || alreadyIn) return
+    setError(null)
+    try {
+      await addVolunteer.mutateAsync({ churchId, ministryId: ministry.id, personId })
+      setPersonId(null)
+      setSelectKey((k) => k + 1)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao incluir')
+    }
+  }
+
+  async function handleRemove(volunteerId: string) {
+    setError(null)
+    try {
+      await removeVolunteer.mutateAsync({ churchId, ministryId: ministry.id, volunteerId })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir')
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Membros — ${ministry.name}`}>
+      <div className="space-y-4">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <PersonSelect
+              key={selectKey}
+              label="Pesquisar membro"
+              value={personId}
+              onChange={(id) => setPersonId(id)}
+              placeholder="Nome (não diferencia acento ou maiúsculas)"
+            />
+          </div>
+          <Button
+            type="button"
+            onClick={() => void handleAdd()}
+            disabled={!personId || alreadyIn || addVolunteer.isPending}
+          >
+            {addVolunteer.isPending ? 'Incluindo...' : 'Incluir'}
+          </Button>
+        </div>
+        {alreadyIn && <p className="text-xs text-amber-600">Esta pessoa já faz parte do ministério.</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <div className="border-t border-border-default pt-3">
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide mb-2">
+            {volunteers.length} membro{volunteers.length !== 1 ? 's' : ''}
+          </p>
+          {isLoading ? (
+            <div className="flex justify-center py-6"><Spinner size="md" /></div>
+          ) : volunteers.length === 0 ? (
+            <p className="text-sm text-text-tertiary py-4 text-center">Nenhum membro neste ministério ainda.</p>
+          ) : (
+            <ul className="divide-y divide-border-default max-h-80 overflow-y-auto">
+              {volunteers.map((v) => (
+                <li key={v.id} className="flex items-center justify-between gap-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary truncate">{v.people?.name ?? 'Sem nome'}</p>
+                    {v.people?.phone && <p className="text-xs text-text-tertiary">{v.people.phone}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleRemove(v.id)}
+                    disabled={removeVolunteer.isPending}
+                    className="shrink-0 text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-50"
+                  >
+                    Excluir
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <Button type="button" onClick={onClose}>Fechar</Button>
+        </div>
+      </div>
     </Modal>
   )
 }
@@ -353,15 +470,14 @@ function ReferralQueue({ isAdmin, ministries }: ReferralQueueProps) {
 
 export default function Ministerios() {
   const { churchId, role } = useAuth()
-  const isMinistryLeader = role === 'ministry_leader'
   const isAdmin = role === 'admin' || role === 'admin_departments'
 
-  const [activeTab, setActiveTab] = useState<PageTab>(
-    isMinistryLeader ? 'fila' : 'ministerios'
-  )
+  // Líder de ministério também vê os cards (para gerir membros); admin gerencia tudo
+  const [activeTab, setActiveTab] = useState<PageTab>('ministerios')
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<MinistryWithLeader | null>(null)
   const [deletingMinistry, setDeletingMinistry] = useState<MinistryWithLeader | null>(null)
+  const [membersMinistry, setMembersMinistry] = useState<MinistryWithLeader | null>(null)
   const deleteMinistry = useDeleteMinistry()
 
   const { data: ministries, isLoading, isError, refetch } = useMinisterios(churchId ?? '')
@@ -401,7 +517,7 @@ export default function Ministerios() {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--bg-hover)' }}>
-        {!isMinistryLeader && (
+        {(
           <button
             onClick={() => setActiveTab('ministerios')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
@@ -448,11 +564,23 @@ export default function Ministerios() {
                   ministry={ministry}
                   onEdit={handleEdit}
                   onDelete={setDeletingMinistry}
+                  onMembers={setMembersMinistry}
+                  canManage={isAdmin}
                 />
               ))}
             </div>
           )}
         </>
+      )}
+
+      {/* Modal de membros do ministério */}
+      {membersMinistry && (
+        <MembersModal
+          open
+          onClose={() => setMembersMinistry(null)}
+          churchId={churchId}
+          ministry={membersMinistry}
+        />
       )}
 
       {/* Conteúdo — aba Fila */}

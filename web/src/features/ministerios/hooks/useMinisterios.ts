@@ -123,6 +123,73 @@ export function useDeleteMinistry() {
   })
 }
 
+// ── Voluntários (membros) de um ministério ───────────────────────────────────
+
+export interface MinistryVolunteer {
+  id: string
+  person_id: string
+  role: string | null
+  joined_at: string
+  people: { id: string; name: string | null; phone: string | null; email: string | null } | null
+}
+
+export function useMinistryVolunteers(churchId: string, ministryId: string | null) {
+  return useQuery({
+    queryKey: ['ministry-volunteers', churchId, ministryId],
+    enabled: Boolean(churchId && ministryId),
+    queryFn: async (): Promise<MinistryVolunteer[]> => {
+      const { data, error } = await supabase
+        .from('volunteers')
+        .select('id, person_id, role, joined_at, people:person_id ( id, name, phone, email )')
+        .eq('church_id', churchId)
+        .eq('ministry_id', ministryId!)
+        .eq('is_active', true)
+        .order('joined_at', { ascending: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as unknown as MinistryVolunteer[]
+    },
+  })
+}
+
+export function useAddVolunteer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ churchId, ministryId, personId }: { churchId: string; ministryId: string; personId: string }) => {
+      // Reativa se já existiu (UNIQUE church_id+person_id+ministry_id)
+      const { error } = await supabase
+        .from('volunteers')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert({ church_id: churchId, ministry_id: ministryId, person_id: personId, is_active: true } as any, {
+          onConflict: 'church_id,person_id,ministry_id',
+        })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_d, { churchId, ministryId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['ministry-volunteers', churchId, ministryId] })
+      void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
+    },
+  })
+}
+
+export function useRemoveVolunteer() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ churchId, ministryId, volunteerId }: { churchId: string; ministryId: string; volunteerId: string }) => {
+      const { error } = await supabase
+        .from('volunteers')
+        .delete()
+        .eq('id', volunteerId)
+        .eq('church_id', churchId)
+        .eq('ministry_id', ministryId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_d, { churchId, ministryId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['ministry-volunteers', churchId, ministryId] })
+      void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
+    },
+  })
+}
+
 export function useDeactivateMinistry() {
   const queryClient = useQueryClient()
 
