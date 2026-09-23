@@ -2,10 +2,19 @@
  * Escopo de unidade — dimensão operacional DENTRO do tenant (church_id).
  *
  *  'all'  → todas as unidades da igreja (escolha explícita, nunca implícita)
- *  'none' → somente pessoas sem unidade definida (visão de saneamento)
+ *  'none' → somente pessoas SEM UNIDADE OPERACIONAL (visão de saneamento)
  *  uuid   → uma unidade específica (church_units.id)
  *
  * church_id continua sendo o isolamento multi-tenant; unit nunca o substitui.
+ *
+ * REGRA DE NEGÓCIO (vive no banco, nunca aqui):
+ *  - people.unit_id           = dado armazenado/histórico.
+ *  - unidade OPERACIONAL      = people_operational_unit(unit_id, created_at, churches.unit_cutoff_date):
+ *        igreja sem unit_cutoff_date → people.unit_id
+ *        igreja com unit_cutoff_date → cadastros anteriores ao corte = sem unidade; demais = unit_id
+ *  O frontend só envia o escopo (p_unit_id); as RPCs canônicas aplicam a regra.
+ *  NÃO reproduzir o corte no cliente e NÃO filtrar people.unit_id direto para representar
+ *  a unidade operacional de uma pessoa.
  */
 export type UnitScope = 'all' | 'none' | string
 

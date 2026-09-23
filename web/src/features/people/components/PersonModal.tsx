@@ -344,6 +344,13 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       return
     }
 
+    // Igreja com unidades: cadastro novo não pode entrar silenciosamente sem unidade
+    if (!isEdit && churchUnits.length > 0 && !form.unit_id) {
+      setActiveTab('eclesiastico')
+      setError('Selecione a Unidade / Sede da pessoa.')
+      return
+    }
+
     const payload = buildPayload()
 
     try {
