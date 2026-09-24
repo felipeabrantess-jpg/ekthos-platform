@@ -90,20 +90,25 @@ function MinistryCard({ ministry, onEdit, onDelete, onMembers, canManage, canMan
           <span className="text-text-tertiary">Líder:</span>
           <span className="font-medium text-text-primary">{leaderName ?? 'Sem líder'}</span>
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-text-tertiary">Pessoas:</span>
-          <span className="font-medium text-text-primary" data-testid="member-count">{ministry.member_count ?? 0}</span>
-        </div>
+        {canManageMembers && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-text-tertiary">Pessoas:</span>
+            <span className="font-medium text-text-primary" data-testid="member-count">{ministry.member_count ?? 0}</span>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 pt-1 border-t border-border-default">
-        <button
-          onClick={() => onMembers(ministry)}
-          className="text-xs text-primary hover:text-primary font-medium"
-          data-testid="btn-pessoas"
-        >
-          {canManageMembers ? 'Pessoas' : 'Ver pessoas'}
-        </button>
+        {/* Só quem gere este ministério (admin ou conta vinculada) vê/gerencia as pessoas */}
+        {canManageMembers && (
+          <button
+            onClick={() => onMembers(ministry)}
+            className="text-xs text-primary hover:text-primary font-medium"
+            data-testid="btn-pessoas"
+          >
+            Pessoas
+          </button>
+        )}
         {canManage && (
           <>
             <button
@@ -302,7 +307,7 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
   return (
     <Modal open={open} onClose={onClose} title={`Pessoas do Ministério — ${ministry.name}`}>
       <div className="space-y-4" data-testid="pessoas-ministerio">
-        {canManageMembers ? (
+        {canManageMembers && (
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <PersonSelect
@@ -323,10 +328,6 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
               {addMember.isPending ? 'Incluindo...' : 'Incluir'}
             </Button>
           </div>
-        ) : (
-          <p className="text-xs text-text-tertiary" data-testid="somente-leitura">
-            Somente o líder com conta vinculada ou um administrador pode incluir/remover pessoas.
-          </p>
         )}
         {alreadyIn && <p className="text-xs text-amber-600">Esta pessoa já faz parte do ministério.</p>}
         {error && <p className="text-sm text-red-500" data-testid="erro-pessoas">{error}</p>}

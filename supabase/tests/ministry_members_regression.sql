@@ -111,7 +111,24 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     INSERT INTO t(cenario, resultado, ok) VALUES ('líder: get_church_accounts → FORBIDDEN', SQLERRM, SQLERRM ILIKE '%FORBIDDEN%');
   END;
-  INSERT INTO t(cenario, resultado, ok) VALUES ('líder: pode VER pessoas de outro ministério (leitura por tenant)', (SELECT COUNT(*)::text FROM get_ministry_members(m2)), (SELECT COUNT(*) FROM get_ministry_members(m2)) = 1);
+  BEGIN
+    PERFORM * FROM get_ministry_members(m2);
+    INSERT INTO t(cenario, resultado, ok) VALUES ('líder: LISTAR pessoas de OUTRO ministério → FORBIDDEN', 'ABERTO', false);
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO t(cenario, resultado, ok) VALUES ('líder: LISTAR pessoas de OUTRO ministério → FORBIDDEN', SQLERRM, SQLERRM ILIKE '%FORBIDDEN%');
+  END;
+  INSERT INTO t(cenario, resultado, ok) VALUES ('líder: SELECT direto em ministry_members só devolve o próprio ministério', (SELECT COUNT(DISTINCT ministry_id)::text||' ministério(s)' FROM ministry_members), (SELECT bool_and(ministry_id = m1) FROM ministry_members) AND (SELECT COUNT(*) FROM ministry_members) >= 1);
+  INSERT INTO t(cenario, resultado, ok) VALUES ('líder: contagens só do próprio ministério', (SELECT string_agg(ministry_id::text, ',') FROM get_ministry_member_counts(c_igv)), (SELECT bool_and(ministry_id = m1) FROM get_ministry_member_counts(c_igv)));
+  INSERT INTO t(cenario, resultado, ok) VALUES ('líder: pode listar o PRÓPRIO ministério', (SELECT COUNT(*)::text FROM get_ministry_members(m1)), (SELECT COUNT(*) FROM get_ministry_members(m1)) = 1);
+
+  -- ── PONTE POR E-MAIL REMOVIDA: ser a PESSOA líder (leader_id) não autoriza a conta ──
+  PERFORM set_config('request.jwt.claims', j_admin, true);
+  UPDATE ministries SET leader_user_id = NULL WHERE id = m2;
+  UPDATE ministries SET leader_id = (SELECT p.id FROM people p JOIN profiles pr ON lower(pr.email) = lower(p.email) WHERE pr.user_id = u_common AND p.church_id = c_igv LIMIT 1) WHERE id = m2;
+  PERFORM set_config('request.jwt.claims', j_common, true);
+  INSERT INTO t(cenario, resultado, ok) VALUES ('pessoa líder (leader_id) com e-mail igual ao da conta NÃO gere sem leader_user_id',
+    'leader_id casado por e-mail='||(SELECT (leader_id IS NOT NULL)::text FROM ministries WHERE id = m2)||' / can_manage='||can_manage_ministry(m2),
+    NOT can_manage_ministry(m2));
 
   -- ── COMUM (sem papel de gestão, sem conta vinculada) ─────────────────────
   PERFORM set_config('request.jwt.claims', j_common, true);
@@ -122,6 +139,13 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN
     INSERT INTO t(cenario, resultado, ok) VALUES ('comum: incluir → FORBIDDEN', SQLERRM, SQLERRM ILIKE '%FORBIDDEN%');
   END;
+  BEGIN
+    PERFORM * FROM get_ministry_members(m1);
+    INSERT INTO t(cenario, resultado, ok) VALUES ('comum: listar pessoas → FORBIDDEN', 'ABERTO', false);
+  EXCEPTION WHEN OTHERS THEN
+    INSERT INTO t(cenario, resultado, ok) VALUES ('comum: listar pessoas → FORBIDDEN', SQLERRM, SQLERRM ILIKE '%FORBIDDEN%');
+  END;
+  INSERT INTO t(cenario, resultado, ok) VALUES ('comum: SELECT direto em ministry_members → 0 linhas', (SELECT COUNT(*)::text FROM ministry_members), (SELECT COUNT(*) FROM ministry_members) = 0);
   BEGIN
     PERFORM ministry_member_remove(m1, p1);
     INSERT INTO t(cenario, resultado, ok) VALUES ('comum: remover → FORBIDDEN', 'ACEITO', false);

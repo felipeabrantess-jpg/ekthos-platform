@@ -4,7 +4,7 @@
  *   - lista "Pessoas do Ministério" vem de get_ministry_members (ministry_members);
  *   - Incluir → ministry_member_add; Remover → ministry_member_remove; nada em volunteers;
  *   - busca no PersonSelect: fernanda/FERNANDA/joao/conceicao (normalizeSearch → name_sort), excludeIds;
- *   - admin gere todos; líder (conta vinculada) só o seu; usuário comum somente leitura;
+ *   - admin gere todos; líder (conta vinculada) só o seu (outros: sem botão, RPC 403); usuário comum: nada;
  *   - card mostra "Pessoas: N" de get_ministry_member_counts; select de conta do líder (admin).
  */
 import { chromium } from 'playwright';
@@ -53,9 +53,10 @@ await ctx.route(`${SUPA}/**`, async (route) => {
     rpcCalls.push({ name, body });
     if (name === 'get_my_tenant_context') return route.fulfill(json({ effective_church_id: CH, church_name: 'T', church_status: 'configured', is_impersonating: false, role: current.role, is_ekthos_admin: false }));
     if (name === 'upsert_session_token') return route.fulfill(json('tok'));
-    if (name === 'get_ministry_member_counts') return route.fulfill(json(Object.entries(members).map(([k, v]) => ({ ministry_id: k, cnt: v.length }))));
+    if (name === 'get_ministry_member_counts') return route.fulfill(json(Object.entries(members).filter(([k]) => canManage(k)).map(([k, v]) => ({ ministry_id: k, cnt: v.length }))));
     if (name === 'get_my_managed_ministries') return route.fulfill(json(ministries.filter(m => canManage(m.id)).map(m => ({ ministry_id: m.id }))));
     if (name === 'get_church_accounts') return isAdmin() ? route.fulfill(json([{ user_id: 'u-leader', email: 'lider@t', name: 'Carlos Souza', role: 'cell_leader' }, { user_id: 'u-admin', email: 'admin@t', name: 'Admin', role: 'admin' }])) : route.fulfill(json({ message: 'FORBIDDEN' }, 403));
+    if (name === 'get_ministry_members' && !canManage(body.p_ministry_id)) return route.fulfill(json({ code: '42501', message: 'FORBIDDEN' }, 403));
     if (name === 'get_ministry_members') return route.fulfill(json(members[body.p_ministry_id].map(pid => { const p = people.find(x => x.id === pid); return { person_id: pid, name: p.name, phone: null, email: null, role: 'membro', since: '2026-09-24' }; })));
     if (name === 'ministry_member_add') { if (!canManage(body.p_ministry_id)) return route.fulfill(json({ code: '42501', message: 'FORBIDDEN' }, 403)); const l = members[body.p_ministry_id]; const ins = !l.includes(body.p_person_id); if (ins) l.push(body.p_person_id); return route.fulfill(json({ inserted: ins })); }
     if (name === 'ministry_member_remove') { if (!canManage(body.p_ministry_id)) return route.fulfill(json({ code: '42501', message: 'FORBIDDEN' }, 403)); const l = members[body.p_ministry_id]; const i = l.indexOf(body.p_person_id); if (i >= 0) l.splice(i, 1); return route.fulfill(json({ removed: i >= 0 })); }
@@ -123,7 +124,7 @@ await page.locator('button:has-text("Cancelar")').click(); await page.waitForTim
 // ── LÍDER (conta vinculada só ao Louvor) ─────────────────────
 members[M_LOUVOR] = []; members[M_INFANTIL] = ['p3'];
 await loginAs('u-leader', 'ministry_leader');
-ck('líder: Louvor com "Pessoas" (gestão) e Infantil com "Ver pessoas"', (await txt(card('Louvor').locator('[data-testid="btn-pessoas"]'))) === 'Pessoas' && (await txt(card('Infantil').locator('[data-testid="btn-pessoas"]'))) === 'Ver pessoas');
+ck('líder: Louvor com "Pessoas" (gestão) e Infantil SEM botão (nem "Ver pessoas")', (await txt(card('Louvor').locator('[data-testid="btn-pessoas"]'))) === 'Pessoas' && (await card('Infantil').locator('[data-testid="btn-pessoas"]').count()) === 0 && (await page.locator('text=Ver pessoas').count()) === 0);
 ck('líder: sem Editar/Excluir/Novo Ministério', (await page.locator('button:has-text("Editar")').count()) === 0 && (await page.locator('button:has-text("+ Novo Ministério")').count()) === 0);
 await card('Louvor').locator('[data-testid="btn-pessoas"]').click(); await page.waitForTimeout(600);
 await page.locator('[data-testid="pessoas-ministerio"] input').first().fill('joao'); await page.waitForTimeout(900);
@@ -132,20 +133,18 @@ await page.locator('[data-testid="btn-incluir"]').click(); await page.waitForTim
 ck('líder: inclui no próprio ministério (Louvor)', members[M_LOUVOR].includes('p3') && (await page.locator('[data-testid="pessoa-item"]:has-text("João Pedro")').count()) === 1);
 await page.screenshot({ path: 'ministerios-lider-proprio.png' });
 await page.locator('button:has-text("Fechar")').click(); await page.waitForTimeout(400);
-await card('Infantil').locator('[data-testid="btn-pessoas"]').click(); await page.waitForTimeout(600);
-ck('líder: Infantil (outro ministério) somente leitura — sem busca, sem Incluir, sem Remover', (await page.locator('[data-testid="somente-leitura"]').count()) === 1 && (await page.locator('[data-testid="btn-incluir"]').count()) === 0 && (await page.locator('[data-testid="btn-remover"]').count()) === 0 && (await page.locator('[data-testid="pessoa-item"]').count()) === 1);
 await page.screenshot({ path: 'ministerios-lider-outro.png' });
-await page.locator('button:has-text("Fechar")').click(); await page.waitForTimeout(300);
+const directList = await page.evaluate(async ({ supa, jwt }) => { const r = await fetch(`${supa}/rest/v1/rpc/get_ministry_members`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt, apikey: 'x' }, body: JSON.stringify({ p_ministry_id: 'm-infantil' }) }); return r.status; }, { supa: SUPA, jwt: mkSession('u-leader', 'ministry_leader').access_token });
+ck('líder: listar pessoas de outro ministério via RPC direta → 403 (mock do backend)', directList === 403);
 // backend também bloqueia: chamada direta da RPC como líder para o Infantil
 const direct = await page.evaluate(async ({ supa, jwt }) => { const r = await fetch(`${supa}/rest/v1/rpc/ministry_member_add`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + jwt, apikey: 'x' }, body: JSON.stringify({ p_ministry_id: 'm-infantil', p_person_id: 'p1' }) }); return r.status; }, { supa: SUPA, jwt: mkSession('u-leader', 'ministry_leader').access_token });
 ck('líder: RPC direta em outro ministério → 403 FORBIDDEN (mock do backend)', direct === 403 && !members[M_INFANTIL].includes('p1'));
 
 // ── USUÁRIO COMUM (sem conta vinculada) ───────────────────────
 await loginAs('u-common', 'ministry_leader');
-ck('comum: todos os cards "Ver pessoas" (somente leitura)', (await page.locator('text=Ver pessoas').count()) === 2 && (await page.locator('[data-testid="btn-pessoas"]:text-is("Pessoas")').count()) === 0);
-await card('Louvor').locator('[data-testid="btn-pessoas"]').click(); await page.waitForTimeout(600);
-ck('comum: modal sem Incluir/Remover', (await page.locator('[data-testid="btn-incluir"]').count()) === 0 && (await page.locator('[data-testid="btn-remover"]').count()) === 0);
-await page.locator('button:has-text("Fechar")').click();
+ck('comum: nenhum card tem botão "Pessoas"/"Ver pessoas"', (await page.locator('[data-testid="btn-pessoas"]').count()) === 0 && (await page.locator('text=Ver pessoas').count()) === 0);
+ck('comum: cards visíveis, sem contador de pessoas nem botão', (await page.locator('h3:has-text("Louvor")').count()) === 1 && (await page.locator('[data-testid="member-count"]').count()) === 0);
+await page.screenshot({ path: 'ministerios-comum.png' });
 
 // ── volunteers nunca tocada por escrita ───────────────────────
 ck('volunteers: nenhuma escrita (POST/PATCH/DELETE) em todo o fluxo', volunteersTouched.every(x => x.startsWith('GET')) && JSON.stringify(volunteers) === volunteersSnapshot, volunteersTouched.join(' | ') || 'nenhum acesso');

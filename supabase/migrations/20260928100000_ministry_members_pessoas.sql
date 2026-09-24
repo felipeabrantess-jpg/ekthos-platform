@@ -12,7 +12,9 @@
 --                               preenchida pelo admin, nunca por suposição)
 --   can_manage_ministry(id)   = admin/admin_departments da igreja efetiva
 --                               OU leader_user_id = auth.uid()
---                               OU (transição) is_ministry_leader_of(id) por e-mail
+--                               (SEM ponte por e-mail: leader_user_id é a única autoridade)
+--   Leitura das pessoas de um ministério (get_ministry_members, contagens e SELECT
+--   direto) segue a MESMA regra: líder não consulta ministério que não gere.
 --   Escrita em ministry_members SOMENTE via RPC; PostgREST perde INSERT/UPDATE/DELETE.
 --
 -- Não altera: volunteers (dados, grants, políticas), people, unidades, contatos.
@@ -73,8 +75,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
           AND m.is_active IS NOT FALSE
           AND (
             auth_user_role() IN ('admin', 'admin_departments')   -- admin da igreja efetiva
-            OR m.leader_user_id = auth.uid()                     -- conta vinculada (definitivo)
-            OR is_ministry_leader_of(m.id)                       -- transição: ponte por e-mail
+            OR m.leader_user_id = auth.uid()                     -- conta vinculada (única autoridade)
           )
       )
 $$;
@@ -86,10 +87,9 @@ CREATE OR REPLACE FUNCTION get_ministry_members(p_ministry_id uuid)
 RETURNS TABLE (person_id uuid, name text, phone text, email text, role text, since timestamptz)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
 BEGIN
-  IF auth.role() IS DISTINCT FROM 'service_role' AND NOT EXISTS (
-    SELECT 1 FROM ministries m WHERE m.id = p_ministry_id AND m.church_id = auth_church_id()
-  ) THEN
-    RAISE EXCEPTION 'FORBIDDEN' USING ERRCODE = '42501';
+  -- Só quem gere o ministério (admin/admin_departments ou leader_user_id) vê suas pessoas
+  IF NOT can_manage_ministry(p_ministry_id) THEN
+    RAISE EXCEPTION 'FORBIDDEN' USING ERRCODE = '42501', HINT = 'sem permissão para ver as pessoas deste ministério';
   END IF;
   RETURN QUERY
   SELECT p.id, p.name::text, p.phone::text, p.email::text, mm.role::text, mm.created_at
@@ -111,6 +111,7 @@ BEGIN
   SELECT mm.ministry_id, COUNT(*)
   FROM ministry_members mm JOIN people p ON p.id = mm.person_id
   WHERE mm.church_id = p_church_id AND p.deleted_at IS NULL
+    AND can_manage_ministry(mm.ministry_id)   -- líder: só contagens dos ministérios que gere
   GROUP BY mm.ministry_id;
 END $$;
 REVOKE ALL ON FUNCTION get_ministry_member_counts(uuid) FROM PUBLIC, anon;
@@ -191,7 +192,9 @@ DROP POLICY IF EXISTS mm_insert_leaders ON ministry_members;
 DROP POLICY IF EXISTS mm_update_leaders ON ministry_members;
 DROP POLICY IF EXISTS mm_delete_admins  ON ministry_members;
 DROP POLICY IF EXISTS mm_select_tenant  ON ministry_members;
-CREATE POLICY mm_select_tenant ON ministry_members FOR SELECT TO authenticated USING (church_id = auth_church_id());
+-- SELECT direto (PostgREST) segue a mesma regra de gestão: admin vê todos; líder só o(s) seu(s)
+CREATE POLICY mm_select_tenant ON ministry_members FOR SELECT TO authenticated
+  USING (church_id = auth_church_id() AND can_manage_ministry(ministry_id));
 -- (service_role continua com acesso total via política existente ou bypass; garantimos:)
 DROP POLICY IF EXISTS mm_service_all ON ministry_members;
 CREATE POLICY mm_service_all ON ministry_members FOR ALL TO service_role USING (true) WITH CHECK (true);
