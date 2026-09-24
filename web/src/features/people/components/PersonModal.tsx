@@ -9,6 +9,7 @@ import { useCreatePerson, useUpdatePerson } from '../hooks/usePeople'
 import { useGroups } from '@/features/celulas/hooks/useGroups'
 import { useChurchUnits } from '../hooks/useChurchUnits'
 import { useMinisterios } from '@/features/ministerios/hooks/useMinisterios'
+import { usePersonMinistries, useMyManagedMinistries, useSyncPersonMinistries } from '@/features/ministerios/hooks/useMinistryMembers'
 import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
@@ -62,7 +63,6 @@ interface FormState {
   batismo_status: string
   baptism_date: string
   calling: string
-  ministry_interest: string[]
   // Formação
   consolidation_school: string   // 'true' | 'false' | '' (tristate via select)
   experiencia_lideranca: string
@@ -83,7 +83,7 @@ const EMPTY_FORM: FormState = {
   neighborhood: '', city: '', state: '',
   como_conheceu: '',
   celula_id: '', unit_id: '', conversion_date: '', batismo_status: '', baptism_date: '',
-  calling: '', ministry_interest: [],
+  calling: '',
   consolidation_school: '', experiencia_lideranca: '',
   is_dizimista: '',
   observacoes_pastorais: '',
@@ -116,7 +116,6 @@ function personToForm(p: Person): FormState {
     batismo_status:       any.batismo_status ?? '',
     baptism_date:         p.baptism_date ?? '',
     calling:              p.calling ?? '',
-    ministry_interest:    p.ministry_interest ?? [],
     consolidation_school: p.consolidation_school == null ? '' : String(p.consolidation_school),
     experiencia_lideranca: any.experiencia_lideranca ?? '',
     is_dizimista:         any.is_dizimista == null ? '' : String(any.is_dizimista),
@@ -162,6 +161,17 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const { role, churchId: authChurchId } = useAuth()
   const { data: ministriesList = [] } = useMinisterios(authChurchId ?? '')
   const isEdit = Boolean(person)
+  // ── Ministérios: única verdade = ministry_members ──────────────────────────
+  const { data: personMinistries = [], isLoading: ministriesLoading } = usePersonMinistries(person?.id)
+  const { data: managedSet } = useMyManagedMinistries(!!authChurchId)
+  const syncMinistries = useSyncPersonMinistries()
+  // ids selecionados (inclui os bloqueados, que nunca mudam aqui)
+  const [ministryIds, setMinistryIds] = useState<string[]>([])
+  const [ministrySyncError, setMinistrySyncError] = useState<string | null>(null)
+  const canManageMinistry = (id: string) => managedSet?.has(id) ?? false
+  const lockedIds = new Set(personMinistries.filter((pm) => !pm.can_manage).map((pm) => pm.ministry_id))
+  const editableMinistries = ministriesList.filter((m) => canManageMinistry(m.id))
+  const canEditAnyMinistry = editableMinistries.length > 0
   const createPerson = useCreatePerson()
   const updatePerson = useUpdatePerson()
   const updatePipelineStage = useUpdatePersonPipelineStage()
@@ -189,6 +199,8 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   useEffect(() => {
     setForm(person ? personToForm(person) : EMPTY_FORM)
     setAvatarUrl((person as any)?.avatar_url ?? null)
+    setMinistryIds([])
+    setMinistrySyncError(null)
     setActiveTab('pessoal')
     setError(null)
     setShowDesligarConfirm(false)
@@ -196,6 +208,11 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   }, [person?.id, open])
 
   // ── Vínculos familiares ── todos os hooks ANTES de qualquer return ──
+  useEffect(() => {
+    if (!person?.id) return
+    setMinistryIds(personMinistries.map((pm) => pm.ministry_id))
+  }, [person?.id, personMinistries])
+
   const { data: familyRels = [] } = useFamilyRelationships(person?.id)
   const saveFamilyRel   = useSaveFamilyRelationship()
   const removeFamilyRel = useRemoveFamilyRelationship()
@@ -319,7 +336,8 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       batismo_status:     form.batismo_status || null,
       baptism_date:       form.batismo_status === 'sim' ? (form.baptism_date || null) : null,
       calling:            form.calling.trim() || null,
-      ministry_interest:  form.ministry_interest.length > 0 ? form.ministry_interest : null,
+      // Ministérios NÃO passam mais por people.ministry_interest (legado intocado):
+      // o vínculo real é ministry_members, sincronizado via sync_person_ministries.
       is_leader:          form.is_leader,
       consolidation_school: form.consolidation_school === '' ? null
         : form.consolidation_school === 'true',
@@ -332,6 +350,21 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       payload.observacoes_pastorais = form.observacoes_pastorais.trim() || null
     }
     return payload
+  }
+
+  /** Ids selecionados que o usuário pode gerir (os bloqueados são imutáveis nesta operação). */
+  function manageableSelection(): string[] {
+    return ministryIds.filter((id) => canManageMinistry(id))
+  }
+  function manageableDesiredCount(): number { return manageableSelection().length }
+  /** Há diferença entre o que está gravado e o selecionado, considerando só ministérios geríveis? */
+  function ministriesDirty(): boolean {
+    if (!canEditAnyMinistry) return false
+    const current = new Set(personMinistries.filter((pm) => pm.can_manage).map((pm) => pm.ministry_id))
+    const desired = new Set(manageableSelection())
+    if (current.size !== desired.size) return true
+    for (const id of desired) if (!current.has(id)) return true
+    return false
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -354,17 +387,39 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     const payload = buildPayload()
 
     try {
+      let savedPersonId: string | null = null
       if (isEdit && person) {
         await updatePerson.mutateAsync({ id: person.id, church_id: churchId, ...payload })
+        savedPersonId = person.id
         // Atualiza etapa se selecionada
         if (form.stage_id) {
           await updatePipelineStage.mutateAsync({ personId: person.id, stageId: form.stage_id, churchId })
         }
       } else {
         const created = await createPerson.mutateAsync({ church_id: churchId, source: 'manual', ...payload, name: form.name.trim() })
+        savedPersonId = created?.id ?? null
         // Associa etapa ao criar nova pessoa
         if (form.stage_id && created?.id) {
           await updatePipelineStage.mutateAsync({ personId: created.id, stageId: form.stage_id, churchId })
+        }
+      }
+
+      // ── Ministérios: sincroniza SOMENTE se há diferença nos vínculos que o usuário gere ──
+      if (savedPersonId && ministriesDirty()) {
+        try {
+          const res = await syncMinistries.mutateAsync({ personId: savedPersonId, ministryIds: manageableSelection(), churchId })
+          const n = (res?.added?.length ?? 0) + (res?.removed?.length ?? 0)
+          if (n === 0 && manageableDesiredCount() > 0 && (res?.kept?.length ?? 0) === 0) {
+            throw new Error('Nenhum vínculo de ministério foi confirmado pelo servidor.')
+          }
+        } catch (err) {
+          // Pessoa foi salva; ministérios NÃO — não esconder a falha
+          setActiveTab('eclesiastico')
+          setMinistrySyncError(
+            `A pessoa foi salva, mas os ministérios não foram vinculados: ${err instanceof Error ? err.message : 'erro desconhecido'}`,
+          )
+          void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+          return
         }
       }
       onClose()
@@ -829,36 +884,51 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Ministérios
+                <span className="ml-1 text-xs font-normal text-gray-400">(vínculos reais — ministry_members)</span>
               </label>
               {ministriesList.length === 0 && (
                 <p className="text-xs text-gray-400">Nenhum ministério cadastrado em Ministérios.</p>
               )}
-              <div className="flex flex-wrap gap-2">
-                {ministriesList.map((m) => m.name).map((dep) => {
-                  const active = form.ministry_interest.includes(dep)
+              {ministriesLoading && isEdit && <p className="text-xs text-gray-400">Carregando vínculos…</p>}
+              <div className="flex flex-wrap gap-2" data-testid="ministry-chips">
+                {ministriesList.map((m) => {
+                  const selected = ministryIds.includes(m.id)
+                  const locked = lockedIds.has(m.id) || (selected && !canManageMinistry(m.id))
+                  const editable = canManageMinistry(m.id)
+                  if (!selected && !editable) return null   // não gere e não está vinculado: não há o que fazer
                   return (
                     <button
-                      key={dep}
+                      key={m.id}
                       type="button"
-                      onClick={() =>
-                        setForm((f) => ({
-                          ...f,
-                          ministry_interest: active
-                            ? f.ministry_interest.filter((d) => d !== dep)
-                            : [...f.ministry_interest, dep],
-                        }))
-                      }
+                      disabled={locked}
+                      title={locked ? 'Vínculo existente que você não administra — permanece como está' : undefined}
+                      data-testid={`ministry-chip-${m.id}`}
+                      data-state={locked ? 'locked' : selected ? 'selected' : 'off'}
+                      onClick={() => {
+                        if (locked) return
+                        setMinistryIds((ids) => (selected ? ids.filter((x) => x !== m.id) : [...ids, m.id]))
+                      }}
                       className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                        active
-                          ? 'bg-brand-50 border-brand-300 text-brand-700 font-medium'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        locked
+                          ? 'bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed'
+                          : selected
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                       }`}
                     >
-                      {dep}
+                      {selected ? '✓ ' : ''}{m.name}{locked ? ' 🔒' : ''}
                     </button>
                   )
                 })}
               </div>
+              {!canEditAnyMinistry && ministriesList.length > 0 && (
+                <p className="text-xs text-gray-400 mt-1" data-testid="ministry-readonly-hint">
+                  Você não administra ministérios; os vínculos são exibidos apenas para consulta.
+                </p>
+              )}
+              {ministrySyncError && (
+                <p className="text-xs text-red-600 mt-1" data-testid="ministry-sync-error">{ministrySyncError}</p>
+              )}
             </div>
           </div>
         )}
