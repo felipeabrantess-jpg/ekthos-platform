@@ -85,12 +85,67 @@ export function useChurchAccounts(enabled: boolean) {
   })
 }
 
+// ── Vínculos de UMA pessoa (Editar Pessoa → Ministérios) ──────
+// Mesma relação ministry_members vista pelo lado da pessoa. can_manage diz se o
+// usuário logado pode alterar aquele vínculo (chip editável) ou não (bloqueado).
+
+export interface PersonMinistry {
+  ministry_id:   string
+  ministry_name: string
+  can_manage:    boolean
+  since:         string
+}
+
+export function usePersonMinistries(personId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['person-ministries', personId],
+    queryFn: async (): Promise<PersonMinistry[]> => {
+      if (!personId) return []
+      const { data, error } = await rpc('get_person_ministries', { p_person_id: personId })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as PersonMinistry[]
+    },
+    enabled: !!personId,
+    staleTime: 15_000,
+  })
+}
+
+export interface SyncResult {
+  person_id: string
+  added: string[]
+  removed: string[]
+  kept: string[]
+  skipped: string[]
+}
+
+/** Sincroniza por IDs; o banco só adiciona/remove nos ministérios que o chamador gere. */
+export function useSyncPersonMinistries() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ personId, ministryIds }: { personId: string; ministryIds: string[]; churchId: string }) => {
+      const { data, error } = await rpc('sync_person_ministries', { p_person_id: personId, p_ministry_ids: ministryIds })
+      if (error) throw new Error(error.message)
+      return data as SyncResult
+    },
+    onSuccess: (res, { personId, churchId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['person-ministries', personId] })
+      void queryClient.invalidateQueries({ queryKey: ['ministry-member-counts', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
+      for (const id of [...(res?.added ?? []), ...(res?.removed ?? [])]) {
+        void queryClient.invalidateQueries({ queryKey: ['ministry-members', id] })
+      }
+    },
+  })
+}
+
 function useInvalidateMembers() {
   const queryClient = useQueryClient()
-  return (ministryId: string, churchId: string) => {
+  return (ministryId: string, churchId: string, personId?: string) => {
     void queryClient.invalidateQueries({ queryKey: ['ministry-members', ministryId] })
     void queryClient.invalidateQueries({ queryKey: ['ministry-member-counts', churchId] })
     void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
+    // Bidirecional: o lado "Editar Pessoa" lê a mesma relação
+    if (personId) void queryClient.invalidateQueries({ queryKey: ['person-ministries', personId] })
   }
 }
 
@@ -102,7 +157,7 @@ export function useAddMinistryMember() {
       if (error) throw new Error(error.message)
       return data as { inserted: boolean }
     },
-    onSuccess: (_d, { ministryId, churchId }) => invalidate(ministryId, churchId),
+    onSuccess: (_d, { ministryId, churchId, personId }) => invalidate(ministryId, churchId, personId),
   })
 }
 
@@ -114,6 +169,6 @@ export function useRemoveMinistryMember() {
       if (error) throw new Error(error.message)
       return data as { removed: boolean }
     },
-    onSuccess: (_d, { ministryId, churchId }) => invalidate(ministryId, churchId),
+    onSuccess: (_d, { ministryId, churchId, personId }) => invalidate(ministryId, churchId, personId),
   })
 }
