@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { matchesSearch } from '@/lib/normalizeSearch'
 import { useParams }                         from 'react-router-dom'
 import {
   Baby, AlertCircle, Users, CheckCircle2, Loader2,
@@ -233,7 +234,7 @@ export default function KidsSala() {
   const filtered = search.trim()
     ? children.filter(c =>
         c.wristband_number.includes(search.trim()) ||
-        c.child_name.toLowerCase().includes(search.trim().toLowerCase())
+        matchesSearch(search, c.child_name)
       )
     : children
 
