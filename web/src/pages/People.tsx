@@ -13,7 +13,7 @@ import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Settings2, ChevronDown, Check, Phone, Heart, Download } from 'lucide-react'
+import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Check, Phone, Heart, Download } from 'lucide-react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useDeletePerson } from '@/features/people/hooks/usePeople'
 import {
@@ -547,8 +547,6 @@ export default function People() {
 
   // ── Filtros cumulativos (todos server-side) ──────────────────────────────
   const [search, setSearch]             = useState('')
-  const [tagFilter, setTagFilter]       = useState<string>('')
-  const [tagDropOpen, setTagDropOpen]   = useState(false)
   const [sourceFilter, setSourceFilter] = useState<string>('')
   const [careFilter, setCareFilter]     = useState<CareFilter>('')
   const [createdFrom, setCreatedFrom]   = useState('')
@@ -590,7 +588,6 @@ export default function People() {
     stageKey:    activeStageKey,
     careStatus:  careFilter || undefined,
     source:      sourceFilter || undefined,
-    tagId:       tagFilter || undefined,
     search:      search || undefined,
     birthMonth:  isBirthdayTab ? currentMonth : undefined,
     createdFrom: (activeStageKey === 'visitante' ? periodRange.from : createdFrom) || undefined,
@@ -815,59 +812,6 @@ export default function People() {
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(0) }}
             className="w-full md:max-w-sm"
           />
-
-          {allTags.length > 0 && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setTagDropOpen((o) => !o)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-              >
-                <span
-                  className="h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: tagFilter ? (allTags.find((t) => t.id === tagFilter)?.color ?? '#6B7280') : '#d1d5db' }}
-                />
-                {tagFilter ? allTags.find((t) => t.id === tagFilter)?.name : 'Todos os tipos'}
-                <ChevronDown size={12} className={`transition-transform ${tagDropOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {tagDropOpen && (
-                <ul className="absolute left-0 top-full mt-1 z-30 bg-white rounded-xl border border-border-default shadow-lg py-1" style={{ minWidth: '160px' }}>
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => { setTagFilter(''); setTagDropOpen(false); setCurrentPage(0) }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${!tagFilter ? 'font-semibold text-text-primary bg-bg-hover' : 'text-text-secondary hover:bg-bg-hover'}`}
-                    >
-                      Todos os tipos
-                    </button>
-                  </li>
-                  {allTags.map((tag) => (
-                    <li key={tag.id}>
-                      <button
-                        type="button"
-                        onClick={() => { setTagFilter(tag.id); setTagDropOpen(false); setCurrentPage(0) }}
-                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${tagFilter === tag.id ? 'font-semibold bg-bg-hover' : 'hover:bg-bg-hover'}`}
-                      >
-                        <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
-                        <span className="flex-1">{tag.name}</span>
-                        {tagFilter === tag.id && <span className="text-text-tertiary" style={{ fontSize: '10px' }}>✓</span>}
-                      </button>
-                    </li>
-                  ))}
-                  <li className="border-t border-border-default mt-1 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => { setTagDropOpen(false); navigate('/pessoas/flags') }}
-                      className="w-full text-left px-3 py-2 text-xs text-text-tertiary hover:text-text-secondary flex items-center gap-1.5 transition-colors"
-                    >
-                      <Settings2 size={11} />
-                      Gerenciar tipos
-                    </button>
-                  </li>
-                </ul>
-              )}
-            </div>
-          )}
 
           <select
             value={sourceFilter}
