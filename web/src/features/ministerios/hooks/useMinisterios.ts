@@ -19,23 +19,15 @@ export function useMinisterios(churchId: string) {
       if (error) throw new Error(error.message)
 
       const ministries = (data ?? []) as MinistryWithLeader[]
-      const ids = ministries.map((m) => m.id)
+      if (ministries.length === 0) return ministries
 
-      if (ids.length === 0) return ministries
-
-      const { data: volunteerData } = await supabase
-        .from('volunteers')
-        .select('ministry_id')
-        .in('ministry_id', ids)
-        .eq('church_id', churchId)
-        .eq('is_active', true)
-
+      // Pessoas do ministério = ministry_members (pertencimento canônico). Não conta volunteers.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: countData } = await (supabase.rpc as any)('get_ministry_member_counts', { p_church_id: churchId })
       const countMap: Record<string, number> = {}
-      for (const v of volunteerData ?? []) {
-        countMap[v.ministry_id] = (countMap[v.ministry_id] ?? 0) + 1
-      }
+      for (const r of (countData ?? []) as Array<{ ministry_id: string; cnt: number }>) countMap[r.ministry_id] = Number(r.cnt)
 
-      return ministries.map((m) => ({ ...m, volunteer_count: countMap[m.id] ?? 0 }))
+      return ministries.map((m) => ({ ...m, member_count: countMap[m.id] ?? 0 }))
     },
     enabled: Boolean(churchId),
   })
@@ -47,17 +39,19 @@ interface CreateMinistryInput {
   slug: string
   description?: string
   leaderPersonId?: string
+  /** Conta de acesso do líder (auth.users.id) — vinculada pelo admin; opcional. */
+  leaderUserId?: string | null
 }
 
 export function useCreateMinistry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ leaderPersonId, ...input }: CreateMinistryInput) => {
+    mutationFn: async ({ leaderPersonId, leaderUserId, ...input }: CreateMinistryInput) => {
       const { data: ministry, error } = await supabase
         .from('ministries')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert({ ...input, leader_id: leaderPersonId ?? null, is_active: true } as any)
+        .insert({ ...input, leader_id: leaderPersonId ?? null, leader_user_id: leaderUserId ?? null, is_active: true } as any)
         .select()
         .single()
 
@@ -77,19 +71,22 @@ interface UpdateMinistryInput {
   slug?: string
   description?: string
   leaderPersonId?: string | null
+  /** Conta de acesso do líder; undefined = não altera, null = desvincula. Só admin (trigger no banco). */
+  leaderUserId?: string | null
 }
 
 export function useUpdateMinistry() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, church_id, leaderPersonId, ...updates }: UpdateMinistryInput) => {
+    mutationFn: async ({ id, church_id, leaderPersonId, leaderUserId, ...updates }: UpdateMinistryInput) => {
       const leaderUpdate = leaderPersonId !== undefined ? { leader_id: leaderPersonId ?? null } : {}
+      const accountUpdate = leaderUserId !== undefined ? { leader_user_id: leaderUserId ?? null } : {}
 
       const { data, error } = await supabase
         .from('ministries')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ ...updates, ...leaderUpdate } as any)
+        .update({ ...updates, ...leaderUpdate, ...accountUpdate } as any)
         .eq('id', id)
         .eq('church_id', church_id)
         .select()
