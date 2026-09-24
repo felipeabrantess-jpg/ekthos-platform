@@ -150,7 +150,10 @@ export interface GroupWithDetails extends Group {
 
 /** ministries with the leader's person data (direct FK: ministries.leader_id → people.id) */
 export interface MinistryWithLeader extends Ministry {
-  volunteer_count?: number
+  /** Pessoas do ministério (ministry_members) — NÃO é contagem de voluntários. */
+  member_count?: number
+  /** Conta de acesso autorizada a gerir o ministério (ministries.leader_user_id). */
+  leader_user_id?: string | null
   people: Pick<Person, 'id' | 'name' | 'phone' | 'email'> | null
 }
 

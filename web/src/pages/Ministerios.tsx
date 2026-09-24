@@ -6,10 +6,14 @@ import {
   useCreateMinistry,
   useUpdateMinistry,
   useDeleteMinistry,
-  useMinistryVolunteers,
-  useAddVolunteer,
-  useRemoveVolunteer,
 } from '@/features/ministerios/hooks/useMinisterios'
+import {
+  useMinistryMembers,
+  useMyManagedMinistries,
+  useChurchAccounts,
+  useAddMinistryMember,
+  useRemoveMinistryMember,
+} from '@/features/ministerios/hooks/useMinistryMembers'
 import { useMinistryReferrals } from '@/features/ministerios/hooks/useMinistryReferrals'
 import type { MinistryReferral } from '@/features/ministerios/hooks/useMinistryReferrals'
 import Spinner from '@/components/ui/Spinner'
@@ -31,13 +35,17 @@ type PageTab = 'ministerios' | 'fila'
 interface MinistryFormData {
   name: string
   description: string
+  /** PESSOA líder (people.id) */
   leaderPersonId: string
+  /** CONTA DE ACESSO autorizada a gerir o ministério (auth.users.id) — vinculada pelo admin */
+  leaderUserId: string
 }
 
 const emptyForm: MinistryFormData = {
   name: '',
   description: '',
   leaderPersonId: '',
+  leaderUserId: '',
 }
 
 function slugify(name: string): string {
@@ -56,10 +64,13 @@ interface MinistryCardProps {
   onEdit: (m: MinistryWithLeader) => void
   onDelete: (m: MinistryWithLeader) => void
   onMembers: (m: MinistryWithLeader) => void
+  /** admin/admin_departments: editar/excluir o ministério */
   canManage: boolean
+  /** admin ou líder com conta vinculada a ESTE ministério: gerir pessoas */
+  canManageMembers: boolean
 }
 
-function MinistryCard({ ministry, onEdit, onDelete, onMembers, canManage }: MinistryCardProps) {
+function MinistryCard({ ministry, onEdit, onDelete, onMembers, canManage, canManageMembers }: MinistryCardProps) {
   const leaderName = ministry.people?.name ?? null
 
   return (
@@ -80,8 +91,8 @@ function MinistryCard({ ministry, onEdit, onDelete, onMembers, canManage }: Mini
           <span className="font-medium text-text-primary">{leaderName ?? 'Sem líder'}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="text-text-tertiary">Voluntários:</span>
-          <span className="font-medium text-text-primary">{ministry.volunteer_count ?? 0}</span>
+          <span className="text-text-tertiary">Pessoas:</span>
+          <span className="font-medium text-text-primary" data-testid="member-count">{ministry.member_count ?? 0}</span>
         </div>
       </div>
 
@@ -89,8 +100,9 @@ function MinistryCard({ ministry, onEdit, onDelete, onMembers, canManage }: Mini
         <button
           onClick={() => onMembers(ministry)}
           className="text-xs text-primary hover:text-primary font-medium"
+          data-testid="btn-pessoas"
         >
-          Membros
+          {canManageMembers ? 'Pessoas' : 'Ver pessoas'}
         </button>
         {canManage && (
           <>
@@ -131,11 +143,14 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           name: editing.name,
           description: editing.description ?? '',
           leaderPersonId: editing.people?.id ?? '',
+          leaderUserId: editing.leader_user_id ?? '',
         }
       : emptyForm
   )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Contas da igreja para vincular a CONTA do líder (RPC só responde a admin)
+  const { data: accounts = [] } = useChurchAccounts(open)
 
   function handleChange(field: keyof MinistryFormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -155,6 +170,7 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           slug: slugify(form.name.trim()),
           description: form.description.trim() || undefined,
           leaderPersonId: form.leaderPersonId || null,
+          leaderUserId: form.leaderUserId || null,
         })
       } else {
         await createMinistry.mutateAsync({
@@ -163,6 +179,7 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           slug: slugify(form.name.trim()),
           description: form.description.trim() || undefined,
           leaderPersonId: form.leaderPersonId || undefined,
+          leaderUserId: form.leaderUserId || null,
         })
       }
       onClose()
@@ -194,12 +211,29 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-500 mb-1">Líder</label>
+          <label className="block text-sm font-medium text-gray-500 mb-1">Líder (pessoa)</label>
           <PersonSelect
             value={form.leaderPersonId || null}
             onChange={(id) => handleChange('leaderPersonId', id ?? '')}
             placeholder="Buscar líder pelo nome..."
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-500 mb-1">Conta de acesso do líder</label>
+          <select
+            value={form.leaderUserId}
+            onChange={(e) => handleChange('leaderUserId', e.target.value)}
+            className="w-full rounded-xl border border-border-default px-3 py-2 text-sm bg-white focus:outline-none focus:border-primary"
+            data-testid="leader-account-select"
+          >
+            <option value="">Sem conta vinculada</option>
+            {accounts.map((a) => (
+              <option key={a.user_id} value={a.user_id}>{a.name} — {a.email} ({a.role})</option>
+            ))}
+          </select>
+          <p className="text-xs text-text-tertiary mt-1">
+            A conta vinculada poderá incluir e remover pessoas somente deste ministério. Pessoa (líder) e conta (login) são coisas distintas.
+          </p>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
@@ -215,94 +249,127 @@ function MinistryModal({ open, onClose, churchId, editing }: MinistryModalProps)
   )
 }
 
-// ── MembersModal — pesquisar / incluir / excluir membros do ministério ─────────
+// ── MembersModal — PESSOAS DO MINISTÉRIO (people ⟷ ministry_members ⟷ ministries) ──
+// Pesquisa pessoas JÁ cadastradas na igreja, inclui e remove o vínculo em
+// ministry_members. Nunca cria/altera/remove `volunteers` (voluntariado é outra
+// estrutura). Autorização real está no banco (can_manage_ministry nas RPCs).
 
 interface MembersModalProps {
   open: boolean
   onClose: () => void
   churchId: string
   ministry: MinistryWithLeader
+  /** admin/admin_departments ou líder com conta vinculada a este ministério */
+  canManageMembers: boolean
 }
 
-function MembersModal({ open, onClose, churchId, ministry }: MembersModalProps) {
-  const { data: volunteers = [], isLoading } = useMinistryVolunteers(churchId, ministry.id)
-  const addVolunteer    = useAddVolunteer()
-  const removeVolunteer = useRemoveVolunteer()
+function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: MembersModalProps) {
+  const { data: members = [], isLoading, isError } = useMinistryMembers(ministry.id)
+  const addMember    = useAddMinistryMember()
+  const removeMember = useRemoveMinistryMember()
   const [personId, setPersonId] = useState<string | null>(null)
   const [selectKey, setSelectKey] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<string | null>(null)
 
-  const alreadyIn = personId ? volunteers.some((v) => v.person_id === personId) : false
+  const memberIds = members.map((m) => m.person_id)
+  const alreadyIn = personId ? memberIds.includes(personId) : false
 
   async function handleAdd() {
     if (!personId || alreadyIn) return
     setError(null)
     try {
-      await addVolunteer.mutateAsync({ churchId, ministryId: ministry.id, personId })
+      await addMember.mutateAsync({ churchId, ministryId: ministry.id, personId })
       setPersonId(null)
       setSelectKey((k) => k + 1)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao incluir')
+      const msg = err instanceof Error ? err.message : 'Erro ao incluir'
+      setError(msg.includes('FORBIDDEN') ? 'Você não tem permissão para gerir as pessoas deste ministério.' : msg)
     }
   }
 
-  async function handleRemove(volunteerId: string) {
+  async function handleRemove(pid: string) {
     setError(null)
     try {
-      await removeVolunteer.mutateAsync({ churchId, ministryId: ministry.id, volunteerId })
+      await removeMember.mutateAsync({ churchId, ministryId: ministry.id, personId: pid })
+      setRemoving(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir')
+      const msg = err instanceof Error ? err.message : 'Erro ao remover'
+      setError(msg.includes('FORBIDDEN') ? 'Você não tem permissão para gerir as pessoas deste ministério.' : msg)
     }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={`Membros — ${ministry.name}`}>
-      <div className="space-y-4">
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <PersonSelect
-              key={selectKey}
-              label="Pesquisar membro"
-              value={personId}
-              onChange={(id) => setPersonId(id)}
-              placeholder="Nome (não diferencia acento ou maiúsculas)"
-            />
+    <Modal open={open} onClose={onClose} title={`Pessoas do Ministério — ${ministry.name}`}>
+      <div className="space-y-4" data-testid="pessoas-ministerio">
+        {canManageMembers ? (
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <PersonSelect
+                key={selectKey}
+                label="Pesquisar pessoa"
+                value={personId}
+                onChange={(id) => setPersonId(id)}
+                excludeIds={memberIds}
+                placeholder="Nome (não diferencia acento, ç ou maiúsculas)"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => void handleAdd()}
+              disabled={!personId || alreadyIn || addMember.isPending}
+              data-testid="btn-incluir"
+            >
+              {addMember.isPending ? 'Incluindo...' : 'Incluir'}
+            </Button>
           </div>
-          <Button
-            type="button"
-            onClick={() => void handleAdd()}
-            disabled={!personId || alreadyIn || addVolunteer.isPending}
-          >
-            {addVolunteer.isPending ? 'Incluindo...' : 'Incluir'}
-          </Button>
-        </div>
+        ) : (
+          <p className="text-xs text-text-tertiary" data-testid="somente-leitura">
+            Somente o líder com conta vinculada ou um administrador pode incluir/remover pessoas.
+          </p>
+        )}
         {alreadyIn && <p className="text-xs text-amber-600">Esta pessoa já faz parte do ministério.</p>}
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500" data-testid="erro-pessoas">{error}</p>}
 
         <div className="border-t border-border-default pt-3">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide mb-2">
-            {volunteers.length} membro{volunteers.length !== 1 ? 's' : ''}
+          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide mb-2" data-testid="pessoas-total">
+            {members.length} pessoa{members.length !== 1 ? 's' : ''} do ministério
           </p>
           {isLoading ? (
             <div className="flex justify-center py-6"><Spinner size="md" /></div>
-          ) : volunteers.length === 0 ? (
-            <p className="text-sm text-text-tertiary py-4 text-center">Nenhum membro neste ministério ainda.</p>
+          ) : isError ? (
+            <p className="text-sm text-red-500 py-4 text-center">Não foi possível carregar as pessoas.</p>
+          ) : members.length === 0 ? (
+            <p className="text-sm text-text-tertiary py-4 text-center">Nenhuma pessoa neste ministério ainda.</p>
           ) : (
             <ul className="divide-y divide-border-default max-h-80 overflow-y-auto">
-              {volunteers.map((v) => (
-                <li key={v.id} className="flex items-center justify-between gap-3 py-2">
+              {members.map((m) => (
+                <li key={m.person_id} className="flex items-center justify-between gap-3 py-2" data-testid="pessoa-item">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-primary truncate">{v.people?.name ?? 'Sem nome'}</p>
-                    {v.people?.phone && <p className="text-xs text-text-tertiary">{v.people.phone}</p>}
+                    <p className="text-sm font-medium text-text-primary truncate">{m.name}</p>
+                    {m.phone && <p className="text-xs text-text-tertiary">{m.phone}</p>}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleRemove(v.id)}
-                    disabled={removeVolunteer.isPending}
-                    className="shrink-0 text-xs text-red-400 hover:text-red-600 font-medium disabled:opacity-50"
-                  >
-                    Excluir
-                  </button>
+                  {canManageMembers && (
+                    removing === m.person_id ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-text-secondary">Remover?</span>
+                        <button type="button" onClick={() => void handleRemove(m.person_id)} disabled={removeMember.isPending}
+                          className="text-xs text-red-500 hover:text-red-700 font-semibold disabled:opacity-50" data-testid="btn-confirmar-remover">
+                          {removeMember.isPending ? 'Removendo...' : 'Sim'}
+                        </button>
+                        <button type="button" onClick={() => setRemoving(null)} className="text-xs text-text-secondary hover:text-text-primary">Não</button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setRemoving(m.person_id)}
+                        className="shrink-0 text-xs text-red-400 hover:text-red-600 font-medium"
+                        data-testid="btn-remover"
+                      >
+                        Remover
+                      </button>
+                    )
+                  )}
                 </li>
               ))}
             </ul>
@@ -316,6 +383,7 @@ function MembersModal({ open, onClose, churchId, ministry }: MembersModalProps) 
     </Modal>
   )
 }
+
 
 // ── ReferralCard ───────────────────────────────────────────────────────────────
 
@@ -481,6 +549,9 @@ export default function Ministerios() {
   const deleteMinistry = useDeleteMinistry()
 
   const { data: ministries, isLoading, isError, refetch } = useMinisterios(churchId ?? '')
+  // Escopo real vem do banco (can_manage_ministry): admin → todos; líder com conta vinculada → os seus.
+  const { data: managed } = useMyManagedMinistries(!!churchId)
+  const canManageMembersOf = (ministryId: string) => isAdmin || (managed?.has(ministryId) ?? false)
 
   if (!churchId) return <ErrorState message="Igreja não identificada." />
 
@@ -566,6 +637,7 @@ export default function Ministerios() {
                   onDelete={setDeletingMinistry}
                   onMembers={setMembersMinistry}
                   canManage={isAdmin}
+                  canManageMembers={canManageMembersOf(ministry.id)}
                 />
               ))}
             </div>
@@ -573,13 +645,14 @@ export default function Ministerios() {
         </>
       )}
 
-      {/* Modal de membros do ministério */}
+      {/* Modal de pessoas do ministério (ministry_members) */}
       {membersMinistry && (
         <MembersModal
           open
           onClose={() => setMembersMinistry(null)}
           churchId={churchId}
           ministry={membersMinistry}
+          canManageMembers={canManageMembersOf(membersMinistry.id)}
         />
       )}
 

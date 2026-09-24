@@ -18,7 +18,11 @@ interface PersonSelectProps {
   label?: string
   error?: string
   hint?: string
+  /** Ids que não devem aparecer nos resultados (ex.: quem já pertence ao ministério). */
+  excludeIds?: string[]
 }
+
+const RESULT_LIMIT = 20
 
 export default function PersonSelect({
   value,
@@ -29,7 +33,9 @@ export default function PersonSelect({
   label,
   error,
   hint,
+  excludeIds,
 }: PersonSelectProps) {
+  const excludeKey = (excludeIds ?? []).join(',')
   const [inputText, setInputText] = useState('')
   const [results, setResults] = useState<Person[]>([])
   const [isOpen, setIsOpen] = useState(false)
@@ -74,12 +80,18 @@ export default function PersonSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Sem guard de 2 chars — query vazia retorna primeiras 8 pessoas (lista ao focar)
+  const [truncated, setTruncated] = useState(false)
+
+  // Sem guard de 2 chars — query vazia lista as primeiras pessoas (ao focar)
   const search = useCallback(async (query: string) => {
     setIsLoading(true)
     setIsOpen(true)
 
-    let q = supabase.from('people').select('id, name, email').is('deleted_at', null).is('left_at', null).limit(8)
+    const exclude = excludeKey ? excludeKey.split(',') : []
+    let q = supabase.from('people').select('id, name, email')
+      .is('deleted_at', null).is('left_at', null)
+      .order('name_sort', { ascending: true })
+      .limit(RESULT_LIMIT + exclude.length + 1)   // +1 para detectar truncamento
     const normalized = normalizeSearch(query)
     if (normalized.length > 0) {
       // name_sort = unaccent(lower(name)) → busca insensível a acento/caixa/cedilha
@@ -90,11 +102,11 @@ export default function PersonSelect({
     const { data, error: queryError } = await q
     if (queryError) console.error('[PersonSelect] query error:', queryError.message)
 
-    const fetched = (data as Person[]) ?? []
-
-    setResults(fetched)
+    const fetched = ((data as Person[]) ?? []).filter(p => !exclude.includes(p.id))
+    setTruncated(fetched.length > RESULT_LIMIT)
+    setResults(fetched.slice(0, RESULT_LIMIT))
     setIsLoading(false)
-  }, [])
+  }, [excludeKey])
 
   // Ao focar, buscar imediatamente (sem debounce) para mostrar lista instantânea
   function handleFocus() {
@@ -207,6 +219,11 @@ export default function PersonSelect({
                   </button>
                 </li>
               ))}
+              {truncated && (
+                <li className="px-3 py-2 text-xs text-amber-600 bg-amber-50 border-t border-black/5" data-testid="person-select-truncated">
+                  Mostrando os primeiros {RESULT_LIMIT} resultados — refine a busca.
+                </li>
+              )}
             </ul>
           )}
         </div>
