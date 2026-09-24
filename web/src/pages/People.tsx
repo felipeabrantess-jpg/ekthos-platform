@@ -314,12 +314,15 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBir
           ) : contactCount === 0 ? (
             <span className="text-xs text-text-tertiary">—</span>
           ) : (
+            // Visão rápida da sequência de atendimento pastoral: a quantidade REAL de
+            // pastoral_contact (get_contact_counts) apresentada como ordinal — "Nº contato".
             <span
-              className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-full text-xs font-semibold tabular-nums"
+              className="inline-flex items-center justify-center h-6 px-2 rounded-full text-xs font-semibold tabular-nums whitespace-nowrap"
               style={{ backgroundColor: '#E1F5EE', color: '#0F6E56' }}
-              title={`${contactCount} contato${contactCount === 1 ? '' : 's'} registrado${contactCount === 1 ? '' : 's'}`}
+              title={`${contactCount} contato${contactCount === 1 ? '' : 's'} pastoral${contactCount === 1 ? '' : 'is'} formalizado${contactCount === 1 ? '' : 's'} — próximo: ${contactCount + 1}º`}
+              data-testid="contatos-ordinal"
             >
-              {contactCount}
+              {contactCount}º contato
             </span>
           )}
         </td>

@@ -226,6 +226,67 @@ export function usePersonTimeline(
   })
 }
 
+// ── Contatos pastorais (sequência 1º, 2º, … Nº) ───────────────
+// Cada item corresponde a UM journey_events(event_type='pastoral_contact') real.
+// O ordinal é derivado no banco pela ordem de registro — nunca escolhido pelo usuário.
+
+export interface PersonContact {
+  event_id:          string
+  ordinal:           number
+  event_at:          string
+  contact_date:      string
+  actor_id:          string | null
+  actor_name:        string
+  channel:           string | null
+  result:            string | null
+  notes:             string | null
+  journey_id:        string
+  journey_closed_at: string | null
+  journey_outcome:   string | null
+}
+
+export function usePersonContacts(personId: string | undefined) {
+  return useQuery({
+    queryKey: ['person-contacts', personId],
+    queryFn: async (): Promise<PersonContact[]> => {
+      if (!personId) return []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_person_contacts', { p_person_id: personId })
+      if (error) throw new Error(error.message)
+      return (data ?? []) as PersonContact[]
+    },
+    enabled: !!personId,
+    staleTime: 15_000,
+  })
+}
+
+/** Última jornada da pessoa (aberta ou encerrada) — só para exibir STATUS. */
+export interface JourneyStatus {
+  id: string
+  closed_at: string | null
+  outcome: string | null
+}
+
+export function usePersonJourneyStatus(personId: string | undefined) {
+  return useQuery({
+    queryKey: ['person-journey-status', personId],
+    queryFn: async (): Promise<JourneyStatus | null> => {
+      if (!personId) return null
+      const { data, error } = await supabase
+        .from('person_journey')
+        .select('id, closed_at, outcome')
+        .eq('person_id', personId)
+        .order('opened_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (error) throw new Error(error.message)
+      return data as unknown as JourneyStatus | null
+    },
+    enabled: !!personId,
+    staleTime: 15_000,
+  })
+}
+
 // ── Mutation ─────────────────────────────────────────────────
 
 interface RegisterArgs {
@@ -270,6 +331,10 @@ export function useRegisterAttendance() {
       void queryClient.invalidateQueries({ queryKey: ['person-atendimento',  args.person_id] })
       void queryClient.invalidateQueries({ queryKey: ['person-journey',      args.person_id] })
       void queryClient.invalidateQueries({ queryKey: ['person-timeline',     args.person_id] })
+      void queryClient.invalidateQueries({ queryKey: ['person-contacts',     args.person_id] })
+      void queryClient.invalidateQueries({ queryKey: ['person-journey-status', args.person_id] })
+      // Coluna CONTATOS em /pessoas lê get_contact_counts — invalida para refletir o novo registro
+      void queryClient.invalidateQueries({ queryKey: ['contact-counts'] })
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board',      churchId] })
       void queryClient.invalidateQueries({ queryKey: ['care-queue',          churchId] })
     },
