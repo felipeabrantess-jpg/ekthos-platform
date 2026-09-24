@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { matchesSearch } from '@/lib/normalizeSearch'
 import { useQuery } from '@tanstack/react-query'
 import { Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -255,8 +256,7 @@ export default function Consolidation() {
   const filtered = people
     .filter(p => filter === 'all' || p.at_risk)
     .filter(p =>
-      (p.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
-      (p.email ?? '').toLowerCase().includes(search.toLowerCase())
+      matchesSearch(search, p.name, p.email)
     )
 
   const atRiskCount = people.filter(p => p.at_risk).length

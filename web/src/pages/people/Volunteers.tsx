@@ -9,6 +9,7 @@
  */
 
 import { useState, useMemo } from 'react'
+import { matchesSearch, ilikePattern } from '@/lib/normalizeSearch'
 import { useQuery } from '@tanstack/react-query'
 import {
   HandHeart, Search, X, Plus, Trash2, Pencil,
@@ -535,7 +536,7 @@ function AddVolunteerModal({ onClose, churchId, ministries, defaultMinistryId }:
         .from('people')
         .select('id, name, email, phone')
         .eq('church_id', churchId)
-        .ilike('name', `%${personSearch}%`)
+        .ilike('name_sort', ilikePattern(personSearch))   // caixa/acento/ç-insensível
         .is('deleted_at', null)
         .is('left_at', null)
         .limit(8)
@@ -726,7 +727,7 @@ function EditVolunteerModal({ volunteer, onClose, churchId, ministries }: EditVo
     queryFn: async () => {
       if (responsibleSearch.trim().length < 2) return []
       const { data } = await supabase.from('people').select('id, name, email, phone')
-        .eq('church_id', churchId).ilike('name', `%${responsibleSearch}%`).is('deleted_at', null).is('left_at', null).limit(8)
+        .eq('church_id', churchId).ilike('name_sort', ilikePattern(responsibleSearch)).is('deleted_at', null).is('left_at', null).limit(8)
       return (data ?? []) as PersonResult[]
     },
     enabled: responsibleSearch.trim().length >= 2,
@@ -1062,11 +1063,7 @@ export default function Volunteers() {
   const filteredVolunteers = useMemo(() => {
     let list = volunteers as VolunteerRow[]
     if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter(v =>
-        (v.people?.name ?? '').toLowerCase().includes(q) ||
-        (v.people?.email ?? '').toLowerCase().includes(q)
-      )
+      list = list.filter(v => matchesSearch(search, v.people?.name, v.people?.email))
     }
     if (statusFilter) {
       list = list.filter(v => ((v as any).care_status ?? 'servindo') === statusFilter)

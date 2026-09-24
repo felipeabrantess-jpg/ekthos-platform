@@ -1,4 +1,5 @@
 import { useState, useEffect }  from 'react'
+import { ilikePattern } from '@/lib/normalizeSearch'
 import { useNavigate }          from 'react-router-dom'
 import { Check, Search, ChevronDown, ChevronUp, MessageSquare, Heart } from 'lucide-react'
 import { useQuery, useQueryClient }  from '@tanstack/react-query'
@@ -46,7 +47,7 @@ function usePeopleForCuidado(churchId: string, search: string, period: Period, o
         .order('created_at', { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1)
 
-      if (trimmed)   q = q.ilike('name', `%${trimmed}%`)
+      if (trimmed)   q = q.ilike('name_sort', ilikePattern(trimmed))   // caixa/acento/ç-insensível
       if (cutoffIso) q = q.gte('created_at', cutoffIso)
 
       const { data, error } = await q

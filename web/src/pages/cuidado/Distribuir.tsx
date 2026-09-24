@@ -5,6 +5,7 @@
  */
 
 import { useState }          from 'react'
+import { matchesSearch } from '@/lib/normalizeSearch'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Users, HeartHandshake } from 'lucide-react'
 import { useAuth }  from '@/hooks/useAuth'
@@ -92,8 +93,8 @@ export default function Distribuir() {
 
   // Filtros
   const filtered = (pessoas ?? []).filter(p => {
-    const matchSearch = !search || (p.name ?? '').toLowerCase().includes(search.toLowerCase())
-    const matchBairro = !filterBairro || (p.neighborhood ?? '').toLowerCase().includes(filterBairro.toLowerCase())
+    const matchSearch = matchesSearch(search, p.name)
+    const matchBairro = matchesSearch(filterBairro, p.neighborhood)
     const matchResp =
       filterResp === 'todos' ? true :
       filterResp === 'sem'   ? !p.responsible_id :

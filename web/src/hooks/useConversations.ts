@@ -2,12 +2,13 @@
 // useConversations — Sprint 3C
 // Lista de conversas da inbox com busca, filtros e realtime.
 //
-// Busca por nome: procura people.first_name/last_name primeiro,
+// Busca por nome: procura people.contact_name_sort (normalizado) primeiro,
 // retorna person_ids → filtra conversations.person_id IN (ids).
 // Busca por fone: ilike em contact_phone.
 // ============================================================
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { ilikePattern } from '@/lib/normalizeSearch'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -79,17 +80,18 @@ export function useConversations(
       const isNameSearch  = searchTrimmed.length > 0 && /[a-zA-ZÀ-ú]/.test(searchTrimmed)
 
       if (isNameSearch) {
-        const { data: people } = await supabase
-          .from('people')
+        // contact_name_sort = unaccent(lower(name, ou first_name+last_name quando name é nulo))
+        // → caixa/acento/ç-insensível; cobre primeiro nome, sobrenome e nome completo ("joao silva"),
+        // inclusive contatos criados pelo WhatsApp sem name.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: people } = await (supabase.from('people') as any)
           .select('id')
           .eq('church_id', churchId)
           .is('deleted_at', null)
-          .or(
-            `first_name.ilike.%${searchTrimmed}%,last_name.ilike.%${searchTrimmed}%`
-          )
-          .limit(100)
+          .ilike('contact_name_sort', ilikePattern(searchTrimmed))
+          .limit(100) as { data: Array<{ id: string }> | null }
 
-        personIds = (people ?? []).map(p => p.id as string)
+        personIds = (people ?? []).map((p) => p.id)
         // Se buscou por nome mas não achou ninguém, retorna lista vazia
         if (personIds.length === 0) {
           setConversations([])

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { matchesSearch, ilikePattern } from '@/lib/normalizeSearch'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users2, Building2, Network, Plus, X, Pencil, Trash2, Eye } from 'lucide-react'
@@ -311,7 +312,7 @@ function AssignLeaderModal({ onClose, churchId }: { onClose: () => void; churchI
         .is('left_at', null)
         .limit(8)
       if (personSearch.trim().length > 0) {
-        q = q.ilike('name', `%${personSearch}%`)
+        q = q.ilike('name_sort', ilikePattern(personSearch))   // caixa/acento/ç-insensível
       }
       const { data } = await q
       return (data ?? []) as PersonResult[]
@@ -506,10 +507,7 @@ export default function Leaders() {
     },
   })
 
-  const filtered = leaders.filter(l =>
-    l.name.toLowerCase().includes(search.toLowerCase()) ||
-    (l.email ?? '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = leaders.filter(l => matchesSearch(search, l.name, l.email))
 
   const totalCelulas = leaders.filter(l => l.roles.some(r => r.kind === 'group_leader' || r.kind === 'group_coleader')).length
   const totalMinisterios = leaders.filter(l => l.roles.some(r => r.kind === 'ministry_leader')).length

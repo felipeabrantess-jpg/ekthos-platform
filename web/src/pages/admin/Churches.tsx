@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { matchesSearch } from '@/lib/normalizeSearch'
 import { useNavigate } from 'react-router-dom'
 import { Search, Filter, Eye, MoreVertical, Building2, Plus, Loader, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -261,12 +262,7 @@ export default function AdminChurches() {
     if (status !== 'all' && r.status !== status) return false
     if (plan   !== 'all' && r.plan_slug !== plan) return false
     if (search.trim()) {
-      const q = search.toLowerCase()
-      return (
-        r.name.toLowerCase().includes(q) ||
-        (r.city ?? '').toLowerCase().includes(q) ||
-        (r.state ?? '').toLowerCase().includes(q)
-      )
+      return matchesSearch(search, r.name, r.city, r.state)
     }
     return true
   })
