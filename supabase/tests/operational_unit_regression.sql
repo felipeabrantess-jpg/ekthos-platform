@@ -3,6 +3,12 @@
 -- um interruptor opcional de corte.
 --
 -- Casos com dados reais (IGV) usam apenas COUNTs; nada é escrito.
+-- Desde o hotfix de tenant (ETAPA 1) as RPCs exigem JWT da igreja: simulamos um usuário da IGV.
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated","app_metadata":{"church_id":"6c127559-874a-4748-8fce-55d4079613a5","role":"admin"}}', true);
+
 
 DO $$
 DECLARE
@@ -69,3 +75,4 @@ BEGIN
 
   RAISE NOTICE 'operational_unit_regression: OK';
 END $$;
+ROLLBACK;

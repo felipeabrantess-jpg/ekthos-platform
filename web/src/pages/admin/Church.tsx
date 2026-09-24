@@ -7,6 +7,8 @@ import {
   LayoutGrid, Link2,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
+import { useQueryClient } from '@tanstack/react-query'
 import Spinner from '@/components/ui/Spinner'
 import ModalHabilitarAgente from '@/components/admin/ModalHabilitarAgente'
 import { useChurchIdentity } from '@/hooks/useChurchIdentity'
@@ -1604,6 +1606,8 @@ const EMPTY_DETAIL: ChurchDetail = {
 export default function AdminChurch() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { refreshTenant } = useAuth()
+  const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const tab = searchParams.get('tab') ?? 'resumo'
   const setTab = (t: string) => setSearchParams({ tab: t }, { replace: true })
@@ -1660,16 +1664,13 @@ export default function AdminChurch() {
         const body = await res.json().catch(() => ({})) as { error?: string }
         throw new Error(body.error ?? `Erro ${res.status} ao iniciar sessão`)
       }
-      const result = await res.json() as { session_id: string; started_at: string; church_name: string }
+      await res.json().catch(() => null)
 
-      // Seta localStorage APENAS após 200 — inclui session_id para audit
-      localStorage.setItem('impersonating', JSON.stringify({
-        church_id:   data.id,
-        church_name: data.name,
-        session_id:  result.session_id,
-      }))
+      // Sessão criada no backend (impersonate_sessions) → o tenant efetivo já é a
+      // igreja alvo. Recarrega o contexto a partir do banco e limpa caches de dados.
+      await refreshTenant()
+      queryClient.clear()
       navigate('/dashboard')
-      window.location.reload()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao iniciar sessão de impersonação'
       setImpersonateError(msg)
