@@ -14,8 +14,12 @@ import {
   useSuggestStage,
   useRegisterAttendance,
   usePersonTimeline,
+  usePersonContacts,
+  usePersonJourneyStatus,
   useMinistries,
   type TimelineItem,
+  type PersonContact,
+  type JourneyStatus,
 } from '@/features/atendimento/hooks/useAtendimento'
 import Button from '@/components/ui/Button'
 
@@ -227,6 +231,146 @@ function TimelineRow({ item }: { item: TimelineItem }) {
   )
 }
 
+// ── Sequência de contatos pastorais (1º, 2º, 3º, … Nº) ────────────────────
+// Ordinal SEMPRE derivado dos pastoral_contact reais (get_person_contacts).
+// Os quatro primeiros são os marcos visuais do processo; acima disso o número
+// real continua sendo exibido (5º, 6º, 7º…) — não existe limite técnico.
+
+const ordinal = (n: number) => `${n}º`
+
+const JOURNEY_OUTCOME_LABEL: Record<string, string> = {
+  nao_quer_contato: 'Não quer contato',
+  mudou_de_igreja:  'Mudou de igreja',
+  manual:           'Encerrada manualmente',
+}
+
+function outcomeLabel(outcome: string | null): string {
+  if (!outcome) return 'Encerrada'
+  return JOURNEY_OUTCOME_LABEL[outcome] ?? RESULT_LABELS[outcome] ?? outcome
+}
+
+function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus }: {
+  contacts: PersonContact[]
+  isLoading: boolean
+  journeyStatus: JourneyStatus | null | undefined
+}) {
+  const done = contacts.length
+  const next = done + 1
+  const marks = Math.max(4, done)   // 4 marcos fixos; acima disso mostra todos os reais
+  const closed = !!journeyStatus?.closed_at
+
+  return (
+    <div className="bg-white rounded-2xl border border-border-default shadow-sm p-5" data-testid="sequencia-contatos">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Contatos pastorais</p>
+          {isLoading ? (
+            <p className="text-sm text-text-secondary mt-1">Carregando…</p>
+          ) : (
+            <>
+              <p className="text-sm text-ekthos-black mt-1" data-testid="contatos-realizados">
+                {done === 0
+                  ? 'Nenhum contato realizado'
+                  : `${done} contato${done === 1 ? '' : 's'} realizado${done === 1 ? '' : 's'}`}
+              </p>
+              <p className="text-base font-bold text-primary mt-0.5" data-testid="proximo-contato">
+                Próximo: {ordinal(next)} contato
+              </p>
+            </>
+          )}
+        </div>
+        {journeyStatus && (
+          <span
+            data-testid="status-jornada"
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${closed ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}
+          >
+            {closed ? `STATUS: ENCERRADO · ${outcomeLabel(journeyStatus.outcome)}` : 'STATUS: EM ATENDIMENTO'}
+          </span>
+        )}
+      </div>
+
+      {!isLoading && (
+        <ol className="mt-4 flex flex-wrap items-center gap-2" aria-label="Sequência de contatos">
+          {Array.from({ length: marks + 1 }, (_, i) => i + 1).map(n => {
+            const isDone = n <= done
+            const isNext = n === next
+            const c = contacts[n - 1]
+            return (
+              <li key={n} className="flex items-center gap-2">
+                <div
+                  data-testid={`marco-${n}`}
+                  data-state={isDone ? 'done' : isNext ? 'next' : 'pending'}
+                  title={isDone && c ? `${ordinal(n)} contato — ${formatDateTime(c.contact_date)}` : isNext ? 'Próximo contato' : 'Ainda não realizado'}
+                  className={`flex flex-col items-center justify-center rounded-xl border px-3 py-2 min-w-[64px] text-center ${
+                    isDone ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : isNext ? 'bg-primary/10 border-primary text-primary ring-2 ring-primary/30'
+                    : 'bg-white border-border-default text-text-tertiary'
+                  }`}
+                >
+                  <span className="text-sm font-bold leading-none flex items-center gap-1">
+                    {isDone && <CheckCircle2 size={12} />}{ordinal(n)}
+                  </span>
+                  <span className="text-[10px] mt-1 leading-none">
+                    {isDone && c ? formatDate(c.contact_date) : isNext ? 'próximo' : 'contato'}
+                  </span>
+                </div>
+                {n < marks + 1 && <span className="text-text-tertiary text-xs">—</span>}
+              </li>
+            )
+          })}
+        </ol>
+      )}
+    </div>
+  )
+}
+
+// ── Histórico específico de contatos (um item por pastoral_contact) ──────────
+
+function BlocoContatos({ contacts, isLoading, isError, refetch }: {
+  contacts: PersonContact[]
+  isLoading: boolean
+  isError: boolean
+  refetch: () => void
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-border-default shadow-sm" data-testid="historico-contatos">
+      <div className="p-5 pb-4">
+        <p className="font-semibold text-ekthos-black text-sm">Histórico de contatos</p>
+        <p className="text-xs text-text-secondary mt-0.5">
+          {isLoading ? 'Carregando…' : contacts.length === 0 ? 'Nenhum contato pastoral registrado' : `${contacts.length} contato${contacts.length === 1 ? '' : 's'}`}
+        </p>
+      </div>
+      <div className="border-t border-border-default">
+        {isLoading && (
+          <div className="flex items-center justify-center py-6"><Loader2 size={18} className="animate-spin text-text-secondary" /></div>
+        )}
+        {isError && (
+          <div className="p-5 text-xs text-red-600 flex items-center gap-2">
+            <AlertCircle size={13} /> Erro ao carregar contatos.
+            <button onClick={refetch} className="underline">Tentar novamente</button>
+          </div>
+        )}
+        {!isLoading && !isError && contacts.length > 0 && (
+          <ol className="divide-y divide-border-default">
+            {[...contacts].reverse().map(c => (
+              <li key={c.event_id} className="p-5 text-xs space-y-1" data-testid={`contato-${c.ordinal}`} data-event-id={c.event_id}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-bold text-ekthos-black text-sm">{ordinal(c.ordinal)} contato</p>
+                  <span className="text-text-secondary tabular-nums">{formatDateTime(c.contact_date).replace(', ', ' • ')}</span>
+                </div>
+                <p><span className="text-text-secondary">Responsável:</span> <span className="text-text-primary">{c.actor_name}</span></p>
+                <p><span className="text-text-secondary">Canal:</span> <span className="text-text-primary">{c.channel ? (CHANNEL_LABELS[c.channel] ?? c.channel) : '—'}</span></p>
+                <p><span className="text-text-secondary">Resultado:</span> <span className="text-text-primary">{c.result ? (RESULT_LABELS[c.result] ?? c.result) : '—'}</span></p>
+                <p><span className="text-text-secondary">Observação:</span> <span className="text-text-primary">{c.notes ?? '—'}</span></p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function BlocoHistorico({ personId }: { personId: string }) {
   const [showAll, setShowAll] = useState(false)
   const limit = showAll ? 50 : 10
@@ -303,9 +447,11 @@ interface BlocoAcoesProps {
   journey:  ReturnType<typeof usePersonJourney>['data']
   stages:   { id: string; name: string; order_index: number }[]
   onToast:  (msg: string, type: 'success' | 'error') => void
+  /** Ordinal do contato que será registrado (contatos reais + 1) — derivado, nunca manual. */
+  nextOrdinal: number
 }
 
-function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
+function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoesProps) {
   const { churchId } = useAuth()
   const register = useRegisterAttendance()
   const { data: ministries = [] } = useMinistries(churchId)
@@ -419,6 +565,8 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
       const msg = String(err)
       if (msg.includes('JOURNEY_VERSION_CONFLICT')) {
         onToast('Conflito de versão — jornada atualizada por outra pessoa. Recarregue a página.', 'error')
+      } else if (msg.includes('JOURNEY_REQUIRED')) {
+        onToast('Esta pessoa não tem jornada aberta: selecione a etapa para abrir a jornada e registrar o contato.', 'error')
       } else {
         onToast('Erro ao registrar atendimento. Dados preservados — tente novamente.', 'error')
       }
@@ -585,7 +733,9 @@ function BlocoAcoes({ person, journey, stages, onToast }: BlocoAcoesProps) {
 
       {/* ── Registro do contato ── */}
       <div className="space-y-3">
-        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Registrar contato</p>
+        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide" data-testid="titulo-registrar">
+          Registrar {ordinal(nextOrdinal)} contato
+        </p>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
             <span className="text-xs text-text-secondary">Canal</span>
@@ -725,6 +875,8 @@ export default function AtendimentoPage() {
 
   const { data: person, isLoading: personLoading, error: personError } = usePerson(personId)
   const { data: journey } = usePersonJourney(personId)
+  const { data: contacts = [], isLoading: contactsLoading, isError: contactsError, refetch: refetchContacts } = usePersonContacts(personId)
+  const { data: journeyStatus } = usePersonJourneyStatus(personId)
 
   const { data: stages = [] } = useQuery({
     queryKey: ['pipeline-stages', churchId],
@@ -809,15 +961,24 @@ export default function AtendimentoPage() {
         <BlocoQuemE person={person} />
       </div>
 
+      {/* Sequência de contatos (1º, 2º, 3º, 4º, … Nº) + status da jornada */}
+      <div className="px-4 md:px-6 pb-3">
+        <BlocoSequenciaContatos contacts={contacts} isLoading={contactsLoading} journeyStatus={journeyStatus} />
+      </div>
+
       {/* E3: Duas colunas — formulário (esq, maior) + histórico (dir, sempre visível) */}
       <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 px-4 md:px-6 items-start">
         <BlocoAcoes
           person={person}
           journey={journey}
           stages={stages}
+          nextOrdinal={contacts.length + 1}
           onToast={(msg, type) => setToast({ msg, type, key: Date.now() })}
         />
-        <BlocoHistorico personId={person.id} />
+        <div className="space-y-4">
+          <BlocoContatos contacts={contacts} isLoading={contactsLoading} isError={contactsError} refetch={() => void refetchContacts()} />
+          <BlocoHistorico personId={person.id} />
+        </div>
       </div>
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} key={toast.key} />}
