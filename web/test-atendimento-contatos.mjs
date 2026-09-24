@@ -215,6 +215,15 @@ const ck = (n, ok, info = '') => { results.push(ok); console.log(`${ok ? '✅' :
 
 async function custom(r, u) {
   const F = async (x) => { await r.fulfill(x); return true; };
+  // ── /pessoas: lista e coluna CONTATOS a partir do MESMO estado (pastoral_contact reais) ──
+  if (u.includes('/rest/v1/rpc/get_contact_counts')) {
+    const body = JSON.parse(r.request().postData() || '{}');
+    return F(json((body.p_person_ids || []).filter(id => people[id]).map(id => ({ person_id: id, cnt: people[id].contacts.length }))));
+  }
+  if (u.includes('/rest/v1/rpc/get_people_page')) {
+    const rows = Object.values(people).map(p => ({ ...MOCK_PEOPLE[0], id: p.id, name: p.name, person_pipeline: [], unit_id: null }));
+    return F(json(rows.map(x => ({ row_data: x, total_count: rows.length }))));
+  }
   const m = r.request().method();
         const q = new URL(u); const pid = (q.searchParams.get('person_id') || q.searchParams.get('id') || '').replace('eq.', '');
   if (u.includes('/rest/v1/rpc/')) {
@@ -302,6 +311,50 @@ ck('depois: 3 contatos, Registrar 4º contato', (await txt('[data-testid="titulo
 const novo = await txt('[data-testid="contato-3"]');
 ck('novo registro aparece como 3º contato no histórico com a observação', /3º contato/.test(novo) && /terceiro contato via teste/.test(novo) && /Responsável: João/.test(novo), novo);
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '));
+
+// ── Teste integrado /pessoas ⇄ Atendimento: coluna CONTATOS como ordinal e atualização após salvar ──
+const cellOf = async (name) => {
+  const row = page.locator('table tbody tr', { hasText: name }).first();
+  await row.waitFor({ state: 'visible', timeout: 15000 });
+  const badge = row.locator('[data-testid="contatos-ordinal"]');
+  return (await badge.count()) ? (await badge.first().textContent() || '').trim() : '—';
+};
+const expectedLabel = (n) => (n === 0 ? '—' : `${n}º contato`);
+// estado limpo para a integração (o cenário anterior já tinha salvo um contato na Pessoa 2)
+people.p2.contacts = mkContacts(2, 'p2'); registerCalls.length = 0;
+
+await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1200);
+for (const n of [0, 1, 2, 3, 4, 6, 7]) {
+  const c = await cellOf(`Pessoa ${n} contatos`);
+  ck(`/pessoas coluna CONTATOS para ${n} pastoral_contact → "${expectedLabel(n)}"`, c === expectedLabel(n), c);
+}
+await page.screenshot({ path: 'pessoas-coluna-contatos.png', fullPage: false });
+
+for (const n of [0, 1, 2, 3, 4, 6]) {
+  const name = `Pessoa ${n} contatos`;
+  await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(800);
+  const before = await cellOf(name);
+  const row = page.locator('table tbody tr', { hasText: name }).first();
+  await row.locator('button[title="Atender"]').first().click();
+  await page.waitForURL(`**/pessoas/p${n}/atendimento**`, { timeout: 15000 }); await page.waitForTimeout(900);
+  const titulo = await txt('[data-testid="titulo-registrar"]');
+  if (n === 0) {
+    // pessoa sem jornada: etapa obrigatória (sugestão preenche; garante seleção explícita)
+    await page.locator('select').filter({ has: page.locator('option:has-text("Selecionar etapa")') }).first().selectOption('s1').catch(() => {});
+  }
+  await page.locator('textarea[placeholder*="Anotações"]').fill(`contato ${n + 1} via /pessoas`);
+  await page.locator('button:has-text("Salvar atendimento"):visible').first().click();
+  await page.waitForTimeout(1200);
+  const tituloDepois = await txt('[data-testid="titulo-registrar"]');
+  await page.locator('button[aria-label="Voltar"]').first().click();
+  await page.waitForURL('**/pessoas**', { timeout: 15000 }); await page.waitForTimeout(1200);
+  const after = await cellOf(name);
+  ck(`${expectedLabel(n)} → coração → "${titulo}" → salva → volta → "${after}"`,
+    before === expectedLabel(n) && titulo === `Registrar ${n + 1}º contato` && tituloDepois === `Registrar ${n + 2}º contato` && after === expectedLabel(n + 1),
+    `antes=${before} depois=${after}`);
+}
+await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(800);
+await page.screenshot({ path: 'pessoas-coluna-contatos-depois.png', fullPage: false });
 
 await browser.close();
 const failed = results.filter(x => !x).length;
