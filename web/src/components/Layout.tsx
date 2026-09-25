@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Eye } from 'lucide-react'
 import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
@@ -10,15 +11,10 @@ import { AgentDrawerProvider } from '@/contexts/AgentDrawerContext'
 import { UnitProvider } from '@/contexts/UnitContext'
 import { AgentDrawer } from '@/components/agents/AgentDrawer'
 import { supabase } from '@/lib/supabase'
-
-interface ImpersonatingState {
-  church_id:   string
-  church_name: string
-  session_id?: string
-}
+import { useAuth, type ImpersonationState } from '@/lib/auth-context'
 
 function ImpersonateBanner({ state, onExit, exitLoading, exitError }: {
-  state: ImpersonatingState
+  state: ImpersonationState
   onExit: () => void
   exitLoading: boolean
   exitError: string | null
@@ -50,7 +46,10 @@ function ImpersonateBanner({ state, onExit, exitLoading, exitError }: {
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [impersonating, setImpersonating] = useState<ImpersonatingState | null>(null)
+  // Impersonação: estado vem do backend via AuthContext (get_my_tenant_context).
+  // localStorage não decide nada aqui.
+  const { impersonation: impersonating, refreshTenant } = useAuth()
+  const queryClient = useQueryClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: church } = useChurch()
 
@@ -70,17 +69,6 @@ export default function Layout() {
     }
   }, [church?.primary_color, church?.secondary_color])
 
-  useEffect(() => {
-    const raw = localStorage.getItem('impersonating')
-    if (raw) {
-      try {
-        setImpersonating(JSON.parse(raw) as ImpersonatingState)
-      } catch {
-        localStorage.removeItem('impersonating')
-      }
-    }
-  }, [])
-
   const [exitLoading, setExitLoading] = useState(false)
   const [exitError,   setExitError]   = useState<string | null>(null)
 
@@ -90,38 +78,44 @@ export default function Layout() {
     setExitError(null)
 
     const session_id = impersonating?.session_id ?? null
-
-    if (session_id) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.access_token) {
-          const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-          const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-end-impersonation`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type':  'application/json',
-            },
-            body: JSON.stringify({ session_id, ended_reason: 'manual_exit' }),
-          })
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({})) as { error?: string }
-            // Logar erro mas não bloquear o logout — always limpa localStorage
-            console.error('[impersonate] end failed:', body.error)
-            setExitError(body.error ?? 'Erro ao encerrar sessão')
-          }
-        }
-      } catch (err) {
-        console.error('[impersonate] end error:', err)
-        // Não bloquear — limpar localStorage de qualquer forma
-      }
+    if (!session_id) {
+      // Nada aberto no backend: apenas ressincroniza o contexto
+      await refreshTenant()
+      setExitLoading(false)
+      return
     }
 
-    // Sempre limpa localStorage (mesmo se EF falhou)
-    localStorage.removeItem('impersonating')
+    // O backend é a autoridade: só consideramos a impersonação encerrada
+    // quando a sessão server-side for fechada. Falha aqui NÃO apaga o estado.
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Sessão expirada')
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-end-impersonation`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ session_id, ended_reason: 'manual_exit' }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(body.error ?? `Erro ${res.status} ao encerrar sessão`)
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao encerrar sessão'
+      console.error('[impersonate] end failed:', msg)
+      setExitError(msg)
+      setExitLoading(false)
+      return
+    }
+
+    // Tenant voltou ao original no backend → recarrega contexto e limpa caches
+    await refreshTenant()
+    queryClient.clear()
     setExitLoading(false)
     navigate('/admin/churches')
-    window.location.reload()
   }
 
   return (

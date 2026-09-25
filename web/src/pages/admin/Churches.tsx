@@ -3,6 +3,8 @@ import { matchesSearch } from '@/lib/normalizeSearch'
 import { useNavigate } from 'react-router-dom'
 import { Search, Filter, Eye, MoreVertical, Building2, Plus, Loader, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth-context'
+import { useQueryClient } from '@tanstack/react-query'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'
 
@@ -129,6 +131,8 @@ type FilterPlan   = 'all' | 'chamado' | 'missao' | 'avivamento'
 
 export default function AdminChurches() {
   const navigate = useNavigate()
+  const { refreshTenant } = useAuth()
+  const queryClient = useQueryClient()
   const [rows,    setRows]    = useState<ChurchRow[]>([])
   const [loading, setLoading] = useState(true)
   const [search,  setSearch]  = useState('')
@@ -240,15 +244,13 @@ export default function AdminChurches() {
         const body = await res.json().catch(() => ({})) as { error?: string }
         throw new Error(body.error ?? `Erro ${res.status} ao iniciar sessão`)
       }
-      const result = await res.json() as { session_id: string; started_at: string; church_name: string }
+      await res.json().catch(() => null)
 
-      localStorage.setItem('impersonating', JSON.stringify({
-        church_id:   church.id,
-        church_name: church.name,
-        session_id:  result.session_id,
-      }))
+      // Sessão criada no backend (impersonate_sessions) → o tenant efetivo já é a
+      // igreja alvo. Recarrega o contexto a partir do banco e limpa caches de dados.
+      await refreshTenant()
+      queryClient.clear()
       navigate('/dashboard')
-      window.location.reload()
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha ao iniciar sessão de impersonação'
       setImpersonateError(msg)
