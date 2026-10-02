@@ -12,7 +12,7 @@ import type { PersonWithStage } from '@/lib/types/joins'
 
 export const PEOPLE_PAGE_SIZE = 50
 
-export type CareStatus = 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
+export type CareStatus = 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado' | 'sem_contato_48h'
 
 /** Marcador para "pessoas sem etapa no pipeline" (p_stage_key = '__none'). */
 export const STAGE_KEY_NONE = '__none'

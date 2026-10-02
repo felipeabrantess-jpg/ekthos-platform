@@ -290,6 +290,29 @@ export function usePersonJourneyStatus(personId: string | undefined) {
   })
 }
 
+// ── Reabrir atendimento encerrado ────────────────────────────
+export function useReopenJourney() {
+  const queryClient = useQueryClient()
+  const { churchId } = useAuth()
+  return useMutation({
+    mutationFn: async ({ journeyId, reason }: { journeyId: string; personId: string; reason: string }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('journey_reopen', { p_journey_id: journeyId, p_reason: reason })
+      if (error) throw new Error((error as { message: string }).message)
+      return data as { journey_id: string; person_id: string; version: number; care_state: string }
+    },
+    onSuccess: (_data, { personId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['person-journey',        personId] })
+      void queryClient.invalidateQueries({ queryKey: ['person-journey-status', personId] })
+      void queryClient.invalidateQueries({ queryKey: ['person-timeline',       personId] })
+      void queryClient.invalidateQueries({ queryKey: ['person-contacts',       personId] })
+      void queryClient.invalidateQueries({ queryKey: ['people-page',           churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['acolhimento-status-counts', churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['care-queue',            churchId] })
+    },
+  })
+}
+
 // ── Mutation ─────────────────────────────────────────────────
 
 interface RegisterArgs {
@@ -305,6 +328,8 @@ interface RegisterArgs {
   next_step_due_at?: string | null
   ministry_id?:      string | null
   close_journey?:    boolean
+  /** Houve contato real com a pessoa? false = só salvar correções (não cria pastoral_contact) */
+  register_contact:  boolean
 }
 
 export function useRegisterAttendance() {
@@ -326,6 +351,7 @@ export function useRegisterAttendance() {
         p_next_step_due_at: args.next_step_due_at ?? undefined,
         p_ministry_id:      args.ministry_id      ?? null,
         p_close_journey:    args.close_journey     ?? null,
+        p_register_contact: args.register_contact,
       })
       if (error) throw new Error(error.message)
       return data
@@ -340,6 +366,9 @@ export function useRegisterAttendance() {
       void queryClient.invalidateQueries({ queryKey: ['contact-counts'] })
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board',      churchId] })
       void queryClient.invalidateQueries({ queryKey: ['care-queue',          churchId] })
+      // Estado operacional (Não atendida / Em atendimento / Atendida / Cancelado) na lista
+      void queryClient.invalidateQueries({ queryKey: ['people-page',         churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['acolhimento-status-counts', churchId] })
     },
   })
 }

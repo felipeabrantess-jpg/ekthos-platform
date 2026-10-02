@@ -4,6 +4,8 @@ import { UNIT_ALL, unitScopeToRpcParam, type UnitScope } from '@/lib/filters/uni
 
 export interface AcolhimentoStatusCounts {
   naoAtendida:   number
+  cancelado:     number
+  total:         number
   emAtendimento: number
   atendida:      number
   semContato48h: number
@@ -25,6 +27,8 @@ export function useAcolhimentoStatus(churchId: string, unit: UnitScope = UNIT_AL
       const d = (data ?? {}) as Record<string, number>
       return {
         naoAtendida:   d.nao_atendida    ?? 0,
+        cancelado:     d.cancelado       ?? 0,
+        total:         d.total           ?? 0,
         emAtendimento: d.em_atendimento  ?? 0,
         atendida:      d.atendida        ?? 0,
         semContato48h: d.sem_contato_48h ?? 0,
@@ -33,16 +37,22 @@ export function useAcolhimentoStatus(churchId: string, unit: UnitScope = UNIT_AL
   })
 }
 
-/** Retorna o label e cor do badge de atendimento a partir do status da jornada da pessoa */
-export function getCareStatusBadge(journeys: Array<{ status: string }> | null | undefined): {
+export type CareState = 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado'
+
+/**
+ * Etiqueta do estado operacional de atendimento. Fonte ÚNICA: people.care_state
+ * (calculado no banco por person_care_state — mesma regra do contador e do filtro).
+ * 'nao_atendida' não tem etiqueta (como antes).
+ */
+export function getCareStatusBadge(careState: string | null | undefined): {
   label: string
   color: string
   bg: string
 } | null {
-  if (!journeys || journeys.length === 0) return null
-  const pending = journeys.find(j => j.status === 'pending')
-  if (pending) return { label: 'Em atendimento', color: '#1e40af', bg: '#dbeafe' }
-  const completed = journeys.find(j => j.status === 'completed')
-  if (completed) return { label: 'Atendida', color: '#065f46', bg: '#d1fae5' }
-  return { label: 'Cancelada', color: '#92400e', bg: '#fef3c7' }
+  switch (careState) {
+    case 'em_atendimento': return { label: 'Em atendimento', color: '#1e40af', bg: '#dbeafe' }
+    case 'atendida':       return { label: 'Atendida',       color: '#065f46', bg: '#d1fae5' }
+    case 'cancelado':      return { label: 'Cancelado',      color: '#92400e', bg: '#fef3c7' }
+    default:               return null
+  }
 }

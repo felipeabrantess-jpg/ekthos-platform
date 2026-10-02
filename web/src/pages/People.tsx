@@ -53,7 +53,7 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 /** 'geral' | 'aniversarios' | 'stage:<pipeline_stages.stage_key>' (fonte canônica) */
 type PeopleTab = 'geral' | 'aniversarios' | `stage:${string}`
-type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
+type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado' | 'sem_contato_48h'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -172,8 +172,7 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, 
               )}
               {showCareBadge && (() => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const journeys = (person as any).acolhimento_journey as Array<{ status: string }> | null
-                const badge = getCareStatusBadge(journeys)
+                const badge = getCareStatusBadge((person as any).care_state as string | null)
                 if (!badge) return null
                 return (
                   <span
@@ -293,8 +292,7 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBir
         <td className="px-4 py-3">
           {(() => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const journeys = (person as any).acolhimento_journey as Array<{ status: string }> | null
-            const badge = getCareStatusBadge(journeys)
+            const badge = getCareStatusBadge((person as any).care_state as string | null)
             if (!badge) return <span className="text-xs text-text-tertiary">—</span>
             return (
               <span
@@ -697,7 +695,7 @@ export default function People() {
     const rows = all.map(p => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const anyP = p as any
-      const badge = getCareStatusBadge(anyP.acolhimento_journey as Array<{ status: string }> | null)
+      const badge = getCareStatusBadge(anyP.care_state as string | null)
       const unitName = churchUnits.find(u => u.id === anyP.unit_id)?.name ?? ''
       return [
         p.name ?? '', p.phone ?? '', p.email ?? '',
@@ -880,6 +878,7 @@ export default function People() {
             { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
             { value: 'em_atendimento',  label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
             { value: 'atendida',        label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
+            { value: 'cancelado',       label: `Cancelado (${careStatusData?.cancelado      ?? '…'})` },
             { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
           ] as const).map(opt => (
             <button

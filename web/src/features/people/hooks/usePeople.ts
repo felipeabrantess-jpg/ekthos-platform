@@ -38,7 +38,7 @@ interface PeopleFilters {
    * Quando definido, a query usa a RPC get_people_page (filtro server-side via JOIN no banco).
    * Nenhuma lista de ID trafega do cliente para o servidor.
    */
-  careStatus?: 'nao_atendida' | 'em_atendimento' | 'atendida' | 'sem_contato_48h'
+  careStatus?: 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado' | 'sem_contato_48h'
 }
 
 /**
