@@ -229,16 +229,32 @@ BEGIN
     (a1 - a0)::text || ' registros');
 END $$;
 
--- blindada webhook-receiver: exceção temporária mantém o comportamento atual (limitação documentada)
+-- webhook-receiver (WhatsApp inbound): sem bypass — a regra vale igual para todas as portas
 DO $$
-DECLARE r text;
+DECLARE c uuid := (SELECT c1 FROM _ctx); x uuid; r text; n0 int; n1 int;
 BEGIN
+  SELECT count(*) INTO n0 FROM people WHERE church_id = c;
+  -- passo 1 da função: localizar pela forma canônica do número que chega ("55…")
+  SELECT id INTO x FROM people WHERE church_id = c AND phone_normalized = '20912345678' AND deleted_at IS NULL ORDER BY created_at LIMIT 1;
+  INSERT INTO _r VALUES (28, 'webhook-receiver: número 5520912345678 localiza a pessoa gravada como +5520912345678',
+    x = (SELECT marcelo FROM _ctx), NULL);
+  -- o INSERT antigo de "Contato NNNN" para telefone que já tem dono agora é barrado pelo banco
   BEGIN
     INSERT INTO people (church_id, first_name, last_name, phone, person_stage, observacoes_pastorais, lgpd_consent)
-    VALUES ((SELECT c1 FROM _ctx), 'Contato', '5678', '5520912345678', 'visitante', 'Cadastrado automaticamente via WhatsApp inbound', false);
-    r := 'CRIADO (comportamento atual da blindada preservado)';
+    VALUES (c, 'Contato', '5678', '5520912345678', 'visitante', 'Cadastrado automaticamente via WhatsApp inbound', false);
+    r := 'CRIADO';
+  EXCEPTION WHEN unique_violation THEN r := 'BLOQUEADO 23505'; END;
+  SELECT count(*) INTO n1 FROM people WHERE church_id = c;
+  INSERT INTO _r VALUES (28, 'sem bypass: INSERT "Contato NNNN" com telefone que já tem dono → bloqueado', r LIKE 'BLOQUEADO%' AND n1 = n0, r);
+  -- número realmente novo continua criando o contato automático
+  BEGIN
+    INSERT INTO people (church_id, first_name, last_name, phone, person_stage, observacoes_pastorais, lgpd_consent)
+    VALUES (c, 'Contato', '0001', '5520900000001', 'visitante', 'Cadastrado automaticamente via WhatsApp inbound', false);
+    r := 'CRIADO';
   EXCEPTION WHEN unique_violation THEN r := 'BLOQUEADO'; END;
-  INSERT INTO _r VALUES (28, 'LIMITAÇÃO: INSERT "Contato NNNN" da webhook-receiver (blindada) segue passando', r LIKE 'CRIADO%', r);
+  INSERT INTO _r VALUES (28, 'webhook-receiver: número novo continua criando "Contato NNNN"', r = 'CRIADO', r);
+  INSERT INTO _r VALUES (28, 'sem bypass: a função da trigger não tem exceção por origem',
+    (SELECT prosrc NOT ILIKE '%Contato%' AND prosrc NOT ILIKE '%WhatsApp inbound%' FROM pg_proc WHERE proname = 'people_enforce_unique_phone'), NULL);
 END $$;
 
 -- registros legados duplicados continuam editáveis e não foram tocados
@@ -279,13 +295,13 @@ INSERT INTO _r SELECT 22, 'unidades + 23 busca normalizada (name_sort/contact_na
   (SELECT md5(string_agg(md5(p::text), '' ORDER BY id)) FROM
      (SELECT id, church_id, name, first_name, last_name, phone, email, observacoes_pastorais, unit_id, name_sort,
              contact_name_sort, person_stage, deleted_at, left_at FROM people
-       WHERE coalesce(name, '') NOT LIKE 'ZZ-TESTE%' AND NOT (coalesce(first_name, '') = 'Contato' AND coalesce(phone, '') = '5520912345678')) p) = s.people_md5,
+       WHERE coalesce(name, '') NOT LIKE 'ZZ-TESTE%' AND NOT (coalesce(first_name, '') = 'Contato' AND coalesce(phone, '') = '5520900000001')) p) = s.people_md5,
   s.people_n || ' pessoas conferidas por hash' FROM _snap s;
 INSERT INTO _r SELECT 23, 'busca normalizada: colunas geradas seguem funcionando em cadastro novo',
   name_sort IS NOT NULL AND contact_name_sort = 'zz-teste marcelo', contact_name_sort FROM people WHERE id = (SELECT marcelo FROM _ctx);
 INSERT INTO _r SELECT 19, 'impacto nos legados: grupos duplicados pré-existentes continuam como estavam (não mesclados)',
   s.grupos_legados = (SELECT count(*) FROM (SELECT 1 FROM people WHERE deleted_at IS NULL AND phone_normalized IS NOT NULL
-        AND coalesce(name, '') NOT LIKE 'ZZ-TESTE%' AND NOT (coalesce(first_name, '') = 'Contato' AND coalesce(phone, '') = '5520912345678')
+        AND coalesce(name, '') NOT LIKE 'ZZ-TESTE%' AND NOT (coalesce(first_name, '') = 'Contato' AND coalesce(phone, '') = '5520900000001')
         GROUP BY church_id, phone_normalized HAVING count(*) > 1) g),
   s.grupos_legados || ' grupos' FROM _snap s;
 

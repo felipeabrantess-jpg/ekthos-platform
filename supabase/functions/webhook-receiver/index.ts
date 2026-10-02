@@ -444,12 +444,26 @@ async function processNormalizedOne(
   }
 
   // ── 4. Identificar / criar pessoa ─────────────────────
-  let { data: person } = await sb
+  // Regra 1 pessoa = 1 telefone por igreja: localiza pela forma canônica
+  // (people.phone_normalized = DDD + número, sem DDI 55), em qualquer formato gravado
+  // ("+55…", "55…", só DDD, com máscara). Sem isso, quem já existe virava "Contato NNNN".
+  const phoneDigits = normalized.from_phone.replace(/\D/g, '').replace(/^0+/, '')
+  const phoneKey = (phoneDigits.length === 12 || phoneDigits.length === 13) && phoneDigits.startsWith('55')
+    ? phoneDigits.slice(2)
+    : phoneDigits
+  const { data: phoneMatches } = await sb
     .from('people')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, phone')
     .eq('church_id', churchId)
-    .eq('phone', normalized.from_phone)
-    .maybeSingle()
+    .eq('phone_normalized', phoneKey)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(10)
+  // Telefone gravado exatamente igual tem prioridade (mantém o vínculo dos contatos já existentes)
+  let person: { id: string; first_name: string | null; last_name: string | null } | null =
+    phoneMatches?.find((p: { phone: string | null }) => p.phone === normalized.from_phone)
+    ?? phoneMatches?.[0]
+    ?? null
 
   if (!person) {
     const { data: newPerson, error: personErr } = await sb

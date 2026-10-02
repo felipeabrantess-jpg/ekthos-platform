@@ -82,18 +82,6 @@ BEGIN
     END IF;
   END IF;
 
-  -- EXCEÇÃO TEMPORÁRIA — Edge Function blindada webhook-receiver (WhatsApp inbound).
-  -- Ela busca a pessoa por people.phone exato ("55…") e, se não acha, cria
-  -- "Contato NNNN". Sem esta exceção o INSERT falharia e a conversa ficaria sem
-  -- person_id, mudando o comportamento de uma função blindada. Remover este bloco
-  -- quando a webhook-receiver for autorizada a buscar por phone_normalized.
-  IF TG_OP = 'INSERT'
-     AND NEW.name IS NULL
-     AND NEW.first_name = 'Contato'
-     AND NEW.observacoes_pastorais = 'Cadastrado automaticamente via WhatsApp inbound' THEN
-    RETURN NEW;
-  END IF;
-
   -- Serializa cadastros simultâneos do mesmo telefone na mesma igreja
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW.church_id::text || ':' || v_norm, 8012));
 
