@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { isPhoneTakenError, PhoneTakenError } from '@/lib/phone'
 import { normalizeSearch } from '@/lib/normalizeSearch'
 import type { PersonWithStage, Person } from '@/lib/types/joins'
 
@@ -238,7 +239,7 @@ export function useCreatePerson() {
         .select()
         .single()
 
-      if (error) throw new Error(error.message)
+      if (error) throw isPhoneTakenError(error) ? new PhoneTakenError() : new Error(error.message)
 
       // Dispara evento de pessoa criada (non-blocking — notificações in-app)
       void supabase.functions.invoke('dispatch-person-event', {
@@ -277,7 +278,7 @@ export function useUpdatePerson() {
         .select()
         .single()
 
-      if (error) throw new Error(error.message)
+      if (error) throw isPhoneTakenError(error) ? new PhoneTakenError() : new Error(error.message)
       return data
     },
     onSuccess: (data) => {

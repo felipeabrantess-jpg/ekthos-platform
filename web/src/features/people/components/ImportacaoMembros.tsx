@@ -31,6 +31,7 @@ import {
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
 import { supabase } from '@/lib/supabase'
+import { phoneKey, isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -405,18 +406,32 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
       )]
       const activePhones      = new Set<string>()
       const desligadasByPhone = new Map<string, string>() // phone → id
+      // Regra: 1 pessoa = 1 telefone por igreja. Compara pela forma canônica
+      // (people.phone_normalized) para achar o telefone em qualquer formato já gravado.
+      const sheetPhoneByKey = new Map<string, string>(phonesToCheck.map(p => [phoneKey(p), p]))
       for (let i = 0; i < phonesToCheck.length; i += 100) {
-        const { data: dbRows } = await supabase
-          .from('people')
-          .select('id, phone, left_at')
+        const slice = phonesToCheck.slice(i, i + 100)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let { data: dbRows, error: dbErr } = await (supabase.from('people') as any)
+          .select('id, phone, phone_normalized, left_at')
           .eq('church_id', churchId)
           .is('deleted_at', null)
-          .in('phone', phonesToCheck.slice(i, i + 100))
+          .in('phone_normalized', slice.map(phoneKey))
+        if (dbErr) {
+          // Coluna ainda não disponível: mantém a comparação anterior por telefone exato
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ;({ data: dbRows } = await (supabase.from('people') as any)
+            .select('id, phone, left_at')
+            .eq('church_id', churchId)
+            .is('deleted_at', null)
+            .in('phone', slice))
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(dbRows ?? []).forEach((p: any) => {
           if (!p.phone) return
-          if (p.left_at !== null) desligadasByPhone.set(p.phone, p.id)
-          else activePhones.add(p.phone)
+          const sheetPhone = sheetPhoneByKey.get(p.phone_normalized ?? phoneKey(p.phone)) ?? p.phone
+          if (p.left_at !== null) { if (!activePhones.has(sheetPhone)) desligadasByPhone.set(sheetPhone, p.id) }
+          else { activePhones.add(sheetPhone); desligadasByPhone.delete(sheetPhone) }
         })
       }
 
@@ -493,7 +508,7 @@ export function ImportacaoMembros({ open, onClose, onSuccess }: ImportacaoMembro
         if (batchErr) {
           for (const row of batch) {
             const { error: rowErr } = await supabase.from('people').insert(row)
-            if (rowErr) errorRows.push({ name: String(row.name), reason: rowErr.message })
+            if (rowErr) errorRows.push({ name: String(row.name), reason: isPhoneTakenError(rowErr) ? PHONE_TAKEN_MESSAGE : rowErr.message })
             else inserted++
           }
         } else {

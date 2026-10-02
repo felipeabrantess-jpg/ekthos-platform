@@ -144,22 +144,51 @@ async function processWebhookPayload(rawBody: string): Promise<void> {
   // ──────────────────────────────────────────────────────────
   // Upsert da pessoa pelo telefone
   // ──────────────────────────────────────────────────────────
-  const { data: person, error: personError } = await supabase
+  // Regra: 1 pessoa = 1 telefone por igreja. Localiza pela forma canônica
+  // (people.phone_normalized: DDD + número, sem DDI 55) para achar a pessoa em qualquer
+  // formato gravado. Se já existe, só registra o contato — não muda source nem dados.
+  const fromDigits = String(fromPhone).replace(/\D/g, '').replace(/^0+/, '')
+  const fromKey = (fromDigits.length === 12 || fromDigits.length === 13) && fromDigits.startsWith('55')
+    ? fromDigits.slice(2)
+    : fromDigits
+  const nowIso = new Date().toISOString()
+
+  const { data: foundPerson } = await supabase
     .from('people')
-    .upsert(
-      {
-        church_id: churchId,
-        phone: fromPhone,
-        source: 'whatsapp',
-        last_contact_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'church_id,phone',
-        ignoreDuplicates: false,
-      }
-    )
     .select('id, name, optout, created_at')
-    .single()
+    .eq('church_id', churchId)
+    .eq('phone_normalized', fromKey)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
+  let person = foundPerson
+  let personError: { message: string } | null = null
+  if (person) {
+    await supabase.from('people').update({ last_contact_at: nowIso }).eq('id', person.id)
+  } else {
+    const ins = await supabase
+      .from('people')
+      .insert({ church_id: churchId, phone: fromPhone, source: 'whatsapp', last_contact_at: nowIso })
+      .select('id, name, optout, created_at')
+      .single()
+    person = ins.data
+    personError = ins.error
+    if (ins.error?.code === '23505') {
+      // Outra requisição cadastrou este telefone no mesmo instante: usa o cadastro que venceu
+      const retry = await supabase
+        .from('people')
+        .select('id, name, optout, created_at')
+        .eq('church_id', churchId)
+        .eq('phone_normalized', fromKey)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      if (retry.data) { person = retry.data; personError = null }
+    }
+  }
 
   if (personError || !person) {
     console.error('[whatsapp-webhook] Erro ao upsert pessoa:', personError?.message)

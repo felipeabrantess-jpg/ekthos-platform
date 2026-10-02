@@ -15,6 +15,8 @@ import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
 import { supabase } from '@/lib/supabase'
+import { useNavigate } from 'react-router-dom'
+import { phoneKey, isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import type { Person, AppRoleDB, PipelineStage } from '@/lib/types/joins'
 import PersonSelect from '@/components/ui/PersonSelect'
 import { useFamilyRelationships, useSaveFamilyRelationship, useRemoveFamilyRelationship } from '../hooks/useFamilyRelationships'
@@ -182,6 +184,9 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const [activeTab, setActiveTab] = useState<TabId>('pessoal')
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
+  // Telefone já vinculado a outra pessoa da igreja (regra: 1 pessoa = 1 telefone)
+  const [phoneConflict, setPhoneConflict] = useState<{ id: string; name: string } | null>(null)
+  const navigate = useNavigate()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [cepLoading, setCepLoading] = useState(false)
@@ -367,9 +372,33 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     return false
   }
 
+  // Localiza, na igreja do usuário (RLS), quem já usa este telefone. Falha silenciosa:
+  // o banco continua sendo a barreira final.
+  async function findPhoneOwner(phone: string | null): Promise<{ id: string; name: string } | null> {
+    if (!phone || !phoneKey(phone)) return null
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: rpcErr } = await (supabase.rpc as any)('find_person_by_phone', {
+        p_phone: phone,
+        p_exclude_id: isEdit && person ? person.id : null,
+      })
+      if (rpcErr || !Array.isArray(data) || data.length === 0) return null
+      return { id: String(data[0].id), name: String(data[0].name ?? '') }
+    } catch {
+      return null
+    }
+  }
+
+  function showPhoneTaken(owner: { id: string; name: string } | null) {
+    setActiveTab('pessoal')
+    setPhoneConflict(owner)
+    setError(PHONE_TAKEN_MESSAGE)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setPhoneConflict(null)
 
     if (!form.name.trim()) {
       setActiveTab('pessoal')
@@ -385,6 +414,14 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
     }
 
     const payload = buildPayload()
+
+    // Telefone único por igreja: bloqueia ANTES de gravar qualquer coisa.
+    // Em edição só verifica quando o telefone realmente mudou.
+    const phoneChanged = !isEdit || phoneKey(payload.phone) !== phoneKey(person?.phone)
+    if (payload.phone && phoneChanged) {
+      const owner = await findPhoneOwner(payload.phone)
+      if (owner) { showPhoneTaken(owner); return }
+    }
 
     try {
       let savedPersonId: string | null = null
@@ -424,6 +461,11 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       }
       onClose()
     } catch (err) {
+      if (isPhoneTakenError(err)) {
+        // Barreira do banco (ex.: cadastro simultâneo) — nunca mostrar erro SQL cru
+        showPhoneTaken(await findPhoneOwner(payload.phone))
+        return
+      }
       setError(err instanceof Error ? err.message : 'Erro ao salvar.')
     }
   }
@@ -1010,7 +1052,21 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
 
         {/* Erro */}
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
+          <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" role="alert">
+            <p>{error}</p>
+            {phoneConflict && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {phoneConflict.name && <span className="text-red-700">Cadastro existente: <strong>{phoneConflict.name}</strong></span>}
+                <button
+                  type="button"
+                  className="font-medium underline underline-offset-2 hover:text-red-800"
+                  onClick={() => { const id = phoneConflict.id; onClose(); navigate(`/pessoas/${id}/atendimento`) }}
+                >
+                  Localizar cadastro existente
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Confirmação de desligamento */}

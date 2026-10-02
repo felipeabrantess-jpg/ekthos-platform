@@ -97,6 +97,19 @@ function phoneVariants(phone: string): string[] {
   return variants
 }
 
+// Forma canônica do telefone — espelha normalize_phone_br() / people.phone_normalized no banco.
+// DDD + número, sem o DDI 55. É por ela que se decide "este telefone já tem dono".
+function phoneKey(raw: string): string {
+  const d = raw.replace(/\D/g, '').replace(/^0+/, '')
+  return (d.length === 12 || d.length === 13) && d.startsWith('55') ? d.slice(2) : d
+}
+
+// Erro do banco para "telefone já pertence a outra pessoa desta igreja"
+// (trigger people_enforce_unique_phone ou índice people_church_phone_unique).
+function isPhoneTaken(err: { code?: string; message?: string } | null | undefined): boolean {
+  return err?.code === '23505' && /PHONE_ALREADY_LINKED|people_church_phone/.test(err.message ?? '')
+}
+
 // Tipos de entrada válidos para o seletor de estágio (R7)
 type EntryType = 'visitante' | 'novo_convertido' | 'reconciliado' | 'vim_de_outra_igreja' | 'ja_sou_membro'
 const VALID_ENTRY_TYPES: EntryType[] = ['visitante', 'novo_convertido', 'reconciliado', 'vim_de_outra_igreja', 'ja_sou_membro']
@@ -232,20 +245,21 @@ Deno.serve(async (req: Request) => {
       return ok200(headers)
     }
 
-    // ── 5. Upsert person ──────────────────────────────────
-    // R8b: buscar por variantes do telefone (com/sem 9º dígito BR)
+    // ── 5. Localizar pessoa pelo telefone ─────────────────
+    // Regra: 1 pessoa = 1 telefone por igreja. Busca pela forma canônica
+    // (phone_normalized), em qualquer formato gravado, com/sem 9º dígito (R8b).
     const phones = phoneVariants(phoneClean)
-    const { data: existingRaw } = await supabase
+    const { data: existing } = await supabase
       .from('people')
-      .select('id, first_visit_date, deleted_at, phone')
+      .select('id, first_visit_date, conversion_date, phone')
       .eq('church_id', churchId)
-      .in('phone', phones)
+      .in('phone_normalized', phones.map(phoneKey))
+      // Pessoa soft-deleted é tratada como nova: cria registro novo, dispara boas-vindas.
+      // O registro antigo permanece oculto (deleted_at preenchido) — não é reativado.
+      .is('deleted_at', null)
+      .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle()
-
-    // Pessoa soft-deleted é tratada como nova: cria registro novo, dispara boas-vindas.
-    // O registro antigo permanece oculto (deleted_at preenchido) — não é reativado.
-    const existing = (existingRaw?.deleted_at == null) ? existingRaw : null
 
     // ── R8: fluxo "Já sou membro" ──────────────────────
     if (entryType === 'ja_sou_membro') {
@@ -279,6 +293,11 @@ Deno.serve(async (req: Request) => {
           })
           .select('id')
           .single()
+        if (isPhoneTaken(insertErr)) {
+          // Barreira do banco: o telefone já pertence a outra pessoa. Não cria, não altera ninguém.
+          console.warn('[visitor-capture] Telefone já vinculado a outra pessoa — cadastro não criado')
+          return ok200(headers)
+        }
         if (insertErr) {
           console.error('[visitor-capture] INSERT membro sem match falhou:', insertErr.message)
           return err500(headers)
@@ -301,20 +320,18 @@ Deno.serve(async (req: Request) => {
     const personStage = entryTypeToStage(entryType)
 
     if (existing?.id) {
-      // R8b: pessoa já existe (mesmo telefone, variante com/sem 9) — não duplicar
+      // R8b: pessoa já existe (mesmo telefone, variante com/sem 9) — não duplicar.
+      // O cadastro existente é PRESERVADO: o formulário público nunca escreve nome,
+      // observações, telefone ou qualquer dado pessoal por cima de quem já é dono do telefone.
       const updates: Record<string, unknown> = { last_contact_at: new Date().toISOString() }
-      // D1: atualiza name se fornecido (novo scan pode ter nome mais completo)
-      if (name) updates.name = name
-      // invitedByName vai para observacoes_pastorais (como_conheceu só aceita enum fixo)
-      if (invitedByName) updates.observacoes_pastorais = 'Convidado por: ' + invitedByName
       // Se first_visit_date nunca foi preenchido (importado sem data de visita),
       // registra hoje como primeira visita para que o card "Visitantes da Semana" a conte.
       // Não reclassifica person_stage nem toca em cadastros antigos.
       if (!existing.first_visit_date) {
         updates.first_visit_date = new Date().toISOString().split('T')[0]
       }
-      // Novo convertido: registrar data de conversão se ainda não tiver
-      if (entryType === 'novo_convertido') {
+      // Novo convertido: registrar data de conversão SOMENTE se ainda não tiver (nunca sobrescreve)
+      if (entryType === 'novo_convertido' && !existing.conversion_date) {
         updates.conversion_date = new Date().toISOString().split('T')[0]
       }
 
@@ -324,7 +341,7 @@ Deno.serve(async (req: Request) => {
         console.log('[visitor-capture] Dedup por variante de telefone:', existing.phone, '→', phoneClean)
       }
       personId = existing.id as string
-      console.log('[visitor-capture] Pessoa existente atualizada:', personId)
+      console.log('[visitor-capture] Pessoa existente preservada (visita registrada):', personId)
     } else {
       // Pessoa nova
       const insertData: Record<string, unknown> = {
@@ -359,6 +376,12 @@ Deno.serve(async (req: Request) => {
         .select('id')
         .single()
 
+      if (isPhoneTaken(insertErr)) {
+        // Barreira do banco (corrida ou outro formato): o telefone já pertence a outra pessoa.
+        // Não cria, não altera ninguém.
+        console.warn('[visitor-capture] Telefone já vinculado a outra pessoa — cadastro não criado')
+        return ok200(headers)
+      }
       if (insertErr || !newPerson) {
         console.error('[visitor-capture] INSERT people falhou:', insertErr?.message)
         return err500(headers)

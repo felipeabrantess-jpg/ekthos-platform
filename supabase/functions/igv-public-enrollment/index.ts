@@ -38,6 +38,13 @@ function corsHeaders(origin: string | null): Record<string, string> {
   }
 }
 
+// Forma canônica do telefone — espelha normalize_phone_br() / people.phone_normalized no banco.
+// DDD + número, sem o DDI 55. É por ela que se decide "este telefone já tem dono".
+function phoneKey(raw: string): string {
+  const d = raw.replace(/\D/g, '').replace(/^0+/, '')
+  return (d.length === 12 || d.length === 13) && d.startsWith('55') ? d.slice(2) : d
+}
+
 function sanitizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
   if (digits.length >= 12) return `+${digits}`
@@ -138,14 +145,18 @@ Deno.serve(async (req: Request) => {
     .from('people')
     .select('id')
     .eq('church_id', IGV_CHURCH_ID)
-    .eq('phone', cleanPhone)
+    .eq('phone_normalized', phoneKey(cleanPhone))
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle()
 
   if (existingPerson) {
-    // Pessoa existente: atualiza last_contact
+    // Telefone já tem dono: cadastro PRESERVADO (nunca escreve nome/dados pessoais).
+    // Só registra o contato e vincula a inscrição.
     await supabase
       .from('people')
-      .update({ last_contact_at: new Date().toISOString(), name: cleanName })
+      .update({ last_contact_at: new Date().toISOString() })
       .eq('id', existingPerson.id)
 
     // Associar person_id à inscrição
