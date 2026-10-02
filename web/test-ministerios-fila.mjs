@@ -105,6 +105,13 @@ await page.locator('button', { hasText: /^Ministérios$/ }).first().click(); awa
 const louvorCount = await page.locator('h3:has-text("Louvor")').locator('xpath=ancestor::div[contains(@class,"rounded-2xl")][1]').locator('[data-testid="member-count"]').innerText();
 ck('Ministérios → card Louvor reflete as 2 pessoas incluídas (contagem atualizada)', louvorCount.trim() === '2', louvorCount);
 
+// ── link da notificação: /ministerios?tab=fila abre direto na fila do líder ──
+reset(); current = { id: 'u-lider', role: 'ministry_leader' };
+await page.goto(`${BASE}/ministerios?tab=fila`, { waitUntil: 'networkidle', timeout: 30000 }); await page.waitForTimeout(1000);
+ck('link da notificação (/ministerios?tab=fila) abre a Fila de Encaminhamentos com os encaminhamentos do líder', (await page.locator('button:has-text("Fila de Encaminhamentos")').getAttribute('class')).includes('shadow-sm') && (await names()) === 'Ana Encaminhada,Bruno Encaminhado', await names());
+await page.goto(`${BASE}/pessoas/p1/atendimento`, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {}); await page.waitForTimeout(1200);
+ck('conta de líder continua SEM acesso ao Atendimento (redirecionada)', !page.url().includes('/atendimento'), page.url());
+
 // ── CONTA SEM VÍNCULO (mesmo perfil de líder, mas sem leader_user_id em nenhum ministério) ──
 reset(); await loginAs('u-outro', 'ministry_leader');
 ck('5/7. conta sem leader_user_id não vê nenhuma fila (ser a PESSOA líder não dá acesso)', (await page.locator('[data-testid="btn-incluir-no-ministerio"]').count()) === 0 && (await page.getByText('Nenhum encaminhamento pendente').count()) === 1);

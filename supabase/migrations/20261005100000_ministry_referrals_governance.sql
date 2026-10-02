@@ -9,9 +9,10 @@
 -- O que muda (as duas funções partem das definições que estavam em produção):
 --   1. get_ministry_referrals: o escopo deixa de usar is_ministry_leader_of (ponte por
 --      e-mail) e passa a usar can_manage_ministry.
---   2. journey_register_attendance: SOMENTE o bloco que escolhe o destinatário da
---      notificação de encaminhamento — passa a ser ministries.leader_user_id.
---      Nenhuma outra linha da função foi alterada.
+--   2. journey_register_attendance: SOMENTE o bloco da notificação de encaminhamento —
+--      o destinatário passa a ser ministries.leader_user_id e o link passa a abrir
+--      Ministérios → Fila de Encaminhamentos (/ministerios?tab=fila), tela que essa conta
+--      acessa. Nenhuma outra linha da função foi alterada.
 --
 -- O que NÃO muda: ministry_members, volunteers, leader_id, person_journey,
 -- journey_events, RLS, grants e o restante do Atendimento. Nenhum dado é alterado e
@@ -269,7 +270,7 @@ BEGIN
         COALESCE(v_person_name, 'Uma pessoa') || ' foi encaminhada para ' || COALESCE(v_ministry_name, 'o seu ministério'),
         'ministry_referral',
         false,
-        '/pessoas/' || p_person_id || '/atendimento',
+        '/ministerios?tab=fila',   -- abre a Fila de Encaminhamentos (a conta do líder não acessa o Atendimento)
         p_person_id
       );
     END IF;

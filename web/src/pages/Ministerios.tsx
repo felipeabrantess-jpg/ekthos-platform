@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -585,7 +585,11 @@ export default function Ministerios() {
   const isAdmin = role === 'admin' || role === 'admin_departments'
 
   // Líder de ministério também vê os cards (para gerir membros); admin gerencia tudo
-  const [activeTab, setActiveTab] = useState<PageTab>('ministerios')
+  // ?tab=fila abre direto na Fila de Encaminhamentos (link da notificação de encaminhamento)
+  const [searchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<PageTab>(tabParam === 'fila' ? 'fila' : 'ministerios')
+  useEffect(() => { if (tabParam === 'fila') setActiveTab('fila') }, [tabParam])
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<MinistryWithLeader | null>(null)
   const [deletingMinistry, setDeletingMinistry] = useState<MinistryWithLeader | null>(null)

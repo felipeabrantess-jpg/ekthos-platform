@@ -73,7 +73,7 @@ RESET ROLE;
 
 -- 8–9. destinatário da notificação (conferido fora da RLS: cada usuário só enxerga as próprias)
 INSERT INTO _r SELECT 8, 'notificação do encaminhamento vai para a conta vinculada (leader_user_id)',
-  count(*) = 2 AND bool_and(n.user_id = c.u_lider AND n.church_id = c.c1 AND n.type = 'ministry_referral'), count(*)::text || ' notificações'
+  count(*) = 2 AND bool_and(n.user_id = c.u_lider AND n.church_id = c.c1 AND n.type = 'ministry_referral' AND n.link = '/ministerios?tab=fila'), count(*)::text || ' notificações → ' || min(n.link)
   FROM notifications n, _c c WHERE n.person_id IN (c.p1, c.p2);
 INSERT INTO _r SELECT 9, 'ministério sem leader_user_id: ninguém é notificado (nem a conta de e-mail coincidente)',
   (SELECT count(*) FROM notifications n WHERE n.person_id = c.p3) = 0
