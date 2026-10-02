@@ -84,6 +84,9 @@ export function useUpdatePersonPipelineStage() {
     onSuccess: (_data, { churchId }) => {
       // Invalida AMBAS as views para sincronização bidirecional
       void queryClient.invalidateQueries({ queryKey: ['people',          churchId] })
+      // Lista paginada de /pessoas + badges das abas (a etapa é o que define a aba)
+      void queryClient.invalidateQueries({ queryKey: ['people-page',         churchId] })
+      void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board',  churchId] })
       void queryClient.invalidateQueries({ queryKey: ['pipeline-stages', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', churchId] })

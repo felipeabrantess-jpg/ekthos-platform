@@ -1,16 +1,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// TagEditModal — modal multi-select para atribuir/remover flags de uma pessoa
+// TagEditModal — modal para escolher o TIPO da pessoa
 //
 // Abre a partir do TagBadgesCell.
-// Mostra todas as flags da igreja com toggle ON/OFF.
-// Ao salvar: useUpdatePersonTags (DELETE + INSERT atômico).
+// "Tipos de pessoa" (categoria person_type): seleção ÚNICA — escolher um tipo substitui o
+// anterior; clicar no tipo marcado deixa a pessoa sem tipo.
+// Etiquetas gerais (categoria general), se existirem: continuam multi-seleção.
+// Ao salvar: useUpdatePersonTags (RPC set_person_tags, atômica).
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react'
 import { X, Loader2, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
-import { useUpdatePersonTags } from '../hooks/useUpdatePersonTags'
+import { useUpdatePersonTags, isPersonTypeTag } from '../hooks/useUpdatePersonTags'
 import type { PersonWithStage, Tag } from '@/lib/types/joins'
 import { TagPill } from './TagBadgesCell'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -39,23 +41,37 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
     return () => document.removeEventListener('keydown', handler)
   }, [onClose])
 
+  const typeTagIds = new Set(allTags.filter(isPersonTypeTag).map((t) => t.id))
+
   function toggle(tagId: string) {
     setSelected((prev) => {
       const next = new Set(prev)
-      if (next.has(tagId)) next.delete(tagId)
-      else next.add(tagId)
+      if (next.has(tagId)) {
+        next.delete(tagId)
+        return next
+      }
+      // Tipo de pessoa: escolher um SUBSTITUI qualquer outro tipo marcado
+      if (typeTagIds.has(tagId)) {
+        for (const id of Array.from(next)) if (typeTagIds.has(id)) next.delete(id)
+      }
+      next.add(tagId)
       return next
     })
   }
 
   async function handleSave() {
     if (!churchId) return
-    await mutation.mutateAsync({
-      personId: person.id,
-      churchId,
-      tagIds: Array.from(selected),
-    })
-    onClose()
+    try {
+      await mutation.mutateAsync({
+        personId: person.id,
+        churchId,
+        tagIds: Array.from(selected),
+        allTags,
+      })
+      onClose()
+    } catch {
+      // erro exibido no rodapé do modal (mutation.isError); o modal continua aberto
+    }
   }
 
   const hasChanges = (() => {
@@ -106,23 +122,28 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
               </button>
             </div>
           ) : (
-            <ul className="space-y-1">
+            <ul className="space-y-1" role="group" aria-label="Tipo da pessoa (apenas um)">
               {allTags.map((tag) => {
                 const active = selected.has(tag.id)
+                const single = isPersonTypeTag(tag)
                 return (
                   <li key={tag.id}>
                     <button
                       type="button"
+                      role={single ? 'radio' : 'checkbox'}
+                      aria-checked={active}
+                      data-testid={`tag-option-${tag.id}`}
                       onClick={() => toggle(tag.id)}
                       className={[
                         'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors',
                         active ? 'bg-bg-hover' : 'hover:bg-bg-hover',
                       ].join(' ')}
                     >
-                      {/* Checkbox visual */}
+                      {/* Marcador: redondo (seleção única) para tipo de pessoa; quadrado para etiqueta geral */}
                       <span
                         className={[
-                          'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
+                          single ? 'h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all'
+                                 : 'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
                           active ? 'border-transparent' : 'border-border-default',
                         ].join(' ')}
                         style={active ? { backgroundColor: tag.color, borderColor: tag.color } : undefined}

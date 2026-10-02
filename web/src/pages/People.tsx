@@ -1061,7 +1061,7 @@ export default function People() {
 
       <PanelErrorBoundary>
         <PersonDetailPanel
-          person={selectedPerson}
+          person={selectedPerson ? (items.find((p) => p.id === selectedPerson.id) ?? selectedPerson) : null}
           onClose={() => setSelectedPerson(null)}
           onEdit={(p) => { setSelectedPerson(null); handleEdit(p) }}
         />
