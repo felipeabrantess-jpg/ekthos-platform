@@ -1,5 +1,5 @@
 -- ============================================================
--- Regressão — itens 10 + 13 + reabertura (migration 20261006100000)
+-- Regressão — itens 10 + 13 + reabertura (migration 20261005110000)
 -- Roda inteira em BEGIN … ROLLBACK: nada persiste. Pessoas sintéticas (ZZ-ATD).
 -- ============================================================
 BEGIN;
