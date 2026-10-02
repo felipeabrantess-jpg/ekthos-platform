@@ -1,8 +1,12 @@
 // ============================================================
-// Edge Function: dispatch-person-event  v35
+// Edge Function: dispatch-person-event  v36
 // Sistema genérico de eventos de pessoa — Frente B (extensível).
 //
 // Changelog:
+//   v36 (2026-07-18) — Gatilho de acolhimento expandido:
+//                      qualquer cadastro via QR Code (source='qr_code')
+//                      ativa a jornada, não só visitantes.
+//                      Autorizado por Felipe em 2026-07-18.
 //   v35 (2026-06-04) — WhatsApp instantâneo: invoca agent-acolhimento
 //                      diretamente após D3 guard passar (fire-and-forget).
 //                      next_touchpoint_at agora é NOW() (era NOW+2h).
@@ -18,7 +22,7 @@
 // Body: { person_id: string, event: 'person_created' }
 //
 // Sprint 2 — duas responsabilidades:
-//   A) Criar acolhimento_journey se person_stage='visitante' (independente de n8n)
+//   A) Criar acolhimento_journey se person_stage='visitante' OU source='qr_code' (independente de n8n)
 //   B) Disparar webhook de boas-vindas para o n8n (se elegível)
 //
 // Lógica de elegibilidade para webhook de boas-vindas:
@@ -74,17 +78,48 @@ async function hmacSha256(secret: string, body: string): Promise<string> {
 }
 
 // ============================================================
+// CORS — o cadastro manual (/pessoas → Nova Pessoa) chama esta função direto do navegador
+// (supabase.functions.invoke). Sem estes cabeçalhos o navegador bloqueia a chamada e o
+// robô de acolhimento nunca é acionado para cadastros manuais (item 7 da ata IGV).
+// Mesma lista de origens das demais funções públicas (visitor-capture).
+// ============================================================
+const ALLOWED_ORIGINS_EXACT = [
+  'https://app.ekthoschurch.com',
+  'https://www.ekthosai.com',
+  'https://ekthosai.com',
+  'https://ekthosai.net',
+  'https://www.ekthosai.net',
+]
+const ALLOWED_ORIGIN_CHURCH_RE = /^https:\/\/[a-z0-9-]+\.ekthoschurch\.com$/
+const ALLOWED_ORIGIN_DEV_RE    = /^http:\/\/localhost:\d+$/
+function isOriginAllowed(origin: string | null): boolean {
+  if (!origin) return false
+  return ALLOWED_ORIGINS_EXACT.includes(origin) || ALLOWED_ORIGIN_CHURCH_RE.test(origin) || ALLOWED_ORIGIN_DEV_RE.test(origin)
+}
+function corsHeaders(origin: string | null): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin':  isOriginAllowed(origin) ? origin! : ALLOWED_ORIGINS_EXACT[0],
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age':       '86400',
+    'Vary':                         'Origin',
+  }
+}
+
+// ============================================================
 // Handler principal
 // ============================================================
 Deno.serve(async (req: Request) => {
-  // Aceita qualquer método — chamada interna, não exposta ao público
+  const cors = corsHeaders(req.headers.get('origin'))
+
+  // Preflight do navegador (cadastro manual). Corpo nulo: o runtime atual rejeita 204 com corpo.
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204 })
+    return new Response(null, { status: 204, headers: cors })
   }
 
   // Responde 200 sempre — nunca bloqueia o chamador
   const ok = () => new Response(JSON.stringify({ ok: true }), {
-    status: 200, headers: { 'Content-Type': 'application/json' },
+    status: 200, headers: { ...cors, 'Content-Type': 'application/json' },
   })
 
   try {
@@ -128,6 +163,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 1c. Criar jornada de acolhimento (Sprint 2) ───────
     // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
+    // v36: qualquer cadastro via QR Code (source='qr_code') também ativa a jornada
     if ((person.person_stage === 'visitante' || person.source === 'qr_code') && person.is_bulk_import !== true) {
       // ═══════════════════════════════════════════════════════
       // R-PREMIUM-GUARD v34 — verifica contratação ativa
@@ -173,7 +209,7 @@ Deno.serve(async (req: Request) => {
 
         return new Response(
           JSON.stringify({ ok: true, skipped: true, reason: 'no_active_contract' }),
-          { headers: { 'Content-Type': 'application/json' }, status: 200 }
+          { headers: { ...cors, 'Content-Type': 'application/json' }, status: 200 }
         )
       }
       // FIM R-PREMIUM-GUARD v34
