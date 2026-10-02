@@ -94,6 +94,8 @@ export interface Tag {
   sort_order: number
   icon: string | null
   created_at: string
+  /** 'person_type' = "Tipos de pessoa" (no máximo 1 por pessoa); 'general' = etiqueta livre (várias). */
+  category?: 'person_type' | 'general'
 }
 
 /** Linha de `person_tags` com join em `tags` (retornado pelo usePeople) */
