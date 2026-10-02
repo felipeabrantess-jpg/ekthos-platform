@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Phone, Calendar, MessageCircle,
@@ -565,6 +566,9 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
       const msg = String(err)
       if (msg.includes('JOURNEY_VERSION_CONFLICT')) {
         onToast('Conflito de versão — jornada atualizada por outra pessoa. Recarregue a página.', 'error')
+      } else if (isPhoneTakenError(msg)) {
+        // Nada foi gravado (a RPC é atômica): nem o telefone, nem o contato
+        onToast(`${PHONE_TAKEN_MESSAGE} Nada foi alterado — corrija o telefone e salve novamente.`, 'error')
       } else if (msg.includes('JOURNEY_REQUIRED')) {
         onToast('Esta pessoa não tem jornada aberta: selecione a etapa para abrir a jornada e registrar o contato.', 'error')
       } else {
