@@ -27,7 +27,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin':  Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app',
+  'Access-Control-Allow-Origin':  Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, content-type',
 }

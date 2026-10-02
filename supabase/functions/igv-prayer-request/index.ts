@@ -23,7 +23,7 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const IGV_CHURCH_ID = '6c127559-874a-4748-8fce-55d4079613a5'
 
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://www.ekthosai.com', 'https://ekthosai.com',
   'https://ekthosai.net',     'https://www.ekthosai.net',
   'http://localhost:5173',    'http://localhost:5201',

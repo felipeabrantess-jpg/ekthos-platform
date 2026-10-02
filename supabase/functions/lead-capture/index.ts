@@ -21,7 +21,7 @@ const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 // CORS — whitelist explícita, nunca wildcard (SEC-003)
 // SA-B7: adicionados ekthosai.net (domínio de marketing/admin)
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://www.ekthosai.com',
   'https://ekthosai.com',
   'https://app.ekthosai.com',

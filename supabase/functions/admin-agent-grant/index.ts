@@ -17,7 +17,7 @@ function jsonResponse(data: unknown, status = 200, extraHeaders: Record<string, 
 // SA-B7 MEGA-ONDA SEGURANÇA: CORS origin validation (fix RISK-001)
 // Reflete apenas origens conhecidas; rejeita todas as demais.
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://ekthosai.com',
   'https://www.ekthosai.com',
   'https://app.ekthosai.com',

@@ -18,7 +18,7 @@ import Stripe from 'https://esm.sh/stripe@14?target=deno'
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const STRIPE_SECRET_KEY         = Deno.env.get('STRIPE_SECRET_KEY')!
-const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },

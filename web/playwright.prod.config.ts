@@ -8,7 +8,7 @@
  * Requer (em web/.env.local ou ambiente CI):
  *   PLAYWRIGHT_ADMIN_EMAIL=playwright@ekthosai.net
  *   PLAYWRIGHT_ADMIN_PASSWORD=<stored in Vercel encrypted env>
- *   PLAYWRIGHT_BASE_URL=https://ekthos-platform.vercel.app  (opcional, é o default)
+ *   PLAYWRIGHT_BASE_URL=https://app.ekthoschurch.com  (opcional, é o default)
  *
  * NÃO commitar .env.local. O .gitignore cobre .env.* automaticamente.
  */
@@ -34,7 +34,7 @@ if (fs.existsSync(envLocalPath)) {
     })
 }
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://ekthos-platform.vercel.app'
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://app.ekthoschurch.com'
 
 export default defineConfig({
   testDir: './tests/e2e',

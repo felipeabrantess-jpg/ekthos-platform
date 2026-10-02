@@ -516,7 +516,7 @@ Antes de qualquer frente de maior impacto:
 - **Branch protegida:** `main` (push direto bloqueado, PR obrigatório)
 - **gh CLI:** NÃO disponível no ambiente — usar git commands + PR manual
 - **CI:** TypeScript advisory (continue-on-error) + build bloqueante
-- **URL de produção:** `https://ekthos-platform.vercel.app`
+- **URL de produção:** `https://app.ekthoschurch.com`
 
 **Branches rastreadas (14):** staging, main, deploy-fix, fix-vercel-deploy, trigger-deploy, ds-to-main, remove-deploy-workflows, feat/fase-6-1-camada-4-entrega, feat/fase-6-3-observabilidade-agentes, fix/cockpit-cupons-stripe-link-and-copy, fix/prompt-formality-caloroso, fix/grant-agent-config-routing-defaults, docs/ops-debts-tracking, fix/canais-zapi-direto-enums-ownership
 
@@ -530,7 +530,7 @@ https://github.com/felipeabrantess-jpg/ekthos-platform/compare/main...staging?ex
 ## 12. Frontend — Mapa de Rotas
 
 > **Dados reais de ENG-6 (2026-05-28).**  
-> URL prod: `https://ekthos-platform.vercel.app`
+> URL prod: `https://app.ekthoschurch.com`
 
 ### Rotas públicas (sem auth)
 `/`, `/landing`, `/login`, `/signup`, `/choose-plan`, `/onboarding`, `/onboarding/configuring`, `/auth/set-password`, `/auth/forgot-password`, `/auth/reset-password`, `/checkout/sucesso`, `/checkout/cancelado`, `/visita/:slug`

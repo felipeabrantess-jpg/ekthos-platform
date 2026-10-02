@@ -405,14 +405,14 @@ Se não houver execuções recentes: não é erro — apenas ambiente de baixo v
 - [ ] **Step 5.4 (S4): Cockpit admin — /admin/cockpit/ativacoes carrega**
 
 Via Playwright:
-1. Navegar para `https://ekthos-platform.vercel.app/admin/cockpit/ativacoes`
+1. Navegar para `https://app.ekthoschurch.com/admin/cockpit/ativacoes`
 2. Verificar que lista carrega sem erro 403/500
 3. Capturar snapshot — deve mostrar ativações ou lista vazia (não erro)
 
 - [ ] **Step 5.5 (S5): Tela pastor — /configuracoes/canais continua funcionando**
 
 Via Playwright (com impersonation ativa de church_demo):
-1. Navegar para `https://ekthos-platform.vercel.app/configuracoes/canais`
+1. Navegar para `https://app.ekthoschurch.com/configuracoes/canais`
 2. Verificar que card Z-API ainda renderiza
 3. Nenhum erro novo no console relacionado a RLS (403 Forbidden)
 

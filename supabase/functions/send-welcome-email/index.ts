@@ -54,7 +54,7 @@ function buildWelcomeHtml(
           style="max-width:600px;width:100%;">
           <tr>
             <td align="center" style="padding-bottom:28px;">
-              <img src="https://ekthos-platform.vercel.app/logo-ekthos-200.png"
+              <img src="https://app.ekthoschurch.com/logo-ekthos-200.png"
                 alt="${churchName}" width="56" height="56"
                 style="display:block;border:0;outline:none;">
               <p style="margin:10px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;color:#161616;letter-spacing:0.5px;">

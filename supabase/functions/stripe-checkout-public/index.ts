@@ -28,7 +28,7 @@ const STRIPE_SECRET_KEY         = Deno.env.get('STRIPE_SECRET_KEY')!
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 // SEC-003: nunca usar wildcard '*' em produção — usar domínio explícito
-const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
 
   // SEC-004: validar domínio das URLs de redirect — impede Open Redirect
   const ALLOWED_REDIRECT_HOSTS = [
-    'ekthos-platform.vercel.app',
+    'app.ekthoschurch.com',
     'app.ekthosai.net',
     'localhost',
     '127.0.0.1',

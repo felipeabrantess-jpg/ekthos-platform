@@ -37,7 +37,7 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 })
 
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://ekthosai.com',
   'https://www.ekthosai.com',
 ]

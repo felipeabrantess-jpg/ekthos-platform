@@ -15,7 +15,7 @@
 | File | Action | Responsabilidade |
 |------|--------|-----------------|
 | `supabase/functions/_shared/errors.ts` | **Create** | Helper `jsonError()` que retorna `{ error: 'Internal server error' }` sem vazar `error.message` |
-| `supabase/functions/agent-acolhimento/index.ts` | **Modify** lines 48-53 | Substituir `'*'` por `Deno.env.get('ALLOWED_ORIGIN') \|\| 'https://ekthos-platform.vercel.app'` |
+| `supabase/functions/agent-acolhimento/index.ts` | **Modify** lines 48-53 | Substituir `'*'` por `Deno.env.get('ALLOWED_ORIGIN') \|\| 'https://app.ekthoschurch.com'` |
 | `supabase/functions/admin-notes-crud/index.ts` | **Modify** lines 69, 92, 109 | Substituir `error.message` por `jsonError()`, adicionar `console.error` |
 | `supabase/functions/admin-churches-list/index.ts` | **Modify** line 79 | Substituir `error.message` por `jsonError()` |
 | `supabase/functions/admin-events-list/index.ts` | **Modify** line 73 | Substituir `error.message` por `jsonError()` |
@@ -74,7 +74,7 @@ const CORS = {
 
 Por:
 ```typescript
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 const CORS = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -317,9 +317,9 @@ supabase functions deploy admin-tasks-crud --project-ref mlqjywqnchilvgkbvicd --
 
 ```bash
 curl -si -X OPTIONS "https://mlqjywqnchilvgkbvicd.supabase.co/functions/v1/agent-acolhimento" \
-  -H "Origin: https://ekthos-platform.vercel.app" \
+  -H "Origin: https://app.ekthoschurch.com" \
   -H "Access-Control-Request-Method: POST" | grep -i "access-control-allow-origin"
-# Expected: https://ekthos-platform.vercel.app (NOT *)
+# Expected: https://app.ekthoschurch.com (NOT *)
 ```
 
 - [ ] **V2 — error.message: grep no repositório (zero ocorrências nas 4 EFs)**
