@@ -1,6 +1,6 @@
 /**
  * admin-smoke.spec.ts
- * Smoke test E2E contra produção (https://ekthos-platform.vercel.app).
+ * Smoke test E2E contra produção (https://app.ekthoschurch.com).
  *
  * Pré-condição: global-setup.ts fez login e salvou .auth.json (via storageState).
  *

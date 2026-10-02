@@ -26,7 +26,7 @@ function isAuthStale(): boolean {
 export default async function globalSetup() {
   const email    = process.env.PLAYWRIGHT_ADMIN_EMAIL
   const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD
-  const baseURL  = process.env.PLAYWRIGHT_BASE_URL ?? 'https://ekthos-platform.vercel.app'
+  const baseURL  = process.env.PLAYWRIGHT_BASE_URL ?? 'https://app.ekthoschurch.com'
 
   if (!email || !password) {
     throw new Error(
