@@ -69,6 +69,8 @@ export interface MinistryItem {
   leader_id: string | null
   leader_name: string | null
   leader_email: string | null
+  /** Conta autorizada a administrar o ministério (recebe e gerencia os encaminhamentos) */
+  leader_user_id: string | null
 }
 
 // ── Hooks ─────────────────────────────────────────────────────
@@ -176,7 +178,7 @@ export function useMinistries(churchId: string | null | undefined) {
       if (!churchId) return []
       const { data, error } = await supabase
         .from('ministries')
-        .select('id, name, leader_id, people!ministries_leader_id_people_fkey(name, email)')
+        .select('id, name, leader_id, leader_user_id, people!ministries_leader_id_people_fkey(name, email)')
         .eq('church_id', churchId)
         .order('name', { ascending: true })
       if (error) throw new Error(error.message)
@@ -186,6 +188,7 @@ export function useMinistries(churchId: string | null | undefined) {
         leader_id:    m.leader_id,
         leader_name:  m.people?.name  ?? null,
         leader_email: m.people?.email ?? null,
+        leader_user_id: m.leader_user_id ?? null,
       })) as MinistryItem[]
     },
     enabled: !!churchId,

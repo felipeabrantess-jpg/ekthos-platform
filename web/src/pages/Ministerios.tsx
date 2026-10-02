@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import {
   useMinisterios,
@@ -392,7 +393,30 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
 
 function ReferralCard({ referral }: { referral: MinistryReferral }) {
   const navigate = useNavigate()
+  const { churchId } = useAuth()
+  const queryClient = useQueryClient()
+  const addMember = useAddMinistryMember()
+  const [includeError, setIncludeError] = useState<string | null>(null)
   const isUrgent = referral.dias_esperando >= 7
+
+  // "Aceitar" o encaminhamento = incluir a pessoa no ministério (ministry_members),
+  // pela mesma RPC de Ministério → Pessoas. A fila só lista quem ainda NÃO é membro,
+  // então o card sai da fila; a jornada e o histórico não são alterados.
+  async function handleInclude(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!churchId || addMember.isPending) return
+    setIncludeError(null)
+    try {
+      await addMember.mutateAsync({ ministryId: referral.ministry_id, personId: referral.person_id, churchId })
+      // some da fila na hora (todas as visões em cache) e re-sincroniza com o servidor
+      queryClient.setQueriesData<MinistryReferral[]>({ queryKey: ['ministry-referrals'] }, (old) =>
+        Array.isArray(old) ? old.filter((r) => !(r.person_id === referral.person_id && r.ministry_id === referral.ministry_id)) : old,
+      )
+      void queryClient.invalidateQueries({ queryKey: ['ministry-referrals'] })
+    } catch (err) {
+      setIncludeError(err instanceof Error && !/FORBIDDEN|42501/.test(err.message) ? err.message : 'Você não tem permissão para incluir pessoas neste ministério.')
+    }
+  }
 
   return (
     <div
@@ -440,6 +464,23 @@ function ReferralCard({ referral }: { referral: MinistryReferral }) {
       {referral.anotacao && (
         <p className="text-xs text-text-secondary bg-bg-hover rounded-lg px-3 py-2 line-clamp-2 italic">
           "{referral.anotacao}"
+        </p>
+      )}
+
+      <div className="pt-1 flex items-center justify-end">
+        <button
+          type="button"
+          data-testid="btn-incluir-no-ministerio"
+          onClick={(e) => { void handleInclude(e) }}
+          disabled={addMember.isPending}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {addMember.isPending ? 'Incluindo...' : 'Incluir no ministério'}
+        </button>
+      </div>
+      {includeError && (
+        <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2" role="alert" onClick={(e) => e.stopPropagation()}>
+          {includeError}
         </p>
       )}
     </div>
