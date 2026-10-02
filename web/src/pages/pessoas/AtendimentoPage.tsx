@@ -14,6 +14,7 @@ import {
   usePersonJourney,
   useSuggestStage,
   useRegisterAttendance,
+  useReopenJourney,
   usePersonTimeline,
   usePersonContacts,
   usePersonJourneyStatus,
@@ -80,6 +81,7 @@ const OUTCOME_CLOSES_JOURNEY = new Set(['nao_quer_contato', 'mudou_de_igreja'])
 
 const EVENT_KIND_LABEL: Record<string, string> = {
   journey_opened:        'Jornada iniciada',
+  journey_reopened:      'Atendimento reaberto',
   stage_advance:         'Avançou de etapa',
   pastoral_contact:      'Contato pastoral',
   journey_assign:        'Responsável atribuído',
@@ -193,6 +195,7 @@ function TimelineIcon({ item }: { item: TimelineItem }) {
     pastoral_contact:  { bg: 'bg-blue-50',   icon: <Phone size={12} className="text-blue-500" /> },
     stage_advance:     { bg: 'bg-emerald-50', icon: <CheckCircle2 size={12} className="text-emerald-500" /> },
     journey_opened:    { bg: 'bg-purple-50',  icon: <Sparkles size={12} className="text-purple-500" /> },
+    journey_reopened:  { bg: 'bg-amber-50',   icon: <AlertCircle size={12} className="text-amber-500" /> },
     journey_assign:    { bg: 'bg-amber-50',   icon: <User size={12} className="text-amber-500" /> },
     ministry_referral: { bg: 'bg-indigo-50',  icon: <Building2 size={12} className="text-indigo-500" /> },
   }
@@ -250,15 +253,40 @@ function outcomeLabel(outcome: string | null): string {
   return JOURNEY_OUTCOME_LABEL[outcome] ?? RESULT_LABELS[outcome] ?? outcome
 }
 
-function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus }: {
+function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, onToast }: {
   contacts: PersonContact[]
   isLoading: boolean
   journeyStatus: JourneyStatus | null | undefined
+  personId: string
+  onToast: (msg: string, type: 'success' | 'error') => void
 }) {
   const done = contacts.length
   const next = done + 1
   const marks = Math.max(4, done)   // 4 marcos fixos; acima disso mostra todos os reais
   const closed = !!journeyStatus?.closed_at
+  const reopen = useReopenJourney()
+  const [reopenOpen, setReopenOpen] = useState(false)
+  const [reopenReason, setReopenReason] = useState('')
+  const [reopenError, setReopenError] = useState<string | null>(null)
+
+  async function handleReopen() {
+    if (!journeyStatus?.id) return
+    const reason = reopenReason.trim()
+    if (!reason) { setReopenError('Informe o motivo da reabertura.'); return }
+    setReopenError(null)
+    try {
+      await reopen.mutateAsync({ journeyId: journeyStatus.id, personId, reason })
+      setReopenOpen(false); setReopenReason('')
+      onToast('Atendimento reaberto. A pessoa voltou para "Em atendimento".', 'success')
+    } catch (err) {
+      const m = err instanceof Error ? err.message : ''
+      setReopenError(
+        m.includes('JOURNEY_ALREADY_OPEN') ? 'Esta pessoa já tem um atendimento em andamento.'
+        : m.includes('JOURNEY_NOT_CLOSED') ? 'Este atendimento não está encerrado.'
+        : m.includes('REASON_REQUIRED') ? 'Informe o motivo da reabertura.'
+        : 'Não foi possível reabrir o atendimento. Tente novamente.')
+    }
+  }
 
   return (
     <div className="bg-white rounded-2xl border border-border-default shadow-sm p-5" data-testid="sequencia-contatos">
@@ -289,6 +317,50 @@ function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus }: {
           </span>
         )}
       </div>
+
+      {/* Reabrir atendimento encerrado por engano — confirmação + motivo obrigatório; nada é apagado */}
+      {closed && journeyStatus?.id && (
+        <div className="mt-3" data-testid="bloco-reabrir">
+          {!reopenOpen ? (
+            <button
+              type="button"
+              data-testid="btn-reabrir"
+              onClick={() => { setReopenOpen(true); setReopenError(null) }}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border-default text-text-primary hover:bg-bg-hover transition-colors"
+            >
+              Reabrir atendimento
+            </button>
+          ) : (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+              <p className="text-xs text-amber-800">
+                Reabrir este atendimento? A finalização anterior continua no histórico e a pessoa volta para <strong>Em atendimento</strong>.
+              </p>
+              <label className="block">
+                <span className="text-xs text-text-secondary">Motivo da reabertura *</span>
+                <textarea
+                  data-testid="reabrir-motivo"
+                  value={reopenReason}
+                  onChange={e => setReopenReason(e.target.value)}
+                  rows={2}
+                  placeholder="Ex.: encerrado por engano"
+                  className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none bg-white"
+                />
+              </label>
+              {reopenError && <p className="text-xs text-red-600" role="alert">{reopenError}</p>}
+              <div className="flex gap-2 justify-end">
+                <button type="button" onClick={() => { setReopenOpen(false); setReopenReason(''); setReopenError(null) }} disabled={reopen.isPending}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg border border-border-default text-text-primary hover:bg-bg-hover">
+                  Cancelar
+                </button>
+                <button type="button" data-testid="btn-confirmar-reabrir" onClick={() => { void handleReopen() }} disabled={reopen.isPending || !reopenReason.trim()}
+                  className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary text-white hover:opacity-90 disabled:opacity-50">
+                  {reopen.isPending ? 'Reabrindo…' : 'Confirmar reabertura'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {!isLoading && (
         <ol className="mt-4 flex flex-wrap items-center gap-2" aria-label="Sequência de contatos">
@@ -483,6 +555,8 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
   // ── Formulário ─────────────────────────────────────────────
   const [channel,    setChannel]    = useState('presencial')
   const [result,     setResult]     = useState('realizado')
+  // Item 10: salvar ≠ registrar contato. A intenção precisa ser explícita (null = não escolheu).
+  const [hadContact, setHadContact] = useState<boolean | null>(null)
   const [notes,      setNotes]      = useState('')
   const [stageId,    setStageId]    = useState<string>(journey?.stage_id ?? '')
   const [nextStep,   setNextStep]   = useState('')
@@ -504,7 +578,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
     }
   }, [suggestion?.stage_id, stageId])
 
-  const closingOutcome = OUTCOME_CLOSES_JOURNEY.has(result)
+  const closingOutcome = hadContact === true && OUTCOME_CLOSES_JOURNEY.has(result)
 
   // ── E2: sem jornada → etapa obrigatória ───────────────────
   const missingStageForNewJourney = !journey && !stageId
@@ -539,9 +613,10 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         person_id:        person.id,
         expected_version: journey?.version ?? null,
         people_updates:   Object.keys(peopleUpdates).length ? peopleUpdates : undefined,
+        register_contact: hadContact === true,
         contact_channel:  channel,
         contact_result:   result,
-        contact_notes:    notes || undefined,
+        contact_notes:    hadContact === true ? (notes || undefined) : undefined,
         new_stage_id:     stageId || null,
         next_step:        nextStep || undefined,
         next_step_due_at: nextDue  || null,
@@ -549,7 +624,8 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         close_journey:    closingOutcome || undefined,
       })
       const closedMsg = closingOutcome ? ' Jornada encerrada.' : ''
-      onToast(`Atendimento registrado com sucesso.${closedMsg}`, 'success')
+      onToast(hadContact ? `Contato registrado com sucesso.${closedMsg}` : 'Alterações salvas (sem novo contato).', 'success')
+      setHadContact(null)
       setNotes('')
       setNextStep('')
       setNextDue('')
@@ -577,7 +653,9 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
     }
   }
 
-  const canSave = hasChanges && !missingStageForNewJourney && !register.isPending
+  // Sem escolher se houve contato, não salva (a intenção é obrigatória)
+  const missingContactChoice = hadContact === null
+  const canSave = (hasChanges || hadContact === true) && !missingStageForNewJourney && !missingContactChoice && !register.isPending
 
   const saveBar = (
     <div className="p-4 bg-white border-t border-border-default rounded-b-2xl">
@@ -596,7 +674,12 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
           Selecione uma etapa para iniciar a jornada
         </p>
       )}
-      {!missingStageForNewJourney && !hasChanges && !register.isPending && (
+      {!missingStageForNewJourney && missingContactChoice && !register.isPending && (
+        <p className="text-center text-xs text-amber-600 font-medium mt-2" data-testid="aviso-escolha-contato">
+          Informe se houve contato com a pessoa
+        </p>
+      )}
+      {!missingStageForNewJourney && !missingContactChoice && !hasChanges && hadContact !== true && !register.isPending && (
         <p className="text-center text-xs text-text-secondary mt-2">
           Preencha ao menos um campo para salvar
         </p>
@@ -735,8 +818,26 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         </select>
       </div>
 
-      {/* ── Registro do contato ── */}
-      <div className="space-y-3">
+      {/* ── Houve contato? (item 10: salvar ≠ registrar contato) ── */}
+      <div className="space-y-2" data-testid="bloco-houve-contato">
+        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Houve contato com a pessoa?</p>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Houve contato com a pessoa?">
+          <button type="button" role="radio" aria-checked={hadContact === true} data-testid="houve-contato-sim"
+            onClick={() => setHadContact(true)}
+            className={`rounded-xl border px-3 py-2 text-sm text-left transition-colors ${hadContact === true ? 'border-primary bg-primary/5 text-text-primary' : 'border-border-default text-text-secondary hover:bg-bg-hover'}`}>
+            <span className="font-medium">Sim</span><br /><span className="text-xs">registrar o {ordinal(nextOrdinal)} contato</span>
+          </button>
+          <button type="button" role="radio" aria-checked={hadContact === false} data-testid="houve-contato-nao"
+            onClick={() => setHadContact(false)}
+            className={`rounded-xl border px-3 py-2 text-sm text-left transition-colors ${hadContact === false ? 'border-primary bg-primary/5 text-text-primary' : 'border-border-default text-text-secondary hover:bg-bg-hover'}`}>
+            <span className="font-medium">Não</span><br /><span className="text-xs">só salvar correções</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Registro do contato (só quando houve contato) ── */}
+      {hadContact === true && (
+      <div className="space-y-3" data-testid="bloco-registrar-contato">
         <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide" data-testid="titulo-registrar">
           Registrar {ordinal(nextOrdinal)} contato
         </p>
@@ -773,6 +874,10 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
           placeholder="Anotações sobre esta conversa…"
           rows={3}
           className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none" />
+      </div>
+      )}
+
+      <div className="space-y-3">
         <label className="block">
           <span className="text-xs text-text-secondary">Observação pastoral</span>
           <input value={obs} onChange={e => setObs(e.target.value)}
@@ -964,7 +1069,7 @@ export default function AtendimentoPage() {
 
       {/* Sequência de contatos (1º, 2º, 3º, 4º, … Nº) + status da jornada */}
       <div className="px-4 md:px-6 pb-3">
-        <BlocoSequenciaContatos contacts={contacts} isLoading={contactsLoading} journeyStatus={journeyStatus} />
+        <BlocoSequenciaContatos contacts={contacts} isLoading={contactsLoading} journeyStatus={journeyStatus} personId={personId!} onToast={(msg, type) => setToast({ msg, type, key: Date.now() })} />
       </div>
 
       {/* E3: Duas colunas — formulário (esq, maior) + histórico (dir, sempre visível) */}

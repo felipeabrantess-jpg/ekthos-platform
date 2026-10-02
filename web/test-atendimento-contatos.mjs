@@ -236,6 +236,7 @@ async function custom(r, u) {
       registerCalls.push(body); const p = people[body.p_person_id];
       if (!p.journey && !body.p_new_stage_id) return F(json({ code: 'P0001', message: 'JOURNEY_REQUIRED' }, 400));
       if (!p.journey) p.journey = { id: `${p.id}-j`, closed_at: null, outcome: null, version: 1, stage_id: body.p_new_stage_id };
+      if (body.p_register_contact === false) return F(json({ ok: true }));
       const n = p.contacts.length + 1;
       p.contacts.push({ event_id: `${p.id}-ev-${n}`, ordinal: n, event_at: new Date().toISOString(), contact_date: body.p_contact_date, actor_id: 'u1', actor_name: 'João', channel: body.p_contact_channel, result: body.p_contact_result, notes: body.p_contact_notes ?? null, journey_id: p.journey.id, journey_closed_at: null, journey_outcome: null });
       return F(json({ ok: true }));
@@ -257,7 +258,8 @@ const page = await ctx.newPage(); const errs = []; page.on('console', m => { if 
 await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' }).catch(() => {});
 for (let i = 0; i < 3; i++) { try { await page.evaluate(({ k, s }) => localStorage.setItem(k, JSON.stringify(s)), { k: 'sb-mlqjywqnchilvgkbvicd-auth-token', s: MOCK_SESSION }); break; } catch { await page.waitForTimeout(500); } }
 
-const open = async (id) => { await page.goto(`${BASE}/pessoas/${id}/atendimento`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(900); };
+// Item 10: a intenção de contato é explícita — este teste cobre o fluxo COM contato, então marca 'Sim' ao abrir
+const open = async (id) => { await page.goto(`${BASE}/pessoas/${id}/atendimento`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(900); const sim = page.locator('[data-testid="houve-contato-sim"]'); if (await sim.count()) { await sim.first().click(); await page.waitForTimeout(150); } };
 const txt = async (sel) => (await page.locator(sel).first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
 
 for (const n of [0, 1, 2, 3, 4, 6, 7]) {
@@ -306,6 +308,7 @@ ck('antes: 2 contatos, Registrar 3º contato', (await txt('[data-testid="titulo-
 await page.locator('textarea[placeholder*="Anotações"]').fill('terceiro contato via teste');
 await page.locator('button:has-text("Salvar atendimento"):visible').first().click();
 await page.waitForTimeout(1500);
+await page.locator('[data-testid="houve-contato-sim"]').first().click(); await page.waitForTimeout(150);   // após salvar a intenção volta a vazia (item 10) — marca de novo para ler o próximo ordinal
 ck('RPC journey_register_attendance chamada sem campo manual de ordinal', registerCalls.length === 1 && !('p_ordinal' in registerCalls[0]) && !('p_contact_number' in registerCalls[0]), Object.keys(registerCalls[0] || {}).join(','));
 ck('depois: 3 contatos, Registrar 4º contato', (await txt('[data-testid="titulo-registrar"]')) === 'Registrar 4º contato' && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 4º contato', await txt('[data-testid="proximo-contato"]'));
 const novo = await txt('[data-testid="contato-3"]');
@@ -337,6 +340,7 @@ for (const n of [0, 1, 2, 3, 4, 6]) {
   const row = page.locator('table tbody tr', { hasText: name }).first();
   await row.locator('button[title="Atender"]').first().click();
   await page.waitForURL(`**/pessoas/p${n}/atendimento**`, { timeout: 15000 }); await page.waitForTimeout(900);
+  await page.locator('[data-testid="houve-contato-sim"]').first().click(); await page.waitForTimeout(150);   // item 10: houve contato
   const titulo = await txt('[data-testid="titulo-registrar"]');
   if (n === 0) {
     // pessoa sem jornada: etapa obrigatória (sugestão preenche; garante seleção explícita)
@@ -345,6 +349,7 @@ for (const n of [0, 1, 2, 3, 4, 6]) {
   await page.locator('textarea[placeholder*="Anotações"]').fill(`contato ${n + 1} via /pessoas`);
   await page.locator('button:has-text("Salvar atendimento"):visible').first().click();
   await page.waitForTimeout(1200);
+  await page.locator('[data-testid="houve-contato-sim"]').first().click(); await page.waitForTimeout(150);   // após salvar a intenção volta a vazia (item 10) — marca de novo para ler o próximo ordinal
   const tituloDepois = await txt('[data-testid="titulo-registrar"]');
   await page.locator('button[aria-label="Voltar"]').first().click();
   await page.waitForURL('**/pessoas**', { timeout: 15000 }); await page.waitForTimeout(1200);
