@@ -795,14 +795,11 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
           </select>
           {ministryId && (() => {
             const sel = ministries.find(m => m.id === ministryId)
-            let msg: string
-            if (!sel?.leader_id) {
-              msg = 'Encaminhamento será registrado. Este ministério ainda não tem líder cadastrado.'
-            } else if (!sel.leader_email) {
-              msg = `Encaminhamento será registrado. ${sel.leader_name ?? 'O líder'} ainda não tem acesso ao sistema.`
-            } else {
-              msg = `${sel.leader_name ?? 'O líder'} será notificado ao salvar.`
-            }
+            // Quem recebe e gerencia o encaminhamento é a CONTA vinculada ao ministério
+            // (leader_user_id). A pessoa líder (leader_id) não é evidência de acesso ao sistema.
+            const msg = sel?.leader_user_id
+              ? 'A conta de líder vinculada a este ministério será notificada ao salvar.'
+              : 'Encaminhamento será registrado. Este ministério ainda não tem conta de líder vinculada — por enquanto só a administração vê na fila.'
             return <p className="text-xs text-text-secondary">{msg}</p>
           })()}
         </div>
