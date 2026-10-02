@@ -1,5 +1,5 @@
 // ============================================================
-// Edge Function: webhook-receiver  v2
+// Edge Function: webhook-receiver  v30b
 // Único ponto de entrada para mensagens inbound de qualquer provider.
 //
 // POST /functions/v1/webhook-receiver
@@ -8,18 +8,23 @@
 // Query params:
 //   ?provider=chatpro&channel_id=UUID  → ChatPro (preferido)
 //   ?provider=chatpro                  → ChatPro, busca canal ativo
-//   ?provider=zapi&instance_id=INST    → Z-API (legado)
+//   ?provider=meta_cloud               → Meta Cloud API
 //   (sem params)                       → auto-detect pelo payload
 //
-// Payload ChatPro (inbound text message):
-//   { phone: "5521...", body: "texto", id: "msg_id" }
-//   ou { phone: "5521...", message: "texto", id: "msg_id" }
+// v30 (Z-API descontinuada — instância morta):
+//   ✅ GET hub.challenge handler (META_WEBHOOK_VERIFY_TOKEN)
+//   ✅ parseMeta(): parser para payload Meta Cloud API
+//   ✅ auto-detect: Meta Cloud + ChatPro apenas (Z-API removido por completo)
+//   ✅ canal lookup: meta_phone_number_id (multi-tenant seguro)
+//   ✅ HMAC-SHA256 signature validation (WA_APP_SECRET) — fail-open se ausente
+//   ✅ payload não reconhecido → 200 + log "ignorado" (sem 500)
 //
-// Regras desta sprint (B):
-//   ✅ Gravar mensagem inbound em conversation_messages (direction=inbound)
-//   ✅ Identificar/criar pessoa por from_phone
-//   ✅ Upsert conversation com person_id vinculado
-//   ✅ Chamar agent-haiku-triagem (fire-and-forget, 5s timeout) para triagem e roteamento
+// v30b — FASE 1B (correções code-review):
+//   ✅ Achado 1: instanceId removido (código morto pós-Z-API)
+//   ✅ Achado 2: branch explícito provider='meta_cloud' em processInbound
+//   ✅ Achado 3: parseMeta retorna NormalizedInbound[] — suporte a lote Meta
+//   ✅ Achado 4: ownership='human' → mensagem gravada, triagem suprimida
+//   ✅ Sugestão 5: log quando raw=null (body não é JSON válido)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -27,25 +32,27 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-// ── B2 FIX: Z-API Client-Token validation — OBRIGATÓRIO ────
-// IMPORTANTE: ZAPI_CLIENT_TOKEN DEVE estar configurado no Supabase Secrets.
-// Se não estiver configurado, REJEITA por segurança (não opt-in).
-// Quando configurado, valida assinatura em tempo constante (previne timing attacks).
-// ⚠️  Felipe: confirmar que secret ZAPI_CLIENT_TOKEN está setado no Dashboard
-//     (Settings → Edge Functions → Secrets) com o Client-Token da instância Z-API.
-const ZAPI_CLIENT_TOKEN_SECRET = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
-
-function validateZApiSignature(req: Request): boolean {
-  if (!ZAPI_CLIENT_TOKEN_SECRET) {
-    // B2 FIX: secret não configurado → rejeitar por segurança (remover opt-in)
-    console.error('[webhook-receiver] B2: ZAPI_CLIENT_TOKEN not configured — rejecting for security. Configure via Supabase Dashboard → Edge Functions → Secrets.')
-    return false
-  }
-  const incoming = req.headers.get('Client-Token') ?? ''
-  if (incoming.length !== ZAPI_CLIENT_TOKEN_SECRET.length) return false
+// v30: HMAC-SHA256 validation para Meta Cloud (x-hub-signature-256)
+// fail-open: se WA_APP_SECRET ausente, caller não invoca esta função
+async function validateMetaSignature(rawBody: string, signature: string, appSecret: string): Promise<boolean> {
+  if (!signature.startsWith('sha256=')) return false
+  const receivedHash = signature.slice(7)
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(appSecret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sigBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(rawBody))
+  const computedHash = Array.from(new Uint8Array(sigBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  if (computedHash.length !== receivedHash.length) return false
   let mismatch = 0
-  for (let i = 0; i < incoming.length; i++) {
-    mismatch |= incoming.charCodeAt(i) ^ ZAPI_CLIENT_TOKEN_SECRET.charCodeAt(i)
+  for (let i = 0; i < computedHash.length; i++) {
+    mismatch |= computedHash.charCodeAt(i) ^ receivedHash.charCodeAt(i)
   }
   return mismatch === 0
 }
@@ -156,93 +163,142 @@ function parseChatPro(raw: unknown): NormalizedInbound | null {
   return { from_phone: phone, text, provider_message_id: msgId, timestamp }
 }
 
-function parseZApi(raw: unknown): NormalizedInbound | null {
-  if (!raw || typeof raw !== 'object') return null
-  const p = raw as Record<string, unknown>
+// v30: parser Meta Cloud API — retorna TODAS as mensagens de texto do lote
+// Payload: { object:"whatsapp_business_account", entry:[{ changes:[{ field:"messages",
+//   value:{ metadata:{phone_number_id}, messages:[{id,from,timestamp,type,text:{body}}] } }] }] }
+// Achado 3 fix: suporte a lote — itera entry[].changes[].value.messages[].
+// Mensagens não-texto: ignoradas com log. Retorna [] se nada processável.
+function parseMeta(raw: unknown): NormalizedInbound[] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+  const results: NormalizedInbound[] = []
+  try {
+    const p = raw as Record<string, unknown>
+    if (p.object !== 'whatsapp_business_account') return []
 
-  // Filtrar eventos que não são mensagens recebidas
-  if (p.isGroup === true) return null
-  // fromMe=true → mensagem enviada por nós (ACK/status de entrega) → ignorar
-  if (p.fromMe === true) return null
-  // Evento de notificação de sistema (ex: CHAT_LABEL_ASSOCIATION) → ignorar
-  if (p.notification !== undefined) return null
-  // type presente mas não é ReceivedCallback → ignorar (DeliveryCallback, ReadCallback, etc.)
-  if (p.type && p.type !== 'ReceivedCallback') return null
+    const entries = (p.entry as Array<Record<string, unknown>> | undefined) ?? []
 
-  // Remetente: campo 'phone' (número de quem enviou)
-  const phone = typeof p.phone === 'string' ? normalizePhone(p.phone) : null
-  if (!phone || phone.length < 12) return null
+    for (const entry of entries) {
+      const changes = (entry.changes as Array<Record<string, unknown>> | undefined) ?? []
+      for (const change of changes) {
+        const value = change.value as Record<string, unknown> | undefined
+        if (!value) continue
 
-  // Texto: Z-API envia text.message (objeto aninhado) ou text direto (string)
-  let text: string | null = null
-  if (typeof p.text === 'string') text = p.text.trim()
-  else if (p.text && typeof p.text === 'object')
-    text = (((p.text as Record<string, unknown>).message as string) ?? '').trim() || null
-  if (!text) return null
+        const messages = value.messages as Array<Record<string, unknown>> | undefined
+        if (!messages || messages.length === 0) {
+          console.log('[webhook-receiver] Meta event sem messages (status update?):', change.field)
+          continue
+        }
 
-  return {
-    from_phone:          phone,
-    text,
-    provider_message_id: (p.messageId as string | undefined) ?? '',
-    // Z-API usa campo 'momment' (typo deles) em milissegundos
-    timestamp:           new Date(typeof p.momment === 'number' ? p.momment : Date.now()).toISOString(),
+        for (const msg of messages) {
+          if (msg.type !== 'text') {
+            console.log('[webhook-receiver] Meta message type não suportado no MVP:', msg.type)
+            continue
+          }
+
+          const fromPhone = typeof msg.from === 'string' ? normalizePhone(msg.from) : null
+          if (!fromPhone || fromPhone.length < 10) continue
+
+          const textObj = msg.text as Record<string, unknown> | undefined
+          const text    = typeof textObj?.body === 'string' ? textObj.body.trim() : null
+          if (!text) continue
+
+          const wamid = typeof msg.id === 'string' ? msg.id : ''
+
+          // Meta Cloud: timestamp é STRING em segundos Unix
+          const tsRaw = typeof msg.timestamp === 'string'
+            ? parseInt(msg.timestamp, 10) * 1000
+            : Date.now()
+
+          results.push({
+            from_phone:          fromPhone,
+            text,
+            provider_message_id: wamid,
+            timestamp:           new Date(tsRaw).toISOString(),
+          })
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[webhook-receiver] parseMeta error:', err)
   }
+  return results
 }
 
 // ── Main ───────────────────────────────────────────────────
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS' || req.method === 'GET') return ok()
-  if (req.method !== 'POST') return ok()
+  if (req.method === 'OPTIONS') return ok()
 
-  const url      = new URL(req.url)
-  const provider = url.searchParams.get('provider') ?? 'auto'
-  const channelId = url.searchParams.get('channel_id') ?? null   // UUID direto (chatpro)
-  const instanceId = url.searchParams.get('instance_id') ?? ''  // zapi legado
-
-  // B2 FIX: validar Client-Token para webhooks Z-API (obrigatório)
-  if (provider === 'zapi' && !validateZApiSignature(req)) {
-    console.warn('[webhook-receiver] B2: Client-Token inválido ou ausente — 401')
-    // Audit log best-effort
-    const sbAudit = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-    sbAudit.from('audit_logs').insert({
-      id:          crypto.randomUUID(),
-      church_id:   null,
-      entity_type: 'webhook',
-      entity_id:   null,
-      action:      'webhook_zapi_rejected_unauthorized',
-      actor_type:  'system',
-      actor_id:    null,
-      payload:     { provider: 'zapi', ip: req.headers.get('x-forwarded-for') ?? null, secret_configured: !!ZAPI_CLIENT_TOKEN_SECRET },
-      created_at:  new Date().toISOString(),
-    }).catch(() => { /* best-effort, ignorar erro de audit */ })
-    return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  // v30: GET hub.challenge — Meta Cloud webhook verification
+  if (req.method === 'GET') {
+    const url         = new URL(req.url)
+    const mode        = url.searchParams.get('hub.mode')
+    const token       = url.searchParams.get('hub.verify_token')
+    const challenge   = url.searchParams.get('hub.challenge')
+    const verifyToken = Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') ?? ''
+    if (mode === 'subscribe' && verifyToken && token === verifyToken && challenge) {
+      console.log('[webhook-receiver] Meta hub.challenge verificado')
+      return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain' } })
+    }
+    return ok()
   }
 
-  const raw = await req.json().catch(() => null)
+  if (req.method !== 'POST') return ok()
 
-  // Responde 200 imediatamente (ChatPro não pode esperar timeout)
-  void processInbound(raw, provider, channelId, instanceId)
+  const url       = new URL(req.url)
+  const provider  = url.searchParams.get('provider') ?? 'auto'
+  const channelId = url.searchParams.get('channel_id') ?? null
+
+  // v30: ler corpo como texto para preservar bytes crus (necessário para HMAC meta_cloud)
+  const rawBody = await req.text().catch(() => '')
+  const raw = rawBody
+    ? (() => { try { return JSON.parse(rawBody) } catch { return null } })()
+    : null
+
+  // v30: Meta Cloud signature validation (HMAC-SHA256, x-hub-signature-256)
+  // fail-open: se WA_APP_SECRET não configurado, loga aviso e continua
+  const isMetaPayload = provider === 'meta_cloud'
+    || (provider === 'auto'
+        && raw && typeof raw === 'object' && !Array.isArray(raw)
+        && (raw as Record<string, unknown>).object === 'whatsapp_business_account')
+
+  if (isMetaPayload) {
+    const appSecret = Deno.env.get('WA_APP_SECRET') ?? ''
+    if (!appSecret) {
+      console.warn('[webhook-receiver] WA_APP_SECRET ausente — meta signature check pulado (fail-open MVP)')
+    } else {
+      const signature = req.headers.get('x-hub-signature-256') ?? ''
+      const valid = await validateMetaSignature(rawBody, signature, appSecret)
+      if (!valid) {
+        console.warn('[webhook-receiver] meta signature mismatch — 401')
+        return new Response(JSON.stringify({ ok: false, error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    }
+  }
+
+  // Responde 200 imediatamente (Meta/ChatPro não podem esperar timeout)
+  void processInbound(raw, provider, channelId)
   return ok()
 })
 
 // ── processInbound ─────────────────────────────────────────
 async function processInbound(
-  raw:        unknown,
-  provider:   string,
-  channelId:  string | null,
-  instanceId: string,
+  raw:       unknown,
+  provider:  string,
+  channelId: string | null,
 ): Promise<void> {
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
   try {
-    if (!raw) return
+    // Sugestão 5: log explícito quando body não é JSON válido
+    if (!raw) {
+      console.warn('[webhook-receiver] body não é JSON válido — ignorado')
+      return
+    }
 
     // ── 1. Parse payload ──────────────────────────────────
     let normalized: NormalizedInbound | null = null
@@ -250,9 +306,9 @@ async function processInbound(
 
     if (provider === 'chatpro') {
       normalized = parseChatPro(raw)
-    } else if (provider === 'zapi' || provider === 'z-api') {
-      normalized = parseZApi(raw)
-      resolvedProvider = 'zapi'
+    } else if (provider === 'meta_cloud') {
+      // Achado 2 fix: branch explícito simétrico ao chatpro — parsed abaixo como array
+      resolvedProvider = 'meta_cloud'
     } else {
       // Auto-detect
       const p = raw as Record<string, unknown>
@@ -264,27 +320,20 @@ async function processInbound(
       } else if (typeof p.event === 'string' && p.event === 'received_message') {
         normalized = parseChatPro(raw)
         resolvedProvider = 'chatpro'
-      // Z-API: type=ReceivedCallback + phone (sem @suffix) + text
-      } else if (typeof p.type === 'string' && p.type === 'ReceivedCallback') {
-        normalized = parseZApi(raw)
-        resolvedProvider = 'zapi'
       // Objeto com phone + body/message → ChatPro legado / flat
       } else if (typeof p.phone === 'string' && (typeof p.body === 'string' || typeof p.message === 'string')) {
         normalized = parseChatPro(raw)
         resolvedProvider = 'chatpro'
+      // v30: Meta Cloud — objeto com object='whatsapp_business_account'
+      } else if (typeof p.object === 'string' && p.object === 'whatsapp_business_account') {
+        resolvedProvider = 'meta_cloud'
+        // parsed abaixo como array (suporte a lote Meta)
       } else {
-        // Fallback: tentar Z-API (formato mais comum)
-        normalized = parseZApi(raw)
-        resolvedProvider = 'zapi'
+        // Payload não reconhecido como Meta Cloud nem ChatPro — ignorar
+        console.log('[webhook-receiver] payload não reconhecido — ignorado:', JSON.stringify(raw).slice(0, 120))
+        return
       }
     }
-
-    if (!normalized) {
-      console.log(`[webhook-receiver] payload ignorado (provider=${resolvedProvider}):`, JSON.stringify(raw).slice(0, 200))
-      return
-    }
-
-    console.log(`[webhook-receiver] inbound from=${normalized.from_phone} provider=${resolvedProvider}`)
 
     // ── 2. Identificar canal ──────────────────────────────
     let channel: { id: string; church_id: string; channel_type: string } | null = null
@@ -298,217 +347,267 @@ async function processInbound(
         .eq('active', true)
         .maybeSingle()
       channel = data
-    } else if (resolvedProvider === 'zapi') {
-      if (instanceId) {
-        // Z-API com instance_id explícito na URL: busca precisa
+    } else if (resolvedProvider === 'meta_cloud') {
+      // v30: identifica canal pelo meta_phone_number_id do payload
+      // Multi-tenant seguro: phone_number_id é único por número/WABA
+      const phoneNumberId = (() => {
+        try {
+          const p = raw as Record<string, unknown>
+          const value = ((p.entry as Array<Record<string, unknown>>)?.[0]
+            ?.changes as Array<Record<string, unknown>>)?.[0]
+            ?.value as Record<string, unknown> | undefined
+          return (value?.metadata as Record<string, unknown> | undefined)
+            ?.phone_number_id as string | undefined
+        } catch { return undefined }
+      })()
+
+      if (phoneNumberId) {
         const { data } = await sb
           .from('church_whatsapp_channels')
           .select('id, church_id, channel_type')
-          .eq('zapi_instance_id', instanceId)
+          .eq('meta_phone_number_id', phoneNumberId)
           .eq('active', true)
           .maybeSingle()
         channel = data
-      }
-      if (!channel) {
-        // Fallback: busca o canal zapi ativo (instância única por projeto nessa sprint)
-        // Também tenta extrair instanceId do próprio payload Z-API
-        const payloadInstanceId = raw && typeof raw === 'object'
-          ? (raw as Record<string, unknown>).instanceId as string | undefined
-          : undefined
-        const query = sb
-          .from('church_whatsapp_channels')
-          .select('id, church_id, channel_type')
-          .eq('channel_type', 'zapi')
-          .eq('active', true)
-        if (payloadInstanceId) {
-          const { data } = await query.eq('zapi_instance_id', payloadInstanceId).maybeSingle()
-          channel = data
+        if (!channel) {
+          console.warn(`[webhook-receiver] meta_cloud: canal não encontrado para phone_number_id=${phoneNumberId}`)
         }
-        // R10 fix: sem instance_id identificado com church_id seguro, NÃO processar.
-        // Removido fallback .limit(1) que retornava o PRIMEIRO canal Z-API ativo
-        // de QUALQUER IGREJA, violando isolamento multi-tenant.
-        // REGRA: sem canal identificado → abortar. Nunca inferir church_id.
-        // NOTA: se R10 regredir novamente (qualquer .limit(1) sem church_id filter),
-        // reverter imediatamente — canal sem church_id = risco cross-tenant crítico.
+      } else {
+        console.warn('[webhook-receiver] meta_cloud: phone_number_id ausente no payload')
       }
     } else if (resolvedProvider === 'chatpro') {
-      // ChatPro: busca canal pelo channelId do routing (isolamento por church_id).
-      // R10 fix: removido fallback .limit(1) sem church_id — mesmo risco cross-tenant.
-      // Canal ChatPro deve ser resolvido pelo channelId do routing, nunca por LIMIT 1.
+      // ChatPro: canal deve ser resolvido pelo channelId na URL (isolamento multi-tenant)
+      // R10: removido fallback .limit(1) sem church_id — risco cross-tenant crítico
     }
 
     if (!channel) {
-      console.warn(`[webhook-receiver] canal não encontrado (provider=${resolvedProvider}, channel_id=${channelId}, instance_id=${instanceId})`)
+      console.warn(`[webhook-receiver] canal não encontrado (provider=${resolvedProvider}, channel_id=${channelId})`)
       return
     }
 
     const { id: resolvedChannelId, church_id: churchId } = channel
 
-    // ── 3. Deduplicar ─────────────────────────────────────
-    // B-SB03: provider_message_id vazio/nulo → rejeitar imediatamente
-    // (antes, string vazia passava o if e o dedup era pulado → N processamentos)
-    if (!normalized.provider_message_id?.trim()) {
-      console.warn('[webhook-receiver] B-SB03: rejeitado — provider_message_id vazio', {
-        from_phone: normalized.from_phone,
-        provider:   resolvedProvider,
-      })
-      return
-    }
-    const { count } = await sb
-      .from('conversation_messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('provider_message_id', normalized.provider_message_id)
-    if ((count ?? 0) > 0) {
-      console.log(`[webhook-receiver] duplicada, ignorando: ${normalized.provider_message_id}`)
-      return
-    }
-
-    // ── 4. Identificar / criar pessoa ─────────────────────
-    let { data: person } = await sb
-      .from('people')
-      .select('id, first_name, last_name')
-      .eq('church_id', churchId)
-      .eq('phone', normalized.from_phone)
-      .maybeSingle()
-
-    if (!person) {
-      const { data: newPerson, error: personErr } = await sb
-        .from('people')
-        .insert({
-          church_id:    churchId,
-          first_name:   'Contato',
-          last_name:    normalized.from_phone.slice(-4),
-          phone:        normalized.from_phone,
-          person_stage: 'visitante',
-          observacoes_pastorais: 'Cadastrado automaticamente via WhatsApp inbound',
-          // LGPD: base legal = legítimo interesse (Art. 7º, IX, LGPD).
-          // Pessoa iniciou contato via WhatsApp — não há consentimento explícito.
-          // lgpd_consent=false documenta ausência de opt-in explícito.
-          // lgpd_consent_at=null indica que não houve consentimento formal.
-          lgpd_consent:    false,
-          lgpd_consent_at: null,
-        })
-        .select('id, first_name, last_name')
-        .single()
-
-      if (personErr || !newPerson) {
-        console.warn('[webhook-receiver] erro ao criar pessoa:', personErr?.message)
-        // Continuar sem person_id em vez de abortar
-      } else {
-        person = newPerson
-        console.log(`[webhook-receiver] nova pessoa criada: ${person.id}`)
-
-        // C2 gap fix: disparar jornada de acolhimento (fire-and-forget)
-        const dispatchUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-person-event`
-        fetch(dispatchUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          },
-          body: JSON.stringify({ person_id: newPerson.id, event: 'person_created' }),
-          signal: AbortSignal.timeout(5_000),
-        }).catch(e => console.warn('[webhook-receiver] dispatch-person-event falhou:', e))
+    // ── Meta Cloud: processar TODAS as mensagens do lote ──────────
+    // Achado 3 fix: parseMeta agora retorna NormalizedInbound[] — loop sobre cada mensagem.
+    // Dedup por provider_message_id (wamid) protege contra duplicatas em redelivery.
+    if (resolvedProvider === 'meta_cloud') {
+      const allMessages = parseMeta(raw)
+      if (allMessages.length === 0) {
+        console.log('[webhook-receiver] meta_cloud: nenhuma mensagem de texto processável no webhook')
+        return
       }
-    }
-
-    // ── 5. Upsert conversation ────────────────────────────
-    const { data: conv, error: convErr } = await sb
-      .from('conversations')
-      .upsert(
-        {
-          church_id:            churchId,
-          channel_id:           resolvedChannelId,
-          contact_phone:        normalized.from_phone,
-          person_id:            person?.id ?? null,
-          status:               'open',
-          ownership:            'agent',
-          channel_type:         'whatsapp',
-          last_message_at:      normalized.timestamp,
-          last_message_preview: normalized.text.slice(0, 120),
-        },
-        { onConflict: 'church_id,channel_id,contact_phone', ignoreDuplicates: false }
-      )
-      .select('id, ownership, agent_slug, person_id')
-      .single()
-
-    if (convErr || !conv) {
-      console.error('[webhook-receiver] erro upsert conversation:', convErr?.message)
+      for (const nm of allMessages) {
+        await processNormalizedOne(sb, nm, resolvedProvider, resolvedChannelId, churchId)
+      }
       return
     }
 
-    // Garantir person_id linkado (pode ter sido criado agora)
-    if (person?.id && !conv.person_id) {
-      await sb.from('conversations')
-        .update({ person_id: person.id })
-        .eq('id', conv.id)
-    }
-
-    // ── 6. INSERT mensagem inbound ────────────────────────
-    const { data: msg, error: msgErr } = await sb
-      .from('conversation_messages')
-      .insert({
-        conversation_id:     conv.id,
-        church_id:           churchId,
-        direction:           'inbound',
-        sender_type:         'contact',
-        sender_id:           normalized.from_phone,
-        content:             normalized.text,
-        content_type:        'text',
-        provider_message_id: normalized.provider_message_id || null,
-        status:              'delivered',
-      })
-      .select('id')
-      .single()
-
-    if (msgErr || !msg) {
-      console.error('[webhook-receiver] erro INSERT message:', msgErr?.message)
+    // ── ChatPro: mensagem única ────────────────────────────────────
+    if (!normalized) {
+      console.log(`[webhook-receiver] payload ignorado (provider=${resolvedProvider}):`, JSON.stringify(raw).slice(0, 200))
       return
     }
-
-    // ── 7. Atualizar preview + unread_count ───────────────
-    // Fetch atual do unread_count para incrementar (não-atômico, mas ok para esta sprint)
-    const { data: curConv } = await sb
-      .from('conversations')
-      .select('unread_count')
-      .eq('id', conv.id)
-      .maybeSingle()
-
-    await sb.from('conversations').update({
-      last_message_at:      normalized.timestamp,
-      last_message_preview: normalized.text.slice(0, 120),
-      unread_count:         (curConv?.unread_count ?? 0) + 1,
-    }).eq('id', conv.id)
-
-    console.log(`[webhook-receiver] ✅ inbound gravado: msg=${msg.id} conv=${conv.id} person=${person?.id ?? 'n/a'} from=${normalized.from_phone}`)
-
-    // ── 8. Rotear para agente de triagem (fire-and-forget) ────────
-    // Sprint 1: agent-haiku-triagem substitui conversation-router como ponto de entrada.
-    // agent-haiku-triagem classifica com Haiku 4.5 e escalona ao Sonnet se necessário.
-    // conversation-router é mantido mas não mais chamado diretamente pelo webhook.
-    fetch(`${SUPABASE_URL}/functions/v1/agent-haiku-triagem`, {
-      method:  'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-      },
-      body: JSON.stringify({
-        conversation_id: conv.id,
-        message_id:      msg.id,
-        church_id:       churchId,
-        ownership:       conv.ownership,
-        agent_slug:      conv.agent_slug ?? null,
-        person_id:       person?.id ?? null,
-        inbound_text:    normalized.text,
-      }),
-      signal: AbortSignal.timeout(5_000),
-    }).catch(err => {
-      console.warn('[webhook-receiver] agent-haiku-triagem call falhou (não crítico):', (err as Error).message)
-    })
+    console.log(`[webhook-receiver] inbound from=${normalized.from_phone} provider=${resolvedProvider}`)
+    await processNormalizedOne(sb, normalized, resolvedProvider, resolvedChannelId, churchId)
 
   } catch (err) {
     console.error('[webhook-receiver] unhandled error:', err)
   }
+}
+
+// ── processNormalizedOne ────────────────────────────────────
+// Etapas 3-8: dedup → pessoa → conversa → mensagem → triagem.
+// Reutilizado por ChatPro (1 msg) e Meta Cloud (N msgs em lote — Achado 3).
+// Achado 4: ownership='human' → mensagem gravada, triagem SUPRIMIDA.
+async function processNormalizedOne(
+  sb:                ReturnType<typeof createClient>,
+  normalized:        NormalizedInbound,
+  resolvedProvider:  string,
+  resolvedChannelId: string,
+  churchId:          string,
+): Promise<void> {
+  // ── 3. Deduplicar ─────────────────────────────────────
+  if (!normalized.provider_message_id?.trim()) {
+    console.warn('[webhook-receiver] rejeitado — provider_message_id vazio', {
+      from_phone: normalized.from_phone,
+      provider:   resolvedProvider,
+    })
+    return
+  }
+  const { count } = await sb
+    .from('conversation_messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('provider_message_id', normalized.provider_message_id)
+  if ((count ?? 0) > 0) {
+    console.log(`[webhook-receiver] duplicada, ignorando: ${normalized.provider_message_id}`)
+    return
+  }
+
+  // ── 4. Identificar / criar pessoa ─────────────────────
+  let { data: person } = await sb
+    .from('people')
+    .select('id, first_name, last_name')
+    .eq('church_id', churchId)
+    .eq('phone', normalized.from_phone)
+    .maybeSingle()
+
+  if (!person) {
+    const { data: newPerson, error: personErr } = await sb
+      .from('people')
+      .insert({
+        church_id:    churchId,
+        first_name:   'Contato',
+        last_name:    normalized.from_phone.slice(-4),
+        phone:        normalized.from_phone,
+        person_stage: 'visitante',
+        observacoes_pastorais: 'Cadastrado automaticamente via WhatsApp inbound',
+        // LGPD: base legal = legítimo interesse (Art. 7º, IX, LGPD).
+        lgpd_consent:    false,
+        lgpd_consent_at: null,
+      })
+      .select('id, first_name, last_name')
+      .single()
+
+    if (personErr || !newPerson) {
+      console.warn('[webhook-receiver] erro ao criar pessoa:', personErr?.message)
+    } else {
+      person = newPerson
+      console.log(`[webhook-receiver] nova pessoa criada: ${person.id}`)
+
+      // C2 gap fix: disparar jornada de acolhimento (fire-and-forget)
+      const dispatchUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-person-event`
+      fetch(dispatchUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({ person_id: newPerson.id, event: 'person_created' }),
+        signal: AbortSignal.timeout(5_000),
+      }).catch(e => console.warn('[webhook-receiver] dispatch-person-event falhou:', e))
+    }
+  }
+
+  // ── 5. Conversa (preserva ownership='human') ──────────
+  // Achado 4 fix: SELECT first para detectar se ownership='human' (pastor assumiu).
+  // Se existente → atualizar só preview (NÃO sobrescrever ownership/status).
+  // Se nova       → INSERT com ownership='agent'.
+  const { data: existingConv } = await sb
+    .from('conversations')
+    .select('id, ownership, agent_slug, person_id')
+    .eq('church_id', churchId)
+    .eq('channel_id', resolvedChannelId)
+    .eq('contact_phone', normalized.from_phone)
+    .maybeSingle()
+
+  let conv: { id: string; ownership: string; agent_slug: string | null; person_id: string | null } | null = null
+
+  if (existingConv) {
+    // Existente: preservar ownership; só atualizar campos de preview
+    const { data: updated, error: updateErr } = await sb
+      .from('conversations')
+      .update({
+        last_message_at:      normalized.timestamp,
+        last_message_preview: normalized.text.slice(0, 120),
+        ...(person?.id && !existingConv.person_id ? { person_id: person.id } : {}),
+      })
+      .eq('id', existingConv.id)
+      .select('id, ownership, agent_slug, person_id')
+      .single()
+
+    if (updateErr || !updated) {
+      console.error('[webhook-receiver] erro update conversation:', updateErr?.message)
+      return
+    }
+    conv = updated
+  } else {
+    // Nova conversa: criar com ownership='agent'
+    const { data: newConv, error: insertErr } = await sb
+      .from('conversations')
+      .insert({
+        church_id:            churchId,
+        channel_id:           resolvedChannelId,
+        contact_phone:        normalized.from_phone,
+        person_id:            person?.id ?? null,
+        status:               'open',
+        ownership:            'agent',
+        channel_type:         'whatsapp',
+        last_message_at:      normalized.timestamp,
+        last_message_preview: normalized.text.slice(0, 120),
+      })
+      .select('id, ownership, agent_slug, person_id')
+      .single()
+
+    if (insertErr || !newConv) {
+      console.error('[webhook-receiver] erro insert conversation:', insertErr?.message)
+      return
+    }
+    conv = newConv
+  }
+
+  // ── 6. INSERT mensagem inbound ────────────────────────
+  // Mensagem SEMPRE gravada — pastor precisa ver o histórico, mesmo em ownership='human'
+  const { data: msg, error: msgErr } = await sb
+    .from('conversation_messages')
+    .insert({
+      conversation_id:     conv.id,
+      church_id:           churchId,
+      direction:           'inbound',
+      sender_type:         'contact',
+      sender_id:           normalized.from_phone,
+      content:             normalized.text,
+      content_type:        'text',
+      provider_message_id: normalized.provider_message_id || null,
+      status:              'delivered',
+    })
+    .select('id')
+    .single()
+
+  if (msgErr || !msg) {
+    console.error('[webhook-receiver] erro INSERT message:', msgErr?.message)
+    return
+  }
+
+  // ── 7. Incrementar unread_count ──────────────────────
+  const { data: curConv } = await sb
+    .from('conversations')
+    .select('unread_count')
+    .eq('id', conv.id)
+    .maybeSingle()
+
+  await sb.from('conversations').update({
+    unread_count: (curConv?.unread_count ?? 0) + 1,
+  }).eq('id', conv.id)
+
+  console.log(`[webhook-receiver] ✅ inbound gravado: msg=${msg.id} conv=${conv.id} person=${person?.id ?? 'n/a'} from=${normalized.from_phone}`)
+
+  // ── 8. Triagem ────────────────────────────────────────
+  // Achado 4 fix: ownership='human' → robô em silêncio.
+  // O pastor assumiu esta conversa; o agente não volta sozinho.
+  if (conv.ownership === 'human') {
+    console.log(`[webhook-receiver] ownership=human — triagem suprimida conv=${conv.id}`)
+    return
+  }
+
+  fetch(`${SUPABASE_URL}/functions/v1/agent-haiku-triagem`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({
+      conversation_id: conv.id,
+      message_id:      msg.id,
+      church_id:       churchId,
+      ownership:       conv.ownership,
+      agent_slug:      conv.agent_slug ?? null,
+      person_id:       person?.id ?? null,
+      inbound_text:    normalized.text,
+    }),
+    signal: AbortSignal.timeout(5_000),
+  }).catch(err => {
+    console.warn('[webhook-receiver] agent-haiku-triagem call falhou (não crítico):', (err as Error).message)
+  })
 }
 
 function ok(): Response {
