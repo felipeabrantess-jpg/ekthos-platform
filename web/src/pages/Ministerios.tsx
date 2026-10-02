@@ -27,6 +27,8 @@ import PersonSelect from '@/components/ui/PersonSelect'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { MinistryWithLeader } from '@/lib/types/joins'
 import ModalPortal from '@/components/ui/ModalPortal'
+import { FileText, ExternalLink } from 'lucide-react'
+import { getMinistryDocsLink } from '@/features/ministerios/ministryDocs'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -566,6 +568,8 @@ export default function Ministerios() {
     setModalOpen(true)
   }
 
+  const docsLink = getMinistryDocsLink(churchId)
+
   async function handleConfirmDelete() {
     if (!deletingMinistry || !churchId) return
     await deleteMinistry.mutateAsync({ id: deletingMinistry.id, churchId })
@@ -587,7 +591,8 @@ export default function Ministerios() {
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs + Documentação */}
+      <div className="flex flex-wrap items-center gap-3">
       <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: 'var(--bg-hover)' }}>
         {(
           <button
@@ -611,6 +616,35 @@ export default function Ministerios() {
         >
           Fila de Encaminhamentos
         </button>
+      </div>
+
+      {/* Documentação da igreja (link externo — OneDrive). Só para igrejas com o recurso habilitado. */}
+      {docsLink.enabled && (
+        docsLink.url ? (
+          <a
+            href={docsLink.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="btn-documentacao"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border-default bg-bg-surface text-sm font-medium text-text-primary hover:bg-bg-hover transition-colors"
+          >
+            <FileText size={15} strokeWidth={1.75} />
+            Documentação
+            <ExternalLink size={12} strokeWidth={1.75} className="text-text-tertiary" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            data-testid="btn-documentacao"
+            title="Link da documentação ainda não configurado"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border-default bg-bg-surface text-sm font-medium text-text-tertiary opacity-60 cursor-not-allowed"
+          >
+            <FileText size={15} strokeWidth={1.75} />
+            Documentação
+          </button>
+        )
+      )}
       </div>
 
       {/* Conteúdo — aba Ministérios */}
