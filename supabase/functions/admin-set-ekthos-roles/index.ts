@@ -23,7 +23,7 @@ const VALID_ROLES = ['ekthos_admin', 'ekthos_support', 'ekthos_commercial'] as c
 type EkthosRole = typeof VALID_ROLES[number]
 
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://ekthosai.com',
   'https://www.ekthosai.com',
 ]

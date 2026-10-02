@@ -41,7 +41,7 @@ Tipos: A = só frontend → JWT + ALLOWED_ORIGIN · B = só EF interna → sem C
 
 | Env | Existe? | Como usado |
 |---|---|---|
-| `ALLOWED_ORIGIN` | ✅ | `Deno.env.get('ALLOWED_ORIGIN') \|\| 'https://ekthos-platform.vercel.app'` — 30+ EFs |
+| `ALLOWED_ORIGIN` | ✅ | `Deno.env.get('ALLOWED_ORIGIN') \|\| 'https://app.ekthoschurch.com'` — 30+ EFs |
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Disponível em toda EF via Supabase platform |
 | `INTERNAL_FUNCTION_SECRET` | ❌ NÃO EXISTE | Não inventar — usar SUPABASE_SERVICE_ROLE_KEY |
 
@@ -574,7 +574,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const ALLOWED_ORIGIN   = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN   = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 const ZAPI_BASE        = 'https://api.z-api.io'
 
 const CORS = {
@@ -718,10 +718,10 @@ Expected: `{"ok":false,"error":"unauthorized"}`
 
 ```bash
 curl -s -X OPTIONS "https://mlqjywqnchilvgkbvicd.supabase.co/functions/v1/test-whatsapp-message" \
-  -H "Origin: https://ekthos-platform.vercel.app" \
+  -H "Origin: https://app.ekthoschurch.com" \
   -H "Access-Control-Request-Method: POST" -i | grep -E "access-control|HTTP"
 ```
-Expected: `Access-Control-Allow-Origin: https://ekthos-platform.vercel.app`
+Expected: `Access-Control-Allow-Origin: https://app.ekthoschurch.com`
 
 - [ ] **Step 5.5: Commit**
 
@@ -741,7 +741,7 @@ git commit -m "fix(security): test-whatsapp-message JWT auth + ALLOWED_ORIGIN"
 
 No início do arquivo, logo após `const SERVICE_ROLE_KEY = ...`, adicionar:
 ```typescript
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 ```
 
 Substituir a função `corsHeaders()` no final do arquivo:
@@ -776,9 +776,9 @@ npx --yes supabase functions deploy conversation-send-message \
 
 ```bash
 curl -s -X OPTIONS "https://mlqjywqnchilvgkbvicd.supabase.co/functions/v1/conversation-send-message" \
-  -H "Origin: https://ekthos-platform.vercel.app" -i | grep access-control
+  -H "Origin: https://app.ekthoschurch.com" -i | grep access-control
 ```
-Expected: `access-control-allow-origin: https://ekthos-platform.vercel.app`
+Expected: `access-control-allow-origin: https://app.ekthoschurch.com`
 
 - [ ] **Step 6.4: Commit**
 
@@ -798,7 +798,7 @@ git commit -m "fix(security): conversation-send-message CORS '*' → ALLOWED_ORI
 
 No início do arquivo (após `const SERVICE_ROLE_KEY = ...`), adicionar:
 ```typescript
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 ```
 
 Substituir a função `corsHeaders()` no final:
@@ -833,9 +833,9 @@ npx --yes supabase functions deploy conversation-handoff \
 
 ```bash
 curl -s -X OPTIONS "https://mlqjywqnchilvgkbvicd.supabase.co/functions/v1/conversation-handoff" \
-  -H "Origin: https://ekthos-platform.vercel.app" -i | grep access-control
+  -H "Origin: https://app.ekthoschurch.com" -i | grep access-control
 ```
-Expected: `access-control-allow-origin: https://ekthos-platform.vercel.app`
+Expected: `access-control-allow-origin: https://app.ekthoschurch.com`
 
 - [ ] **Step 7.4: Commit**
 

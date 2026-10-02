@@ -15,7 +15,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const IGV_CHURCH_ID = "6c127559-874a-4748-8fce-55d4079613a5";
 
 const ALLOWED_ORIGINS = [
-  "https://ekthos-platform.vercel.app",
+  "https://app.ekthoschurch.com",
   "http://localhost:5173",
   "http://localhost:3000",
 ];

@@ -144,7 +144,7 @@ const GENERIC_SLUGS = new Set(['localhost', 'www', 'app', 'ekthos-platform', '']
 
 function resolveSubdomainSlug(): string | null {
   const hostname = window.location.hostname
-  // Sem ponto = hostname raiz (ex: "localhost", "vercel.app") — não é subdomínio
+  // Sem ponto = hostname raiz (ex: "localhost") — não é subdomínio
   if (!hostname.includes('.')) return null
   const candidate = hostname.split('.')[0]
   if (GENERIC_SLUGS.has(candidate)) return null

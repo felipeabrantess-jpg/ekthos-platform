@@ -7,7 +7,7 @@ Este projeto possui duas configurações Playwright distintas:
 | Config | Target | Arquivo |
 |---|---|---|
 | `playwright.config.ts` | `http://localhost:5173` | Testes locais (CI/dev) |
-| `playwright.prod.config.ts` | `https://ekthos-platform.vercel.app` | Smoke tests de produção |
+| `playwright.prod.config.ts` | `https://app.ekthoschurch.com` | Smoke tests de produção |
 
 ---
 
@@ -29,7 +29,7 @@ As variáveis não estão no repositório. Você precisa ter `web/.env.local` co
 ```env
 PLAYWRIGHT_ADMIN_EMAIL=playwright@ekthosai.net
 PLAYWRIGHT_ADMIN_PASSWORD=<valor no Vercel Dashboard — Projects > ekthos-platform > Settings > Environment Variables>
-PLAYWRIGHT_BASE_URL=https://ekthos-platform.vercel.app
+PLAYWRIGHT_BASE_URL=https://app.ekthoschurch.com
 ```
 
 O arquivo `web/.env.local` está coberto pelo `.gitignore` (`*.env.*`).
@@ -44,8 +44,8 @@ npx playwright test --config=playwright.prod.config.ts
 
 Saída esperada:
 ```
-[global-setup-prod] Login como playwright@ekthosai.net em https://ekthos-platform.vercel.app
-[global-setup-prod] Login OK: https://ekthos-platform.vercel.app/admin/cockpit
+[global-setup-prod] Login como playwright@ekthosai.net em https://app.ekthoschurch.com
+[global-setup-prod] Login OK: https://app.ekthoschurch.com/admin/cockpit
 Running 1 test using 1 worker
   ok 1 [chromium] › admin-smoke.spec.ts › ativações → churches → logout
   1 passed

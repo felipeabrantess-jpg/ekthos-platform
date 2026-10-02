@@ -16,7 +16,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = [
-  "https://ekthos-platform.vercel.app",
+  "https://app.ekthoschurch.com",
   "http://localhost:5173",
   "http://localhost:3000",
 ];
@@ -317,7 +317,7 @@ Deno.serve(async (req: Request) => {
       await upsertAreas(supabase, draft.id, reporter.church_id, areas);
     }
 
-    const baseUrl = Deno.env.get("ALLOWED_ORIGIN") ?? "https://ekthos-platform.vercel.app";
+    const baseUrl = Deno.env.get("ALLOWED_ORIGIN") ?? "https://app.ekthoschurch.com";
     const viewUrl = `${baseUrl}/culto/ver/${draft.view_token}`;
 
     return json(

@@ -17,7 +17,7 @@
 
 ```typescript
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://ekthosai.com',
   'https://www.ekthosai.com',
   'https://app.ekthosai.com',

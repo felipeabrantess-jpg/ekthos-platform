@@ -19,7 +19,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN            = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 const RESEND_API_KEY            = Deno.env.get('RESEND_API_KEY') || ''
 const ADMIN_EMAIL               = 'felipe@ekthosai.net'
 const FROM_EMAIL                = 'noreply@ekthosai.net'
@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
     </table>
     <p style="margin-top:16px;font-family:sans-serif;font-size:12px;color:#999;">
       Data: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}<br>
-      <a href="https://ekthos-platform.vercel.app/admin/churches">Ver no Cockpit Admin</a>
+      <a href="https://app.ekthoschurch.com/admin/churches">Ver no Cockpit Admin</a>
     </p>
   `
 

@@ -132,9 +132,9 @@ verify_jwt = false   # interno — chamado por dispatch-person-event via service
 
 # ── Auth — configurações de produção ─────────────────────────────────────────
 [auth]
-site_url = "https://ekthos-platform.vercel.app"
+site_url = "https://app.ekthoschurch.com"
 additional_redirect_urls = [
-  "https://ekthos-platform.vercel.app/*",
+  "https://app.ekthoschurch.com/*",
   "https://ekthosai.com",
   "https://ekthosai.com/*",
   "https://www.ekthosai.com",

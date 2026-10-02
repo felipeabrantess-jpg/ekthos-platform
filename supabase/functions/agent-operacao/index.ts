@@ -50,7 +50,7 @@ const MODEL      = 'claude-haiku-4-5-20251001'
 const MAX_TOKENS = 1024
 
 // ── CORS ───────────────────────────────────────────────────
-const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://ekthos-platform.vercel.app'
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || 'https://app.ekthoschurch.com'
 const CORS = {
   'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',

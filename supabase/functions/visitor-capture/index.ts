@@ -37,21 +37,18 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 // CORS — whitelist explícita, nunca wildcard
 const ALLOWED_ORIGINS_EXACT = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://www.ekthosai.com',
   'https://ekthosai.com',
   'https://ekthosai.net',
   'https://www.ekthosai.net',
 ]
-// E1: aceita preview deployments Vercel (ex: ekthos-platform-abc123.vercel.app)
-const ALLOWED_ORIGIN_PREVIEW_RE = /^https:\/\/ekthos-platform(-[a-z0-9]+)*\.vercel\.app$/
 // E2: aceita subdomínios ekthoschurch.com (ex: igreja-gerando-vencedores.ekthoschurch.com)
 const ALLOWED_ORIGIN_CHURCH_RE  = /^https:\/\/[a-z0-9-]+\.ekthoschurch\.com$/
 
 function isOriginAllowed(origin: string | null): boolean {
   if (!origin) return false
   if (ALLOWED_ORIGINS_EXACT.includes(origin)) return true
-  if (ALLOWED_ORIGIN_PREVIEW_RE.test(origin)) return true
   return ALLOWED_ORIGIN_CHURCH_RE.test(origin)
 }
 

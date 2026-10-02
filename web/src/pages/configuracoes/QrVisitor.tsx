@@ -21,7 +21,7 @@ import Spinner from '@/components/ui/Spinner'
 // ── Constantes ───────────────────────────────────────────────
 
 const APP_BASE_URL = import.meta.env.VITE_APP_URL as string
-  ?? (typeof window !== 'undefined' ? window.location.origin : 'https://ekthos-platform.vercel.app')
+  ?? (typeof window !== 'undefined' ? window.location.origin : 'https://app.ekthoschurch.com')
 
 const QR_PREVIEW_SIZE  = 240
 const QR_DOWNLOAD_SIZE = 1024

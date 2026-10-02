@@ -25,7 +25,7 @@ npm install -g @bubblewrap/cli
 
 # 2. Inicializar o projeto TWA
 mkdir igv-android && cd igv-android
-bubblewrap init --manifest https://ekthos-platform.vercel.app/manifest.json
+bubblewrap init --manifest https://app.ekthoschurch.com/manifest.json
 
 # 3. Configurar durante o init:
 #    - Package ID: net.ekthosai.igv (ou com.igv.app)
@@ -45,7 +45,7 @@ bubblewrap build
 O Chrome verifica se o site "confia" no app Android via:
 
 ```
-https://ekthos-platform.vercel.app/.well-known/assetlinks.json
+https://app.ekthoschurch.com/.well-known/assetlinks.json
 ```
 
 Conteúdo (substituir SHA-256 pelo fingerprint da sua keystore):
@@ -119,7 +119,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // Usar servidor remoto (app busca conteúdo da Vercel)
-    url: 'https://ekthos-platform.vercel.app/igv',
+    url: 'https://app.ekthoschurch.com/igv',
     cleartext: false,
   },
 }
@@ -145,7 +145,7 @@ export default config
 
 Para gerar os pacotes sem linha de comando:
 1. Acesse https://www.pwabuilder.com
-2. Cole `https://ekthos-platform.vercel.app/igv`
+2. Cole `https://app.ekthoschurch.com/igv`
 3. Faça Download do pacote Android (.aab) e/ou iOS (.ipa)
 4. Submeta manualmente nas lojas
 

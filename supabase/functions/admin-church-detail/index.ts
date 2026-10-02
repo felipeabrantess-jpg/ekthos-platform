@@ -23,7 +23,7 @@ const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 // SA-B7 MEGA-ONDA SEGURANÇA: CORS origin validation (fix RISK-002)
 // Reflete apenas origens conhecidas; rejeita todas as demais.
 const ALLOWED_ORIGINS = [
-  'https://ekthos-platform.vercel.app',
+  'https://app.ekthoschurch.com',
   'https://ekthosai.com',
   'https://www.ekthosai.com',
   'https://app.ekthosai.com',
