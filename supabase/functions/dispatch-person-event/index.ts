@@ -1,8 +1,12 @@
 // ============================================================
-// Edge Function: dispatch-person-event  v35
+// Edge Function: dispatch-person-event  v36
 // Sistema genérico de eventos de pessoa — Frente B (extensível).
 //
 // Changelog:
+//   v36 (2026-07-18) — Gatilho de acolhimento expandido:
+//                      qualquer cadastro via QR Code (source='qr_code')
+//                      ativa a jornada, não só visitantes.
+//                      Autorizado por Felipe em 2026-07-18.
 //   v35 (2026-06-04) — WhatsApp instantâneo: invoca agent-acolhimento
 //                      diretamente após D3 guard passar (fire-and-forget).
 //                      next_touchpoint_at agora é NOW() (era NOW+2h).
@@ -18,7 +22,7 @@
 // Body: { person_id: string, event: 'person_created' }
 //
 // Sprint 2 — duas responsabilidades:
-//   A) Criar acolhimento_journey se person_stage='visitante' (independente de n8n)
+//   A) Criar acolhimento_journey se person_stage='visitante' OU source='qr_code' (independente de n8n)
 //   B) Disparar webhook de boas-vindas para o n8n (se elegível)
 //
 // Lógica de elegibilidade para webhook de boas-vindas:
@@ -128,6 +132,7 @@ Deno.serve(async (req: Request) => {
 
     // ── 1c. Criar jornada de acolhimento (Sprint 2) ───────
     // Independente do webhook n8n — toda visitante não-bulk ganha jornada 90 dias
+    // v36: qualquer cadastro via QR Code (source='qr_code') também ativa a jornada
     if ((person.person_stage === 'visitante' || person.source === 'qr_code') && person.is_bulk_import !== true) {
       // ═══════════════════════════════════════════════════════
       // R-PREMIUM-GUARD v34 — verifica contratação ativa
