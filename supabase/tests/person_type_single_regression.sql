@@ -58,7 +58,14 @@ INSERT INTO person_tags (person_id, tag_id, church_id) SELECT p_tri, t_vis, c1 F
 INSERT INTO person_tags (person_id, tag_id, church_id) SELECT p_sem, t_nc,  c1 FROM _c;
 INSERT INTO person_tags (person_id, tag_id, church_id) SELECT p_des, t_rec, c1 FROM _c;
 
-INSERT INTO _r SELECT 0, 'toda etiqueta existente é da categoria "Tipos de pessoa"', count(*) FILTER (WHERE category <> 'person_type' AND name NOT LIKE 'ZZ-TIPO%') = 0, count(*)::text || ' etiquetas' FROM tags;
+INSERT INTO _r SELECT 0, 'as cinco etiquetas atuais (por id) ficaram na categoria person_type',
+  (SELECT count(*) FROM tags t, _c WHERE t.id IN (_c.t_mem, _c.t_vis, _c.t_nc, _c.t_rec, _c.t_ina) AND t.category = 'person_type') = 5
+  AND (SELECT count(*) FROM tags WHERE category <> 'person_type' AND name NOT LIKE 'ZZ-TIPO%') = 0, (SELECT count(*)::text || ' etiquetas reais' FROM tags WHERE name NOT LIKE 'ZZ-TIPO%');
+INSERT INTO _r SELECT 0, 'default seguro: etiqueta criada SEM categoria nasce "general" (nunca tipo por acidente)',
+  category = 'general' AND (SELECT column_default LIKE '%general%' AND is_nullable = 'NO' FROM information_schema.columns WHERE table_name = 'tags' AND column_name = 'category'), category FROM tags WHERE name = 'ZZ-TIPO Outra Igreja';
+INSERT INTO _r SELECT 0, 'categoria inválida é rejeitada (CHECK)', NOT EXISTS (SELECT 1 FROM tags WHERE category NOT IN ('person_type', 'general')), NULL;
+INSERT INTO _r SELECT 0, 'a trigger decide SOMENTE por tags.category (não usa nome, cor, ordem ou rótulo)',
+  prosrc LIKE '%t.category%' AND prosrc NOT ILIKE '%name%' AND prosrc NOT ILIKE '%color%' AND prosrc NOT ILIKE '%sort_order%', NULL FROM pg_proc WHERE proname = 'person_tags_enforce_single_type';
 
 SELECT set_config('request.jwt.claims', json_build_object('sub', (SELECT adm FROM _c), 'role', 'authenticated',
        'app_metadata', json_build_object('church_id', (SELECT c1 FROM _c)))::text, true);
@@ -132,6 +139,36 @@ BEGIN
   EXCEPTION WHEN check_violation THEN r := 'BLOQUEADO'; END;
   INSERT INTO _r VALUES (10, 'virar "tipo" uma etiqueta geral de quem já tem tipo → bloqueado', r = 'BLOQUEADO', r);
   PERFORM set_person_tags(c.p_ita, ARRAY[c.t_vis]);
+
+  -- A / D. sem tipo → Membro; e tipo → sem tipo
+  PERFORM set_person_tags(c.p_ita, '{}');
+  PERFORM set_person_tags(c.p_ita, ARRAY[c.t_mem]);
+  SELECT string_agg(t.name, '+') INTO tipos FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = c.p_ita;
+  INSERT INTO _r VALUES (33, 'A. pessoa sem tipo → Membro', tipos = 'Membro', tipos);
+  PERFORM set_person_tags(c.p_ita, '{}');
+  INSERT INTO _r VALUES (33, 'D. remover o tipo atual → pessoa fica sem tipo', (SELECT count(*) FROM person_tags WHERE person_id = c.p_ita) = 0, NULL);
+  PERFORM set_person_tags(c.p_ita, ARRAY[c.t_vis]);
+
+  -- F. duas etiquetas "general" direto no banco → permitido
+  BEGIN
+    INSERT INTO person_tags (person_id, tag_id, church_id) VALUES (c.p_tri, c.g1, c.c1), (c.p_tri, c.g2, c.c1);
+    r := 'ACEITO';
+  EXCEPTION WHEN check_violation THEN r := 'BLOQUEADO'; END;
+  SELECT count(*) INTO n FROM person_tags WHERE person_id = c.p_tri;
+  INSERT INTO _r VALUES (33, 'F. duas etiquetas general direto no banco (junto com 1 tipo) → permitido', r = 'ACEITO' AND n = 3, r || ', ' || n || ' etiquetas');
+
+  -- RPC: troca só o que mudou — a etiqueta que permanece não é regravada
+  SELECT string_agg(pt.id::text, ',' ORDER BY pt.tag_id) INTO tipos FROM person_tags pt WHERE pt.person_id = c.p_tri AND pt.tag_id IN (c.g1, c.g2);
+  PERFORM set_person_tags(c.p_tri, ARRAY[c.t_vis, c.g1, c.g2]);
+  INSERT INTO _r VALUES (33, 'RPC: trocar o tipo não regrava as etiquetas que permanecem; resultado tem exatamente 1 tipo',
+    (SELECT string_agg(pt.id::text, ',' ORDER BY pt.tag_id) FROM person_tags pt WHERE pt.person_id = c.p_tri AND pt.tag_id IN (c.g1, c.g2)) = tipos
+    AND (SELECT count(*) FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = c.p_tri AND t.category = 'person_type') = 1, NULL);
+  PERFORM set_person_tags(c.p_tri, ARRAY[c.t_mem]);
+
+  -- RPC: pessoa inexistente / removida
+  BEGIN PERFORM set_person_tags(gen_random_uuid(), ARRAY[c.t_mem]); r := 'ACEITO';
+  EXCEPTION WHEN insufficient_privilege THEN r := SQLERRM; END;
+  INSERT INTO _r VALUES (33, 'RPC: pessoa inexistente → recusada', r LIKE 'PERSON_NOT_FOUND%', r);
 
   -- 14–16. status de atendimento não muda com a troca de tipo
   care1 := get_care_status_counts(c.c1, NULL)::text;

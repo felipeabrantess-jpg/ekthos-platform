@@ -94,7 +94,7 @@ export interface Tag {
   sort_order: number
   icon: string | null
   created_at: string
-  /** 'person_type' = "Tipos de pessoa" (no máximo 1 por pessoa); 'general' = etiqueta livre. Ausente = person_type. */
+  /** 'person_type' = "Tipos de pessoa" (no máximo 1 por pessoa); 'general' = etiqueta livre (várias). */
   category?: 'person_type' | 'general'
 }
 

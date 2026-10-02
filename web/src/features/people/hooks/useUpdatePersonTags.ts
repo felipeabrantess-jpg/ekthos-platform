@@ -25,14 +25,17 @@ interface UpdatePersonTagsInput {
 
 export const PERSON_TYPE_SINGLE_MESSAGE = 'Uma pessoa só pode ter um tipo. Escolha apenas um.'
 
-/** 'person_type' é o padrão: toda etiqueta sem categoria explícita é um "Tipo de pessoa". */
+/** Só é "Tipo de pessoa" (seleção única) a etiqueta cuja categoria diz isso explicitamente. */
 export function isPersonTypeTag(tag: Pick<Tag, 'category'>): boolean {
-  return (tag.category ?? 'person_type') === 'person_type'
+  return tag.category === 'person_type'
 }
 
 function friendlyError(message: string): Error {
   if (message.includes('PERSON_TYPE_SINGLE') || message.includes('person_tags_single_person_type')) {
     return new Error(PERSON_TYPE_SINGLE_MESSAGE)
+  }
+  if (message.includes('INVALID_TAG') || message.includes('PERSON_NOT_FOUND')) {
+    return new Error('Não foi possível alterar o tipo desta pessoa. Atualize a página e tente novamente.')
   }
   return new Error(message)
 }

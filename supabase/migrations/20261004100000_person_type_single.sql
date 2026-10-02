@@ -5,7 +5,10 @@
 -- "Tipos de pessoa" (Visitante, Membro, Novo Convertido, Reconciliado, Inativos) são as
 -- etiquetas da tabela tags, ligadas à pessoa por person_tags. Esta migration:
 --   1. tags.category: separa a categoria "Tipos de pessoa" ('person_type') de etiquetas
---      gerais ('general'). Toda etiqueta existente é um tipo de pessoa (é só o que existe hoje).
+--      gerais ('general'). As etiquetas que existem hoje (só os "Tipos de pessoa" da tela
+--      /pessoas/flags) são marcadas EXPLICITAMENTE como 'person_type'. O default da coluna é
+--      'general': uma etiqueta futura só vira "tipo de pessoa" se quem a cria disser isso.
+--      A categoria nunca é deduzida de nome, cor, ordem ou rótulo.
 --   2. Trigger person_tags_enforce_single_type: última barreira no banco — uma pessoa não
 --      pode ficar com duas etiquetas da categoria 'person_type'. Etiquetas 'general'
 --      continuam livres (várias por pessoa).
@@ -20,7 +23,15 @@
 
 -- ── 1. Categoria da etiqueta ─────────────────────────────────
 ALTER TABLE public.tags
-  ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT 'person_type';
+  ADD COLUMN IF NOT EXISTS category text;
+
+-- Classificação explícita do que existe HOJE: todas as etiquetas atuais foram criadas pela tela
+-- "Tipos de Pessoa" e são tipos de pessoa. (Só preenche o que ainda não tem categoria.)
+UPDATE public.tags SET category = 'person_type' WHERE category IS NULL;
+
+-- Daqui em diante, sem categoria informada = etiqueta geral (nunca exclusiva por acidente).
+ALTER TABLE public.tags ALTER COLUMN category SET DEFAULT 'general';
+ALTER TABLE public.tags ALTER COLUMN category SET NOT NULL;
 
 DO $$
 BEGIN
@@ -102,6 +113,9 @@ CREATE TRIGGER tags_guard_category_change
 -- ── 3. Troca atômica das etiquetas da pessoa ─────────────────
 -- SECURITY INVOKER: valem as políticas RLS de people / tags / person_tags (só a igreja do usuário).
 -- Substitui o DELETE + INSERT em duas requisições que a tela fazia.
+-- Tudo acontece numa única transação: para qualquer outra sessão a pessoa passa direto do
+-- tipo antigo para o novo — nunca é vista com 0 ou 2 tipos no meio da troca.
+-- Só mexe nas etiquetas que mudaram (as que permanecem não são regravadas).
 CREATE OR REPLACE FUNCTION public.set_person_tags(p_person_id uuid, p_tag_ids uuid[])
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -114,10 +128,15 @@ DECLARE
   v_found  int;
   v_types  int;
 BEGIN
-  SELECT p.church_id INTO v_church FROM people p WHERE p.id = p_person_id;
-  IF v_church IS NULL THEN
+  -- A RLS de people já limita à igreja do usuário; a conferência explícita abaixo é a 2ª trava.
+  SELECT p.church_id INTO v_church FROM people p WHERE p.id = p_person_id AND p.deleted_at IS NULL;
+  IF v_church IS NULL
+     OR (COALESCE(auth.role(), '') <> 'service_role' AND v_church IS DISTINCT FROM auth_church_id()) THEN
     RAISE EXCEPTION 'PERSON_NOT_FOUND: pessoa não encontrada' USING ERRCODE = '42501';
   END IF;
+
+  -- Uma troca por vez para a mesma pessoa (mesma chave de lock da trigger)
+  PERFORM pg_advisory_xact_lock(hashtextextended('person_type:' || p_person_id::text, 8013));
 
   SELECT count(*), count(*) FILTER (WHERE t.category = 'person_type')
     INTO v_found, v_types

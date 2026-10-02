@@ -828,7 +828,10 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
                   onChange={(e) => set('stage_id', e.target.value)}
                   className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
                 >
-                  <option value="">Sem etapa definida</option>
+                  {/* Só aparece para quem ainda NÃO tem etapa: remover etapa não é uma ação suportada */}
+                  {!(person as { person_pipeline?: Array<{ stage_id?: string | null }> } | null | undefined)?.person_pipeline?.[0]?.stage_id && (
+                    <option value="">Sem etapa definida</option>
+                  )}
                   {(pipelineStages as (PipelineStage & { color?: string | null })[]).map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}

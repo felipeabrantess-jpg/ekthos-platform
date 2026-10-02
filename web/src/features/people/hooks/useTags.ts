@@ -48,7 +48,7 @@ export function useCreateTag() {
       const { data, error } = await supabase
         .from('tags')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert({ church_id: churchId, name: name.trim(), color, sort_order } as any)
+        .insert({ church_id: churchId, name: name.trim(), color, sort_order, category: 'person_type' } as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .select('id, church_id, name, color, sort_order, icon, created_at' as any)
         .single()

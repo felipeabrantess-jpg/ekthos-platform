@@ -34,6 +34,7 @@ const db = {
   p3: { name: 'Carla Sem Unidade', unit: null, tags: ['t-nc'], stage: null, left_at: null },
   p4: { name: 'Davi Reconciliado', unit: 'u-ita', tags: ['t-rec'], stage: null, left_at: null },
   p5: { name: 'Eva Legado', unit: 'u-ita', tags: ['t-vis', 't-mem'], stage: 's-mem', left_at: null },   // registro legado com 2 tipos
+  p6: { name: 'Fabio Sem Tipo', unit: 'u-tri', tags: [], stage: null, left_at: null },
 };
 const row = (id) => { const p = db[id]; const st = STAGES.find(s => s.id === p.stage); return { id, church_id: CH, name: p.name, phone: '+55219999' + id.slice(1).padStart(5, '0'), email: null, person_stage: 'visitante', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z', deleted_at: null, left_at: p.left_at, unit_id: p.unit, source: 'manual', optout: false, acolhimento_journey: [], ministry_interest: null, name_sort: p.name.toLowerCase(),
   person_pipeline: st ? [{ id: 'pp-' + id, stage_id: st.id, pipeline_stages: st }] : [],
@@ -54,7 +55,7 @@ await ctx.route(`${SUPA}/**`, async (route) => {
     if (name === 'get_my_tenant_context') return route.fulfill(json({ effective_church_id: CH, church_name: 'T', church_status: 'configured', is_impersonating: false, role: 'admin', is_ekthos_admin: false }));
     if (name === 'upsert_session_token') return route.fulfill(json('tok'));
     if (name === 'get_people_page') return route.fulfill(json(Object.keys(db).map(id => ({ row_data: row(id), total_count: Object.keys(db).length }))));
-    if (name === 'get_people_stage_counts') return route.fulfill(json({ total: 5, aniversarios: 0, sem_etapa: 2, stages: STAGES.map(s => ({ stage_id: s.id, stage_key: s.stage_key, name: s.name, order_index: s.order_index, cnt: Object.values(db).filter(p => p.stage === s.id).length })) }));
+    if (name === 'get_people_stage_counts') return route.fulfill(json({ total: 6, aniversarios: 0, sem_etapa: 3, stages: STAGES.map(s => ({ stage_id: s.id, stage_key: s.stage_key, name: s.name, order_index: s.order_index, cnt: Object.values(db).filter(p => p.stage === s.id).length })) }));
     if (name === 'get_care_status_counts') return route.fulfill(json({ nao_atendida: 5, em_atendimento: 0, atendida: 0, sem_contato_48h: 0 }));
     if (name === 'set_person_tags') {
       if (failNext) { const f = failNext; failNext = null; return route.fulfill(json(f, 400)); }
@@ -126,6 +127,30 @@ for (const [n, nome, id, alvo, esperado] of [[2, 'Bruno Trindade', 'p2', 't-mem'
   await pill(nome).click(); await page.waitForTimeout(350); await opt(alvo).click(); await save(); await page.waitForTimeout(450);
   ck(`${n}. ${antes} → ${esperado} (${nome}): substitui, lista atualizada`, tagNames(id) === esperado && (await pillText(nome)) === esperado, `banco=${tagNames(id)} tela=${await pillText(nome)}`);
 }
+
+// ── A. pessoa sem tipo → Membro ──
+await pill('Fabio Sem Tipo').click(); await page.waitForTimeout(350);
+ck('A. pessoa sem tipo: modal abre sem nada marcado', (await checked()) === '');
+await opt('t-mem').click(); await save(); await page.waitForTimeout(450);
+ck('A. pessoa sem tipo → Membro: gravado e lista atualizada', tagNames('p6') === 'Membro' && (await pillText('Fabio Sem Tipo')) === 'Membro', tagNames('p6'));
+// D. clicar no tipo atual → fica sem tipo (gravando)
+await pill('Fabio Sem Tipo').click(); await page.waitForTimeout(350); await opt('t-mem').click(); await save(); await page.waitForTimeout(450);
+ck('D. clicar no tipo atual e salvar → pessoa fica sem tipo', db.p6.tags.length === 0 && !/Membro/.test(await pillText('Fabio Sem Tipo')), JSON.stringify(db.p6.tags));
+
+// ── J / K. Editar Pessoa: "Sem etapa definida" só para quem ainda não tem etapa ──
+const stageOptions = async (nome) => {
+  await tr(nome).locator('button[title="Editar"]').first().click(); await page.waitForTimeout(700);
+  await page.locator('button:has-text("Eclesiástico")').first().click(); await page.waitForTimeout(500);
+  const sel = page.locator('label:has-text("Etapa do discipulado")').locator('xpath=following-sibling::select[1]');
+  const out = { options: await sel.locator('option').allInnerTexts(), value: await sel.inputValue() };
+  await page.locator('button:has-text("Cancelar"):visible').first().click(); await page.waitForTimeout(400);
+  return out;
+};
+const comEtapa = await stageOptions('Eva Legado');
+ck('J. pessoa COM etapa: seletor não oferece mais "Sem etapa definida" e mostra a etapa atual', !comEtapa.options.includes('Sem etapa definida') && comEtapa.value === 's-mem' && comEtapa.options.length === 2, JSON.stringify(comEtapa));
+const semEtapa = await stageOptions('Fabio Sem Tipo');
+ck('K. pessoa SEM etapa: carrega normalmente, com "Sem etapa definida" selecionado', semEtapa.options[0] === 'Sem etapa definida' && semEtapa.value === '' && semEtapa.options.length === 3, JSON.stringify(semEtapa));
+ck('J/K. nenhuma gravação em etapa só por abrir/cancelar', !calls.some(c => String(c.name).includes('person_pipeline')));
 
 // ── sem tipo ──
 await pill('Davi Reconciliado').click(); await page.waitForTimeout(350); await opt('t-mem').click(); await page.waitForTimeout(100);
