@@ -37,8 +37,8 @@ export function getAdminCredentials(): AdminCredentials {
 
 /**
  * Retorna a baseURL de produção.
- * Default: https://ekthos-platform.vercel.app
+ * Default: https://app.ekthoschurch.com
  */
 export function getBaseURL(): string {
-  return process.env.PLAYWRIGHT_BASE_URL ?? 'https://ekthos-platform.vercel.app'
+  return process.env.PLAYWRIGHT_BASE_URL ?? 'https://app.ekthoschurch.com'
 }

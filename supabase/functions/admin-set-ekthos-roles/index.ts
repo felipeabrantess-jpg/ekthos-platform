@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
 
   // ── CORS preflight ───────────────────────────────────────────
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { status: 204, headers: corsHeaders(origin) })
+    return new Response(null, { status: 204, headers: corsHeaders(origin) })
   }
   if (req.method !== 'POST') {
     return json({ error: 'Method Not Allowed' }, 405, origin)

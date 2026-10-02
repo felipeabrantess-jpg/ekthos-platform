@@ -52,7 +52,7 @@ STRIPE_SECRET_KEY
 STRIPE_WEBHOOK_SECRET
 SUPABASE_SERVICE_ROLE_KEY
 ANTHROPIC_API_KEY
-ALLOWED_ORIGIN=https://ekthos-platform.vercel.app
+ALLOWED_ORIGIN=https://app.ekthoschurch.com
 ```
 
 ## Padrão de autenticação frontend

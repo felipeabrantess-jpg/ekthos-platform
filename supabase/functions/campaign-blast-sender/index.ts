@@ -127,7 +127,7 @@ async function zapiSendText(
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return resp({ ok: true }, 204)
+  if (req.method === 'OPTIONS') return resp({ ok: true }, 200)  // 204 não pode ter corpo (gerava 500 no preflight)
   if (req.method !== 'POST')   return resp({ ok: false, error: 'method_not_allowed' }, 405)
 
   let body: {
