@@ -645,6 +645,8 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
       } else if (isPhoneTakenError(msg)) {
         // Nada foi gravado (a RPC é atômica): nem o telefone, nem o contato
         onToast(`${PHONE_TAKEN_MESSAGE} Nada foi alterado — corrija o telefone e salve novamente.`, 'error')
+      } else if (msg.includes('FORBIDDEN') || msg.includes('42501') || /permission denied/i.test(msg)) {
+        onToast('Você não tem permissão para registrar este atendimento.', 'error')
       } else if (msg.includes('JOURNEY_REQUIRED')) {
         onToast('Esta pessoa não tem jornada aberta: selecione a etapa para abrir a jornada e registrar o contato.', 'error')
       } else {
