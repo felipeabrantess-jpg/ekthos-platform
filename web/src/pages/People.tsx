@@ -604,7 +604,12 @@ export default function People() {
 
   // Badges das abas — mesmos predicados (unidade, deleted, left_at) da lista
   const { data: stageCounts } = usePeopleStageCounts(churchId ?? '', selectedUnit)
-  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '', selectedUnit)
+  // Contadores de atendimento no MESMO universo da lista (unidade, etapa, origem, busca, período),
+  // sem o próprio filtro de atendimento: cada botão mostra quantas pessoas da lista atual têm aquele estado.
+  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '', {
+    unit: pageFilters.unit, stageKey: pageFilters.stageKey, source: pageFilters.source, search: pageFilters.search,
+    birthMonth: pageFilters.birthMonth, createdFrom: pageFilters.createdFrom, createdTo: pageFilters.createdTo,
+  })
   const { data: allTags = [] } = useTags(churchId ?? '')
   const deletePerson = useDeletePerson()
 
@@ -869,30 +874,47 @@ export default function People() {
         </div>
       )}
 
-      {/* Filtro de atendimento — contadores no mesmo escopo de unidade da lista */}
+      {/* Atendimento — ESTADOS (exclusivos, somam o total da lista) × ALERTA (sobrepõe, não soma).
+          Contadores calculados no banco sobre o MESMO universo da lista (filtros acima). */}
       {showFilters && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Atendimento:</span>
-          {([
-            { value: '', label: 'Todos' },
-            { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
-            { value: 'em_atendimento',  label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
-            { value: 'atendida',        label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
-            { value: 'cancelado',       label: `Cancelado (${careStatusData?.cancelado      ?? '…'})` },
-            { value: 'sem_contato_48h', label: `Sem contato +48h (${careStatusData?.semContato48h ?? '…'})` },
-          ] as const).map(opt => (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="atendimento-filtros">
+          <div className="flex flex-wrap items-center gap-2" data-testid="atendimento-estados">
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Estados:</span>
+            {([
+              { value: '', label: `Todos (${careStatusData?.total ?? '…'})` },
+              { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
+              { value: 'em_atendimento',  label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
+              { value: 'atendida',        label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
+              { value: 'cancelado',       label: `Cancelado (${careStatusData?.cancelado      ?? '…'})` },
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                data-testid={`estado-${opt.value || 'todos'}`}
+                onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                  careFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+                }`}
+                style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 md:border-l md:border-border-default md:pl-4" data-testid="atendimento-alerta">
+            <span className="text-xs font-medium text-amber-700 uppercase tracking-wide">Alerta:</span>
             <button
-              key={opt.value}
               type="button"
-              onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
+              data-testid="alerta-sem-contato"
+              title="Pessoas aguardando nova tentativa de contato há mais tempo que o limite. É um alerta sobre o estado, não um quinto estado: não entra na soma."
+              onClick={() => { setCareFilter('sem_contato_48h'); setCurrentPage(0) }}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                careFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+                careFilter === 'sem_contato_48h' ? 'border-amber-500 text-amber-800 bg-amber-100' : 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100'
               }`}
-              style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
             >
-              {opt.label}
+              Sem contato +{careStatusData?.alertThresholdHours ?? 48}h ({careStatusData?.semContato48h ?? '…'})
             </button>
-          ))}
+          </div>
         </div>
       )}
 
@@ -919,8 +941,8 @@ export default function People() {
               onClick={() => { setCareFilter('sem_contato_48h'); setCurrentPage(0) }}
             >
               <div>
-                <p className="text-sm font-semibold text-amber-800">Entrou e ninguém falou</p>
-                <p className="text-xs text-amber-600 mt-0.5">Pessoas cadastradas há mais de 48h sem nenhum contato registrado</p>
+                <p className="text-sm font-semibold text-amber-800">Aguardando nova tentativa há mais de {careStatusData.alertThresholdHours}h</p>
+                <p className="text-xs text-amber-600 mt-0.5">Nunca tentadas desde o cadastro, ou cuja última tentativa não foi atendida / ficou sem resposta ({careStatusData.semContato48h})</p>
               </div>
               <span className="text-xs font-medium text-amber-700 shrink-0">Ver lista →</span>
             </div>
