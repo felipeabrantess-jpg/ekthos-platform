@@ -555,7 +555,10 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
   // ── Formulário ─────────────────────────────────────────────
   const [channel,    setChannel]    = useState('presencial')
   const [result,     setResult]     = useState('realizado')
-  // Item 10: salvar ≠ registrar contato. A intenção precisa ser explícita (null = não escolheu).
+  // Item 10: salvar ≠ registrar tentativa de contato. A intenção precisa ser explícita (null = não escolheu).
+  // "Tentou falar?" = houve uma TENTATIVA (ligação, mensagem, visita), atendida ou não. Toda tentativa
+  // é um contato operacional com ordinal (1º, 2º, 3º…) — inclusive "Não atendeu" / "Sem resposta".
+  // "Não" = não tentou falar; só está corrigindo/atualizando dados (nenhum pastoral_contact).
   const [hadContact, setHadContact] = useState<boolean | null>(null)
   const [notes,      setNotes]      = useState('')
   const [stageId,    setStageId]    = useState<string>(journey?.stage_id ?? '')
@@ -624,7 +627,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         close_journey:    closingOutcome || undefined,
       })
       const closedMsg = closingOutcome ? ' Jornada encerrada.' : ''
-      onToast(hadContact ? `Contato registrado com sucesso.${closedMsg}` : 'Alterações salvas (sem novo contato).', 'success')
+      onToast(hadContact ? `${ordinal(nextOrdinal)} contato registrado (${RESULT_LABELS[result] ?? result}).${closedMsg}` : 'Alterações salvas (nenhuma tentativa de contato registrada).', 'success')
       setHadContact(null)
       setNotes('')
       setNextStep('')
@@ -678,7 +681,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
       )}
       {!missingStageForNewJourney && missingContactChoice && !register.isPending && (
         <p className="text-center text-xs text-amber-600 font-medium mt-2" data-testid="aviso-escolha-contato">
-          Informe se houve contato com a pessoa
+          Informe se você tentou falar com a pessoa
         </p>
       )}
       {!missingStageForNewJourney && !missingContactChoice && !hasChanges && hadContact !== true && !register.isPending && (
@@ -820,29 +823,31 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         </select>
       </div>
 
-      {/* ── Houve contato? (item 10: salvar ≠ registrar contato) ── */}
-      <div className="space-y-2" data-testid="bloco-houve-contato">
-        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Houve contato com a pessoa?</p>
-        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Houve contato com a pessoa?">
-          <button type="button" role="radio" aria-checked={hadContact === true} data-testid="houve-contato-sim"
+      {/* ── Tentou falar? (item 10: toda TENTATIVA é um contato numerado; "Não" = só corrigir dados) ── */}
+      <div className="space-y-2" data-testid="bloco-tentou-falar">
+        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Você tentou falar com a pessoa agora?</p>
+        <p className="text-xs text-text-secondary">Ligação, mensagem ou visita contam como tentativa — mesmo que a pessoa não tenha atendido.</p>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Você tentou falar com a pessoa agora?">
+          <button type="button" role="radio" aria-checked={hadContact === true} data-testid="tentou-falar-sim"
             onClick={() => setHadContact(true)}
             className={`rounded-xl border px-3 py-2 text-sm text-left transition-colors ${hadContact === true ? 'border-primary bg-primary/5 text-text-primary' : 'border-border-default text-text-secondary hover:bg-bg-hover'}`}>
-            <span className="font-medium">Sim</span><br /><span className="text-xs">registrar o {ordinal(nextOrdinal)} contato</span>
+            <span className="font-medium">Sim, tentei</span><br /><span className="text-xs">registrar a {ordinal(nextOrdinal)} tentativa (atendida ou não)</span>
           </button>
-          <button type="button" role="radio" aria-checked={hadContact === false} data-testid="houve-contato-nao"
+          <button type="button" role="radio" aria-checked={hadContact === false} data-testid="tentou-falar-nao"
             onClick={() => setHadContact(false)}
             className={`rounded-xl border px-3 py-2 text-sm text-left transition-colors ${hadContact === false ? 'border-primary bg-primary/5 text-text-primary' : 'border-border-default text-text-secondary hover:bg-bg-hover'}`}>
-            <span className="font-medium">Não</span><br /><span className="text-xs">só salvar correções</span>
+            <span className="font-medium">Não tentei</span><br /><span className="text-xs">só corrigir ou atualizar dados</span>
           </button>
         </div>
       </div>
 
-      {/* ── Registro do contato (só quando houve contato) ── */}
+      {/* ── Registro da tentativa (só quando tentou falar) ── */}
       {hadContact === true && (
       <div className="space-y-3" data-testid="bloco-registrar-contato">
         <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide" data-testid="titulo-registrar">
           Registrar {ordinal(nextOrdinal)} contato
         </p>
+        <p className="text-xs text-text-secondary">O resultado diz como foi a tentativa. "Não atendeu" e "Sem resposta" também contam como contato.</p>
         <div className="grid grid-cols-2 gap-2">
           <label className="block">
             <span className="text-xs text-text-secondary">Canal</span>
@@ -873,7 +878,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         )}
 
         <textarea value={notes} onChange={e => setNotes(e.target.value)}
-          placeholder="Anotações sobre esta conversa…"
+          placeholder="Anotações sobre esta tentativa…"
           rows={3}
           className="w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none" />
       </div>

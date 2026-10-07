@@ -328,7 +328,7 @@ interface RegisterArgs {
   next_step_due_at?: string | null
   ministry_id?:      string | null
   close_journey?:    boolean
-  /** Houve contato real com a pessoa? false = só salvar correções (não cria pastoral_contact) */
+  /** Tentou falar com a pessoa (atendida ou não)? true = registra a tentativa como contato numerado; false = só corrigir dados (não cria pastoral_contact) */
   register_contact:  boolean
 }
 

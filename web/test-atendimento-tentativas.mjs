@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 /**
- * test-routes.mjs — testa rotas do app com Supabase mockado via Playwright
+ * test-atendimento-tentativas.mjs — FLUXO HUMANO do item 10: tentativas não atendidas contam como contato (1º, 2º, 3º…).
  * Zero requisições ao banco de produção.
  */
 
@@ -258,112 +258,86 @@ const page = await ctx.newPage(); const errs = []; page.on('console', m => { if 
 await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' }).catch(() => {});
 for (let i = 0; i < 3; i++) { try { await page.evaluate(({ k, s }) => localStorage.setItem(k, JSON.stringify(s)), { k: 'sb-mlqjywqnchilvgkbvicd-auth-token', s: MOCK_SESSION }); break; } catch { await page.waitForTimeout(500); } }
 
-// A leitura dos ordinais NÃO marca nada: 'Próximo: Nº contato' é visível sem escolher. Quem registra um contato clica 'Sim, tentei' explicitamente, como o operador.
+// Nada é pré-marcado: cada passo abaixo é o que o operador faz na tela.
 const open = async (id) => { await page.goto(`${BASE}/pessoas/${id}/atendimento`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(900); };
-const tentei = async () => { await page.locator('[data-testid="tentou-falar-sim"]').first().click(); await page.waitForTimeout(150); };
 const txt = async (sel) => (await page.locator(sel).first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
+const saveBtn = () => page.locator('button:has-text("Salvar atendimento"):visible').first();
+const resultSelect = () => page.locator('label:has-text("Resultado") select').first();
+const historico = async () => { const n = await page.locator('[data-testid^="contato-"]').count(); const out = []; for (let i = 1; i <= n; i++) out.push(await txt(`[data-testid="contato-${i}"]`)); return out; };
 
-for (const n of [0, 1, 2, 3, 4, 6, 7]) {
-  await open(`p${n}`);
-  const prox = await txt('[data-testid="proximo-contato"]');
-  ck(`${n} contatos → antes de escolher, nenhum campo de registro aberto`, (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
-  await tentei();
-  const titulo = await txt('[data-testid="titulo-registrar"]');
-  const realizados = await txt('[data-testid="contatos-realizados"]');
-  const done = await page.locator('[data-testid^="marco-"][data-state="done"]').count();
-  const next = await page.locator('[data-testid^="marco-"][data-state="next"]').count();
-  const nextId = await page.locator('[data-testid^="marco-"][data-state="next"]').first().getAttribute('data-testid');
-  const marcos = await page.locator('[data-testid^="marco-"]').count();
-  ck(`${n} contatos → "Próximo: ${n + 1}º contato" e "Registrar ${n + 1}º contato"`, prox === `Próximo: ${n + 1}º contato` && titulo === `Registrar ${n + 1}º contato`, `${prox} | ${titulo} | ${realizados}`);
-  ck(`${n} contatos → ${n} marcos concluídos, 1 destacado (marco-${n + 1}), ${Math.max(4, n) + 1} marcos visíveis`, done === n && next === 1 && nextId === `marco-${n + 1}` && marcos === Math.max(4, n) + 1, `done=${done} next=${nextId} marcos=${marcos}`);
-  const itens = await page.locator('[data-testid^="contato-"]').count();
-  ck(`${n} contatos → histórico com ${n} itens`, itens === n, `itens=${itens}`);
-  if (n === 7) {
-    ck('7 contatos → texto "7 contatos realizados" (ordinal real, sem "5º+")', realizados === '7 contatos realizados' && !(await page.content()).includes('5º+'), realizados);
-    ck('marco 7º presente e 8º destacado', (await page.locator('[data-testid="marco-7"][data-state="done"]').count()) === 1 && nextId === 'marco-8');
-  }
-  if (n === 3) {
-    const c3 = await txt('[data-testid="contato-3"]');
-    ck('3º contato mostra ordinal/data/responsável/canal/resultado/observação', /3º contato/.test(c3) && /12\/09\/26/.test(c3) && /Responsável: João/.test(c3) && /Canal: Ligação/.test(c3) && /Resultado: Sem resposta/.test(c3) && /Observação: Conversamos sobre a célula/.test(c3), c3);
-    const c2 = await txt('[data-testid="contato-2"]');
-    ck('2º contato: responsável Maria, canal Pessoalmente, resultado Encaminhado, observação —', /Responsável: Maria/.test(c2) && /Canal: Pessoalmente/.test(c2) && /Resultado: Encaminhado/.test(c2) && /Observação: —/.test(c2), c2);
-    const status = await txt('[data-testid="status-jornada"]');
-    ck('jornada aberta → STATUS: EM ATENDIMENTO', status === 'STATUS: EM ATENDIMENTO', status);
-    await page.screenshot({ path: 'atendimento-3-contatos.png', fullPage: true });
-  }
-  if (n === 7) await page.screenshot({ path: 'atendimento-7-contatos.png', fullPage: true });
-  if (n === 0) await page.screenshot({ path: 'atendimento-0-contatos.png', fullPage: true });
-}
-
-// Encerrada
-await open('pclosed');
-const st = await txt('[data-testid="status-jornada"]');
-ck('jornada encerrada → STATUS: ENCERRADO · Não quer contato (2 contatos, próximo 3º)', st === 'STATUS: ENCERRADO · Não quer contato' && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 3º contato', st);
-await page.screenshot({ path: 'atendimento-encerrada.png', fullPage: true });
-
-// Pessoa sem jornada: etapa obrigatória; salvar → 1º contato
+// Pessoa sem contatos e sem jornada ("p0")
+// 1. Abrir Atendimento
 await open('p0');
-ck('sem jornada → aviso "Sem jornada ativa" e etapa obrigatória', (await page.locator('text=Sem jornada ativa').count()) > 0 && (await page.locator('option:has-text("Selecionar etapa (obrigatório)")').count()) > 0);
+ck('1. abre: "Próximo: 1º contato", pergunta "Você tentou falar com a pessoa agora?", nada marcado, Salvar desabilitado',
+  (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 1º contato'
+  && (await page.locator('text=Você tentou falar com a pessoa agora?').count()) === 1
+  && (await page.locator('[data-testid="tentou-falar-sim"][aria-checked="true"]').count()) === 0
+  && (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0
+  && await saveBtn().isDisabled());
+// 2. "Você tentou falar?" → SIM
+await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200);
+ck('2. "Sim, tentei" abre canal / resultado / anotações para o 1º contato', (await txt('[data-testid="titulo-registrar"]')) === 'Registrar 1º contato' && (await resultSelect().count()) === 1 && (await page.locator('textarea[placeholder*="tentativa"]').count()) === 1);
+ck('   resultado oferece "Não atendeu", "Sem resposta" e "Contato realizado"', (await resultSelect().locator('option[value="nao_atendeu"]').count()) === 1 && (await resultSelect().locator('option[value="sem_resposta"]').count()) === 1 && (await resultSelect().locator('option[value="realizado"]').count()) === 1);
+// 3. Resultado → NÃO ATENDEU (pessoa sem jornada: etapa obrigatória, como na tela real)
+await resultSelect().selectOption('nao_atendeu');
+await page.locator('select').filter({ has: page.locator('option:has-text("Selecionar etapa")') }).first().selectOption('s1').catch(() => {});
+// 4. Salvar
+await saveBtn().click(); await page.waitForTimeout(1500);
+const c1 = registerCalls[0];
+ck('4. salva: RPC com p_register_contact=true e p_contact_result=nao_atendeu (tentativa não atendida É contato)', registerCalls.length === 1 && c1.p_register_contact === true && c1.p_contact_result === 'nao_atendeu', JSON.stringify({ reg: c1?.p_register_contact, res: c1?.p_contact_result }));
+ck('   toast confirma "1º contato registrado (Não atendeu)"', (await page.locator('text=1º contato registrado (Não atendeu)').count()) === 1);
+// 5. Fechar e abrir novamente
+await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(500);
+await open('p0');
+const h5 = await historico();
+ck('5. reabre: "Próximo: 2º contato"; histórico 1º — Não atendeu', (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 2º contato' && h5.length === 1 && /1º contato/.test(h5[0]) && /Resultado: Não atendeu/.test(h5[0]), await txt('[data-testid="proximo-contato"]'));
+ck('   nenhuma tentativa pré-marcada ao reabrir', (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0 && await saveBtn().isDisabled());
+// 6. Segunda tentativa → NÃO ATENDEU
+await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200);
+ck('6. "Sim, tentei" → "Registrar 2º contato"', (await txt('[data-testid="titulo-registrar"]')) === 'Registrar 2º contato');
+await resultSelect().selectOption('nao_atendeu');
+// 7. Salvar
+await saveBtn().click(); await page.waitForTimeout(1500);
+ck('7. 2ª tentativa gravada: p_register_contact=true, nao_atendeu, p_expected_version da jornada aberta', registerCalls.length === 2 && registerCalls[1].p_register_contact === true && registerCalls[1].p_contact_result === 'nao_atendeu' && registerCalls[1].p_expected_version === 1, JSON.stringify(registerCalls[1]));
+// 8. Reabrir
+await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(500);
+await open('p0');
+ck('8. reabre: "Próximo: 3º contato"', (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 3º contato', await txt('[data-testid="proximo-contato"]'));
+// 9. Terceira tentativa → REALIZADO
+await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200);
+await resultSelect().selectOption('realizado');
+await page.locator('textarea[placeholder*="tentativa"]').fill('conversamos, vai à célula');
+// 10. Salvar
+await saveBtn().click(); await page.waitForTimeout(1500);
+ck('10. 3ª tentativa gravada como realizado', registerCalls.length === 3 && registerCalls[2].p_register_contact === true && registerCalls[2].p_contact_result === 'realizado');
+await open('p0');
+const h = await historico();
+ck('histórico exatamente: 1º — Não atendeu | 2º — Não atendeu | 3º — Contato realizado',
+  h.length === 3 && /1º contato/.test(h[0]) && /Resultado: Não atendeu/.test(h[0]) && /2º contato/.test(h[1]) && /Resultado: Não atendeu/.test(h[1]) && /3º contato/.test(h[2]) && /Resultado: Contato realizado/.test(h[2]) && /conversamos, vai à célula/.test(h[2]),
+  h.map(x => x.slice(0, 60)).join(' || '));
+ck('"Próximo: 4º contato" e 3 marcos concluídos', (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 4º contato' && (await page.locator('[data-testid^="marco-"][data-state="done"]').count()) === 3);
+await page.screenshot({ path: 'atendimento-tentativas-3.png', fullPage: true });
 
-// Fluxo: p2 tem 2 contatos → salva → 3º
-await open('p2'); await tentei();
-ck('antes: 2 contatos, Registrar 3º contato', (await txt('[data-testid="titulo-registrar"]')) === 'Registrar 3º contato');
-await page.locator('textarea[placeholder*="Anotações"]').fill('terceiro contato via teste');
-await page.locator('button:has-text("Salvar atendimento"):visible').first().click();
-await page.waitForTimeout(1500);
-ck('após salvar, a pergunta volta a vazia (nenhuma tentativa pré-marcada)', (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0); await tentei();   // operador decide de novo
-ck('RPC journey_register_attendance chamada sem campo manual de ordinal', registerCalls.length === 1 && !('p_ordinal' in registerCalls[0]) && !('p_contact_number' in registerCalls[0]), Object.keys(registerCalls[0] || {}).join(','));
-ck('depois: 3 contatos, Registrar 4º contato', (await txt('[data-testid="titulo-registrar"]')) === 'Registrar 4º contato' && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 4º contato', await txt('[data-testid="proximo-contato"]'));
-const novo = await txt('[data-testid="contato-3"]');
-ck('novo registro aparece como 3º contato no histórico com a observação', /3º contato/.test(novo) && /terceiro contato via teste/.test(novo) && /Responsável: João/.test(novo), novo);
+// ── "Não tentei" + alterar só uma informação → contador NÃO aumenta ──
+await page.locator('[data-testid="tentou-falar-nao"]').click(); await page.waitForTimeout(200);
+ck('"Não tentei": sem campos de contato; sem alteração o Salvar fica desabilitado (não cria tentativa falsa)', (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0 && await saveBtn().isDisabled());
+await page.locator('input[placeholder*="Contexto pastoral"]').fill('mora perto da igreja');
+ck('   alterou uma informação → Salvar habilita', !(await saveBtn().isDisabled()));
+await saveBtn().click(); await page.waitForTimeout(1500);
+const c4 = registerCalls[3];
+ck('   salva com p_register_contact=false e a observação; nenhum pastoral_contact', registerCalls.length === 4 && c4.p_register_contact === false && c4.p_people_updates?.observacoes_pastorais === 'mora perto da igreja' && people.p0.contacts.length === 3, JSON.stringify({ reg: c4?.p_register_contact, upd: c4?.p_people_updates }));
+ck('   toast: "Alterações salvas (nenhuma tentativa de contato registrada)"', (await page.locator('text=nenhuma tentativa de contato registrada').count()) === 1);
+await open('p0');
+ck('   contador continua "Próximo: 4º contato" e histórico com 3 itens', (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 4º contato' && (await historico()).length === 3);
+
+// ── "Não tentei" sem alterar nada → nada é enviado ──
+await page.locator('[data-testid="tentou-falar-nao"]').click(); await page.waitForTimeout(200);
+const before = registerCalls.length;
+ck('"Não tentei" sem mudar nada: Salvar desabilitado, aviso "Preencha ao menos um campo", nenhuma RPC', await saveBtn().isDisabled() && (await page.locator('text=Preencha ao menos um campo').count()) === 1 && registerCalls.length === before);
+await saveBtn().click({ force: true }).catch(() => {}); await page.waitForTimeout(500);
+ck('   clique forçado não cria tentativa falsa', registerCalls.length === before && people.p0.contacts.length === 3);
+
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '));
-
-// ── Teste integrado /pessoas ⇄ Atendimento: coluna CONTATOS como ordinal e atualização após salvar ──
-const cellOf = async (name) => {
-  const row = page.locator('table tbody tr', { hasText: name }).first();
-  await row.waitFor({ state: 'visible', timeout: 15000 });
-  const badge = row.locator('[data-testid="contatos-ordinal"]');
-  return (await badge.count()) ? (await badge.first().textContent() || '').trim() : '—';
-};
-const expectedLabel = (n) => (n === 0 ? '—' : `${n}º contato`);
-// estado limpo para a integração (o cenário anterior já tinha salvo um contato na Pessoa 2)
-people.p2.contacts = mkContacts(2, 'p2'); registerCalls.length = 0;
-
-await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1200);
-for (const n of [0, 1, 2, 3, 4, 6, 7]) {
-  const c = await cellOf(`Pessoa ${n} contatos`);
-  ck(`/pessoas coluna CONTATOS para ${n} pastoral_contact → "${expectedLabel(n)}"`, c === expectedLabel(n), c);
-}
-await page.screenshot({ path: 'pessoas-coluna-contatos.png', fullPage: false });
-
-for (const n of [0, 1, 2, 3, 4, 6]) {
-  const name = `Pessoa ${n} contatos`;
-  await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(800);
-  const before = await cellOf(name);
-  const row = page.locator('table tbody tr', { hasText: name }).first();
-  await row.locator('button[title="Atender"]').first().click();
-  await page.waitForURL(`**/pessoas/p${n}/atendimento**`, { timeout: 15000 }); await page.waitForTimeout(900);
-  await tentei();   // operador: 'Sim, tentei'
-  const titulo = await txt('[data-testid="titulo-registrar"]');
-  if (n === 0) {
-    // pessoa sem jornada: etapa obrigatória (sugestão preenche; garante seleção explícita)
-    await page.locator('select').filter({ has: page.locator('option:has-text("Selecionar etapa")') }).first().selectOption('s1').catch(() => {});
-  }
-  await page.locator('textarea[placeholder*="Anotações"]').fill(`contato ${n + 1} via /pessoas`);
-  await page.locator('button:has-text("Salvar atendimento"):visible').first().click();
-  await page.waitForTimeout(1200);
-  ck('após salvar, a pergunta volta a vazia (nenhuma tentativa pré-marcada)', (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0); await tentei();   // operador decide de novo
-  const tituloDepois = await txt('[data-testid="titulo-registrar"]');
-  await page.locator('button[aria-label="Voltar"]').first().click();
-  await page.waitForURL('**/pessoas**', { timeout: 15000 }); await page.waitForTimeout(1200);
-  const after = await cellOf(name);
-  ck(`${expectedLabel(n)} → coração → "${titulo}" → salva → volta → "${after}"`,
-    before === expectedLabel(n) && titulo === `Registrar ${n + 1}º contato` && tituloDepois === `Registrar ${n + 2}º contato` && after === expectedLabel(n + 1),
-    `antes=${before} depois=${after}`);
-}
-await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(800);
-await page.screenshot({ path: 'pessoas-coluna-contatos-depois.png', fullPage: false });
-
 await browser.close();
 const failed = results.filter(x => !x).length;
 console.log(`\n=== ${results.length - failed}/${results.length} OK ===`);

@@ -2,7 +2,7 @@
  * test-atendimento-estado.mjs — itens 10 + 13 + reabertura, com Supabase MOCKADO (Playwright).
  *   node test-atendimento-estado.mjs                                  (dev server :5173)
  *   BASE_URL=https://app.ekthoschurch.com node test-atendimento-estado.mjs
- * Cobre: escolha explícita "Houve contato?", salvar sem contato (zero pastoral_contact),
+ * Cobre: escolha explícita "Você tentou falar com a pessoa agora?", salvar sem tentativa (zero pastoral_contact),
  * registrar contato (1), reabertura com motivo (histórico preservado), estado único na lista.
  */
 import { chromium } from 'playwright';
@@ -89,8 +89,8 @@ const cityInput = () => page.locator('input[placeholder*="Cidade"], label:has-te
 
 // ── ITEM 10 ──
 await open('p1');
-ck('intenção obrigatória: sem escolher "Houve contato?", Salvar fica desabilitado com aviso', await saveBtn().isDisabled() && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 1 && (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
-await page.locator('[data-testid="houve-contato-nao"]').click(); await page.waitForTimeout(200);
+ck('intenção obrigatória: sem escolher "Você tentou falar?", Salvar fica desabilitado com aviso', await saveBtn().isDisabled() && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 1 && (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
+await page.locator('[data-testid="tentou-falar-nao"]').click(); await page.waitForTimeout(200);
 ck('"Não": campos de canal/resultado/anotações do contato ficam ocultos', (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
 ck('"Não" sem nenhuma alteração: nada a salvar', await saveBtn().isDisabled());
 await cityInput().fill('Niterói'); await page.waitForTimeout(200);
@@ -98,9 +98,9 @@ calls.length = 0;
 await saveBtn().click(); await page.waitForTimeout(1200);
 ck('salvar correção SEM contato → RPC com p_register_contact=false e cidade enviada', lastReg()?.body.p_register_contact === false && lastReg()?.body.p_people_updates?.city === 'Niterói', JSON.stringify(lastReg()?.body?.p_people_updates));
 ck('… e zero contato novo (continua 1 contato; "Próximo: 2º contato")', people.p1.contacts === 1 && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 2º contato', await txt('[data-testid="proximo-contato"]'));
-ck('mensagem: "Alterações salvas (sem novo contato)"', (await page.locator('text=Alterações salvas (sem novo contato)').count()) === 1);
+ck('mensagem: "Alterações salvas (nenhuma tentativa de contato registrada)"', (await page.locator('text=Alterações salvas (nenhuma tentativa de contato registrada)').count()) === 1);
 ck('após salvar, a intenção volta a vazia (não há regravação sem nova escolha)', await saveBtn().isDisabled() && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 1);
-await page.locator('[data-testid="houve-contato-sim"]').click(); await page.waitForTimeout(200);
+await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200);
 ck('"Sim": aparece "Registrar 2º contato" com canal/resultado e Salvar habilita', /registrar 2º contato/i.test(await txt('[data-testid="titulo-registrar"]')) && !(await saveBtn().isDisabled()), (await txt('[data-testid="titulo-registrar"]')) + ' | disabled=' + (await saveBtn().isDisabled()));
 await page.locator('textarea[placeholder*="Anotações"]').fill('conversa real'); calls.length = 0;
 await saveBtn().click(); await page.waitForTimeout(1200);
