@@ -1,28 +1,42 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { UNIT_ALL, unitScopeToRpcParam, type UnitScope } from '@/lib/filters/unitScope'
+import { UNIT_ALL, type UnitScope } from '@/lib/filters/unitScope'
+import { buildPeoplePageArgs, type PeoplePageFilters } from './usePeoplePage'
 
 export interface AcolhimentoStatusCounts {
+  /** ESTADOS (mutuamente exclusivos; somam `total`) */
   naoAtendida:   number
-  cancelado:     number
-  total:         number
   emAtendimento: number
   atendida:      number
+  cancelado:     number
+  total:         number
+  /** ALERTA operacional (sobrepõe um estado; NÃO entra na soma) */
   semContato48h: number
+  /** Threshold do alerta em horas, definido no banco (care_alert_threshold) */
+  alertThresholdHours: number
 }
 
-/** Contadores de atendimento via RPC server-side, no mesmo escopo de unidade da lista. */
-export function useAcolhimentoStatus(churchId: string, unit: UnitScope = UNIT_ALL) {
+/** Filtros do contador = filtros da lista, menos o próprio filtro de atendimento e a paginação. */
+export type CareCountFilters = Omit<PeoplePageFilters, 'careStatus' | 'page' | 'pageSize'>
+
+/**
+ * Contadores de atendimento via RPC server-side, no MESMO universo da lista
+ * (unidade, etapa, origem, busca, período…): get_care_status_counts usa o
+ * mesmo people_filter_base de get_people_page. Nenhuma regra é recalculada aqui.
+ */
+export function useAcolhimentoStatus(churchId: string, filters: CareCountFilters | UnitScope = UNIT_ALL) {
+  const f: CareCountFilters = typeof filters === 'object' && filters !== null && 'unit' in filters ? filters : { unit: filters as UnitScope }
   return useQuery({
-    queryKey: ['acolhimento-status-counts', churchId, unit],
+    queryKey: ['acolhimento-status-counts', churchId, f],
     enabled: Boolean(churchId),
     staleTime: 60_000,
+    placeholderData: prev => prev,
     queryFn: async (): Promise<AcolhimentoStatusCounts> => {
+      // Mesmos argumentos da lista, sem p_care_status / p_limit / p_offset
+      const { p_care_status: _c, p_limit: _l, p_offset: _o, ...args } = buildPeoplePageArgs(churchId, { ...f, careStatus: undefined })
+      void _c; void _l; void _o
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('get_care_status_counts', {
-        p_church_id: churchId,
-        p_unit_id:   unitScopeToRpcParam(unit),
-      })
+      const { data, error } = await (supabase.rpc as any)('get_care_status_counts', args)
       if (error) throw new Error(error.message)
       const d = (data ?? {}) as Record<string, number>
       return {
@@ -32,6 +46,7 @@ export function useAcolhimentoStatus(churchId: string, unit: UnitScope = UNIT_AL
         emAtendimento: d.em_atendimento  ?? 0,
         atendida:      d.atendida        ?? 0,
         semContato48h: d.sem_contato_48h ?? 0,
+        alertThresholdHours: d.alert_threshold_hours ?? 48,
       }
     },
   })
