@@ -58,7 +58,7 @@ BEGIN
   -- Regra (itens 2/16/22, migration 20261007100000): jornada aberta COM atividade humana (algum journey_events)
   -- = Em atendimento, mesmo sem pastoral_contact ("Não tentei"); jornada aberta SEM nenhum evento (legado de backfill) = Não atendida.
   INSERT INTO _r VALUES (13, 'jornada aberta com evento humano e sem contato = Em atendimento; sem nenhum evento = Não atendida',
-    (SELECT bool_and(person_care_state(j.person_id) = CASE WHEN EXISTS (SELECT 1 FROM journey_events e WHERE e.journey_id = j.id) THEN 'em_atendimento' ELSE 'nao_atendida' END)
+    (SELECT bool_and(person_care_state(j.person_id) = CASE WHEN EXISTS (SELECT 1 FROM journey_events e WHERE e.journey_id = j.id AND e.actor_type = 'human') THEN 'em_atendimento' ELSE 'nao_atendida' END)
        FROM person_journey j JOIN people p ON p.id = j.person_id
       WHERE j.church_id = c.c1 AND j.closed_at IS NULL AND p.deleted_at IS NULL AND p.left_at IS NULL
         AND NOT EXISTS (SELECT 1 FROM journey_events e WHERE e.journey_id = j.id AND e.event_type = 'pastoral_contact')),

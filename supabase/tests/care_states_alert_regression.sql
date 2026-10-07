@@ -77,8 +77,8 @@ BEGIN
   SELECT count(*) INTO n_em_sem_evento
   FROM people p WHERE p.church_id = c.c1 AND p.deleted_at IS NULL AND p.left_at IS NULL
     AND person_care_state(p.id) = 'em_atendimento'
-    AND NOT EXISTS (SELECT 1 FROM journey_events e JOIN person_journey j ON j.id = e.journey_id WHERE j.person_id = p.id);
-  INSERT INTO _r VALUES (12, 'depois: nenhuma pessoa "Em atendimento" sem nenhum evento humano', n_em_sem_evento = 0, n_em_sem_evento::text);
+    AND NOT EXISTS (SELECT 1 FROM journey_events e JOIN person_journey j ON j.id = e.journey_id WHERE j.person_id = p.id AND e.actor_type = 'human');
+  INSERT INTO _r VALUES (12, 'depois: nenhuma pessoa "Em atendimento" sem nenhum evento HUMANO', n_em_sem_evento = 0, n_em_sem_evento::text);
 END $$;
 
 -- ── Cenários humanos A–H (pessoas sintéticas) ──
@@ -103,6 +103,17 @@ INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
 SELECT c1, 'ZZ-CARE H cancelado', '+55 20 99920-0009', 'manual', itaipu, now() - interval '10 days' FROM _c;
 INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
 SELECT c1, 'ZZ-CARE N nao tentei so correcao', '+55 20 99920-0010', 'manual', NULL, now() - interval '10 days' FROM _c;
+INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
+SELECT c1, 'ZZ-CARE S so evento de sistema', '+55 20 99920-0011', 'manual', itaipu, now() - interval '10 days' FROM _c;
+-- S: jornada aberta só com eventos de sistema/agente (como uma automação faria) → NÃO é atendimento humano
+RESET ROLE;
+INSERT INTO person_journey (person_id, church_id, stage_id, version)
+SELECT id, (SELECT c1 FROM _c), (SELECT stage_visit FROM _c), 1 FROM people WHERE name = 'ZZ-CARE S so evento de sistema';
+INSERT INTO journey_events (journey_id, church_id, event_type, actor_id, actor_type, payload)
+SELECT j.id, j.church_id, 'stage_advance', NULL, 'system', '{"note":"automação"}'::jsonb FROM person_journey j JOIN people p ON p.id = j.person_id WHERE p.name = 'ZZ-CARE S so evento de sistema';
+INSERT INTO journey_events (journey_id, church_id, event_type, actor_id, actor_type, payload)
+SELECT j.id, j.church_id, 'touch_sent', NULL, 'agent', '{}'::jsonb FROM person_journey j JOIN people p ON p.id = j.person_id WHERE p.name = 'ZZ-CARE S so evento de sistema';
+SET LOCAL ROLE authenticated;
 
 CREATE TEMP TABLE _p ON COMMIT DROP AS SELECT id, name FROM people WHERE name LIKE 'ZZ-CARE %';
 GRANT ALL ON _p TO authenticated;
@@ -155,7 +166,8 @@ DECLARE r record; st text; al boolean; n int := 20;
     "F":  ["em_atendimento", true],
     "G":  ["atendida", false],
     "H":  ["cancelado", false],
-    "N":  ["em_atendimento", true]
+    "N":  ["em_atendimento", true],
+    "S":  ["nao_atendida", true]
   }';
   k text;
 BEGIN
@@ -190,8 +202,8 @@ BEGIN
   -- L. busca sozinha: 10 sintéticas, 2 sem jornada (A, A2)
   j := get_care_status_counts(c.c1, p_search => 'zz-care');
   SELECT COALESCE(min(total_count), 0) INTO lista FROM get_people_page(c.c1, p_search => 'zz-care', p_limit => 1);
-  n := n + 1; INSERT INTO _r VALUES (n, 'L. busca "zz-care" (normalizada): total 10 = lista; Não atendida 2; alerta 5 (A, C, D, F, N)',
-    (j->>'total')::bigint = 10 AND lista = 10 AND (j->>'nao_atendida')::bigint = 2 AND (j->>'sem_contato_48h')::bigint = 5, j::text || ' lista=' || lista);
+  n := n + 1; INSERT INTO _r VALUES (n, 'L. busca "zz-care" (normalizada): total 11 = lista; Não atendida 3 (A, A2, S); alerta 6 (A, C, D, F, N, S)',
+    (j->>'total')::bigint = 11 AND lista = 11 AND (j->>'nao_atendida')::bigint = 3 AND (j->>'sem_contato_48h')::bigint = 6, j::text || ' lista=' || lista);
 
   -- M. período de cadastro: últimos 4 dias → só A2 (3h)
   j := get_care_status_counts(c.c1, p_search => 'ZZ-CARE', p_created_from => (now() - interval '4 days')::date);
@@ -201,11 +213,11 @@ BEGIN
 
   -- Situação: filtro sem_contato_48h devolve exatamente os alertados; filtro de estado = contador
   SELECT COALESCE(min(total_count), 0) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CARE', p_care_status => 'sem_contato_48h', p_limit => 1);
-  n := n + 1; INSERT INTO _r VALUES (n, 'situação: lista "Sem contato +48h" = 5 = contador do alerta', lista = 5, 'lista=' || lista);
+  n := n + 1; INSERT INTO _r VALUES (n, 'situação: lista "Sem contato +48h" = 6 = contador do alerta', lista = 6, 'lista=' || lista);
   SELECT COALESCE(min(total_count), 0) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CARE', p_care_status => 'em_atendimento', p_limit => 1);
   n := n + 1; INSERT INTO _r VALUES (n, 'situação: lista "Em atendimento" = 6 = contador', lista = 6, 'lista=' || lista);
   SELECT COALESCE(min(total_count), 0) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CARE', p_care_status => 'nao_atendida', p_limit => 1);
-  n := n + 1; INSERT INTO _r VALUES (n, 'situação: lista "Não atendida" = 2 = contador', lista = 2, 'lista=' || lista);
+  n := n + 1; INSERT INTO _r VALUES (n, 'situação: lista "Não atendida" = 3 = contador (inclui S: só evento de sistema)', lista = 3, 'lista=' || lista);
 
   -- Unidade "Sem unidade": só N (unit NULL)
   j := get_care_status_counts(c.c1, p_unit_id => 'none', p_search => 'ZZ-CARE');
@@ -221,6 +233,14 @@ BEGIN
     (SELECT bool_and((row_data->>'care_state') = person_care_state((row_data->>'id')::uuid) AND (row_data->>'care_alert')::boolean = person_care_alert((row_data->>'id')::uuid))
        FROM get_people_page(c.c1, p_search => 'ZZ-CARE', p_limit => 50)), '');
 END $$;
+
+-- Pessoa real de homologação do item 10 (igreja Mock): só leitura
+RESET ROLE;
+INSERT INTO _r SELECT 55, 'ZZ Homologação Item 10 (Mock): estado/alerta/contatos/último resultado', true,
+  format('estado=%s alerta=%s contatos=%s ultimo=%s', person_care_state(p.id), person_care_alert(p.id),
+    (SELECT count(*) FROM journey_events e JOIN person_journey j ON j.id = e.journey_id WHERE j.person_id = p.id AND e.event_type = 'pastoral_contact'),
+    (SELECT e.payload->>'result' FROM journey_events e JOIN person_journey j ON j.id = e.journey_id WHERE j.person_id = p.id AND e.event_type = 'pastoral_contact' ORDER BY e.created_at DESC LIMIT 1))
+  FROM people p WHERE p.id = '105f5d84-bfb5-49f9-93dc-db263288cab4';
 
 -- anon não executa os contadores
 RESET ROLE;

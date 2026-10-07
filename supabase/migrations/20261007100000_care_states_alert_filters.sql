@@ -4,7 +4,7 @@
 -- 1. ESTADOS (mutuamente exclusivos, somam o universo da lista):
 --      nao_atendida | em_atendimento | atendida | cancelado
 --    "Em atendimento" passa a exigir jornada aberta COM atividade humana
---    (ao menos um journey_events). Jornada aberta sem nenhum evento — as 473
+--    (ao menos um journey_events com actor_type = 'human'). Jornada aberta sem nenhum evento — as 473
 --    jornadas legadas de 01/08/2026 criadas por backfill — NÃO conta como
 --    atendimento: a pessoa é classificada como "Não atendida". Nenhum dado
 --    histórico é alterado; a regra vive só na leitura.
@@ -42,11 +42,14 @@ LANGUAGE sql STABLE
 SET search_path TO 'public'
 AS $function$
   SELECT CASE
-    -- Em atendimento: jornada aberta com atividade humana registrada
+    -- Em atendimento: jornada aberta com atividade HUMANA registrada.
+    -- Só eventos actor_type = 'human' (CHECK do schema: human ⇒ actor_id NOT NULL).
+    -- Eventos 'system'/'agent' (journey_advance/assign/close/transfer/update_next_step
+    -- chamadas por service_role, journey_register_touch, agentes) NÃO colocam ninguém em atendimento.
     WHEN EXISTS (
       SELECT 1 FROM person_journey j
       WHERE j.person_id = p_person_id AND j.closed_at IS NULL
-        AND EXISTS (SELECT 1 FROM journey_events e WHERE e.journey_id = j.id))
+        AND EXISTS (SELECT 1 FROM journey_events e WHERE e.journey_id = j.id AND e.actor_type = 'human'))
       THEN 'em_atendimento'
     -- Encerrada: classifica pelo desfecho da última jornada encerrada
     WHEN EXISTS (SELECT 1 FROM person_journey j WHERE j.person_id = p_person_id AND j.closed_at IS NOT NULL)
