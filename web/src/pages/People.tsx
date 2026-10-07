@@ -16,8 +16,9 @@ import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Check, Phone, Heart, Download } from 'lucide-react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useDeletePerson } from '@/features/people/hooks/usePeople'
+import { buildPeopleCsv, type ExportPayload } from '@/features/people/exportCsv'
 import {
-  usePeoplePage, usePeopleStageCounts, fetchPeoplePage, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE,
+  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE,
   type PeoplePageFilters,
 } from '@/features/people/hooks/usePeoplePage'
 import { useUnit } from '@/contexts/UnitContext'
@@ -693,27 +694,30 @@ export default function People() {
     }
   }
 
-  // CSV: mesmo universo da lista (todos os filtros), sem paginação
+  // CSV (itens 21/18/25): EXATAMENTE o universo da lista (todos os filtros, inclusive estado/alerta),
+  // sem paginação e sem o corte de 1.000 linhas do PostgREST: a RPC export_people_rows devolve UM
+  // escalar jsonb com todas as pessoas. 1 pessoa = 1 linha; contatos ilimitados em colunas dinâmicas.
+  const [exporting, setExporting] = useState(false)
   async function exportCsv() {
-    const { items: all } = await fetchPeoplePage(churchId!, { ...pageFilters, page: 0, pageSize: 5000 })
-    const header = ['Nome', 'Telefone', 'Email', 'Etapa', 'Atendimento', 'Unidade', 'Primeira visita', 'Cadastro', 'Origem']
-    const rows = all.map(p => {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const { p_limit: _l, p_offset: _o, ...args } = buildPeoplePageArgs(churchId!, pageFilters)
+      void _l; void _o
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const anyP = p as any
-      const badge = getCareStatusBadge(anyP.care_state as string | null)
-      const unitName = churchUnits.find(u => u.id === anyP.unit_id)?.name ?? ''
-      return [
-        p.name ?? '', p.phone ?? '', p.email ?? '',
-        p.person_pipeline?.[0]?.pipeline_stages?.name ?? '',
-        badge?.label ?? 'Não atendida', unitName,
-        anyP.first_visit_date ?? '', formatDate(p.created_at), anyP.source ?? '',
-      ]
-    })
-    const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = 'pessoas.csv'; a.click(); URL.revokeObjectURL(url)
+      const { data, error } = await (supabase.rpc as any)('export_people_rows', args)
+      if (error) throw new Error(error.message)
+      const csv = buildPeopleCsv(data as ExportPayload, { unitScope: selectedUnit, units: churchUnits })
+      const blob = new Blob(['\uFEFF' + csv.text], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = csv.filename; a.click(); URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('[exportCsv]', err)
+      window.alert('Não foi possível gerar o CSV. Tente novamente.')
+    } finally {
+      setExporting(false)
+    }
   }
 
   const pageSize   = isBirthdayTab ? 500 : PEOPLE_PAGE_SIZE
@@ -865,10 +869,13 @@ export default function People() {
             <button
               type="button"
               onClick={() => void exportCsv()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+              disabled={exporting}
+              data-testid="btn-exportar-csv"
+              title="Exporta exatamente as pessoas da lista atual (todos os filtros), sem limite de linhas"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors disabled:opacity-60"
             >
               <Download size={13} strokeWidth={1.75} />
-              CSV
+              {exporting ? 'Gerando…' : 'CSV'}
             </button>
           )}
         </div>

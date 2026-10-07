@@ -24,6 +24,7 @@ import {
   type JourneyStatus,
 } from '@/features/atendimento/hooks/useAtendimento'
 import Button from '@/components/ui/Button'
+import { CHANNEL_LABELS, RESULT_LABELS } from '@/features/atendimento/contactLabels'
 
 // ── Utilitários ───────────────────────────────────────────────
 
@@ -55,26 +56,6 @@ const MARITAL_STATUS_LABEL: Record<string, string> = {
   divorciado:     'Divorciado(a)',
   viuvo:          'Viúvo(a)',
   uniao_estavel:  'União estável',
-}
-
-const CHANNEL_LABELS: Record<string, string> = {
-  presencial: 'Pessoalmente',
-  whatsapp:   'WhatsApp',
-  ligacao:    'Ligação',
-  email:      'E-mail',
-  visita:     'Visita domiciliar',
-}
-
-const RESULT_LABELS: Record<string, string> = {
-  realizado:        'Contato realizado',
-  sem_resposta:     'Sem resposta',
-  reagendado:       'Reagendado',
-  encaminhado:      'Encaminhado',
-  nao_atendeu:      'Não atendeu',
-  numero_errado:    'Número errado',
-  pediu_retorno:    'Pediu retorno',
-  nao_quer_contato: 'Não quer contato (encerra jornada)',
-  mudou_de_igreja:  'Mudou de Igreja (encerra jornada)',
 }
 
 const OUTCOME_CLOSES_JOURNEY = new Set(['nao_quer_contato', 'mudou_de_igreja'])
