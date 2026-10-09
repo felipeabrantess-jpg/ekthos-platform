@@ -31,13 +31,13 @@ DO $$
 DECLARE c record; j jsonb; n_ms int;
 BEGIN
   SELECT * INTO c FROM _c;
-  SELECT count(*) INTO n_ms FROM people p WHERE p.church_id = c.c1 AND p.deleted_at IS NULL AND p.left_at IS NULL AND person_classification_value(p.id) IS NOT NULL;
-  INSERT INTO _r VALUES (1, 'legado: nenhuma pessoa da IGV foi classificada pela migration (todas "Não classificado")', n_ms = 0, n_ms::text);
+  SELECT count(*) INTO n_ms FROM person_classification_rows(c.c1) pc WHERE pc.source = 'validated';
+  INSERT INTO _r VALUES (1, 'legado: nenhuma pessoa da IGV foi VALIDADA pela migration (classification_set_at nulo em todas); a leitura usa a derivada', n_ms = 0, n_ms::text);
   INSERT INTO _r VALUES (2, 'legado: membership_status / person_stage / person_pipeline intactos (md5)',
     (SELECT people_md5 FROM _snap) = (SELECT md5(string_agg(md5(x::text), '' ORDER BY id)) FROM (SELECT id, membership_status, person_stage FROM people WHERE church_id = c.c1) x)
     AND (SELECT pipeline_md5 FROM _snap) = (SELECT md5(string_agg(md5(x::text), '' ORDER BY id)) FROM (SELECT id, person_id, stage_id, entered_at FROM person_pipeline WHERE church_id = c.c1) x), '');
-  INSERT INTO _r VALUES (3, 'Sidinéia e Ozias: Não classificado, etapa Visitante preservada, etiqueta Membro preservada (só leitura)',
-    (SELECT bool_and(person_classification_value(p.id) IS NULL AND (person_classification(p.id)->>'stage_key') = 'visitante'
+  INSERT INTO _r VALUES (3, 'Sidinéia e Ozias: classificação efetiva = Membro (derivada da etiqueta, source=legacy), etapa Visitante e etiqueta preservadas, nada gravado',
+    (SELECT bool_and(person_classification_value(p.id) = 'member' AND person_classification_source(p.id) = 'legacy' AND person_classification_validated(p.id) IS NULL AND (person_classification(p.id)->>'stage_key') = 'visitante'
                      AND EXISTS (SELECT 1 FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = p.id AND t.name = 'Membro'))
        FROM people p WHERE p.id IN ('26000cc3-1f76-4621-ae32-707f8c100549', '06b2a999-3453-4bb2-93e2-6fc3cdf76052')), '');
   INSERT INTO _r VALUES (4, 'etapas: requires_classification configurado (membro/afastado/voluntario/lider = member; visitante = visitor; NC/reconciliado/connect livres)',
@@ -45,7 +45,56 @@ BEGIN
                        WHEN 'visitante' THEN requires_classification = 'visitor' WHEN 'novo_convertido' THEN requires_classification IS NULL
                        WHEN 'reconciliado' THEN requires_classification IS NULL WHEN 'connect' THEN requires_classification IS NULL ELSE true END)
        FROM pipeline_stages WHERE church_id = c.c1), '');
+  -- Transição: listas e indicadores NÃO zeram; aba Visitante sem Membros identificados
+  INSERT INTO _r VALUES (5, 'transição: há Membros e Visitantes derivados na IGV (listas/indicadores não zeram)',
+    (SELECT count(*) FROM person_classification_rows(c.c1) WHERE cls = 'member') >= 60
+    AND (SELECT count(*) FROM person_classification_rows(c.c1) WHERE cls = 'visitor') >= 700,
+    format('member=%s visitor=%s none=%s',
+      (SELECT count(*) FROM person_classification_rows(c.c1) WHERE cls = 'member'),
+      (SELECT count(*) FROM person_classification_rows(c.c1) WHERE cls = 'visitor'),
+      (SELECT count(*) FROM person_classification_rows(c.c1) WHERE cls IS NULL)));
+  INSERT INTO _r VALUES (6, 'transição: membership_status legado (default visitor da importação) NÃO vira Visitante sem etiqueta/etapa',
+    (SELECT count(*) FROM person_classification_rows(c.c1) pc JOIN people p ON p.id = pc.person_id WHERE p.membership_status = 'visitor' AND p.classification_set_at IS NULL AND pc.cls IS NULL) > 4000, '');
+  INSERT INTO _r VALUES (7, 'transição: nenhum Membro identificado lê como Visitante (etiqueta Visitante + evidência de Membro → Membro)',
+    NOT EXISTS (SELECT 1 FROM person_classification_rows(c.c1) pc JOIN people p ON p.id = pc.person_id WHERE pc.cls = 'visitor'
+                  AND (EXISTS (SELECT 1 FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = p.id AND t.name = 'Membro')
+                       OR EXISTS (SELECT 1 FROM volunteers v WHERE v.person_id = p.id AND v.is_active)
+                       OR EXISTS (SELECT 1 FROM ministries m WHERE m.leader_id = p.id))), '');
 END $$;
+
+-- Aba Visitante (etapa) × Membros identificados — leitura como admin
+SELECT set_config('request.jwt.claims', json_build_object('sub', (SELECT adm FROM _c), 'role', 'authenticated',
+       'app_metadata', json_build_object('church_id', (SELECT c1 FROM _c)))::text, true);
+SET LOCAL ROLE authenticated;
+DO $$
+DECLARE c record; n_etapa int; n_aba bigint; n_badge int; n_30 bigint; n_30_all int; j jsonb;
+BEGIN
+  SELECT * INTO c FROM _c;
+  SELECT count(*) INTO n_etapa FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id JOIN people p ON p.id = pp.person_id
+   WHERE pp.church_id = c.c1 AND ps.stage_key = 'visitante' AND p.deleted_at IS NULL AND p.left_at IS NULL;
+  SELECT max(total_count) INTO n_aba FROM get_people_page(c.c1, p_stage_key => 'visitante', p_limit => 1);
+  SELECT (x->>'cnt')::int INTO n_badge FROM jsonb_array_elements((get_people_stage_counts(c.c1))->'stages') x WHERE x->>'stage_key' = 'visitante';
+  INSERT INTO _r VALUES (8, 'aba Visitante: lista = badge = pessoas na etapa Visitante MENOS Membros identificados (9 na IGV)',
+    n_aba = n_badge AND n_aba = n_etapa - (SELECT count(*) FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id JOIN people p ON p.id = pp.person_id
+      WHERE pp.church_id = c.c1 AND ps.stage_key = 'visitante' AND p.deleted_at IS NULL AND p.left_at IS NULL AND p.id IN (SELECT person_id FROM person_classification_rows(c.c1) WHERE cls = 'member')),
+    format('etapa=%s aba=%s badge=%s', n_etapa, n_aba, n_badge));
+  INSERT INTO _r VALUES (9, 'Sidinéia e Ozias NÃO aparecem na aba Visitante (nem nos últimos 30 dias), continuam na etapa Visitante',
+    NOT EXISTS (SELECT 1 FROM get_people_page(c.c1, p_stage_key => 'visitante', p_limit => 5000) WHERE (row_data->>'id') IN ('26000cc3-1f76-4621-ae32-707f8c100549', '06b2a999-3453-4bb2-93e2-6fc3cdf76052'))
+    AND NOT EXISTS (SELECT 1 FROM get_people_page(c.c1, p_stage_key => 'visitante', p_created_from => (CURRENT_DATE - 30), p_limit => 5000) WHERE (row_data->>'id') IN ('26000cc3-1f76-4621-ae32-707f8c100549', '06b2a999-3453-4bb2-93e2-6fc3cdf76052'))
+    AND EXISTS (SELECT 1 FROM get_people_page(c.c1, p_classification => 'member', p_search => 'ozias', p_limit => 5) WHERE (row_data->>'id') = '06b2a999-3453-4bb2-93e2-6fc3cdf76052')
+    AND EXISTS (SELECT 1 FROM get_people_page(c.c1, p_search => 'ozias', p_limit => 5) WHERE (row_data->>'id') = '06b2a999-3453-4bb2-93e2-6fc3cdf76052' AND row_data->'classification'->>'label' = 'Membro' AND row_data->'classification'->>'source' = 'legacy' AND row_data->'classification'->>'stage_key' = 'visitante'), '');
+  -- consistência: filtro Visitantes (classificação) + unidade + busca + período = contador
+  j := get_care_status_counts(c.c1, p_unit_id => c.itaipu::text, p_classification => 'visitor', p_created_from => (CURRENT_DATE - 30));
+  SELECT max(total_count) INTO n_30 FROM get_people_page(c.c1, p_unit_id => c.itaipu::text, p_classification => 'visitor', p_created_from => (CURRENT_DATE - 30), p_limit => 1);
+  INSERT INTO _r VALUES (10, 'consistência: Visitantes + Itaipu + últimos 30 dias → lista = contador; CSV igual',
+    COALESCE(n_30, 0) = (j->>'total')::int AND (j->>'total')::int = ((export_people_rows(c.c1, p_unit_id => c.itaipu::text, p_classification => 'visitor', p_created_from => (CURRENT_DATE - 30)))->>'total')::int,
+    format('lista=%s contador=%s', n_30, j->>'total'));
+  INSERT INTO _r VALUES (11, 'CSV: classification.source = legacy/validated/null coerente com as funções',
+    (SELECT bool_and((x->'classification'->>'source') IS NOT DISTINCT FROM person_classification_source((x->>'id')::uuid)
+                     AND (x->'classification'->>'classification') IS NOT DISTINCT FROM person_classification_value((x->>'id')::uuid))
+       FROM jsonb_array_elements((export_people_rows(c.c1, p_search => 'ana'))->'rows') x), '');
+END $$;
+RESET ROLE;
 
 -- ── Dados sintéticos ──
 INSERT INTO ministries (church_id, name, slug, is_active) SELECT c1, 'ZZ-CLS Louvor', 'zz-cls-louvor', true FROM _c;
@@ -188,7 +237,7 @@ BEGIN
   INSERT INTO _r VALUES (46, 'Atendimento: escolher etapa Membro para Visitante → CLASSIFICATION_REQUIRED (nada gravado: atômico)', ok AND (SELECT count(*) FROM journey_events e JOIN person_journey j ON j.id = e.journey_id WHERE j.person_id = pb AND e.event_type = 'pastoral_contact') = 1, '');
   -- Release 1: pessoa Não classificada (legado) ainda pode ir para etapa Membro (nada é promovido em silêncio: continua Não classificado)
   r := person_set_stage((SELECT id FROM _p WHERE name = 'ZZ-CLS Importada'), c.st_membro);
-  INSERT INTO _r VALUES (48, 'legado Não classificado → etapa Membro: permitido; classificação continua Não classificado', (r->>'changed')::boolean AND r->>'classification' IS NULL AND r->>'label' = 'Não classificado', r::text);
+  INSERT INTO _r VALUES (48, 'legado Não classificado → etapa Membro: permitido; passa a ler Membro DERIVADO (source=legacy), sem validar (classification_set_at nulo)', (r->>'changed')::boolean AND r->>'classification' = 'member' AND r->>'source' = 'legacy' AND person_classification_validated((SELECT id FROM _p WHERE name = 'ZZ-CLS Importada')) IS NULL, r::text);
   -- etiqueta de tipo bloqueada
   BEGIN INSERT INTO person_tags (person_id, tag_id, church_id) SELECT pb, t.id, c.c1 FROM tags t WHERE t.church_id = c.c1 AND t.category = 'person_type' AND t.name = 'Membro'; ok := false; EXCEPTION WHEN OTHERS THEN ok := SQLERRM LIKE 'PERSON_TYPE_TAG_DEPRECATED%'; END;
   INSERT INTO _r VALUES (47, 'atribuir etiqueta de tipo → PERSON_TYPE_TAG_DEPRECATED', ok, '');
@@ -272,30 +321,30 @@ BEGIN
   SELECT * INTO c FROM _c;
   j := (get_people_stage_counts(c.c1))->'classificacao';
   SELECT max(total_count) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CLS', p_classification => 'member', p_limit => 1);
-  INSERT INTO _r VALUES (60, 'filtro Membros + busca: lista = 3 (Alice, Carla, Davi)', lista = 3, lista::text);
+  INSERT INTO _r VALUES (60, 'filtro Membros + busca: lista = 4 (Alice, Carla, Davi validados + Importada derivada)', lista = 4, lista::text);
   SELECT max(total_count) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CLS', p_classification => 'visitor', p_limit => 1);
   INSERT INTO _r VALUES (61, 'filtro Visitantes + busca: 2 (Bruno, QR Visitante)', lista = 2, lista::text);
   SELECT max(total_count) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CLS', p_classification => 'none', p_limit => 1);
-  INSERT INTO _r VALUES (62, 'filtro Não classificados + busca: 3 (QR já sou membro, Importada, Direto)', lista = 3, lista::text);
+  INSERT INTO _r VALUES (62, 'filtro Não classificados + busca: 2 (QR já sou membro, Direto)', lista = 2, lista::text);
   SELECT max(total_count) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CLS', p_role => 'leader_volunteer', p_limit => 1);
   INSERT INTO _r VALUES (63, 'filtro Líderes que também são voluntários: 1 (Alice)', lista = 1, lista::text);
   SELECT max(total_count) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CLS', p_role => 'member_only', p_limit => 1);
-  INSERT INTO _r VALUES (64, 'filtro Somente membros sem função: 1 (Carla)', lista = 1, lista::text);
+  INSERT INTO _r VALUES (64, 'filtro Somente membros sem função: 2 (Carla, Importada)', lista = 2, lista::text);
   SELECT max(total_count) INTO lista FROM get_people_page(c.c1, p_search => 'ZZ-CLS', p_role => 'leader', p_limit => 1);
   INSERT INTO _r VALUES (65, 'filtro Membros líderes: 2 (Alice, Davi coordenador)', lista = 2, lista::text);
   INSERT INTO _r VALUES (66, 'contadores de classificação (IGV + sintéticos): visitor + member + none = total da lista',
     (j->>'visitor')::int + (j->>'member')::int + (j->>'none')::int = (SELECT max(total_count) FROM get_people_page(c.c1, p_limit => 1)), j::text);
   j := get_care_status_counts(c.c1, p_search => 'ZZ-CLS', p_classification => 'member');
-  INSERT INTO _r VALUES (67, 'contador de atendimento respeita o filtro de classificação (total 3)', (j->>'total')::int = 3, j::text);
+  INSERT INTO _r VALUES (67, 'contador de atendimento respeita o filtro de classificação (total 4)', (j->>'total')::int = 4, j::text);
   r := (SELECT row_data FROM get_people_page(c.c1, p_search => 'ZZ-CLS Alice', p_limit => 1));
   INSERT INTO _r VALUES (68, 'row_data traz classification.label "Membro · Líder" e roles', r->'classification'->>'label' = 'Membro · Líder' AND jsonb_array_length(r->'classification'->'roles') = 2, r->'classification'::text);
   j := export_people_rows(c.c1, p_search => 'ZZ-CLS', p_classification => 'member');
-  INSERT INTO _r VALUES (69, 'CSV: respeita filtro de classificação e traz classification por linha', (j->>'total')::int = 3 AND (SELECT bool_and(x->'classification'->>'classification' = 'member') FROM jsonb_array_elements(j->'rows') x), j->>'total');
+  INSERT INTO _r VALUES (69, 'CSV: respeita filtro de classificação e traz classification por linha', (j->>'total')::int = 4 AND (SELECT bool_and(x->'classification'->>'classification' = 'member') FROM jsonb_array_elements(j->'rows') x), j->>'total');
   j := get_dashboard_people_stats(c.c1);
-  INSERT INTO _r VALUES (70, 'dashboard: "membros" pela classificação canônica (= contagem member do mesmo escopo)', (j->>'membros')::int = (SELECT count(*) FROM people p WHERE p.church_id = c.c1 AND p.deleted_at IS NULL AND p.left_at IS NULL AND person_classification_value(p.id) = 'member'), j->>'membros');
+  INSERT INTO _r VALUES (70, 'dashboard: "membros" pela classificação efetiva (= contagem member em lote do mesmo escopo)', (j->>'membros')::int = (SELECT count(*) FROM person_classification_rows(c.c1) WHERE cls = 'member'), j->>'membros');
   -- nenhuma pessoa com label contraditório
   INSERT INTO _r VALUES (71, 'nenhuma pessoa lê como Visitante e Membro ao mesmo tempo (classificação única por construção)',
-    NOT EXISTS (SELECT 1 FROM people p WHERE p.church_id = c.c1 AND person_classification_value(p.id) NOT IN ('visitor', 'member')), '');
+    NOT EXISTS (SELECT 1 FROM person_classification_rows(c.c1) WHERE cls NOT IN ('visitor', 'member')) AND NOT EXISTS (SELECT 1 FROM person_classification_rows(c.c1) pc WHERE pc.cls IS DISTINCT FROM person_classification_value(pc.person_id) AND pc.person_id IN (SELECT id FROM _p)), '');
 END $$;
 
 -- ── Histórico e dados preservados ──

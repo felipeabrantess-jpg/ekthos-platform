@@ -3,9 +3,10 @@
 --
 -- Fonte única da classificação vigente: people.membership_status ∈ {visitor, member, NULL}
 --   + people.classification_set_at (NULL = valor legado/indefinido → "Não classificado").
---   Nenhum valor legado é alterado: quem não passou por uma decisão (RPC, entrada
---   nova ou migração futura) lê como Não classificado, mesmo que a coluna tenha o
---   default 'visitor' da importação.
+--   Nenhum valor legado é alterado. TRANSIÇÃO: quem ainda não foi validado lê a
+--   classificação DERIVADA das evidências existentes (person_legacy_classification),
+--   só para leitura; sem evidência lê como Não classificado. O default 'visitor' da
+--   importação nunca conta como evidência.
 -- Funções (derivadas, nunca gravadas): Líder = liderança/coordenação de ministério,
 --   liderança/vice-liderança de célula; Voluntário = volunteers.is_active.
 -- Etapa pastoral (person_pipeline) independente; pipeline_stages.requires_classification
@@ -47,12 +48,49 @@ CREATE INDEX IF NOT EXISTS ministry_members_person_id_idx ON public.ministry_mem
 CREATE INDEX IF NOT EXISTS volunteers_person_active_idx ON public.volunteers (person_id) WHERE is_active = true;
 
 -- ── 2. Leitura ────────────────────────────────────────────────────────────
--- Classificação vigente (NULL = Não classificado)
-CREATE OR REPLACE FUNCTION public.person_classification_value(p_person_id uuid)
+-- Classificação VALIDADA (decisão registrada: RPC, entrada nova ou migração). NULL = ainda não validada.
+CREATE OR REPLACE FUNCTION public.person_classification_validated(p_person_id uuid)
 RETURNS text LANGUAGE sql STABLE SET search_path TO 'public' AS $$
   SELECT CASE WHEN p.classification_set_at IS NOT NULL AND p.membership_status IN ('visitor', 'member')
               THEN p.membership_status END
   FROM people p WHERE p.id = p_person_id
+$$;
+
+-- Classificação DERIVADA do legado (transição, só leitura — nada é gravado):
+--   Membro   = etiqueta Membro, OU etapa de Membro (membro, membro_afastado, lider, voluntario),
+--              OU liderança formal (ministério/coordenação/célula/vice), OU voluntariado ativo;
+--   Visitante = (etiqueta Visitante OU etapa Visitante) e NENHUMA evidência de Membro;
+--   NULL     = sem evidência (ex.: importação de junho sem etapa nem etiqueta).
+-- membership_status legado (default 'visitor' da importação) NÃO é evidência.
+CREATE OR REPLACE FUNCTION public.person_legacy_classification(p_person_id uuid)
+RETURNS text LANGUAGE sql STABLE SET search_path TO 'public' AS $$
+  WITH ev AS (
+    SELECT
+      EXISTS (SELECT 1 FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = p_person_id AND t.category = 'person_type' AND t.name = 'Membro') AS tag_m,
+      EXISTS (SELECT 1 FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = p_person_id AND t.category = 'person_type' AND t.name = 'Visitante') AS tag_v,
+      (SELECT ps.stage_key FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p_person_id LIMIT 1) AS etapa,
+      EXISTS (SELECT 1 FROM ministries m WHERE m.leader_id = p_person_id AND m.is_active IS NOT FALSE) AS lid_m,
+      EXISTS (SELECT 1 FROM ministry_members mm WHERE mm.person_id = p_person_id AND mm.role::text IN ('lider', 'coordenador')) AS coord,
+      EXISTS (SELECT 1 FROM groups g WHERE (g.leader_id = p_person_id OR g.co_leader_id = p_person_id) AND COALESCE(g.status, 'active') NOT IN ('inactive', 'archived')) AS lid_c,
+      EXISTS (SELECT 1 FROM volunteers v WHERE v.person_id = p_person_id AND v.is_active = true) AS vol)
+  SELECT CASE
+    WHEN tag_m OR etapa IN ('membro', 'membro_afastado', 'lider', 'voluntario') OR lid_m OR coord OR lid_c OR vol THEN 'member'
+    WHEN tag_v OR etapa = 'visitante' THEN 'visitor'
+  END FROM ev
+$$;
+
+-- Classificação EFETIVA (o que todas as telas, contadores, filtros, CSV e guardas usam):
+-- validada quando existe; senão a derivada do legado; senão NULL (Não classificado).
+CREATE OR REPLACE FUNCTION public.person_classification_value(p_person_id uuid)
+RETURNS text LANGUAGE sql STABLE SET search_path TO 'public' AS $$
+  SELECT COALESCE(person_classification_validated(p_person_id), person_legacy_classification(p_person_id))
+$$;
+
+-- Origem da classificação efetiva: 'validated' | 'legacy' | NULL
+CREATE OR REPLACE FUNCTION public.person_classification_source(p_person_id uuid)
+RETURNS text LANGUAGE sql STABLE SET search_path TO 'public' AS $$
+  SELECT CASE WHEN person_classification_validated(p_person_id) IS NOT NULL THEN 'validated'
+              WHEN person_legacy_classification(p_person_id) IS NOT NULL THEN 'legacy' END
 $$;
 
 -- Funções derivadas: [{role, basis, ref_id, ref_name}]
@@ -79,11 +117,64 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path TO 'public' AS $$
   ) s
 $$;
 
+-- Classificação efetiva de TODAS as pessoas ativas de uma igreja, em lote (uma consulta com junções):
+-- usada por contadores, filtros, dashboard, aba Visitante e CSV, para não recalcular pessoa a pessoa.
+-- Mesma regra de person_classification_value / person_roles.
+CREATE OR REPLACE FUNCTION public.person_classification_rows(p_church_id uuid)
+RETURNS TABLE(person_id uuid, cls text, source text, roles jsonb)
+LANGUAGE sql STABLE SET search_path TO 'public' AS $$
+  WITH ppl AS (
+    SELECT p.id, p.membership_status, p.classification_set_at
+    FROM people p WHERE p.church_id = p_church_id AND p.deleted_at IS NULL AND p.left_at IS NULL
+  ),
+  tags_m AS (SELECT DISTINCT pt.person_id FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.church_id = p_church_id AND t.category = 'person_type' AND t.name = 'Membro'),
+  tags_v AS (SELECT DISTINCT pt.person_id FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.church_id = p_church_id AND t.category = 'person_type' AND t.name = 'Visitante'),
+  stg AS (SELECT pp.person_id, ps.stage_key FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.church_id = p_church_id),
+  rl AS (
+    SELECT s.person_id, jsonb_agg(s.r ORDER BY (s.r->>'role') = 'leader' DESC, s.r->>'ref_name') AS roles
+    FROM (
+      SELECT m.leader_id AS person_id, jsonb_build_object('role','leader','basis','ministry_leader','ref_id',m.id,'ref_name',m.name) AS r
+        FROM ministries m WHERE m.church_id = p_church_id AND m.is_active IS NOT FALSE AND m.leader_id IS NOT NULL
+      UNION ALL
+      SELECT mm.person_id, jsonb_build_object('role','leader','basis','ministry_' || mm.role::text,'ref_id',m.id,'ref_name',m.name)
+        FROM ministry_members mm JOIN ministries m ON m.id = mm.ministry_id
+       WHERE mm.church_id = p_church_id AND mm.role::text IN ('lider','coordenador') AND m.is_active IS NOT FALSE
+      UNION ALL
+      SELECT g.leader_id, jsonb_build_object('role','leader','basis','cell_leader','ref_id',g.id,'ref_name',g.name)
+        FROM groups g WHERE g.church_id = p_church_id AND g.leader_id IS NOT NULL AND COALESCE(g.status,'active') NOT IN ('inactive','archived')
+      UNION ALL
+      SELECT g.co_leader_id, jsonb_build_object('role','leader','basis','cell_co_leader','ref_id',g.id,'ref_name',g.name)
+        FROM groups g WHERE g.church_id = p_church_id AND g.co_leader_id IS NOT NULL AND COALESCE(g.status,'active') NOT IN ('inactive','archived')
+      UNION ALL
+      SELECT v.person_id, jsonb_build_object('role','volunteer','basis','volunteer_active','ref_id',v.id,'ref_name',COALESCE(m.name, v.role, 'Voluntário'))
+        FROM volunteers v LEFT JOIN ministries m ON m.id = v.ministry_id
+       WHERE v.church_id = p_church_id AND v.is_active = true
+    ) s GROUP BY s.person_id
+  )
+  SELECT ppl.id,
+    COALESCE(
+      CASE WHEN ppl.classification_set_at IS NOT NULL AND ppl.membership_status IN ('visitor','member') THEN ppl.membership_status END,
+      CASE WHEN tm.person_id IS NOT NULL OR stg.stage_key IN ('membro','membro_afastado','lider','voluntario') OR rl.person_id IS NOT NULL THEN 'member'
+           WHEN tv.person_id IS NOT NULL OR stg.stage_key = 'visitante' THEN 'visitor' END) AS cls,
+    CASE WHEN ppl.classification_set_at IS NOT NULL AND ppl.membership_status IN ('visitor','member') THEN 'validated'
+         WHEN tm.person_id IS NOT NULL OR stg.stage_key IN ('membro','membro_afastado','lider','voluntario') OR rl.person_id IS NOT NULL
+              OR tv.person_id IS NOT NULL OR stg.stage_key = 'visitante' THEN 'legacy' END AS source,
+    COALESCE(rl.roles, '[]'::jsonb) AS roles
+  FROM ppl
+  LEFT JOIN tags_m tm ON tm.person_id = ppl.id
+  LEFT JOIN tags_v tv ON tv.person_id = ppl.id
+  LEFT JOIN stg ON stg.person_id = ppl.id
+  LEFT JOIN rl ON rl.person_id = ppl.id
+$$;
+REVOKE ALL ON FUNCTION public.person_classification_rows(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.person_classification_rows(uuid) TO authenticated, service_role;
+
 -- Monta o objeto de classificação a partir dos componentes (puro; fonte única do rótulo)
-CREATE OR REPLACE FUNCTION public.person_classification_build(p_cls text, p_roles jsonb, p_stage_key text, p_stage_name text)
+CREATE OR REPLACE FUNCTION public.person_classification_build(p_cls text, p_roles jsonb, p_stage_key text, p_stage_name text, p_source text DEFAULT NULL)
 RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
   SELECT jsonb_build_object(
     'classification', p_cls,
+    'source',         p_source,
     'is_leader',    COALESCE(p_roles, '[]'::jsonb) @> '[{"role":"leader"}]',
     'is_volunteer', COALESCE(p_roles, '[]'::jsonb) @> '[{"role":"volunteer"}]',
     'roles',        COALESCE(p_roles, '[]'::jsonb),
@@ -97,8 +188,8 @@ RETURNS jsonb LANGUAGE sql IMMUTABLE AS $$
       WHEN p_cls = 'visitor' THEN 'Visitante'
       ELSE 'Não classificado' END)
 $$;
-REVOKE ALL ON FUNCTION public.person_classification_build(text, jsonb, text, text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.person_classification_build(text, jsonb, text, text) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.person_classification_build(text, jsonb, text, text, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.person_classification_build(text, jsonb, text, text, text) TO authenticated, service_role;
 
 -- Leitura única para todas as telas, RPCs e CSV
 CREATE OR REPLACE FUNCTION public.person_classification(p_person_id uuid)
@@ -107,9 +198,14 @@ RETURNS jsonb LANGUAGE sql STABLE SET search_path TO 'public' AS $$
     person_classification_value(p_person_id),
     person_roles(p_person_id),
     (SELECT ps.stage_key FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p_person_id LIMIT 1),
-    (SELECT ps.name      FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p_person_id LIMIT 1))
+    (SELECT ps.name      FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p_person_id LIMIT 1),
+    person_classification_source(p_person_id))
 $$;
 REVOKE ALL ON FUNCTION public.person_classification_value(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.person_classification_validated(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.person_legacy_classification(uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.person_classification_source(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.person_classification_validated(uuid), public.person_legacy_classification(uuid), public.person_classification_source(uuid) TO authenticated, service_role;
 REVOKE ALL ON FUNCTION public.person_roles(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.person_classification(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.person_classification_value(uuid), public.person_roles(uuid), public.person_classification(uuid) TO authenticated, service_role;
@@ -182,9 +278,9 @@ BEGIN
   IF v_basis IS NULL THEN
     RAISE EXCEPTION 'FORBIDDEN: sem permissão para classificar esta pessoa' USING ERRCODE = '42501';
   END IF;
-  v_old := person_classification_value(p_person_id);
-  -- no-op: nada gravado
-  IF v_old IS NOT DISTINCT FROM v_new AND v_person.classification_set_at IS NOT NULL THEN
+  v_old := person_classification_value(p_person_id);   -- efetiva (validada ou derivada do legado)
+  -- no-op: nada gravado quando já está VALIDADA com o mesmo valor (validar um legado igual registra a decisão)
+  IF v_old IS NOT DISTINCT FROM v_new AND person_classification_validated(p_person_id) IS NOT NULL THEN
     RETURN jsonb_build_object('person_id', p_person_id, 'changed', false) || person_classification(p_person_id);
   END IF;
   IF NOT COALESCE(p_confirmed, false) THEN
@@ -207,7 +303,8 @@ BEGIN
   INSERT INTO audit_logs (church_id, entity_type, entity_id, action, actor_type, actor_id, payload)
   VALUES (v_person.church_id, 'person', p_person_id, 'person_classification_changed', 'human', auth.uid()::text,
           jsonb_build_object('old', v_old, 'new', v_new, 'reason', NULLIF(btrim(COALESCE(p_reason, '')), ''),
-                             'scope_basis', v_basis, 'legacy_value', CASE WHEN v_person.classification_set_at IS NULL THEN v_person.membership_status END));
+                             'scope_basis', v_basis, 'old_source', CASE WHEN v_person.classification_set_at IS NULL THEN 'legacy' ELSE 'validated' END,
+                             'legacy_membership_status', CASE WHEN v_person.classification_set_at IS NULL THEN v_person.membership_status END));
   RETURN jsonb_build_object('person_id', p_person_id, 'changed', true, 'old', v_old, 'scope_basis', v_basis) || person_classification(p_person_id);
 END $$;
 REVOKE ALL ON FUNCTION public.person_set_classification(uuid, text, text, boolean) FROM PUBLIC, anon;
@@ -653,7 +750,9 @@ AS $function$
     AND people_unit_scope_ok(p.unit_id, p.created_at, cfg.cutoff, p_unit_id)
     AND (p_stage_key IS NULL
          OR (p_stage_key = '__none' AND pp.id IS NULL)
-         OR ps.stage_key = p_stage_key)
+         OR (ps.stage_key = p_stage_key
+             -- aba/etapa Visitante nunca lista um Membro identificado (classificação efetiva)
+             AND NOT (p_stage_key = 'visitante' AND p.id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls = 'member'))))
     AND (p_stage IS NULL OR p.person_stage::text = p_stage)
     AND (p_source IS NULL OR p.source::text = p_source)
     AND (p_tag_id IS NULL OR EXISTS (SELECT 1 FROM person_tags pt WHERE pt.person_id = p.id AND pt.tag_id = p_tag_id))
@@ -664,14 +763,13 @@ AS $function$
     AND (p_created_to   IS NULL OR p.created_at::date <= p_created_to)
     -- Classificação vigente (fonte única) e funções derivadas
     AND (p_classification IS NULL
-         OR (p_classification = 'none'   AND person_classification_value(p.id) IS NULL)
-         OR (p_classification IN ('visitor', 'member') AND person_classification_value(p.id) = p_classification))
+         OR (p_classification = 'none'   AND p.id NOT IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls IS NOT NULL))
+         OR (p_classification IN ('visitor', 'member') AND p.id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls = p_classification)))
     AND (p_role IS NULL
-         OR (p_role = 'member_only'      AND person_classification_value(p.id) = 'member' AND person_roles(p.id) = '[]'::jsonb)
-         OR (p_role = 'volunteer'        AND EXISTS (SELECT 1 FROM jsonb_array_elements(person_roles(p.id)) x WHERE x->>'role' = 'volunteer'))
-         OR (p_role = 'leader'           AND EXISTS (SELECT 1 FROM jsonb_array_elements(person_roles(p.id)) x WHERE x->>'role' = 'leader'))
-         OR (p_role = 'leader_volunteer' AND EXISTS (SELECT 1 FROM jsonb_array_elements(person_roles(p.id)) x WHERE x->>'role' = 'leader')
-                                         AND EXISTS (SELECT 1 FROM jsonb_array_elements(person_roles(p.id)) x WHERE x->>'role' = 'volunteer')))
+         OR (p_role = 'member_only'      AND p.id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls = 'member' AND pc.roles = '[]'::jsonb))
+         OR (p_role = 'volunteer'        AND p.id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.roles @> '[{"role":"volunteer"}]'))
+         OR (p_role = 'leader'           AND p.id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.roles @> '[{"role":"leader"}]'))
+         OR (p_role = 'leader_volunteer' AND p.id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.roles @> '[{"role":"leader"}]' AND pc.roles @> '[{"role":"volunteer"}]')))
     AND (cfg.q IS NULL
          OR p.name_sort ILIKE '%' || cfg.q || '%'
          OR p.phone ILIKE '%' || cfg.q || '%'
@@ -866,6 +964,21 @@ BEGIN
        WHERE v.church_id = p_church_id AND v.is_active = true AND v.person_id IN (SELECT id FROM filtered)
     ) s GROUP BY s.person_id
   ),
+  legacy_cls AS (
+    -- derivada do legado em lote (mesma regra de person_legacy_classification)
+    SELECT f.id AS person_id,
+      CASE
+        WHEN EXISTS (SELECT 1 FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = f.id AND t.category = 'person_type' AND t.name = 'Membro')
+          OR EXISTS (SELECT 1 FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = f.id AND ps.stage_key IN ('membro','membro_afastado','lider','voluntario'))
+          OR EXISTS (SELECT 1 FROM roles_agg ra WHERE ra.person_id = f.id)
+          OR EXISTS (SELECT 1 FROM ministry_members mm WHERE mm.person_id = f.id AND mm.role::text IN ('lider','coordenador'))
+        THEN 'member'
+        WHEN EXISTS (SELECT 1 FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = f.id AND t.category = 'person_type' AND t.name = 'Visitante')
+          OR EXISTS (SELECT 1 FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = f.id AND ps.stage_key = 'visitante')
+        THEN 'visitor'
+      END AS cls
+    FROM filtered f
+  ),
   rows_ AS (
     SELECT jsonb_build_object(
       'id',               p.id,
@@ -877,10 +990,11 @@ BEGIN
       'care_state',       person_care_state(p.id),
       'care_alert',       person_care_alert(p.id),
       'classification',   person_classification_build(
-                            CASE WHEN p.classification_set_at IS NOT NULL AND p.membership_status IN ('visitor','member') THEN p.membership_status END,
+                            COALESCE(CASE WHEN p.classification_set_at IS NOT NULL AND p.membership_status IN ('visitor','member') THEN p.membership_status END, lg.cls),
                             COALESCE(ra.roles, '[]'::jsonb),
                             (SELECT ps.stage_key FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p.id AND pp.church_id = p_church_id LIMIT 1),
-                            (SELECT ps.name FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p.id AND pp.church_id = p_church_id LIMIT 1)),
+                            (SELECT ps.name FROM person_pipeline pp JOIN pipeline_stages ps ON ps.id = pp.stage_id WHERE pp.person_id = p.id AND pp.church_id = p_church_id LIMIT 1),
+                            CASE WHEN p.classification_set_at IS NOT NULL AND p.membership_status IN ('visitor','member') THEN 'validated' WHEN lg.cls IS NOT NULL THEN 'legacy' END),
       -- Unidade OPERACIONAL canônica (mesma regra do filtro da tela: people_operational_unit + cutoff da igreja).
       -- unit_id cadastral é mantido só como referência; a coluna "Unidade" do CSV usa unit_name (operacional).
       'unit_id',          p.unit_id,
@@ -898,6 +1012,7 @@ BEGIN
     LEFT JOIN contacts_agg  ca ON ca.person_id = p.id
     LEFT JOIN ministries_agg ma ON ma.person_id = p.id
     LEFT JOIN roles_agg ra ON ra.person_id = p.id
+    LEFT JOIN legacy_cls lg ON lg.person_id = p.id
   )
   SELECT jsonb_build_object(
     'total',        (SELECT COUNT(*) FROM rows_),
@@ -949,14 +1064,16 @@ BEGIN
         'leader',           COUNT(*) FILTER (WHERE roles @> '[{"role":"leader"}]'),
         'volunteer',        COUNT(*) FILTER (WHERE roles @> '[{"role":"volunteer"}]'),
         'leader_volunteer', COUNT(*) FILTER (WHERE roles @> '[{"role":"leader"}]' AND roles @> '[{"role":"volunteer"}]'))
-      FROM (SELECT person_classification_value(id) cls, person_roles(id) roles FROM base) b),
+      FROM (SELECT pc.cls, pc.roles FROM base JOIN person_classification_rows(p_church_id) pc ON pc.person_id = base.id) b),
     'stages', COALESCE((
       SELECT jsonb_agg(jsonb_build_object(
                'stage_id', s.id, 'stage_key', s.stage_key, 'name', s.name,
                'order_index', s.order_index, 'cnt', COALESCE(c.cnt, 0))
              ORDER BY s.order_index)
       FROM pipeline_stages s
-      LEFT JOIN (SELECT stage_id, COUNT(*) cnt FROM base WHERE stage_id IS NOT NULL GROUP BY stage_id) c
+      LEFT JOIN (SELECT stage_id, COUNT(*) cnt FROM base WHERE stage_id IS NOT NULL
+                   AND NOT (stage_key = 'visitante' AND id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls = 'member'))   -- badge Visitante sem Membros identificados
+                 GROUP BY stage_id) c
              ON c.stage_id = s.id
       WHERE s.church_id = p_church_id AND s.is_active
     ), '[]'::jsonb)
@@ -1012,10 +1129,10 @@ BEGIN
     'total',              (SELECT COUNT(*) FROM base),
     'sem_etapa',          (SELECT COUNT(*) FROM base WHERE stage_id IS NULL),
     'novos_semana',       (SELECT COUNT(*) FROM base WHERE created_at >= NOW() - INTERVAL '7 days'),
-    'visitantes_30d',     (SELECT COUNT(*) FROM base WHERE person_classification_value(id) = 'visitor'
+    'visitantes_30d',     (SELECT COUNT(*) FROM base WHERE id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls = 'visitor')
                              AND (first_visit_date >= CURRENT_DATE - 30
                                   OR (first_visit_date IS NULL AND created_at >= NOW() - INTERVAL '30 days'))),
-    'membros',            (SELECT COUNT(*) FROM base WHERE person_classification_value(id) = 'member'),
+    'membros',            (SELECT COUNT(*) FROM base WHERE id IN (SELECT pc.person_id FROM person_classification_rows(p_church_id) pc WHERE pc.cls = 'member')),
     'novos_convertidos',  (SELECT COUNT(*) FROM base WHERE stage_key = 'novo_convertido'),
     'novos_convertidos_30d', (SELECT COUNT(*) FROM base WHERE stage_key = 'novo_convertido'
                              AND entered_at >= NOW() - INTERVAL '30 days'),

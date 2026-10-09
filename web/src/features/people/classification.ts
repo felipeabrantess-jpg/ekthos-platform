@@ -14,6 +14,8 @@ export interface PersonRole {
 
 export interface PersonClassification {
   classification: Classification
+  /** 'validated' = decisão registrada; 'legacy' = derivada das evidências do legado (transição, só leitura); null = sem evidência */
+  source?: 'validated' | 'legacy' | null
   is_leader: boolean
   is_volunteer: boolean
   roles: PersonRole[]

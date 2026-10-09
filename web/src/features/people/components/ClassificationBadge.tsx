@@ -11,7 +11,8 @@ export function ClassificationBadge({ value, showRoles = true, size = 'sm' }: { 
       <span
         className={`inline-flex items-center rounded-full font-semibold ${size === 'md' ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[10px]'}`}
         style={{ color: b.color, background: b.bg }}
-        title={roles.length ? roles.map(r => `${ROLE_BASIS_LABEL[r.basis] ?? r.role}${r.ref_name ? `: ${r.ref_name}` : ''}`).join(' · ') : undefined}
+        title={[value?.source === 'legacy' ? 'Classificação derivada do cadastro antigo (ainda não validada)' : value?.source === 'validated' ? 'Classificação validada' : null, ...roles.map(r => `${ROLE_BASIS_LABEL[r.basis] ?? r.role}${r.ref_name ? `: ${r.ref_name}` : ''}`)].filter(Boolean).join(' · ') || undefined}
+        data-source={value?.source ?? 'none'}
       >
         {b.label}
       </span>
