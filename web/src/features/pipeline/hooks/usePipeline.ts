@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { classificationErrorMessage } from '@/features/people/classification'
 import type { PipelineStage, PersonWithStage } from '@/lib/types/joins'
 
 // Returns stages ordered by order_index
@@ -75,43 +76,12 @@ export function useMovePersonToStage() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ personId, newStageId, churchId }: MovePersonInput) => {
-      const now = new Date().toISOString()
-
-      // Get current stage for history record
+    // Release 1: arrastar no Kanban chama person_set_stage (permissão por escopo, no-op se igual,
+    // histórico automático, CLASSIFICATION_REQUIRED/STAGE_CONFLICT quando a etapa contradiz a classificação).
+    mutationFn: async ({ personId, newStageId }: MovePersonInput) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: existing } = await (supabase as any)
-        .from('person_pipeline')
-        .select('id, stage_id')
-        .eq('person_id', personId)
-        .eq('church_id', churchId)
-        .maybeSingle() as { data: { id: string; stage_id: string } | null }
-
-      if (existing) {
-        // Update position — reset entered_at so SLA counts from this move
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
-          .from('person_pipeline')
-          .update({ stage_id: newStageId, entered_at: now, last_activity_at: now })
-          .eq('person_id', personId)
-          .eq('church_id', churchId)
-
-        if (error) throw new Error((error as Error).message)
-      } else {
-        // First time entering pipeline
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any)
-          .from('person_pipeline')
-          .insert({ church_id: churchId, person_id: personId, stage_id: newStageId, entered_at: now, last_activity_at: now, notes: null })
-
-        if (error) throw new Error((error as Error).message)
-      }
-
-      // Record history (fire-and-forget — não bloqueia a UI se falhar)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from('pipeline_history')
-        .insert({ church_id: churchId, person_id: personId, from_stage_id: existing?.stage_id ?? null, to_stage_id: newStageId, moved_at: now })
+      const { error } = await (supabase.rpc as any)('person_set_stage', { p_person_id: personId, p_stage_id: newStageId, p_reason: null })
+      if (error) throw new Error(classificationErrorMessage(error) ?? (error as Error).message)
     },
     onSuccess: (_data, { churchId }) => {
       void queryClient.invalidateQueries({ queryKey: ['pipeline-board',  churchId] })

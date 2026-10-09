@@ -42,6 +42,9 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
   }, [onClose])
 
   const typeTagIds = new Set(allTags.filter(isPersonTypeTag).map((t) => t.id))
+  // Release 1: o tipo de pessoa virou "Classificação" (campo próprio, RPC person_set_classification).
+  // Etiquetas de tipo não são mais oferecidas; as já atribuídas ficam intactas (só leitura) e são mantidas ao salvar.
+  const visibleTags = allTags.filter((t) => !isPersonTypeTag(t))
 
   function toggle(tagId: string) {
     setSelected((prev) => {
@@ -108,7 +111,7 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
 
         {/* Body */}
         <div className="px-5 py-4 overflow-y-auto" style={{ maxHeight: '60vh' }}>
-          {allTags.length === 0 ? (
+          {visibleTags.length === 0 ? (
             <div className="py-6 text-center space-y-3">
               <p className="text-sm text-text-secondary">
                 Nenhuma flag criada ainda.
@@ -123,7 +126,7 @@ export function TagEditModal({ person, allTags, onClose }: TagEditModalProps) {
             </div>
           ) : (
             <ul className="space-y-1" role="group" aria-label="Tipo da pessoa (apenas um)">
-              {allTags.map((tag) => {
+              {visibleTags.map((tag) => {
                 const active = selected.has(tag.id)
                 const single = isPersonTypeTag(tag)
                 return (

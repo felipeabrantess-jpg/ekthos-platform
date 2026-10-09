@@ -29,7 +29,8 @@ import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
 import { ImportacaoMembros } from '@/features/people/components/ImportacaoMembros'
-import { TagBadgesCell } from '@/features/people/components/TagBadgesCell'
+import { ClassificationBadge } from '@/features/people/components/ClassificationBadge'
+import { CLASSIFICATION_LABEL, ROLE_FILTER_LABEL, type ClassificationFilter, type RoleFilter, type PersonClassification } from '@/features/people/classification'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -136,7 +137,7 @@ interface PersonCardMobileProps {
   showCareBadge?: boolean
 }
 
-function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge }: PersonCardMobileProps) {
+function PersonCardMobile({ person, allTags: _allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge }: PersonCardMobileProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -196,7 +197,7 @@ function PersonCardMobile({ person, allTags, onView, onEdit, onDelete, onAtend, 
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <div onClick={(e) => e.stopPropagation()}>
-            <TagBadgesCell person={person} allTags={allTags} />
+            <ClassificationBadge value={(person as unknown as { classification?: PersonClassification | null }).classification} />
           </div>
           <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
             <button
@@ -242,7 +243,7 @@ interface PersonRowProps {
   contactCount?: number | null
 }
 
-function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge, contactCount }: PersonRowProps) {
+function PersonRow({ person, allTags: _allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge, contactCount }: PersonRowProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
     : null
@@ -287,7 +288,7 @@ function PersonRow({ person, allTags, onView, onEdit, onDelete, onAtend, showBir
         {formatPhone(person.phone)}
       </td>
       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-        <TagBadgesCell person={person} allTags={allTags} />
+        <ClassificationBadge value={(person as unknown as { classification?: PersonClassification | null }).classification} />
       </td>
       {showCareBadge && (
         <td className="px-4 py-3">
@@ -551,6 +552,9 @@ export default function People() {
   const [search, setSearch]             = useState('')
   const [sourceFilter, setSourceFilter] = useState<string>('')
   const [careFilter, setCareFilter]     = useState<CareFilter>('')
+  // Classificação única (Release 1): visitante / membro / não classificado + função
+  const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('')
   const [createdFrom, setCreatedFrom]   = useState('')
   const [createdTo, setCreatedTo]       = useState('')
   const [currentPage, setCurrentPage]   = useState(0)
@@ -589,6 +593,8 @@ export default function People() {
     unit:        selectedUnit,
     stageKey:    activeStageKey,
     careStatus:  careFilter || undefined,
+    classification: classificationFilter || undefined,
+    role:        roleFilter || undefined,
     source:      sourceFilter || undefined,
     search:      search || undefined,
     birthMonth:  isBirthdayTab ? currentMonth : undefined,
@@ -610,6 +616,7 @@ export default function People() {
   const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '', {
     unit: pageFilters.unit, stageKey: pageFilters.stageKey, source: pageFilters.source, search: pageFilters.search,
     birthMonth: pageFilters.birthMonth, createdFrom: pageFilters.createdFrom, createdTo: pageFilters.createdTo,
+    classification: pageFilters.classification, role: pageFilters.role,
   })
   const { data: allTags = [] } = useTags(churchId ?? '')
   const deletePerson = useDeletePerson()
@@ -733,7 +740,7 @@ export default function People() {
           <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
           <p className="text-xs md:text-sm text-text-secondary mt-1">
             {pageData
-              ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${!isGeralTab ? ` · ${activeTabLabel}` : ''}`
+              ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${!isGeralTab ? ` · ${activeTabLabel}` : ''}${classificationFilter ? ` · ${CLASSIFICATION_LABEL[classificationFilter]}` : ''}`
               : 'Carregando...'}
           </p>
         </div>
@@ -881,6 +888,48 @@ export default function People() {
         </div>
       )}
 
+      {/* Classificação única (Release 1): Visitantes · Membros · Não classificados; funções só para Membros */}
+      {showFilters && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="classificacao-filtros">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Classificação:</span>
+            {([
+              { value: '',        label: 'Todas' },
+              { value: 'visitor', label: `Visitantes (${stageCounts?.classificacao?.visitor ?? '…'})` },
+              { value: 'member',  label: `Membros (${stageCounts?.classificacao?.member ?? '…'})` },
+              { value: 'none',    label: `Não classificados (${stageCounts?.classificacao?.none ?? '…'})` },
+            ] as const).map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                data-testid={`classificacao-${opt.value || 'todas'}`}
+                onClick={() => { setClassificationFilter(opt.value as ClassificationFilter); if (opt.value !== 'member') setRoleFilter(''); setCurrentPage(0) }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                  classificationFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
+                }`}
+                style={classificationFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {classificationFilter === 'member' && (
+            <select
+              value={roleFilter}
+              data-testid="funcao-filtro"
+              onChange={e => { setRoleFilter(e.target.value as RoleFilter); setCurrentPage(0) }}
+              className="px-3 py-1.5 rounded-xl border border-border-default bg-white text-xs text-text-secondary hover:bg-bg-hover transition-colors"
+            >
+              <option value="">Todos os membros ({stageCounts?.classificacao?.member ?? '…'})</option>
+              <option value="member_only">{ROLE_FILTER_LABEL.member_only} ({stageCounts?.classificacao?.member_only ?? '…'})</option>
+              <option value="volunteer">{ROLE_FILTER_LABEL.volunteer} ({stageCounts?.classificacao?.volunteer ?? '…'})</option>
+              <option value="leader">{ROLE_FILTER_LABEL.leader} ({stageCounts?.classificacao?.leader ?? '…'})</option>
+              <option value="leader_volunteer">{ROLE_FILTER_LABEL.leader_volunteer} ({stageCounts?.classificacao?.leader_volunteer ?? '…'})</option>
+            </select>
+          )}
+        </div>
+      )}
+
       {/* Atendimento — ESTADOS (exclusivos, somam o total da lista) × ALERTA (sobrepõe, não soma).
           Contadores calculados no banco sobre o MESMO universo da lista (filtros acima). */}
       {showFilters && (
@@ -1012,7 +1061,7 @@ export default function People() {
                       <tr className="bg-bg-hover border-b border-border-default">
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Tipos</th>
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Classificação</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Atendimento</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest text-center" title="Contatos pastorais registrados">Contatos</th>
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>

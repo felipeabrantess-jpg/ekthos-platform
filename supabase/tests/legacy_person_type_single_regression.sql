@@ -1,3 +1,5 @@
+-- [SUPERSEDIDA pelo Release 1 (classificação única, migration 20261009100000): etiquetas de tipo (person_type) deixaram de ser atribuíveis;
+-- esta suíte cobria a Frente 2 (tipo único por etiqueta) e é mantida só como histórico. Não executar após o Release 1.]
 -- ============================================================
 -- Regressão — Tipo da pessoa: no máximo UM tipo (migration 20261004100000)
 -- Roda inteira em BEGIN … ROLLBACK: nada persiste. Pessoas e etiquetas sintéticas (ZZ-TIPO).
@@ -52,6 +54,7 @@ INSERT INTO tags (church_id, name, color, sort_order, category) SELECT c1, 'ZZ-T
 INSERT INTO tags (church_id, name, color, sort_order) SELECT c2, 'ZZ-TIPO Outra Igreja', '#333333', 1 FROM _c;
 UPDATE _c SET g1 = (SELECT id FROM tags WHERE name = 'ZZ-TIPO Geral 1'), g2 = (SELECT id FROM tags WHERE name = 'ZZ-TIPO Geral 2'), t_outra = (SELECT id FROM tags WHERE name = 'ZZ-TIPO Outra Igreja');
 -- etapa + atendimento da pessoa de Itaipu: Membro, com jornada e um contato (para provar que nada disso muda)
+SELECT set_config('ekthos.pipeline_write', 'rpc', true);
 INSERT INTO person_pipeline (church_id, person_id, stage_id, entered_at, last_activity_at) SELECT c1, p_ita, s_mem, now(), now() FROM _c;
 INSERT INTO person_tags (person_id, tag_id, church_id) SELECT p_ita, t_mem, c1 FROM _c;
 INSERT INTO person_tags (person_id, tag_id, church_id) SELECT p_tri, t_vis, c1 FROM _c;
@@ -179,6 +182,7 @@ BEGIN
     (SELECT left_at = '2026-05-01'::timestamptz AND left_reason = 'mudou' FROM people WHERE id = c.p_des), NULL);
 
   -- 20–22. etapa × tipo: dimensões independentes
+  PERFORM set_config('ekthos.pipeline_write', 'rpc', true);
   UPDATE person_pipeline SET stage_id = c.s_vis, entered_at = now(), last_activity_at = now() WHERE person_id = c.p_ita;
   GET DIAGNOSTICS n = ROW_COUNT;
   SELECT string_agg(t.name, '+') INTO tipos FROM person_tags pt JOIN tags t ON t.id = pt.tag_id WHERE pt.person_id = c.p_ita;

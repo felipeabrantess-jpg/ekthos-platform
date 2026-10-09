@@ -14,6 +14,7 @@
 import { getCareStatusBadge } from './hooks/useAcolhimentoStatus'
 import { resultLabel, channelLabel } from '@/features/atendimento/contactLabels'
 import { UNIT_ALL, UNIT_NONE, type UnitScope } from '@/lib/filters/unitScope'
+import { classificationLabel, ROLE_BASIS_LABEL, type PersonClassification } from './classification'
 
 export interface ExportContact {
   ordinal: number
@@ -34,6 +35,8 @@ export interface ExportRow {
   etapa: string | null
   care_state: string | null
   care_alert: boolean
+  /** classificação única + funções (Release 1) */
+  classification?: PersonClassification | null
   /** unidade cadastral (referência) */
   unit_id: string | null
   /** unidade OPERACIONAL (cutoff aplicado no banco) — é a que vai para a coluna "Unidade" */
@@ -79,7 +82,7 @@ export const ordinalLabel = (n: number) => `${n}º contato`
 
 export function buildPeopleHeader(maxContacts: number, alertHours = 48): string[] {
   const header = [
-    'Nome', 'Telefone', 'Email', 'Etapa', 'Atendimento', `Sem contato +${alertHours}h`, 'Unidade', 'Ministérios',
+    'Nome', 'Telefone', 'Email', 'Classificação', 'Funções', 'Etapa', 'Atendimento', `Sem contato +${alertHours}h`, 'Unidade', 'Ministérios',
     'Primeira visita', 'Cadastro', 'Origem', 'Qtd contatos',
   ]
   for (let n = 1; n <= maxContacts; n++) {
@@ -90,7 +93,10 @@ export function buildPeopleHeader(maxContacts: number, alertHours = 48): string[
 
 export function buildPeopleRow(r: ExportRow, maxContacts: number): string[] {
   const row = [
-    r.name ?? '', r.phone ?? '', r.email ?? '', r.etapa ?? '',
+    r.name ?? '', r.phone ?? '', r.email ?? '',
+    classificationLabel(r.classification),
+    (r.classification?.roles ?? []).map(x => `${ROLE_BASIS_LABEL[x.basis] ?? x.role}${x.ref_name ? ` (${x.ref_name})` : ''}`).join(' | '),
+    r.etapa ?? '',
     getCareStatusBadge(r.care_state)?.label ?? 'Não atendida',
     r.care_alert ? 'Sim' : 'Não',
     r.unit_name ?? '', r.ministerios ?? '',
