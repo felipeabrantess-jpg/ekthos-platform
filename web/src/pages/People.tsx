@@ -955,6 +955,7 @@ export default function People() {
                 type="button"
                 data-testid={`classificacao-${opt.value || 'todas'}`}
                 onClick={() => selectClassification(opt.value as ClassificationFilter)}
+                aria-label={opt.label}
                 title={opt.value ? 'Total na unidade selecionada. Se a aba atual não comporta esta classificação, a lista passa para "Visão geral" (a unidade não muda).' : undefined}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
                   classificationFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
