@@ -438,9 +438,19 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
       if (isEdit && person) {
         await updatePerson.mutateAsync({ id: person.id, church_id: churchId, ...payload })
         savedPersonId = person.id
-        // Atualiza etapa se selecionada
-        if (form.stage_id) {
-          await updatePipelineStage.mutateAsync({ personId: person.id, stageId: form.stage_id, churchId })
+        // Etapa: só pelo fluxo autorizado (person_set_stage) e SOMENTE se mudou. Reenviar a mesma etapa é
+        // desnecessário e falha para perfis sem escopo de etapa (ex.: líder de célula), bloqueando o salvamento
+        // de dados cadastrais que já foram gravados acima.
+        const originalStageId = (person as { person_pipeline?: Array<{ stage_id?: string | null }> } | null | undefined)?.person_pipeline?.[0]?.stage_id ?? ''
+        if (form.stage_id && form.stage_id !== originalStageId) {
+          try {
+            await updatePipelineStage.mutateAsync({ personId: person.id, stageId: form.stage_id, churchId })
+          } catch (err) {
+            setActiveTab('eclesiastico')
+            setError(`Os dados cadastrais foram salvos, mas a etapa não foi alterada: ${err instanceof Error ? err.message : 'erro desconhecido'}`)
+            void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+            return
+          }
         }
       } else {
         const created = await createPerson.mutateAsync({ church_id: churchId, source: 'manual', ...payload, name: form.name.trim() })
