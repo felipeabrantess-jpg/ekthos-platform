@@ -30,6 +30,7 @@ import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
 import { ImportacaoMembros } from '@/features/people/components/ImportacaoMembros'
 import { ClassificationBadge } from '@/features/people/components/ClassificationBadge'
+import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { CLASSIFICATION_LABEL, ROLE_FILTER_LABEL, type ClassificationFilter, type RoleFilter, type PersonClassification } from '@/features/people/classification'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
@@ -537,9 +538,9 @@ export default function People() {
   const isBirthdayTab  = activeTab === 'aniversarios'
   const isGeralTab     = activeTab === 'geral'
 
-  function setActiveTab(tab: PeopleTab) {
+  function setActiveTab(tab: PeopleTab, opts: { keepSearch?: boolean } = {}) {
     setActiveTabState(tab)
-    setSearch('')
+    if (!opts.keepSearch) setSearch('')
     setCurrentPage(0)
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
@@ -635,6 +636,55 @@ export default function People() {
     return list
   }, [stageCounts])
   const activeTabLabel = tabs.find(t => t.id === activeTab)?.label ?? 'Pessoas'
+
+  // ── Compatibilidade aba (etapa) × classificação ───────────────────────────
+  // Regra do banco (pipeline_stages.requires_classification, Release 1): uma etapa que exige
+  // 'member' só contém membros; uma que exige 'visitor' só contém visitantes. Logo "aba Visitante +
+  // Membros" ou "aba Membro + Não classificados" são vazias POR REGRA, não por dado. Para que cada
+  // classificação sempre mostre sua relação, a seleção incompatível leva a aba para "Visão geral"
+  // (unidade, estado, origem, cadastro e busca são preservados); e trocar para uma aba incompatível
+  // limpa só a classificação. Nada é escrito; a regra continua no banco (lida de pipeline_stages).
+  const { data: pipelineStages } = usePipelineStages(churchId ?? '')
+  const stageRequires = useMemo(() => {
+    const map: Record<string, 'member' | 'visitor' | null> = {}
+    for (const st of (pipelineStages ?? []) as unknown as { stage_key?: string | null; requires_classification?: 'member' | 'visitor' | null }[]) {
+      if (st.stage_key) map[st.stage_key] = st.requires_classification ?? null
+    }
+    return map
+  }, [pipelineStages])
+  function isCompatible(stageKey: string | undefined, cls: ClassificationFilter): boolean {
+    if (!stageKey || stageKey === STAGE_KEY_NONE || !cls) return true
+    const required = stageRequires[stageKey]
+    return required == null ? true : required === cls
+  }
+  function selectClassification(value: ClassificationFilter) {
+    setClassificationFilter(value)
+    if (value !== 'member') setRoleFilter('')
+    setCurrentPage(0)
+    if (!isCompatible(activeStageKey, value)) setActiveTab('geral', { keepSearch: true })
+  }
+  function selectTab(tab: PeopleTab) {
+    setActiveTab(tab)
+    if (!isCompatible(tabToStageKey(tab), classificationFilter)) { setClassificationFilter(''); setRoleFilter('') }
+  }
+  // Filtros ativos (para o estado vazio) e limpeza — a unidade e a aba NÃO são tocadas
+  const CARE_FILTER_LABEL: Record<Exclude<CareFilter, ''>, string> = {
+    nao_atendida: 'Não atendida', em_atendimento: 'Em atendimento', atendida: 'Atendida', cancelado: 'Cancelado',
+    sem_contato_48h: `Sem contato +${careStatusData?.alertThresholdHours ?? 48}h`,
+  }
+  const activeFilterLabels: string[] = [
+    classificationFilter ? CLASSIFICATION_LABEL[classificationFilter] : '',
+    roleFilter ? ROLE_FILTER_LABEL[roleFilter] : '',
+    careFilter ? CARE_FILTER_LABEL[careFilter] : '',
+    sourceFilter ? `Origem: ${sourceFilter === 'qr_code' ? 'QR Code' : sourceFilter === 'manual' ? 'Manual' : sourceFilter === 'import_xlsx' ? 'Importação' : sourceFilter}` : '',
+    activeStageKey === 'visitante' && dateFilter !== 'all' && dateFilter !== 'custom' ? `Período: ${dateFilter} dias` : '',
+    (activeStageKey !== 'visitante' || dateFilter === 'custom') && (createdFrom || createdTo) ? `Cadastro: ${createdFrom || '…'} – ${createdTo || '…'}` : '',
+    search ? `Busca: "${search}"` : '',
+  ].filter(Boolean)
+  function clearFilters() {
+    setClassificationFilter(''); setRoleFilter(''); setCareFilter(''); setSourceFilter('')
+    setCreatedFrom(''); setCreatedTo(''); setSearch(''); setDateFilter('all'); setCurrentPage(0)
+  }
 
   // Nº de contatos pastorais por pessoa (ids da página atual)
   const visibleIds = useMemo(() => items.map(p => p.id), [items])
@@ -769,7 +819,7 @@ export default function People() {
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => selectTab(tab.id)}
             className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-primary text-primary-text'
@@ -893,7 +943,7 @@ export default function People() {
       {showFilters && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="classificacao-filtros">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Classificação:</span>
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses são totais da unidade selecionada; o total da lista atual (com aba, estado e busca) aparece no cabeçalho da página.">Classificação:</span>
             {([
               { value: '',        label: 'Todas' },
               { value: 'visitor', label: `Visitantes (${stageCounts?.classificacao?.visitor ?? '…'})` },
@@ -904,7 +954,8 @@ export default function People() {
                 key={opt.value}
                 type="button"
                 data-testid={`classificacao-${opt.value || 'todas'}`}
-                onClick={() => { setClassificationFilter(opt.value as ClassificationFilter); if (opt.value !== 'member') setRoleFilter(''); setCurrentPage(0) }}
+                onClick={() => selectClassification(opt.value as ClassificationFilter)}
+                title={opt.value ? 'Total na unidade selecionada. Se a aba atual não comporta esta classificação, a lista passa para "Visão geral" (a unidade não muda).' : undefined}
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
                   classificationFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
                 }`}
@@ -986,8 +1037,12 @@ export default function People() {
         <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
           <EmptyState
             title={search ? 'Nenhuma pessoa encontrada' : isBirthdayTab ? 'Nenhum aniversariante este mês' : `Nenhuma pessoa em "${activeTabLabel}"`}
-            description={search ? 'Tente buscar por outro nome ou telefone.' : 'Ajuste os filtros ou a unidade selecionada no topo da página.'}
-            action={isGeralTab && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
+            description={activeFilterLabels.length > 0
+              ? `Filtros ativos: ${activeFilterLabels.join(' · ')}. A unidade selecionada no topo também limita a lista.`
+              : search ? 'Tente buscar por outro nome ou telefone.' : 'Ajuste os filtros ou a unidade selecionada no topo da página.'}
+            action={activeFilterLabels.length > 0
+              ? <Button variant="secondary" data-testid="btn-limpar-filtros" onClick={clearFilters}>Limpar filtros</Button>
+              : isGeralTab && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
           />
         </div>
       ) : (
