@@ -34,7 +34,10 @@ export interface ExportRow {
   etapa: string | null
   care_state: string | null
   care_alert: boolean
+  /** unidade cadastral (referência) */
   unit_id: string | null
+  /** unidade OPERACIONAL (cutoff aplicado no banco) — é a que vai para a coluna "Unidade" */
+  unit_operational_id?: string | null
   unit_name: string | null
   first_visit_date: string | null
   created_at: string

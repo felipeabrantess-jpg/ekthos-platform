@@ -18,6 +18,8 @@
 -- get_person_contacts (profiles → auth.users → Agente/Sistema); nunca o owner.
 -- Ministério = ministry_members ⟶ ministries (nunca volunteers), ordenado por
 -- nome e concatenado com " | ".
+-- Unidade = unidade OPERACIONAL (people_operational_unit com o cutoff da igreja), a
+-- mesma do filtro da tela; cadastros anteriores ao cutoff ficam sem unidade.
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.export_people_rows(
@@ -41,8 +43,10 @@ SET search_path TO 'public'
 AS $function$
 DECLARE
   v_result jsonb;
+  v_cutoff date;
 BEGIN
   PERFORM assert_church_access(p_church_id);
+  SELECT unit_cutoff_date INTO v_cutoff FROM churches WHERE id = p_church_id;
 
   WITH filtered AS (
     -- Exatamente o universo de get_people_page (mesmos filtros + estado/alerta)
@@ -107,8 +111,11 @@ BEGIN
                             WHERE pp.person_id = p.id AND pp.church_id = p_church_id LIMIT 1),
       'care_state',       person_care_state(p.id),
       'care_alert',       person_care_alert(p.id),
+      -- Unidade OPERACIONAL canônica (mesma regra do filtro da tela: people_operational_unit + cutoff da igreja).
+      -- unit_id cadastral é mantido só como referência; a coluna "Unidade" do CSV usa unit_name (operacional).
       'unit_id',          p.unit_id,
-      'unit_name',        (SELECT cu.name FROM church_units cu WHERE cu.id = p.unit_id),
+      'unit_operational_id', people_operational_unit(p.unit_id, p.created_at, v_cutoff),
+      'unit_name',        (SELECT cu.name FROM church_units cu WHERE cu.id = people_operational_unit(p.unit_id, p.created_at, v_cutoff)),
       'first_visit_date', p.first_visit_date,
       'created_at',       p.created_at,
       'source',           p.source,

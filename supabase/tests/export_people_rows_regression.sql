@@ -33,8 +33,12 @@ INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
 SELECT c1, 'ZZ-CSV Dois Contatos', '+55 20 99930-0003', 'manual', NULL, '2026-09-03T12:00:00Z' FROM _c;
 INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
 SELECT c1, 'ZZ-CSV Tres Contatos Multi', '+55 20 99930-0004', 'manual', itaipu, '2026-09-04T12:00:00Z' FROM _c;
-INSERT INTO people (church_id, name, phone, source)
-SELECT c2, 'ZZ-CSV Outra Igreja', '+55 20 99930-0005', 'manual' FROM _c;
+INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
+SELECT c1, 'ZZ-CSV Antes Cutoff', '+55 20 99930-0006', 'manual', itaipu, '2026-05-01T12:00:00Z' FROM _c;
+-- igreja c2 SEM cutoff: unidade sintética e pessoa cadastrada antes de 28/06 → unidade operacional = cadastral
+INSERT INTO church_units (church_id, name, slug, is_active) SELECT c2, 'ZZ-CSV Unidade C2', 'zz-csv-unidade-c2', true FROM _c;
+INSERT INTO people (church_id, name, phone, source, unit_id, created_at)
+SELECT c2, 'ZZ-CSV Outra Igreja', '+55 20 99930-0005', 'manual', (SELECT id FROM church_units WHERE name = 'ZZ-CSV Unidade C2'), '2026-05-01T12:00:00Z' FROM _c;
 CREATE TEMP TABLE _p ON COMMIT DROP AS SELECT id, name, church_id FROM people WHERE name LIKE 'ZZ-CSV %';
 GRANT ALL ON _p TO authenticated, anon;
 -- Ministérios: pessoa 4 em dois; pessoa 2 em um; demais sem
@@ -68,6 +72,7 @@ DECLARE p3 uuid;
 BEGIN
   SELECT id INTO p3 FROM _p WHERE name LIKE 'ZZ-CSV Tres%';
   PERFORM journey_register_attendance(p_person_id => p3, p_expected_version => 2, p_contact_channel => 'presencial', p_contact_result => 'realizado', p_contact_date => '2026-09-15T10:00:00Z', p_register_contact => true);
+  PERFORM journey_register_attendance(p_person_id => p3, p_expected_version => 3, p_contact_channel => 'whatsapp', p_contact_result => 'reagendado', p_contact_date => '2026-09-01T08:00:00Z', p_register_contact => true);
 END $$;
 SELECT set_config('request.jwt.claims', json_build_object('sub', (SELECT adm FROM _c), 'role', 'authenticated',
        'app_metadata', json_build_object('church_id', (SELECT c1 FROM _c)))::text, true);
@@ -114,7 +119,7 @@ BEGIN
 
   -- 9–12, 14–17: pessoas sintéticas (busca)
   j := export_people_rows(c.c1, p_search => 'ZZ-CSV');
-  n := n + 1; INSERT INTO _r VALUES (n, 'busca ZZ-CSV: 4 pessoas (a de outra igreja NÃO aparece); max_contacts = 3', (j->>'total')::int = 4 AND (j->>'max_contacts')::int = 3
+  n := n + 1; INSERT INTO _r VALUES (n, 'busca ZZ-CSV: 5 pessoas (a de outra igreja NÃO aparece); max_contacts = 4', (j->>'total')::int = 5 AND (j->>'max_contacts')::int = 4
     AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(j->'rows') x WHERE x->>'name' = 'ZZ-CSV Outra Igreja'), j->>'total' || '/' || (j->>'max_contacts'));
 
   SELECT x INTO r FROM jsonb_array_elements(j->'rows') x WHERE x->>'name' LIKE 'ZZ-CSV Zero%';
@@ -133,9 +138,13 @@ BEGIN
     AND r->'contacts'->1->>'notes' = 'ok' AND r->>'unit_name' IS NULL AND r->>'care_state' = 'em_atendimento', r::text);
 
   SELECT x INTO r FROM jsonb_array_elements(j->'rows') x WHERE x->>'name' LIKE 'ZZ-CSV Tres%';
-  n := n + 1; INSERT INTO _r VALUES (n, '12/14/16. 3 contatos: 3º por OUTRO ator (admin_departments) com o nome dele; 2 ministérios concatenados em ordem alfabética',
-    (r->>'contacts_count')::int = 3 AND r->'contacts'->2->>'ordinal' = '3' AND r->'contacts'->2->>'actor_id' = c.adm2::text AND r->'contacts'->2->>'actor_name' = nome_adm2
-    AND r->'contacts'->0->>'actor_name' = nome_adm AND r->>'ministerios' = 'ZZ-CSV Acolhimento | ZZ-CSV Louvor', r::text);
+  n := n + 1; INSERT INTO _r VALUES (n, '12/14/16. 4 contatos com datas distintas (na MESMA transação o created_at empata e o desempate canônico é contact_date, igual a get_person_contacts): contato realizado pelo OUTRO ator (admin_departments) com o nome dele; reagendado de 01/09 presente; 2 ministérios em ordem alfabética',
+    (r->>'contacts_count')::int = 4 AND jsonb_array_length(r->'contacts') = 4
+    AND EXISTS (SELECT 1 FROM jsonb_array_elements(r->'contacts') ct WHERE ct->>'result' = 'realizado' AND ct->>'actor_id' = c.adm2::text AND ct->>'actor_name' = nome_adm2)
+    AND EXISTS (SELECT 1 FROM jsonb_array_elements(r->'contacts') ct WHERE ct->>'result' = 'reagendado' AND (ct->>'contact_date')::timestamptz = '2026-09-01T08:00:00Z')
+    AND (SELECT bool_and(ct->>'actor_name' = nome_adm) FROM jsonb_array_elements(r->'contacts') ct WHERE ct->>'result' IN ('nao_atendeu','sem_resposta'))
+    AND (SELECT array_agg((ct->>'ordinal')::int ORDER BY (ct->>'ordinal')::int) FROM jsonb_array_elements(r->'contacts') ct) = ARRAY[1,2,3,4]
+    AND r->>'ministerios' = 'ZZ-CSV Acolhimento | ZZ-CSV Louvor', r::text);
 
   n := n + 1; INSERT INTO _r VALUES (n, 'responsável nunca é o owner da jornada: actor_id de cada contato = actor_id gravado em journey_events',
     (SELECT bool_and(ct->>'actor_id' = (SELECT e.actor_id::text FROM journey_events e WHERE e.id = (ct->>'event_id')::uuid))
@@ -147,16 +156,41 @@ BEGIN
 
   -- filtro de alerta dentro da busca: Zero (nunca tentada, cadastro antigo), Um (nao_atendeu antigo), Tres? última realizado → não; Dois última realizado → não
   j := export_people_rows(c.c1, p_search => 'ZZ-CSV', p_care_status => 'sem_contato_48h');
-  n := n + 1; INSERT INTO _r VALUES (n, 'alerta + busca: exporta só Zero e Um (última tentativa não atendida / nunca tentada)', (j->>'total')::int = 2
-    AND (SELECT bool_and(x->>'name' LIKE 'ZZ-CSV Zero%' OR x->>'name' LIKE 'ZZ-CSV Um %') FROM jsonb_array_elements(j->'rows') x), j->>'total');
+  n := n + 1; INSERT INTO _r VALUES (n, 'alerta + busca: exporta Zero, Um e Antes Cutoff (nunca tentadas / última não atendida)', (j->>'total')::int = 3
+    AND (SELECT bool_and(x->>'name' LIKE 'ZZ-CSV Zero%' OR x->>'name' LIKE 'ZZ-CSV Um %' OR x->>'name' LIKE 'ZZ-CSV Antes%') FROM jsonb_array_elements(j->'rows') x), j->>'total');
   j := export_people_rows(c.c1, p_search => 'ZZ-CSV', p_unit_id => c.itaipu::text);
-  n := n + 1; INSERT INTO _r VALUES (n, 'Itaipu + busca: 3 pessoas (Dois tem unidade NULL)', (j->>'total')::int = 3, j->>'total');
+  n := n + 1; INSERT INTO _r VALUES (n, 'Itaipu + busca: 3 pessoas (Dois tem unidade NULL; Antes Cutoff cai em Sem unidade)', (j->>'total')::int = 3, j->>'total');
   j := export_people_rows(c.c1, p_search => 'ZZ-CSV', p_unit_id => 'none');
-  n := n + 1; INSERT INTO _r VALUES (n, 'Sem unidade + busca: 1 pessoa (Dois)', (j->>'total')::int = 1 AND j->'rows'->0->>'name' LIKE 'ZZ-CSV Dois%', j->>'total');
+  n := n + 1; INSERT INTO _r VALUES (n, 'Sem unidade + busca: 2 pessoas (Dois sem unidade; Antes Cutoff por regra operacional)', (j->>'total')::int = 2 AND (SELECT bool_and(x->>'name' LIKE 'ZZ-CSV Dois%' OR x->>'name' LIKE 'ZZ-CSV Antes%') FROM jsonb_array_elements(j->'rows') x), j->>'total');
+
+  -- Unidade OPERACIONAL (cutoff 28/06/2026): após o cutoff = cadastral; antes = sem unidade
+  j := export_people_rows(c.c1, p_search => 'ZZ-CSV');
+  SELECT x INTO r FROM jsonb_array_elements(j->'rows') x WHERE x->>'name' LIKE 'ZZ-CSV Zero%';
+  n := n + 1; INSERT INTO _r VALUES (n, 'unidade operacional: cadastro 01/09 (após cutoff) com unit_id Itaipu → Unidade "Itaipu"', r->>'unit_name' = 'Itaipu' AND r->>'unit_operational_id' = c.itaipu::text AND r->>'unit_id' = c.itaipu::text, r->>'unit_name');
+  SELECT x INTO r FROM jsonb_array_elements(j->'rows') x WHERE x->>'name' LIKE 'ZZ-CSV Antes%';
+  n := n + 1; INSERT INTO _r VALUES (n, 'unidade operacional: cadastro 01/05 (antes do cutoff) com unit_id Itaipu → Unidade vazia; unit_id cadastral preservado', r->>'unit_name' IS NULL AND r->>'unit_operational_id' IS NULL AND r->>'unit_id' = c.itaipu::text, COALESCE(r->>'unit_name', 'NULL'));
+  n := n + 1; INSERT INTO _r VALUES (n, 'unidade operacional = regra do filtro da tela para TODAS as pessoas exportadas (people_operational_unit)',
+    (SELECT bool_and((x->>'unit_operational_id') IS NOT DISTINCT FROM people_operational_unit((x->>'unit_id')::uuid, (x->>'created_at')::timestamptz, (SELECT unit_cutoff_date FROM churches WHERE id = c.c1))::text)
+       FROM jsonb_array_elements((export_people_rows(c.c1))->'rows') x), '');
+
+  -- Ordinais idênticos aos de get_person_contacts (sintéticas + 50 pessoas reais com mais contatos)
+  n := n + 1; INSERT INTO _r VALUES (n, 'ordinais: (event_id, ordinal, contact_date) do export = get_person_contacts para as pessoas sintéticas',
+    (SELECT bool_and(
+       (SELECT jsonb_agg(jsonb_build_object('e', ct->>'event_id', 'o', (ct->>'ordinal')::int, 'd', (ct->>'contact_date')::timestamptz) ORDER BY (ct->>'ordinal')::int) FROM jsonb_array_elements(x->'contacts') ct)
+       IS NOT DISTINCT FROM
+       (SELECT jsonb_agg(jsonb_build_object('e', g.event_id, 'o', g.ordinal, 'd', g.contact_date) ORDER BY g.ordinal) FROM get_person_contacts((x->>'id')::uuid) g))
+     FROM jsonb_array_elements(j->'rows') x), '');
+  n := n + 1; INSERT INTO _r VALUES (n, 'ordinais: idem para as 50 pessoas reais da IGV com mais contatos (datas de contato variadas)',
+    (SELECT bool_and(
+       (SELECT jsonb_agg(jsonb_build_object('e', ct->>'event_id', 'o', (ct->>'ordinal')::int, 'd', (ct->>'contact_date')::timestamptz) ORDER BY (ct->>'ordinal')::int) FROM jsonb_array_elements(x->'contacts') ct)
+       IS NOT DISTINCT FROM
+       (SELECT jsonb_agg(jsonb_build_object('e', g.event_id, 'o', g.ordinal, 'd', g.contact_date) ORDER BY g.ordinal) FROM get_person_contacts((x->>'id')::uuid) g))
+     FROM (SELECT x FROM jsonb_array_elements((export_people_rows(c.c1))->'rows') x WHERE x->>'name' NOT LIKE 'ZZ-CSV%' ORDER BY (x->>'contacts_count')::int DESC LIMIT 50) s),
+    (SELECT max((x->>'contacts_count')::int)::text || ' contatos no máximo' FROM jsonb_array_elements((export_people_rows(c.c1))->'rows') x));
 
   -- 20. contadores homologados inalterados pela migration
   j := get_care_status_counts(c.c1, p_search => 'ZZ-CSV');
-  n := n + 1; INSERT INTO _r VALUES (n, 'contadores (busca ZZ-CSV): 1 não atendida + 3 em atendimento = 4; alerta 2', (j->>'nao_atendida')::int = 1 AND (j->>'em_atendimento')::int = 3 AND (j->>'total')::int = 4 AND (j->>'sem_contato_48h')::int = 2, j::text);
+  n := n + 1; INSERT INTO _r VALUES (n, 'contadores (busca ZZ-CSV): 2 não atendidas + 3 em atendimento = 5; alerta 3', (j->>'nao_atendida')::int = 2 AND (j->>'em_atendimento')::int = 3 AND (j->>'total')::int = 5 AND (j->>'sem_contato_48h')::int = 3, j::text);
 END $$;
 
 -- Isolamento de tenant: outra igreja não vê as pessoas da IGV; igreja errada no parâmetro → FORBIDDEN
@@ -168,6 +202,8 @@ BEGIN
   SELECT * INTO c FROM _c;
   j := export_people_rows(c.c2, p_search => 'ZZ-CSV');
   INSERT INTO _r VALUES (40, 'tenant: usuário da igreja c2 exporta só a pessoa da c2', (j->>'total')::int = 1 AND j->'rows'->0->>'name' = 'ZZ-CSV Outra Igreja', j->>'total');
+  INSERT INTO _r VALUES (43, 'igreja SEM cutoff: cadastro antigo (01/05) mantém a unidade cadastral como operacional',
+    (SELECT unit_cutoff_date FROM churches WHERE id = c.c2) IS NULL AND j->'rows'->0->>'unit_name' = 'ZZ-CSV Unidade C2' AND j->'rows'->0->>'unit_operational_id' = j->'rows'->0->>'unit_id', COALESCE(j->'rows'->0->>'unit_name', 'NULL'));
   BEGIN
     PERFORM export_people_rows(c.c1);
     INSERT INTO _r VALUES (41, 'tenant: p_church_id de outra igreja → FORBIDDEN', false, 'executou');
