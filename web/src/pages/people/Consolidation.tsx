@@ -226,9 +226,10 @@ export default function Consolidation() {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
       const dateStr = ninetyDaysAgo.toISOString().split('T')[0]
 
-      const { data } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
         .from('people')
-        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage, created_at')
+        .select('id, name, email, phone, avatar_url, conversion_date, first_visit_date, person_stage, created_at, membership_status, classification_set_at')
         .eq('church_id', churchId!)
         // C2: OR entre os 3 campos para incluir visitantes QR Code (sem conversion_date)
         .or(`conversion_date.gte.${dateStr},first_visit_date.gte.${dateStr},created_at.gte.${dateStr}`)
@@ -236,12 +237,15 @@ export default function Consolidation() {
         .not('name', 'is', null)
         .order('conversion_date', { ascending: false, nullsFirst: false })
 
-      return (data ?? []).map(p => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return ((data ?? []) as any[]).map(p => {
         // C2: fallback hierárquico: conversion_date → first_visit_date → created_at
         const refDate = p.conversion_date ?? p.first_visit_date ?? p.created_at
         const days = daysSince(refDate)
-        // person_stage is ENUM — show its value as label directly
-        const stageName = p.person_stage as string | null
+        // Release 1: rótulo da classificação única (person_stage legado não é mais exibido)
+        const anyP = p as unknown as { membership_status?: string | null; classification_set_at?: string | null }
+        const cls = anyP.classification_set_at && (anyP.membership_status === 'visitor' || anyP.membership_status === 'member') ? anyP.membership_status : null
+        const stageName = cls === 'member' ? 'Membro' : cls === 'visitor' ? 'Visitante' : 'Não classificado'
 
         return {
           ...p,

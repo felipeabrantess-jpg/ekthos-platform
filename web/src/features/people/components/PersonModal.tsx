@@ -14,6 +14,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { canManageFinancial, isAdminLevel } from '@/hooks/useRole'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
+import { useSetClassification } from '../hooks/useClassification'
+import { classificationErrorMessage, type PersonClassification } from '../classification'
 import { supabase } from '@/lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import { phoneKey, isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
@@ -76,6 +78,8 @@ interface FormState {
   is_leader: boolean
   // Pipeline
   stage_id: string
+  // Classificação única (Release 1): '' = não alterar; 'visitor' | 'member' | 'none'
+  classification: '' | 'visitor' | 'member' | 'none'
 }
 
 const EMPTY_FORM: FormState = {
@@ -91,6 +95,7 @@ const EMPTY_FORM: FormState = {
   observacoes_pastorais: '',
   is_leader: false,
   stage_id: '',
+  classification: '',
 }
 
 // Converte Person (ou PersonWithStage) → FormState para edição
@@ -125,6 +130,7 @@ function personToForm(p: Person): FormState {
     is_leader:            any.is_leader ?? false,
     // Etapa: lê de person_pipeline[0] se disponível (PersonWithStage)
     stage_id:             (any.person_pipeline?.[0]?.stage_id) ?? '',
+    classification:       ((any.classification as PersonClassification | null | undefined)?.classification ?? 'none') as FormState['classification'],
   }
 }
 
@@ -177,6 +183,10 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   const createPerson = useCreatePerson()
   const updatePerson = useUpdatePerson()
   const updatePipelineStage = useUpdatePersonPipelineStage()
+  const setClassification = useSetClassification()
+  // classificação vigente da pessoa em edição (para saber se mudou)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const currentClassification: FormState['classification'] = ((person as any)?.classification?.classification ?? (person ? 'none' : '')) as FormState['classification']
   const { data: groups = [] } = useGroups(churchId)
   const { data: churchUnits = [] } = useChurchUnits(churchId)
   const { data: pipelineStages = [] } = usePipelineStages(churchId)
@@ -438,6 +448,31 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
         // Associa etapa ao criar nova pessoa
         if (form.stage_id && created?.id) {
           await updatePipelineStage.mutateAsync({ personId: created.id, stageId: form.stage_id, churchId })
+        }
+      }
+
+      // ── Classificação única: só pela RPC, com confirmação explícita; rebaixamento exige justificativa ──
+      const wantsClassification = form.classification !== '' && form.classification !== currentClassification && !(form.classification === 'none' && !isEdit)
+      if (savedPersonId && wantsClassification) {
+        const target = form.classification as 'visitor' | 'member' | 'none'
+        const isDowngrade = currentClassification === 'member' && target !== 'member'
+        const label = target === 'member' ? 'Membro' : target === 'visitor' ? 'Visitante' : 'Não classificado'
+        if (!window.confirm(`Confirmar a classificação de ${form.name.trim()} como ${label}?`)) {
+          setActiveTab('eclesiastico'); setError('Classificação não confirmada: a pessoa foi salva sem alterar a classificação.'); return
+        }
+        let reason: string | undefined
+        if (isDowngrade) {
+          const r = window.prompt('Justificativa obrigatória para deixar de ser Membro:') ?? ''
+          if (!r.trim()) { setActiveTab('eclesiastico'); setError('Justificativa obrigatória: a classificação não foi alterada.'); return }
+          reason = r.trim()
+        }
+        try {
+          await setClassification.mutateAsync({ personId: savedPersonId, churchId, value: target, reason, confirmed: true })
+        } catch (err) {
+          setActiveTab('eclesiastico')
+          setError(classificationErrorMessage(err) ?? (err instanceof Error ? err.message : 'Não foi possível alterar a classificação.'))
+          void queryClient.invalidateQueries({ queryKey: ['people', churchId] })
+          return
         }
       }
 
@@ -818,6 +853,23 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
         {activeTab === 'eclesiastico' && (
           <div className="space-y-3 pt-1">
             <SectionTitle>Vínculo com a Igreja</SectionTitle>
+
+            {/* Classificação única (Release 1): Visitante / Membro / Não classificado — nunca os dois */}
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1.5">Classificação</label>
+              <select
+                value={form.classification}
+                data-testid="classificacao-select"
+                onChange={(e) => set('classification', e.target.value as FormState['classification'])}
+                className="block w-full rounded-xl border border-black/10 px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-600"
+              >
+                {!isEdit && <option value="">Definir depois (Não classificado)</option>}
+                <option value="none">Não classificado</option>
+                <option value="visitor">Visitante</option>
+                <option value="member">Membro</option>
+              </select>
+              <p className="text-[11px] text-gray-400 mt-1">Líder e Voluntário são funções de Membro, definidas em Ministérios, Células e Voluntários. Mudar a classificação pede confirmação; deixar de ser Membro pede justificativa.</p>
+            </div>
 
             {/* Etapa do discipulado */}
             {pipelineStages.length > 0 && (

@@ -25,6 +25,9 @@ import {
 } from '@/features/atendimento/hooks/useAtendimento'
 import Button from '@/components/ui/Button'
 import { CHANNEL_LABELS, RESULT_LABELS } from '@/features/atendimento/contactLabels'
+import { usePersonClassification, useSetClassification } from '@/features/people/hooks/useClassification'
+import { ClassificationBadge } from '@/features/people/components/ClassificationBadge'
+import { classificationErrorMessage } from '@/features/people/classification'
 
 // ── Utilitários ───────────────────────────────────────────────
 
@@ -92,7 +95,18 @@ function Toast({ msg, type, onClose }: { msg: string; type: ToastState['type']; 
 
 // ── Bloco 1: QUEM É — faixa horizontal (E2) ──────────────────
 
-function BlocoQuemE({ person }: { person: NonNullable<ReturnType<typeof usePerson>['data']> }) {
+function BlocoQuemE({ person, onToast }: { person: NonNullable<ReturnType<typeof usePerson>['data']>; onToast: (msg: string, type: 'success' | 'error') => void }) {
+  const { data: cls } = usePersonClassification(person.id)
+  const setCls = useSetClassification()
+  async function tornarMembro() {
+    if (!window.confirm(`Confirmar ${person.name} como Membro?`)) return
+    try {
+      await setCls.mutateAsync({ personId: person.id, churchId: person.church_id, value: 'member', confirmed: true })
+      onToast('Classificação atualizada: Membro.', 'success')
+    } catch (err) {
+      onToast(classificationErrorMessage(err) ?? 'Não foi possível alterar a classificação.', 'error')
+    }
+  }
   const displayName = [person.first_name, person.last_name].filter(Boolean).join(' ') || person.name
   const initials = displayName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
   const whatsappUrl = person.phone ? `https://wa.me/${person.phone.replace(/\D/g, '')}` : null
@@ -109,11 +123,16 @@ function BlocoQuemE({ person }: { person: NonNullable<ReturnType<typeof usePerso
       {/* Nome + etapa */}
       <div className="min-w-0">
         <h2 className="font-display font-bold text-ekthos-black text-sm leading-tight">{displayName}</h2>
-        {person.person_stage && (
-          <span className="inline-block mt-0.5 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-semibold rounded-full">
-            {person.person_stage}
-          </span>
-        )}
+        {/* Classificação única (fonte: person_classification) — substitui o enum legado person_stage */}
+        <div className="mt-0.5 flex items-center gap-2 flex-wrap">
+          <ClassificationBadge value={cls} />
+          {cls && cls.classification !== 'member' && (
+            <button type="button" data-testid="btn-tornar-membro" onClick={() => { void tornarMembro() }} disabled={setCls.isPending}
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-border-default text-text-secondary hover:bg-bg-hover disabled:opacity-50">
+              Tornar membro
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Telefone */}
@@ -631,6 +650,8 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
         onToast(`${PHONE_TAKEN_MESSAGE} Nada foi alterado — corrija o telefone e salve novamente.`, 'error')
       } else if (msg.includes('FORBIDDEN') || msg.includes('42501') || /permission denied/i.test(msg)) {
         onToast('Você não tem permissão para registrar este atendimento.', 'error')
+      } else if (classificationErrorMessage(msg)) {
+        onToast(classificationErrorMessage(msg)!, 'error')
       } else if (msg.includes('JOURNEY_REQUIRED')) {
         onToast('Esta pessoa não tem jornada aberta: selecione a etapa para abrir a jornada e registrar o contato.', 'error')
       } else {
@@ -1052,7 +1073,7 @@ export default function AtendimentoPage() {
 
       {/* E2: Quem é — faixa horizontal full-width */}
       <div className="px-4 md:px-6 pb-3">
-        <BlocoQuemE person={person} />
+        <BlocoQuemE person={person} onToast={(msg, type) => setToast({ msg, type, key: Date.now() })} />
       </div>
 
       {/* Sequência de contatos (1º, 2º, 3º, 4º, … Nº) + status da jornada */}

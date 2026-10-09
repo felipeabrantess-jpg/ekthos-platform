@@ -376,10 +376,13 @@ export default function Pipeline() {
       setDragging(null)
       return
     }
-    void movePersonToStage.mutateAsync({
+    movePersonToStage.mutateAsync({
       personId: dragging.personId,
       newStageId: toStageId,
       churchId,
+    }).catch((err: unknown) => {
+      // Release 1: etapa contraditória com a classificação (CLASSIFICATION_REQUIRED / STAGE_CONFLICT) ou sem permissão
+      window.alert(err instanceof Error ? err.message : 'Não foi possível mover a pessoa.')
     })
     setDragging(null)
   }

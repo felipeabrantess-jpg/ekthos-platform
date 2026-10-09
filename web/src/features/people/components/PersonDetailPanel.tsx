@@ -13,6 +13,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTags } from '@/features/people/hooks/useTags'
 import { TagBadgesCell } from './TagBadgesCell'
 import { PipelineStageSelector } from '@/features/pipeline/components/PipelineStageSelector'
+import { ClassificationBadge } from '@/features/people/components/ClassificationBadge'
+import type { PersonClassification } from '@/features/people/classification'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
@@ -552,6 +554,10 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
                 </p>
               )}
               {/* Etapa do pipeline — seletor inline (fonte única: person_pipeline.stage_id) */}
+              {/* Classificação única (fonte: person_classification) — nunca Visitante e Membro ao mesmo tempo */}
+              <div className="mt-2">
+                <ClassificationBadge value={(person as unknown as { classification?: PersonClassification | null }).classification} size="md" />
+              </div>
               {churchId && (
                 <div className="mt-2">
                   <PipelineStageSelector person={person} churchId={churchId} />

@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { unitScopeToRpcParam, type UnitScope } from '@/lib/filters/unitScope'
 import type { PersonWithStage } from '@/lib/types/joins'
+import type { ClassificationFilter, RoleFilter } from '../classification'
 
 export const PEOPLE_PAGE_SIZE = 50
 
@@ -30,6 +31,10 @@ export interface PeoplePageFilters {
   /** Cadastro (created_at) >= / <= YYYY-MM-DD */
   createdFrom?: string
   createdTo?: string
+  /** Classificação única: visitor | member | none (Não classificado) */
+  classification?: ClassificationFilter
+  /** Funções (só Membros): member_only | volunteer | leader | leader_volunteer */
+  role?: RoleFilter
   page?: number
   pageSize?: number
 }
@@ -53,6 +58,8 @@ export function buildPeoplePageArgs(churchId: string, f: PeoplePageFilters) {
     p_birth_month:  f.birthMonth  ?? null,
     p_created_from: f.createdFrom || null,
     p_created_to:   f.createdTo   || null,
+    p_classification: f.classification || null,
+    p_role:           f.role || null,
     p_limit:        pageSize,
     p_offset:       page * pageSize,
   }
@@ -88,11 +95,18 @@ export interface StageCount {
   cnt: number
 }
 
+export interface ClassificationCounts {
+  visitor: number; member: number; none: number
+  member_only: number; leader: number; volunteer: number; leader_volunteer: number
+}
+
 export interface PeopleStageCounts {
   total: number
   aniversarios: number
   sem_etapa: number
   stages: StageCount[]
+  /** Contagens da classificação única no mesmo escopo de unidade (Release 1) */
+  classificacao?: ClassificationCounts
 }
 
 export function usePeopleStageCounts(churchId: string, unit: UnitScope) {
@@ -113,6 +127,7 @@ export function usePeopleStageCounts(churchId: string, unit: UnitScope) {
         aniversarios: Number(d.aniversarios ?? 0),
         sem_etapa:    Number(d.sem_etapa ?? 0),
         stages:       (d.stages ?? []).map(s => ({ ...s, cnt: Number(s.cnt) })),
+        classificacao: d.classificacao ? Object.fromEntries(Object.entries(d.classificacao as unknown as Record<string, unknown>).map(([k, v]) => [k, Number(v)])) as unknown as ClassificationCounts : undefined,
       }
     },
   })

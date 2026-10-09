@@ -253,32 +253,32 @@ ck('CSV começa com BOM UTF-8 e tipo text/csv (compatível com Excel)', c.bom ==
 ck('nome do arquivo: pessoas-todas-AAAAMMDD.csv', /^pessoas-todas-\d{8}\.csv$/.test(c.filename), c.filename)
 ck('RPC export_people_rows chamada com os filtros da lista (sem p_limit/p_offset)', exportCalls.length === 1 && !('p_limit' in exportCalls[0]) && !('p_offset' in exportCalls[0]) && exportCalls[0].p_unit_id === null, JSON.stringify(exportCalls[0]))
 ck('1 pessoa = 1 linha: 3 linhas de dados + cabeçalho', c.rows.length === 4, String(c.rows.length))
-ck('cabeçalho fixo: Nome, Telefone, Email, Etapa, Atendimento, Sem contato +48h, Unidade, Ministérios, Primeira visita, Cadastro, Origem, Qtd contatos',
-  H.slice(0, 12).join('|') === 'Nome|Telefone|Email|Etapa|Atendimento|Sem contato +48h|Unidade|Ministérios|Primeira visita|Cadastro|Origem|Qtd contatos', H.slice(0, 12).join('|'))
-ck('colunas dinâmicas até o maior ordinal (3): 1º/2º/3º contato — data / resultado / responsável', H.length === 12 + 9 && H[12] === '1º contato — data' && H[13] === '1º contato — resultado' && H[14] === '1º contato — responsável' && H[18] === '3º contato — data' && H[20] === '3º contato — responsável', H.slice(12).join('|'))
+ck('cabeçalho fixo: Nome, Telefone, Email, Classificação, Funções, Etapa, Atendimento, Sem contato +48h, Unidade, Ministérios, Primeira visita, Cadastro, Origem, Qtd contatos',
+  H.slice(0, 14).join('|') === 'Nome|Telefone|Email|Classificação|Funções|Etapa|Atendimento|Sem contato +48h|Unidade|Ministérios|Primeira visita|Cadastro|Origem|Qtd contatos', H.slice(0, 14).join('|'))
+ck('colunas dinâmicas até o maior ordinal (3): 1º/2º/3º contato — data / resultado / responsável', H.length === 14 + 9 && H[14] === '1º contato — data' && H[15] === '1º contato — resultado' && H[16] === '1º contato — responsável' && H[20] === '3º contato — data' && H[22] === '3º contato — responsável', H.slice(14).join('|'))
 const byName = (n) => c.rows.find(r => r[0].startsWith(n))
 const z = byName('Zélia'), j = byName('João'), m = byName('Maria')
 ck('aspas, vírgula e acentos preservados no nome (escape RFC 4180)', z[0] === 'Zélia "Dona" Souza, da Silva' && j[0] === 'João Ação', z[0])
 ck('pessoa sem contato: Qtd 0, colunas de contato vazias, Ministérios vazio, alerta Sim, Cadastro 01/09/2026, 1ª visita 01/09/2026, Origem QR Code',
-  z[11] === '0' && z.slice(12).every(v => v === '') && z[7] === '' && z[5] === 'Sim' && z[9] === '01/09/2026' && z[8] === '01/09/2026' && z[10] === 'QR Code' && z[4] === 'Não atendida' && z[6] === 'Unidade Central', z.join('|'))
+  z[13] === '0' && z.slice(14).every(v => v === '') && z[9] === '' && z[7] === 'Sim' && z[11] === '01/09/2026' && z[10] === '01/09/2026' && z[12] === 'QR Code' && z[6] === 'Não atendida' && z[8] === 'Unidade Central' && z[3] === 'Não classificado' && z[4] === '', z.join('|'))
 ck('pessoa com 1 contato: 1º contato — data 10/09/2026 hh:mm, resultado "Não atendeu (Ligação)", responsável Mirian Secretaria; 2º/3º vazios; Unidade vazia; Em atendimento',
-  j[11] === '1' && /^10\/09\/2026 \d{2}:\d{2}$/.test(j[12]) && j[13] === 'Não atendeu (Ligação)' && j[14] === 'Mirian Secretaria' && j.slice(15).every(v => v === '') && j[6] === '' && j[4] === 'Em atendimento' && j[7] === 'Louvor' && j[10] === 'Manual', j.join('|'))
+  j[13] === '1' && /^10\/09\/2026 \d{2}:\d{2}$/.test(j[14]) && j[15] === 'Não atendeu (Ligação)' && j[16] === 'Mirian Secretaria' && j.slice(17).every(v => v === '') && j[8] === '' && j[6] === 'Em atendimento' && j[9] === 'Louvor' && j[12] === 'Manual', j.join('|'))
 ck('pessoa com 3 contatos: ordem 1º Não atendeu, 2º Sem resposta (WhatsApp), 3º Contato realizado (Pessoalmente) por Pr. Valdir; ministérios "Acolhimento | Louvor"',
-  m[11] === '3' && m[13] === 'Não atendeu (Ligação)' && m[16] === 'Sem resposta (WhatsApp)' && m[19] === 'Contato realizado (Pessoalmente)' && m[20] === 'Pr. Valdir' && m[14] === 'Mirian Secretaria' && m[7] === 'Acolhimento | Louvor' && m[10] === 'Importação', m.join('|'))
+  m[13] === '3' && m[15] === 'Não atendeu (Ligação)' && m[18] === 'Sem resposta (WhatsApp)' && m[21] === 'Contato realizado (Pessoalmente)' && m[22] === 'Pr. Valdir' && m[16] === 'Mirian Secretaria' && m[9] === 'Acolhimento | Louvor' && m[12] === 'Importação', m.join('|'))
 
 // Filtro de alerta → RPC recebe p_care_status e exporta só as alertadas
 await page.locator('[data-testid="alerta-sem-contato"]').click(); await page.waitForTimeout(800)
 c = await exportAndRead()
-ck('com filtro "Sem contato +48h": RPC recebe p_care_status=sem_contato_48h e exporta 2 linhas (Zélia, Maria)', exportCalls[1].p_care_status === 'sem_contato_48h' && c.rows.length === 3 && c.rows.slice(1).every(r => r[5] === 'Sim'), String(c.rows.length))
+ck('com filtro "Sem contato +48h": RPC recebe p_care_status=sem_contato_48h e exporta 2 linhas (Zélia, Maria)', exportCalls[1].p_care_status === 'sem_contato_48h' && c.rows.length === 3 && c.rows.slice(1).every(r => r[7] === 'Sim'), String(c.rows.length))
 await page.locator('[data-testid="estado-em_atendimento"]').click(); await page.waitForTimeout(800)
 c = await exportAndRead()
-ck('com filtro "Em atendimento": exporta 2 linhas, ambas Em atendimento', exportCalls[2].p_care_status === 'em_atendimento' && c.rows.length === 3 && c.rows.slice(1).every(r => r[4] === 'Em atendimento'))
+ck('com filtro "Em atendimento": exporta 2 linhas, ambas Em atendimento', exportCalls[2].p_care_status === 'em_atendimento' && c.rows.length === 3 && c.rows.slice(1).every(r => r[6] === 'Em atendimento'))
 await page.locator('[data-testid="estado-todos"]').click(); await page.waitForTimeout(500)
 
 // Busca → p_search
 await page.locator('input[placeholder*="Buscar"]').fill('maria'); await page.waitForTimeout(1200)
 c = await exportAndRead()
-ck('busca "maria": RPC recebe p_search e exporta só Maria; colunas dinâmicas seguem o universo (3 contatos)', exportCalls[3].p_search === 'maria' && c.rows.length === 2 && c.rows[1][0] === 'Maria Três' && c.rows[0].length === 21)
+ck('busca "maria": RPC recebe p_search e exporta só Maria; colunas dinâmicas seguem o universo (3 contatos)', exportCalls[3].p_search === 'maria' && c.rows.length === 2 && c.rows[1][0] === 'Maria Três' && c.rows[0].length === 23)
 await page.locator('input[placeholder*="Buscar"]').fill(''); await page.waitForTimeout(800)
 
 // Unidade → p_unit_id + nome do arquivo
@@ -289,7 +289,7 @@ ck('unidade Central: RPC recebe p_unit_id da unidade, exporta 2 linhas, arquivo 
 // universo sem contatos → nenhuma coluna dinâmica
 await unitSel.selectOption({ label: 'Sem unidade definida' }); await page.waitForTimeout(1500)
 c = await exportAndRead()
-ck('sem unidade: 1 linha (João), max_contacts 1 → só 3 colunas dinâmicas; arquivo pessoas-sem-unidade-*.csv', exportCalls[5].p_unit_id === 'none' && c.rows.length === 2 && c.rows[0].length === 15 && /^pessoas-sem-unidade-/.test(c.filename), c.rows[0].length + ' ' + c.filename)
+ck('sem unidade: 1 linha (João), max_contacts 1 → só 3 colunas dinâmicas; arquivo pessoas-sem-unidade-*.csv', exportCalls[5].p_unit_id === 'none' && c.rows.length === 2 && c.rows[0].length === 17 && /^pessoas-sem-unidade-/.test(c.filename), c.rows[0].length + ' ' + c.filename)
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close();
 const failed = results.filter(x => !x).length;
