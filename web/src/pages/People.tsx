@@ -37,6 +37,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import ErrorState from '@/components/ui/ErrorState'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import { StickyHorizontalScroll } from '@/components/ui/StickyHorizontalScroll'
 import type { Person, PersonWithStage, Tag } from '@/lib/types/joins'
 
 // ── Error Boundary para PersonDetailPanel ────────────────────────────────────
@@ -1054,8 +1055,8 @@ export default function People() {
                 ))}
               </div>
 
-              <div className="hidden md:block bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+              {/* Tabela larga: a barra horizontal fica fixa na base da área visível e sincronizada com a tabela (uma barra só) */}
+              <StickyHorizontalScroll className="hidden md:block" contentClassName="bg-bg-primary rounded-2xl border border-border-default shadow-sm">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-bg-hover border-b border-border-default">
@@ -1085,8 +1086,7 @@ export default function People() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
+              </StickyHorizontalScroll>
             </>
           )}
         </>
