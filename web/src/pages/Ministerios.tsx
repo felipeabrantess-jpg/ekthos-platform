@@ -275,6 +275,7 @@ interface MembersModalProps {
 }
 
 function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: MembersModalProps) {
+  const navigate = useNavigate()
   const { data: members = [], isLoading, isError } = useMinistryMembers(ministry.id)
   const { data: origins = {} } = useMinistryMemberOrigins(ministry.id)
   const addMember    = useAddMinistryMember()
@@ -356,6 +357,15 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text-primary truncate">{m.name}</p>
                     {m.phone && <p className="text-xs text-text-tertiary">{m.phone}</p>}
+                    {/* Item 24: abre o cadastro em Pessoas em "Todas as unidades" (a unidade operacional da pessoa pode ser outra) */}
+                    <button
+                      type="button"
+                      data-testid="btn-ver-em-pessoas"
+                      className="text-xs font-medium text-brand-600 hover:underline"
+                      onClick={() => { onClose(); navigate(withUnitParam(`/pessoas?tab=geral&q=${encodeURIComponent(m.name)}`, 'all')) }}
+                    >
+                      Ver cadastro em Pessoas
+                    </button>
                     {(origins[m.person_id]?.referred_by_name || origins[m.person_id]?.added_by_name) && (
                       <p className="text-xs text-text-tertiary" data-testid="pessoa-origem">
                         {origins[m.person_id]?.referred_by_name && <>Encaminhado por {origins[m.person_id]?.referred_by_name}{origins[m.person_id]?.referred_at ? ` em ${new Date(origins[m.person_id]!.referred_at!).toLocaleDateString('pt-BR')}` : ''}</>}
