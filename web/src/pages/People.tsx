@@ -22,6 +22,7 @@ import {
   type PeoplePageFilters,
 } from '@/features/people/hooks/usePeoplePage'
 import { useUnit } from '@/contexts/UnitContext'
+import { withUnitParam } from '@/lib/filters/unitScope'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
 import { useAcolhimentoStatus, getCareStatusBadge } from '@/features/people/hooks/useAcolhimentoStatus'
@@ -734,7 +735,7 @@ export default function People() {
   function handleView(person: PersonWithStage)  { setSelectedPerson(person) }
   function handleEdit(person: Person)           { setEditingPerson(person); setModalOpen(true) }
   function handleNewPerson()                    { setEditingPerson(null); setModalOpen(true) }
-  function handleAtend(person: PersonWithStage) { navigate(`/pessoas/${person.id}/atendimento`) }
+  function handleAtend(person: PersonWithStage) { navigate(withUnitParam(`/pessoas/${person.id}/atendimento`, selectedUnit)) }
   function handleDelete(person: Person)         { setPersonToDelete(person); setDeleteError(null) }
 
   async function confirmDelete() {

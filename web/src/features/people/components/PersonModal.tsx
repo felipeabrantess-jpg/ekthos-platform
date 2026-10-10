@@ -18,6 +18,8 @@ import { useSetClassification } from '../hooks/useClassification'
 import { classificationErrorMessage, type PersonClassification } from '../classification'
 import { supabase } from '@/lib/supabase'
 import { useNavigate } from 'react-router-dom'
+import { useUnit } from '@/contexts/UnitContext'
+import { withUnitParam } from '@/lib/filters/unitScope'
 import { phoneKey, isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import type { Person, AppRoleDB, PipelineStage } from '@/lib/types/joins'
 import PersonSelect from '@/components/ui/PersonSelect'
@@ -197,6 +199,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
   // Telefone já vinculado a outra pessoa da igreja (regra: 1 pessoa = 1 telefone)
   const [phoneConflict, setPhoneConflict] = useState<{ id: string; name: string } | null>(null)
   const navigate = useNavigate()
+  const { selectedUnit } = useUnit()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [cepLoading, setCepLoading] = useState(false)
@@ -1125,7 +1128,7 @@ export default function PersonModal({ open, onClose, churchId, person }: PersonM
                 <button
                   type="button"
                   className="font-medium underline underline-offset-2 hover:text-red-800"
-                  onClick={() => { const id = phoneConflict.id; onClose(); navigate(`/pessoas/${id}/atendimento`) }}
+                  onClick={() => { const id = phoneConflict.id; onClose(); navigate(withUnitParam(`/pessoas/${id}/atendimento`, selectedUnit)) }}
                 >
                   Localizar cadastro existente
                 </button>

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useUnit } from '@/contexts/UnitContext'
+import { withUnitParam } from '@/lib/filters/unitScope'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -393,6 +395,7 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
 
 function ReferralCard({ referral }: { referral: MinistryReferral }) {
   const navigate = useNavigate()
+  const { selectedUnit } = useUnit()
   const { churchId } = useAuth()
   const queryClient = useQueryClient()
   const addMember = useAddMinistryMember()
@@ -420,7 +423,7 @@ function ReferralCard({ referral }: { referral: MinistryReferral }) {
 
   return (
     <div
-      onClick={() => navigate(`/pessoas/${referral.person_id}/atendimento`)}
+      onClick={() => navigate(withUnitParam(`/pessoas/${referral.person_id}/atendimento`, selectedUnit))}
       className="bg-bg-surface rounded-2xl border border-border-default shadow-sm p-4 flex flex-col gap-2.5 hover:shadow-md transition-shadow cursor-pointer"
       style={isUrgent ? { borderLeftWidth: 3, borderLeftColor: 'var(--color-warning, #f59e0b)' } : {}}
     >

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, Settings2, AlertCircle, ChevronRight, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useUnit } from '@/contexts/UnitContext'
+import { withUnitParam } from '@/lib/filters/unitScope'
 import {
   useDiscipuladoOverview,
   useDiscipuladoStagePeople,
@@ -240,7 +241,7 @@ function StageList({ churchId, stage, onTotalChange }: StageListProps) {
                 diasNaEtapa={p.dias_na_etapa}
                 responsavel={p.responsavel}
                 atrasado={p.atrasado}
-                onClick={() => navigate(`/pessoas/${p.person_id}/atendimento`)}
+                onClick={() => navigate(withUnitParam(`/pessoas/${p.person_id}/atendimento`, selectedUnit))}
               />
             ))}
           </div>
