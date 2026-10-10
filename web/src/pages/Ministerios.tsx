@@ -12,6 +12,7 @@ import {
 } from '@/features/ministerios/hooks/useMinisterios'
 import {
   useMinistryMembers,
+  useMinistryMemberOrigins,
   useMyManagedMinistries,
   useChurchAccounts,
   useAddMinistryMember,
@@ -275,6 +276,7 @@ interface MembersModalProps {
 
 function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: MembersModalProps) {
   const { data: members = [], isLoading, isError } = useMinistryMembers(ministry.id)
+  const { data: origins = {} } = useMinistryMemberOrigins(ministry.id)
   const addMember    = useAddMinistryMember()
   const removeMember = useRemoveMinistryMember()
   const [personId, setPersonId] = useState<string | null>(null)
@@ -354,6 +356,13 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-text-primary truncate">{m.name}</p>
                     {m.phone && <p className="text-xs text-text-tertiary">{m.phone}</p>}
+                    {(origins[m.person_id]?.referred_by_name || origins[m.person_id]?.added_by_name) && (
+                      <p className="text-xs text-text-tertiary" data-testid="pessoa-origem">
+                        {origins[m.person_id]?.referred_by_name && <>Encaminhado por {origins[m.person_id]?.referred_by_name}{origins[m.person_id]?.referred_at ? ` em ${new Date(origins[m.person_id]!.referred_at!).toLocaleDateString('pt-BR')}` : ''}</>}
+                        {origins[m.person_id]?.referred_by_name && origins[m.person_id]?.added_by_name && ' · '}
+                        {origins[m.person_id]?.added_by_name && <>Incluído por {origins[m.person_id]?.added_by_name}</>}
+                      </p>
+                    )}
                   </div>
                   {canManageMembers && (
                     removing === m.person_id ? (
