@@ -8,7 +8,9 @@
  *    até o maior ordinal do universo exportado (max_contacts), sem limite artificial;
  *  - ministérios (ministry_members ⟶ ministries) concatenados com " | " em ordem de nome;
  *  - responsável = ator persistido no evento, nome resolvido no banco (nunca o owner da jornada);
- *  - data do contato = regra canônica de get_person_contacts (contact_date, senão created_at).
+ *  - data do contato = regra canônica de get_person_contacts (contact_date, senão created_at);
+ *  - item 18: "Etapa desde" / "Dias na etapa" (entrada na etapa atual, de person_pipeline.entered_at) vão NO FIM da linha,
+ *    depois das colunas de contato, para não deslocar nenhuma coluna que já existia. Vazio = sem registro de etapa.
  * Toda regra de negócio vem do banco; aqui só há formatação.
  */
 import { getCareStatusBadge } from './hooks/useAcolhimentoStatus'
@@ -48,6 +50,10 @@ export interface ExportRow {
   ministerios: string
   contacts_count: number
   contacts: ExportContact[]
+  /** entrada na etapa atual (person_pipeline.entered_at); null quando não há registro */
+  etapa_desde?: string | null
+  /** dias corridos na etapa atual (calculado no banco) */
+  dias_na_etapa?: number | null
 }
 
 export interface ExportPayload {
@@ -88,6 +94,7 @@ export function buildPeopleHeader(maxContacts: number, alertHours = 48): string[
   for (let n = 1; n <= maxContacts; n++) {
     header.push(`${ordinalLabel(n)} — data`, `${ordinalLabel(n)} — resultado`, `${ordinalLabel(n)} — responsável`)
   }
+  header.push('Etapa desde', 'Dias na etapa')
   return header
 }
 
@@ -114,6 +121,7 @@ export function buildPeopleRow(r: ExportRow, maxContacts: number): string[] {
       row.push('', '', '')
     }
   }
+  row.push(fmtDate(r.etapa_desde), r.dias_na_etapa == null ? '' : String(r.dias_na_etapa))
   return row
 }
 
