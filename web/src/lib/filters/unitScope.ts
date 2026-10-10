@@ -40,6 +40,20 @@ export function unitScopeToRpcParam(scope: UnitScope): string | null {
   return scope === UNIT_ALL ? null : scope
 }
 
+/**
+ * Acrescenta ?unidade=<escopo> a um caminho interno. Usar em toda navegação para uma tela do CRM que deve
+ * herdar a unidade vigente (ex.: Pessoas → Atendimento). Sem isso o UnitProvider cai no localStorage
+ * (última unidade escolhida no seletor) e a tela destino pode abrir em outra unidade.
+ * Não altera nenhum dado: é só o contexto de navegação; a unidade real da pessoa (people.unit_id) não é tocada.
+ */
+export function withUnitParam(path: string, scope: UnitScope): string {
+  const [base, hash = ''] = path.split('#')
+  const [p, q = ''] = base.split('?')
+  const params = new URLSearchParams(q)
+  params.set(UNIT_PARAM, scope)
+  return `${p}?${params.toString()}${hash ? '#' + hash : ''}`
+}
+
 export function unitStorageKey(churchId: string): string {
   return `ekthos:unit:${churchId}`
 }
