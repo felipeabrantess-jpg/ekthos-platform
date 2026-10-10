@@ -53,9 +53,9 @@ BEGIN
   -- contrato de colunas
   INSERT INTO t_out VALUES ('chaves de topo do JSON preservadas',
     (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(e) k) = ARRAY['alert_threshold_hours','max_contacts','rows','total'], '');
-  INSERT INTO t_out VALUES ('chaves de cada linha preservadas (17)',
+  INSERT INTO t_out VALUES ('chaves de cada linha preservadas (17 originais + etapa_desde e dias_na_etapa do item 18)',
     (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(e->'rows'->0) k) =
-      ARRAY['care_alert','care_state','classification','contacts','contacts_count','created_at','email','etapa','first_visit_date','id','ministerios','name','phone','source','unit_id','unit_name','unit_operational_id'], '');
+      ARRAY['care_alert','care_state','classification','contacts','contacts_count','created_at','dias_na_etapa','email','etapa','etapa_desde','first_visit_date','id','ministerios','name','phone','source','unit_id','unit_name','unit_operational_id'], '');
   INSERT INTO t_out VALUES ('ordenação created_at DESC, id DESC preservada',
     NOT EXISTS (SELECT 1 FROM (SELECT (r->>'created_at')::timestamptz c, (r->>'id') i, lag((r->>'created_at')::timestamptz) OVER (ORDER BY ord) pc FROM jsonb_array_elements(e->'rows') WITH ORDINALITY a(r, ord)) x WHERE pc IS NOT NULL AND c > pc), '');
   INSERT INTO t_out VALUES ('histórico de contatos: soma de contacts_count = itens de contacts',

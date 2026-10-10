@@ -54,7 +54,7 @@ INSERT INTO _r
 SELECT 1, 'filtro "' || b.k || '": total, max_contacts, limiar e linhas anteriores idênticos',
   (b.j->>'total') = (a.j->>'total') AND (b.j->>'max_contacts') = (a.j->>'max_contacts')
   AND (b.j->>'alert_threshold_hours') = (a.j->>'alert_threshold_hours')
-  AND (SELECT md5(string_agg(md5(x::text), '' ORDER BY ord)) FROM jsonb_array_elements(b.j->'rows') WITH ORDINALITY t(x, ord))
+  AND (SELECT md5(string_agg(md5((x - 'etapa_desde' - 'dias_na_etapa')::text), '' ORDER BY ord)) FROM jsonb_array_elements(b.j->'rows') WITH ORDINALITY t(x, ord))
     = (SELECT md5(string_agg(md5((x - 'etapa_desde' - 'dias_na_etapa')::text), '' ORDER BY ord)) FROM jsonb_array_elements(a.j->'rows') WITH ORDINALITY t(x, ord)),
   'total=' || (a.j->>'total')
 FROM _b b JOIN _a a USING (k);
