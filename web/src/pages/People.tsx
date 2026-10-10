@@ -18,8 +18,8 @@ import ModalPortal from '@/components/ui/ModalPortal'
 import { useDeletePerson } from '@/features/people/hooks/usePeople'
 import { buildPeopleCsv, type ExportPayload } from '@/features/people/exportCsv'
 import {
-  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE,
-  type PeoplePageFilters,
+  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE, PEOPLE_SORT_KEYS,
+  type PeoplePageFilters, type PeopleSortKey, type PeopleSortDir,
 } from '@/features/people/hooks/usePeoplePage'
 import { useUnit } from '@/contexts/UnitContext'
 import { withUnitParam } from '@/lib/filters/unitScope'
@@ -573,6 +573,9 @@ export default function People() {
   const [createdFrom, setCreatedFrom]   = useState(() => dateFromUrl('de'))
   const [createdTo, setCreatedTo]       = useState(() => dateFromUrl('ate'))
   const [currentPage, setCurrentPage]   = useState(() => { const n = parseInt(searchParams.get('pagina') ?? '', 10); return Number.isFinite(n) && n > 1 ? n - 1 : 0 })
+  // Ordenação por coluna (item 23): ?ordem=nome|telefone|atendimento|contatos|cadastro&dir=asc|desc
+  const [sortBy, setSortBy]   = useState<PeopleSortKey | ''>(() => fromUrl('ordem', PEOPLE_SORT_KEYS))
+  const [sortDir, setSortDir] = useState<PeopleSortDir>(() => (searchParams.get('dir') === 'desc' ? 'desc' : 'asc'))
 
   type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
   const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
@@ -589,10 +592,11 @@ export default function People() {
       put('cls', classificationFilter); put('funcao', roleFilter); put('estado', careFilter); put('origem', sourceFilter)
       put('q', search); put('de', createdFrom); put('ate', createdTo)
       put('pagina', currentPage > 0 ? String(currentPage + 1) : '')
+      put('ordem', sortBy); put('dir', sortBy && sortDir === 'desc' ? 'desc' : '')
       put('periodo', activeStageKey === 'visitante' && dateFilter !== '30' ? dateFilter : '')
       return next.toString() === prev.toString() ? prev : next
     }, { replace: true })
-  }, [classificationFilter, roleFilter, careFilter, sourceFilter, search, createdFrom, createdTo, currentPage, dateFilter, activeStageKey, setSearchParams])
+  }, [classificationFilter, roleFilter, careFilter, sourceFilter, search, createdFrom, createdTo, currentPage, sortBy, sortDir, dateFilter, activeStageKey, setSearchParams])
 
   // Período (só etapa visitante): converte em intervalo de cadastro
   const periodRange = useMemo(() => {
@@ -628,8 +632,40 @@ export default function People() {
     birthMonth:  isBirthdayTab ? currentMonth : undefined,
     createdFrom: (activeStageKey === 'visitante' ? periodRange.from : createdFrom) || undefined,
     createdTo:   (activeStageKey === 'visitante' ? periodRange.to   : createdTo)   || undefined,
+    sortBy:      !isBirthdayTab && sortBy ? sortBy : undefined,
+    sortDir:     sortDir,
     page:        currentPage,
     pageSize:    isBirthdayTab ? 500 : PEOPLE_PAGE_SIZE,
+  }
+
+  // Clique no cabeçalho: sem ordem → crescente → decrescente → ordem padrão. Sempre volta à 1ª página.
+  function toggleSort(key: PeopleSortKey) {
+    if (sortBy !== key) { setSortBy(key); setSortDir('asc') }
+    else if (sortDir === 'asc') setSortDir('desc')
+    else { setSortBy(''); setSortDir('asc') }
+    setCurrentPage(0)
+  }
+  const sortableTh = (key: PeopleSortKey, label: string, extra = '', title?: string) => {
+    const active = !isBirthdayTab && sortBy === key
+    return (
+      <th
+        className={`px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest ${extra}`}
+        aria-sort={active ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
+        title={title}
+      >
+        <button
+          type="button"
+          onClick={() => toggleSort(key)}
+          disabled={isBirthdayTab}
+          data-testid={`ordenar-${key}`}
+          className={`inline-flex items-center gap-1 uppercase tracking-widest hover:text-text-primary transition-colors ${active ? 'text-text-primary' : ''}`}
+          title={`Ordenar por ${label}`}
+        >
+          {label}
+          <span aria-hidden="true" className="text-[10px]">{active ? (sortDir === 'desc' ? '▼' : '▲') : '↕'}</span>
+        </button>
+      </th>
+    )
   }
   const { data: pageData, isLoading: pageLoading, isError, refetch, isPlaceholderData: pageStale } =
     usePeoplePage(churchId ?? '', pageFilters, !unitLoading)
@@ -1151,12 +1187,12 @@ export default function People() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-bg-hover border-b border-border-default">
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Nome</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Telefone</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Classificação</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Atendimento</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest text-center" title="Contatos pastorais registrados">Contatos</th>
-                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Cadastro</th>
+                        {sortableTh('nome', 'Nome')}
+                        {sortableTh('telefone', 'Telefone')}
+                        <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest" title="Use os filtros Visitantes / Membros / Não classificados acima da lista">Classificação</th>
+                        {sortableTh('atendimento', 'Atendimento')}
+                        {sortableTh('contatos', 'Contatos', 'text-center', 'Contatos pastorais registrados')}
+                        {sortableTh('cadastro', 'Cadastro')}
                         <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase tracking-widest">Ações</th>
                       </tr>
                     </thead>

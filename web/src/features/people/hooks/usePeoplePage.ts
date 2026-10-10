@@ -18,6 +18,11 @@ export type CareStatus = 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cance
 /** Marcador para "pessoas sem etapa no pipeline" (p_stage_key = '__none'). */
 export const STAGE_KEY_NONE = '__none'
 
+/** Colunas ordenáveis da lista (item 23 da ata IGV). Classificação segue só como filtro. */
+export type PeopleSortKey = 'nome' | 'telefone' | 'atendimento' | 'contatos' | 'cadastro'
+export const PEOPLE_SORT_KEYS: readonly PeopleSortKey[] = ['nome', 'telefone', 'atendimento', 'contatos', 'cadastro']
+export type PeopleSortDir = 'asc' | 'desc'
+
 export interface PeoplePageFilters {
   unit: UnitScope
   /** pipeline_stages.stage_key, STAGE_KEY_NONE, ou undefined = todas as etapas */
@@ -35,6 +40,9 @@ export interface PeoplePageFilters {
   classification?: ClassificationFilter
   /** Funções (só Membros): member_only | volunteer | leader | leader_volunteer */
   role?: RoleFilter
+  /** Ordenação por coluna; sem valor = ordem padrão (cadastro mais recente primeiro). */
+  sortBy?: PeopleSortKey
+  sortDir?: PeopleSortDir
   page?: number
   pageSize?: number
 }
@@ -62,6 +70,8 @@ export function buildPeoplePageArgs(churchId: string, f: PeoplePageFilters) {
     p_role:           f.role || null,
     p_limit:        pageSize,
     p_offset:       page * pageSize,
+    // só envia quando o usuário escolheu uma coluna: sem isso a chamada é idêntica à anterior
+    ...(f.sortBy ? { p_sort_by: f.sortBy, p_sort_dir: f.sortDir ?? 'asc' } : {}),
   }
 }
 
