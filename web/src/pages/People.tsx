@@ -9,7 +9,7 @@
  *  - Em Risco       → stage: frequentador
  */
 
-import { useState, useMemo, useEffect, Component, type ReactNode } from 'react'
+import { useState, useMemo, useEffect, useRef, Component, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -746,8 +746,14 @@ export default function People() {
     }
   }, [searchParams, items, setSearchParams])
 
-  // Troca de unidade global → volta à primeira página
-  useEffect(() => { setCurrentPage(0) }, [selectedUnit])
+  // Troca de unidade global → volta à primeira página. Só em mudança real: na montagem a página
+  // vem da URL (?pagina=N) e não pode ser descartada (Atender → Voltar, atualizar, link direto).
+  const prevUnitRef = useRef(selectedUnit)
+  useEffect(() => {
+    if (prevUnitRef.current === selectedUnit) return
+    prevUnitRef.current = selectedUnit
+    setCurrentPage(0)
+  }, [selectedUnit])
 
   function invalidatePeople() {
     void queryClient.invalidateQueries({ queryKey: ['people-page', churchId] })
