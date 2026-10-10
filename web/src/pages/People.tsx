@@ -630,7 +630,7 @@ export default function People() {
     page:        currentPage,
     pageSize:    isBirthdayTab ? 500 : PEOPLE_PAGE_SIZE,
   }
-  const { data: pageData, isLoading: pageLoading, isError, refetch } =
+  const { data: pageData, isLoading: pageLoading, isError, refetch, isPlaceholderData: pageStale } =
     usePeoplePage(churchId ?? '', pageFilters, !unitLoading)
   const isLoading = unitLoading || pageLoading
   const items = useMemo(() => (pageData?.items ?? []).filter(p => !deletingId || p.id !== deletingId), [pageData, deletingId])
@@ -640,7 +640,7 @@ export default function People() {
   const { data: stageCounts } = usePeopleStageCounts(churchId ?? '', selectedUnit)
   // Contadores de atendimento no MESMO universo da lista (unidade, etapa, origem, busca, período),
   // sem o próprio filtro de atendimento: cada botão mostra quantas pessoas da lista atual têm aquele estado.
-  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '', {
+  const { data: careStatusData, isPlaceholderData: careStale } = useAcolhimentoStatus(churchId ?? '', {
     unit: pageFilters.unit, stageKey: pageFilters.stageKey, source: pageFilters.source, search: pageFilters.search,
     birthMonth: pageFilters.birthMonth, createdFrom: pageFilters.createdFrom, createdTo: pageFilters.createdTo,
     classification: pageFilters.classification, role: pageFilters.role,
@@ -814,7 +814,7 @@ export default function People() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
-          <p className="text-xs md:text-sm text-text-secondary mt-1">
+          <p className={`text-xs md:text-sm text-text-secondary mt-1 transition-opacity ${pageStale ? 'opacity-50' : ''}`} title={pageStale ? 'Atualizando…' : undefined} aria-busy={pageStale}>
             {pageData
               ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${!isGeralTab ? ` · ${activeTabLabel}` : ''}${classificationFilter ? ` · ${CLASSIFICATION_LABEL[classificationFilter]}` : ''}`
               : 'Carregando...'}
@@ -1012,7 +1012,7 @@ export default function People() {
           Contadores calculados no banco sobre o MESMO universo da lista (filtros acima). */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="atendimento-filtros">
-          <div className="flex flex-wrap items-center gap-2" data-testid="atendimento-estados">
+          <div className={`flex flex-wrap items-center gap-2 transition-opacity ${careStale ? 'opacity-50' : ''}`} data-testid="atendimento-estados" aria-busy={careStale}>
             <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses contam as pessoas da lista atual (unidade, aba, classificação, origem, busca e datas).">Estados (da lista atual):</span>
             {([
               { value: '', label: `Todos (${careStatusData?.total ?? '…'})` },
