@@ -20,9 +20,13 @@ export interface MinistryDocsLink {
   url: string | null
 }
 
-export function getMinistryDocsLink(churchId: string | null | undefined): MinistryDocsLink {
+/**
+ * @param dbUrl link configurado dentro do sistema (church_settings.ministerios_docs_url); tem prioridade
+ *              sobre a variável de ambiente, que fica como fallback.
+ */
+export function getMinistryDocsLink(churchId: string | null | undefined, dbUrl?: string | null): MinistryDocsLink {
   if (!churchId || !(churchId in DOCS_URL_BY_CHURCH)) return { enabled: false, url: null }
-  const raw = (DOCS_URL_BY_CHURCH[churchId] ?? '').trim()
+  const raw = ((dbUrl ?? '').trim() || (DOCS_URL_BY_CHURCH[churchId] ?? '')).trim()
   // Só aceita link https — nunca abre esquema arbitrário
   return { enabled: true, url: /^https:\/\/\S+$/i.test(raw) ? raw : null }
 }

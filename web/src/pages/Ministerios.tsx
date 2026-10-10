@@ -33,6 +33,7 @@ import type { MinistryWithLeader } from '@/lib/types/joins'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { FileText, ExternalLink } from 'lucide-react'
 import { getMinistryDocsLink } from '@/features/ministerios/ministryDocs'
+import { useMinistryDocsUrl, useSaveMinistryDocsUrl, docsUrlErrorMessage } from '@/features/ministerios/hooks/useMinistryDocsUrl'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -625,7 +626,29 @@ export default function Ministerios() {
     setModalOpen(true)
   }
 
-  const docsLink = getMinistryDocsLink(churchId)
+  const { data: docsDbUrl } = useMinistryDocsUrl(churchId)
+  const docsLink = getMinistryDocsLink(churchId, docsDbUrl)
+  const saveDocsUrl = useSaveMinistryDocsUrl(churchId)
+  const [docsModalOpen, setDocsModalOpen] = useState(false)
+  const [docsInput, setDocsInput] = useState('')
+  const [docsError, setDocsError] = useState<string | null>(null)
+
+  function openDocsModal() {
+    setDocsInput(docsLink.url ?? '')
+    setDocsError(null)
+    setDocsModalOpen(true)
+  }
+
+  async function handleSaveDocs(e: React.FormEvent) {
+    e.preventDefault()
+    setDocsError(null)
+    try {
+      await saveDocsUrl.mutateAsync(docsInput.trim())
+      setDocsModalOpen(false)
+    } catch (err) {
+      setDocsError(docsUrlErrorMessage(err))
+    }
+  }
 
   async function handleConfirmDelete() {
     if (!deletingMinistry || !churchId) return
@@ -702,7 +725,39 @@ export default function Ministerios() {
           </button>
         )
       )}
+      {/* Item 14: a própria igreja informa o endereço (campo + Enviar), sem variável de ambiente */}
+      {docsLink.enabled && isAdmin && (
+        <button
+          type="button"
+          onClick={openDocsModal}
+          data-testid="btn-configurar-documentacao"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-hover transition-colors"
+        >
+          {docsLink.url ? 'Alterar link' : 'Configurar link'}
+        </button>
+      )}
       </div>
+
+      <Modal open={docsModalOpen} onClose={() => setDocsModalOpen(false)} title="Link da Documentação" size="sm">
+        <form onSubmit={(e) => void handleSaveDocs(e)} className="space-y-4">
+          <Input
+            label="Endereço da pasta de documentação"
+            type="url"
+            placeholder="https://..."
+            value={docsInput}
+            onChange={(e) => setDocsInput(e.target.value)}
+            data-testid="input-docs-url"
+            hint="Cole o link da pasta (OneDrive, Drive etc.). Deixe em branco para remover."
+            error={docsError ?? undefined}
+          />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDocsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit" disabled={saveDocsUrl.isPending} data-testid="btn-enviar-docs-url">
+              {saveDocsUrl.isPending ? 'Enviando...' : 'Enviar'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Conteúdo — aba Ministérios */}
       {activeTab === 'ministerios' && (
