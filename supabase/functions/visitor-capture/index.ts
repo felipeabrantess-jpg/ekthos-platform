@@ -131,6 +131,15 @@ function ok200(headers: Record<string, string>): Response {
   )
 }
 
+// Telefone que já pertence a uma pessoa desta igreja: o visitante é avisado, nada é criado nem sobrescrito.
+// (Item 8/12 da ata IGV.) Só é usado depois que o slug foi validado — slug inválido segue 200 genérico.
+function alreadyRegistered(headers: Record<string, string>): Response {
+  return new Response(
+    JSON.stringify({ success: true, already_registered: true, message: 'USUÁRIO JÁ CADASTRADO' }),
+    { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+  )
+}
+
 // Resposta 500 para falhas internas — nunca vaza detalhe do erro ao visitante
 function err500(headers: Record<string, string>): Response {
   return new Response(
@@ -242,7 +251,7 @@ Deno.serve(async (req: Request) => {
         was_blocked: true, block_reason: 'duplicate_24h',
       })
       console.warn('[visitor-capture] Dedup 24h:', phoneClean, '@', churchId)
-      return ok200(headers)
+      return alreadyRegistered(headers)
     }
 
     // ── 5. Localizar pessoa pelo telefone ─────────────────
@@ -296,7 +305,7 @@ Deno.serve(async (req: Request) => {
         if (isPhoneTaken(insertErr)) {
           // Barreira do banco: o telefone já pertence a outra pessoa. Não cria, não altera ninguém.
           console.warn('[visitor-capture] Telefone já vinculado a outra pessoa — cadastro não criado')
-          return ok200(headers)
+          return alreadyRegistered(headers)
         }
         if (insertErr) {
           console.error('[visitor-capture] INSERT membro sem match falhou:', insertErr.message)
@@ -309,7 +318,7 @@ Deno.serve(async (req: Request) => {
       await supabase.from('visitor_capture_rate_limits').insert({
         ip, phone: phoneClean, church_id: churchId, user_agent: userAgent, was_blocked: false,
       })
-      return ok200(headers)
+      return existing?.id ? alreadyRegistered(headers) : ok200(headers)
     }
 
     // ── fluxo padrão (visitante, novo_convertido, reconciliado, vim_de_outra_igreja) ──
@@ -380,7 +389,7 @@ Deno.serve(async (req: Request) => {
         // Barreira do banco (corrida ou outro formato): o telefone já pertence a outra pessoa.
         // Não cria, não altera ninguém.
         console.warn('[visitor-capture] Telefone já vinculado a outra pessoa — cadastro não criado')
-        return ok200(headers)
+        return alreadyRegistered(headers)
       }
       if (insertErr || !newPerson) {
         console.error('[visitor-capture] INSERT people falhou:', insertErr?.message)
@@ -431,7 +440,7 @@ Deno.serve(async (req: Request) => {
       ).catch(e => console.warn('[visitor-capture] dispatch-person-event falhou (não crítico):', (e as Error).message))
     }
 
-    return ok200(headers)
+    return existing?.id ? alreadyRegistered(headers) : ok200(headers)
 
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)

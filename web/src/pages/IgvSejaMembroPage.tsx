@@ -53,6 +53,7 @@ export default function IgvSejaMembroPage() {
   const [errors,     setErrors]     = useState<Partial<Record<keyof FormState, string>>>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted,  setSubmitted]  = useState(false)
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false)
 
   function handleChange(field: keyof FormState, raw: string | boolean) {
     const value = field === 'phone' && typeof raw === 'string' ? maskPhone(raw) : raw
@@ -79,7 +80,7 @@ export default function IgvSejaMembroPage() {
     if (!validate() || submitting) return
     setSubmitting(true)
     try {
-      await fetch(`${EF_BASE}/visitor-capture`, {
+      const res = await fetch(`${EF_BASE}/visitor-capture`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -90,6 +91,8 @@ export default function IgvSejaMembroPage() {
           invited_by_name: form.invited_by_name.trim() || undefined,
         }),
       })
+      // Telefone já cadastrado: a EF avisa (sem criar nem alterar ninguém). Qualquer outra resposta = sucesso.
+      try { const d = await res.json(); setAlreadyRegistered(d?.already_registered === true) } catch { /* resposta sem JSON → sucesso */ }
       setSubmitted(true)
     } catch {
       // Erro de rede raro — EF sempre retorna 200 em operação normal
@@ -118,12 +121,14 @@ export default function IgvSejaMembroPage() {
             className="text-[1.8rem] font-bold text-white mb-2 tracking-tight"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
-            Bem-vindo(a) à família!
+            {alreadyRegistered ? 'USUÁRIO JÁ CADASTRADO' : 'Bem-vindo(a) à família!'}
           </h1>
           <p className="text-[1rem] text-white/70 leading-relaxed mb-7">
-            Recebemos seu cadastro. Em breve alguém da{' '}
-            <span className="font-medium text-white/85">{IGV.name}</span>{' '}
-            vai entrar em contato pelo WhatsApp.
+            {alreadyRegistered
+              ? <>Este telefone já está cadastrado na <span className="font-medium text-white/85">{IGV.name}</span>. Não é preciso se cadastrar de novo.</>
+              : <>Recebemos seu cadastro. Em breve alguém da{' '}
+                <span className="font-medium text-white/85">{IGV.name}</span>{' '}
+                vai entrar em contato pelo WhatsApp.</>}
           </p>
           <a
             href={`https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent(`Olá! Acabei de me cadastrar em ${IGV.name}. Gostaria de saber mais!`)}`}
