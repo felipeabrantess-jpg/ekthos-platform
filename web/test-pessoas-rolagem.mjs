@@ -234,7 +234,7 @@ await page.evaluate(() => { const r = document.querySelector('[data-testid="stic
 s = await state(); ck('mover o trilho para a direita move a tabela (mesmo scrollLeft nos dois, > 100)', s.railScrollLeft > 100 && s.contentScrollLeft === s.railScrollLeft, JSON.stringify({ rail: s.railScrollLeft, content: s.contentScrollLeft }))
 await page.evaluate(() => { document.querySelector('[data-testid="sticky-hscroll-content"]').scrollLeft = 40 }); await page.waitForTimeout(300)
 s = await state(); ck('mover a tabela (ex.: shift+roda) para a esquerda move o trilho (40 nos dois)', s.railScrollLeft === 40 && s.contentScrollLeft === 40, JSON.stringify({ rail: s.railScrollLeft, content: s.contentScrollLeft }))
-await page.mouse.move(500, 400); await page.keyboard.down('Shift'); await page.mouse.wheel(0, 120); await page.keyboard.up('Shift'); await page.waitForTimeout(300)
+{ const tb = await page.locator('table').first().boundingBox(); await page.mouse.move(tb.x + 120, Math.min(tb.y + 80, 650)) }; await page.keyboard.down('Shift'); await page.mouse.wheel(0, 120); await page.keyboard.up('Shift'); await page.waitForTimeout(300)
 s = await state(); ck('shift + roda do mouse sobre a tabela rola horizontalmente e o trilho acompanha', s.contentScrollLeft > 40 && s.railScrollLeft === s.contentScrollLeft, JSON.stringify({ rail: s.railScrollLeft, content: s.contentScrollLeft }))
 // redimensionamento: largo → trilho some; estreito → volta
 await page.setViewportSize({ width: 1900, height: 800 }); await page.waitForTimeout(500)

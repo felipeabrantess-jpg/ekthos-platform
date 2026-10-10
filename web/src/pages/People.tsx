@@ -552,15 +552,27 @@ export default function People() {
   }
 
   // ── Filtros cumulativos (todos server-side) ──────────────────────────────
-  const [search, setSearch]             = useState('')
-  const [sourceFilter, setSourceFilter] = useState<string>('')
-  const [careFilter, setCareFilter]     = useState<CareFilter>('')
+  // Os filtros ficam espelhados na URL (?q, ?cls, ?funcao, ?estado, ?origem, ?de, ?ate, ?pagina, ?periodo):
+  // ao abrir o Atendimento de uma pessoa e voltar, a lista reaparece exatamente como estava.
+  const fromUrl = <T extends string>(key: string, allowed: readonly T[]): T | '' => {
+    const v = searchParams.get(key) ?? ''
+    return (allowed as readonly string[]).includes(v) ? (v as T) : ''
+  }
+  const dateFromUrl = (key: string) => {
+    const v = searchParams.get(key) ?? ''
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return ''
+    const d = new Date(v + 'T00:00:00Z')   // rejeita datas impossíveis (ex.: 2026-13-99)
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v ? v : ''
+  }
+  const [search, setSearch]             = useState(() => (searchParams.get('q') ?? '').slice(0, 120))
+  const [sourceFilter, setSourceFilter] = useState<string>(() => fromUrl('origem', ['qr_code', 'manual', 'import_xlsx'] as const))
+  const [careFilter, setCareFilter]     = useState<CareFilter>(() => fromUrl('estado', ['nao_atendida', 'em_atendimento', 'atendida', 'cancelado', 'sem_contato_48h'] as const))
   // Classificação única (Release 1): visitante / membro / não classificado + função
-  const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>('')
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('')
-  const [createdFrom, setCreatedFrom]   = useState('')
-  const [createdTo, setCreatedTo]       = useState('')
-  const [currentPage, setCurrentPage]   = useState(0)
+  const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>(() => fromUrl('cls', ['visitor', 'member', 'none'] as const))
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>(() => fromUrl('funcao', ['member_only', 'volunteer', 'leader', 'leader_volunteer'] as const))
+  const [createdFrom, setCreatedFrom]   = useState(() => dateFromUrl('de'))
+  const [createdTo, setCreatedTo]       = useState(() => dateFromUrl('ate'))
+  const [currentPage, setCurrentPage]   = useState(() => { const n = parseInt(searchParams.get('pagina') ?? '', 10); return Number.isFinite(n) && n > 1 ? n - 1 : 0 })
 
   type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
   const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
@@ -569,6 +581,19 @@ export default function People() {
     periodoParam && validPeriodos.includes(periodoParam) ? periodoParam :
     activeStageKey === 'visitante' ? '30' : 'all'
   )
+  // Espelha os filtros na URL (replace: não polui o histórico; Voltar traz a tela como estava)
+  useEffect(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      const put = (k: string, v: string) => { if (v) next.set(k, v); else next.delete(k) }
+      put('cls', classificationFilter); put('funcao', roleFilter); put('estado', careFilter); put('origem', sourceFilter)
+      put('q', search); put('de', createdFrom); put('ate', createdTo)
+      put('pagina', currentPage > 0 ? String(currentPage + 1) : '')
+      put('periodo', activeStageKey === 'visitante' && dateFilter !== '30' ? dateFilter : '')
+      return next.toString() === prev.toString() ? prev : next
+    }, { replace: true })
+  }, [classificationFilter, roleFilter, careFilter, sourceFilter, search, createdFrom, createdTo, currentPage, dateFilter, activeStageKey, setSearchParams])
+
   // Período (só etapa visitante): converte em intervalo de cadastro
   const periodRange = useMemo(() => {
     if (activeStageKey !== 'visitante' || dateFilter === 'all') return { from: '', to: '' }
@@ -606,7 +631,7 @@ export default function People() {
     page:        currentPage,
     pageSize:    isBirthdayTab ? 500 : PEOPLE_PAGE_SIZE,
   }
-  const { data: pageData, isLoading: pageLoading, isError, refetch } =
+  const { data: pageData, isLoading: pageLoading, isError, refetch, isPlaceholderData: pageStale } =
     usePeoplePage(churchId ?? '', pageFilters, !unitLoading)
   const isLoading = unitLoading || pageLoading
   const items = useMemo(() => (pageData?.items ?? []).filter(p => !deletingId || p.id !== deletingId), [pageData, deletingId])
@@ -616,7 +641,7 @@ export default function People() {
   const { data: stageCounts } = usePeopleStageCounts(churchId ?? '', selectedUnit)
   // Contadores de atendimento no MESMO universo da lista (unidade, etapa, origem, busca, período),
   // sem o próprio filtro de atendimento: cada botão mostra quantas pessoas da lista atual têm aquele estado.
-  const { data: careStatusData } = useAcolhimentoStatus(churchId ?? '', {
+  const { data: careStatusData, isPlaceholderData: careStale } = useAcolhimentoStatus(churchId ?? '', {
     unit: pageFilters.unit, stageKey: pageFilters.stageKey, source: pageFilters.source, search: pageFilters.search,
     birthMonth: pageFilters.birthMonth, createdFrom: pageFilters.createdFrom, createdTo: pageFilters.createdTo,
     classification: pageFilters.classification, role: pageFilters.role,
@@ -790,7 +815,7 @@ export default function People() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
-          <p className="text-xs md:text-sm text-text-secondary mt-1">
+          <p className={`text-xs md:text-sm text-text-secondary mt-1 transition-opacity ${pageStale ? 'opacity-50' : ''}`} title={pageStale ? 'Atualizando…' : undefined} aria-busy={pageStale}>
             {pageData
               ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${!isGeralTab ? ` · ${activeTabLabel}` : ''}${classificationFilter ? ` · ${CLASSIFICATION_LABEL[classificationFilter]}` : ''}`
               : 'Carregando...'}
@@ -944,7 +969,7 @@ export default function People() {
       {showFilters && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="classificacao-filtros">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses são totais da unidade selecionada; o total da lista atual (com aba, estado e busca) aparece no cabeçalho da página.">Classificação:</span>
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses são totais da unidade selecionada; o total da lista atual (com aba, estado e busca) aparece no cabeçalho da página.">Classificação (total da unidade):</span>
             {([
               { value: '',        label: 'Todas' },
               { value: 'visitor', label: `Visitantes (${stageCounts?.classificacao?.visitor ?? '…'})` },
@@ -988,8 +1013,8 @@ export default function People() {
           Contadores calculados no banco sobre o MESMO universo da lista (filtros acima). */}
       {showFilters && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="atendimento-filtros">
-          <div className="flex flex-wrap items-center gap-2" data-testid="atendimento-estados">
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Estados:</span>
+          <div className={`flex flex-wrap items-center gap-2 transition-opacity ${careStale ? 'opacity-50' : ''}`} data-testid="atendimento-estados" aria-busy={careStale}>
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses contam as pessoas da lista atual (unidade, aba, classificação, origem, busca e datas).">Estados (da lista atual):</span>
             {([
               { value: '', label: `Todos (${careStatusData?.total ?? '…'})` },
               { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
