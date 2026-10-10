@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 
 
 const BASE = 'http://localhost:5173';
+let UNITS_DELAY = 0 // simula a lista de unidades chegando depois (selectedUnit='all' + isLoading=true → unidade da URL + isLoading=false)
 const SUPA = 'https://mlqjywqnchilvgkbvicd.supabase.co';
 
 // JWT mínimo válido (assinatura fake — só para o SDK parsear o payload)
@@ -174,6 +175,7 @@ function mockResponse(data, status = 200) {
     }
     // Church units
     if (url.includes('/rest/v1/church_units')) {
+      if (UNITS_DELAY) await new Promise(r => setTimeout(r, UNITS_DELAY))
       return route.fulfill(mockResponse([
         { id: '11111111-1111-4111-8111-111111111111', name: 'Unidade Central', church_id: MOCK_CHURCH.id, is_active: true },
         { id: '22222222-2222-4222-8222-222222222222', name: 'Unidade Norte', church_id: MOCK_CHURCH.id, is_active: true },
@@ -279,6 +281,21 @@ const antes = Object.fromEntries(new URL(page.url()).searchParams)
 await atenderEVolta()
 const depois = Object.fromEntries(new URL(page.url()).searchParams)
 ck('combinado: Atender → Voltar devolve exatamente a mesma URL e a página 3', JSON.stringify(antes) === JSON.stringify(depois) && lastPage()?.p_offset === 100, JSON.stringify(depois))
+// ── Reload frio / carregamento lento da lista de unidades: a unidade passa de 'all' (carregando) para a da URL ──
+UNITS_DELAY = 1500
+await go(`&unidade=${U2}&pagina=2`)
+ck('J1: link direto com unidades lentas mantém a página 2 e a unidade', pg() === '2' && lastPage()?.p_offset === 50 && /Página 2 de 3/.test(await label()) && new URL(page.url()).searchParams.get('unidade') === U2, `${pg()} ${lastPage()?.p_offset} ${await label()}`)
+await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(3000)
+ck('J2: F5 com unidades lentas mantém a página 2', pg() === '2' && lastPage()?.p_offset === 50 && /Página 2 de 3/.test(await label()), `${pg()} ${lastPage()?.p_offset}`)
+await go(`&unidade=${U1}&cls=visitor&estado=nao_atendida&origem=qr_code&q=Pessoa&de=2026-01-01&ate=2026-12-31&pagina=3`)
+await page.waitForTimeout(1500)
+const lq = lastPage()
+ck('J3: filtros combinados + página 3 sobrevivem ao carregamento lento', pg() === '3' && lq?.p_offset === 100 && lq?.p_unit_id === U1 && lq?.p_search === 'Pessoa' && lq?.p_care_status === 'nao_atendida', JSON.stringify({ p: pg(), off: lq?.p_offset, u: lq?.p_unit_id }))
+await page.locator('select[aria-label="Unidade"]:visible').first().selectOption(U2); await page.waitForTimeout(2500)
+ck('J4: depois de resolvido, trocar a unidade ainda volta à página 1', pg() === null && lastPage()?.p_offset === 0 && lastPage()?.p_unit_id === U2, `${pg()} ${lastPage()?.p_offset}`)
+await next().click(); await page.waitForTimeout(1200)
+ck('J5: Próxima continua funcionando após o carregamento lento', pg() === '2')
+UNITS_DELAY = 0
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close()
 const failed = results.filter(x => !x).length
