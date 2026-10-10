@@ -67,6 +67,7 @@ export default function VisitorLanding() {
   const [loading,   setLoading]   = useState(true)
   const [notFound,  setNotFound]  = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false)
   const [submitting,setSubmitting]= useState(false)
   const [errors,    setErrors]    = useState<Partial<FormState>>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -144,7 +145,7 @@ export default function VisitorLanding() {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      await fetch(`${EF_BASE}/visitor-capture`, {
+      const res = await fetch(`${EF_BASE}/visitor-capture`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -156,7 +157,8 @@ export default function VisitorLanding() {
           entry_type:      form.entry_type,
         }),
       })
-      // A EF sempre retorna 200, independente do resultado interno
+      // Telefone já cadastrado: a EF avisa (sem criar nem alterar ninguém). Qualquer outra resposta = sucesso.
+      try { const d = await res.json(); setAlreadyRegistered(d?.already_registered === true) } catch { /* resposta sem JSON → sucesso */ }
       setSubmitted(true)
     } catch {
       setSubmitError('Sem conexão com a internet. Verifique sua rede e tente novamente.')
@@ -222,13 +224,15 @@ export default function VisitorLanding() {
             className="font-display text-2xl font-bold text-gray-900 mb-2"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
-            Recebemos seu cadastro! 🙏
+            {alreadyRegistered ? 'USUÁRIO JÁ CADASTRADO' : 'Recebemos seu cadastro! 🙏'}
           </h1>
 
           <p className="text-sm text-gray-500 leading-relaxed">
-            Em alguns minutos, alguém de{' '}
-            <span className="font-medium text-gray-700">{church?.name}</span>{' '}
-            vai entrar em contato com você.
+            {alreadyRegistered
+              ? <>Este telefone já está cadastrado em{' '}<span className="font-medium text-gray-700">{church?.name}</span>. Não é preciso se cadastrar de novo.</>
+              : <>Em alguns minutos, alguém de{' '}
+                <span className="font-medium text-gray-700">{church?.name}</span>{' '}
+                vai entrar em contato com você.</>}
           </p>
 
           {/* Botão wa.me — exibido apenas se a church configurou o número público */}

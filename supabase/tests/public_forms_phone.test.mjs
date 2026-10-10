@@ -95,7 +95,7 @@ async function runAll(dirOf) {
   try {
     // ── visitor-capture ─────────────────────────────────────
     const qr = () => ({ qr_codes: [{ id: 'qr-1', church_id: IGV, unit_id: 'unit-1', slug: 'igv', is_active: true }, { id: 'qr-2', church_id: OUTRA, unit_id: null, slug: 'outra', is_active: true }] })
-    const vc = async (seedPeople, body) => { const db = makeDb({ ...qr(), people: seedPeople }); const h = await load(dirOf('visitor-capture'), db); const res = await post(h, body); return { db, status: res.status } }
+    const vc = async (seedPeople, body) => { const db = makeDb({ ...qr(), people: seedPeople }); const h = await load(dirOf('visitor-capture'), db); const res = await post(h, body); return { db, status: res.status, body: await res.clone().json().catch(() => null) } }
     { const { db, status } = await vc([marcelo('+5521999990000')], { slug: 'igv', name: 'João Pereira', phone: '(21) 99999-0000', invited_by_name: 'Fulano', entry_type: 'visitante' })
       const p = db.t.people[0]
       o.vc_existente = { status, pessoas: db.t.people.length, identidade: ident(p) === ident(marcelo('+5521999990000')), visita: !!p.first_visit_date && !!p.last_contact_at, pipeline: db.rpcCalls.some(c => c.name === 'capture_visitor_to_pipeline' && c.args.p_person_id === 'marcelo') } }
@@ -115,6 +115,16 @@ async function runAll(dirOf) {
     { const outra = { ...marcelo('+5521999990000'), id: 'outra', church_id: OUTRA, name: 'Pessoa da Igreja 2' }
       const { db } = await vc([outra], { slug: 'igv', name: 'João Pereira', phone: '21999990000' })
       o.vc_tenant = { criouNaIgv: db.t.people.some(p => p.church_id === IGV && p.name === 'João Pereira'), outraIntacta: ident(db.t.people.find(p => p.id === 'outra')) === ident(outra), total: db.t.people.length } }
+
+    // ── item 8/12: aviso "USUÁRIO JÁ CADASTRADO" (só quando o telefone já existe) ──
+    { const e = await vc([marcelo('+5521999990000')], { slug: 'igv', name: 'João Pereira', phone: '(21) 99999-0000', entry_type: 'visitante' })
+      const m = await vc([marcelo('+5521999990000')], { slug: 'igv', name: 'João Pereira', phone: '21999990000', entry_type: 'ja_sou_membro' })
+      const n = await vc([], { slug: 'igv', name: 'Carla Nova', phone: '(21) 97777-1111', entry_type: 'visitante' })
+      const x = await vc([], { slug: 'slug-inexistente', name: 'Carla Nova', phone: '(21) 97777-1111' })
+      const o24 = makeDb({ ...qr(), people: [] }); const h24 = await load(dirOf('visitor-capture'), o24)
+      const r1 = await (await post(h24, { slug: 'igv', name: 'Carla Nova', phone: '(21) 97777-1111' })).json()
+      const r2 = await (await post(h24, { slug: 'igv', name: 'Carla Outra', phone: '21 97777 1111' })).json()
+      o.aviso = { existente: e.body, membro: m.body, novo: n.body, slugInvalido: x.body, novoDepoisRepetido: r1, repetido24h: r2, pessoasAposRepetir: o24.t.people.length, nomeMantido: o24.t.people[0]?.name } }
 
     // ── igv-public-enrollment ───────────────────────────────
     const course = () => ({ church_courses: [{ id: 'course-1', church_id: IGV, title: 'Curso', is_public: true, active: true, max_capacity: null, enrolled_count: 0 }] })
@@ -153,6 +163,11 @@ ck('QR: datas operacionais mantidas (visita/contato registrados, pessoa segue pa
 ck('QR: acha o dono do telefone em qualquer formato gravado (55, DDD, máscara, sem 9º dígito)', Object.values(N.vc_formatos).every(Boolean), J(N.vc_formatos))
 ck('QR: conversão/primeira visita só preenchem quando vazias; nunca sobrescrevem', N.vc_datas.naoSobrescreve && N.vc_datas.preencheVazia, J(N.vc_datas))
 ck('QR "já sou membro": só registra o contato', N.vc_membro.status === 200 && N.vc_membro.pessoas === 1 && N.vc_membro.identidade && N.vc_membro.contato)
+ck('Aviso: telefone existente (visitante) → already_registered + "USUÁRIO JÁ CADASTRADO", sem criar/alterar identidade', N.aviso.existente?.already_registered === true && N.aviso.existente?.message === 'USUÁRIO JÁ CADASTRADO' && N.vc_existente.pessoas === 1 && N.vc_existente.identidade, J(N.aviso.existente))
+ck('Aviso: telefone existente ("já sou membro") → already_registered', N.aviso.membro?.already_registered === true, J(N.aviso.membro))
+ck('Aviso: cadastro novo → sucesso atual, sem already_registered', N.aviso.novo?.success === true && N.aviso.novo?.already_registered === undefined && N.aviso.novo?.message === 'Cadastro realizado!', J(N.aviso.novo))
+ck('Aviso: slug inexistente → resposta genérica (não revela nada)', N.aviso.slugInvalido?.already_registered === undefined && N.aviso.slugInvalido?.success === true, J(N.aviso.slugInvalido))
+ck('Aviso: reenvio em 24h → avisa e não duplica nem renomeia', N.aviso.novoDepoisRepetido?.already_registered === undefined && N.aviso.repetido24h?.already_registered === true && N.aviso.pessoasAposRepetir === 1 && N.aviso.nomeMantido === 'Carla Nova', J({ r1: N.aviso.novoDepoisRepetido, r2: N.aviso.repetido24h, p: N.aviso.pessoasAposRepetir, nome: N.aviso.nomeMantido }))
 ck('QR: telefone novo → cadastro criado como antes (nome, origem, unidade, "Convidado por")', N.vc_novo.pessoas === 1 && N.vc_novo.name === 'Carla Nova' && N.vc_novo.phone === '+5521977771111' && N.vc_novo.source === 'qr_code' && N.vc_novo.obs === 'Convidado por: Fulano' && N.vc_novo.unit === 'unit-1' && N.vc_novo.church === IGV, J(N.vc_novo))
 ck('QR: mesmo telefone em outra igreja → cria na igreja do QR; a outra fica intacta', N.vc_tenant.criouNaIgv && N.vc_tenant.outraIntacta && N.vc_tenant.total === 2)
 ck('Curso IGV: telefone existente (outro formato) → não cria, não renomeia; inscrição vinculada à pessoa certa', N.curso_existente.status === 200 && N.curso_existente.pessoas === 1 && N.curso_existente.identidade && N.curso_existente.inscricao === 1 && N.curso_existente.vinculo === 'marcelo', J(N.curso_existente))
