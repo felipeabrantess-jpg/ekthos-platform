@@ -746,14 +746,17 @@ export default function People() {
     }
   }, [searchParams, items, setSearchParams])
 
-  // Troca de unidade global → volta à primeira página. Só em mudança real: na montagem a página
-  // vem da URL (?pagina=N) e não pode ser descartada (Atender → Voltar, atualizar, link direto).
-  const prevUnitRef = useRef(selectedUnit)
+  // Troca de unidade global → volta à primeira página. Só em mudança real feita depois que o contexto
+  // de unidade resolveu: enquanto as unidades carregam, selectedUnit vale 'all' e depois assume a unidade
+  // da URL — isso é inicialização, não troca, e não pode descartar ?pagina=N (reload, link direto, Voltar).
+  const resolvedUnitRef = useRef<typeof selectedUnit | null>(null)
   useEffect(() => {
-    if (prevUnitRef.current === selectedUnit) return
-    prevUnitRef.current = selectedUnit
+    if (unitLoading) return
+    if (resolvedUnitRef.current === null) { resolvedUnitRef.current = selectedUnit; return }
+    if (resolvedUnitRef.current === selectedUnit) return
+    resolvedUnitRef.current = selectedUnit
     setCurrentPage(0)
-  }, [selectedUnit])
+  }, [selectedUnit, unitLoading])
 
   function invalidatePeople() {
     void queryClient.invalidateQueries({ queryKey: ['people-page', churchId] })
