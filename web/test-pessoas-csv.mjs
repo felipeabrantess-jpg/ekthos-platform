@@ -212,6 +212,12 @@ async function custom(r, u) {
   if (u.includes('get_my_tenant_context')) return F(json({ effective_church_id: CH, church_name: 'T', church_status: 'configured', is_impersonating: false, role: 'admin', is_ekthos_admin: false }))
   if (u.includes('export_people_rows')) {
     exportCalls.push(body)
+    if (body.p_search === 'GRANDE') {
+      // 1.200 pessoas (> 1.000): prova que a exportação não é cortada; metade com etapa, metade sem registro (vazio)
+      const big = Array.from({ length: 1200 }, (_, i) => ({ ...PEOPLE[1], id: 'big-' + i, name: 'Grande ' + String(i + 1).padStart(4, '0'), contacts_count: 0, contacts: [],
+        etapa: i % 2 === 0 ? 'Visitante' : null, etapa_desde: i % 2 === 0 ? '2026-08-15T13:00:00+00:00' : null, dias_na_etapa: i % 2 === 0 ? 56 : null }))
+      return F(json({ total: big.length, max_contacts: 0, alert_threshold_hours: 48, rows: big }))
+    }
     let rows = PEOPLE
     if (body.p_unit_id === '11111111-1111-4111-8111-111111111111') rows = rows.filter(p => p.unit_id === '11111111-1111-4111-8111-111111111111')
     if (body.p_unit_id === 'none') rows = rows.filter(p => !p.unit_id)
@@ -255,7 +261,7 @@ ck('RPC export_people_rows chamada com os filtros da lista (sem p_limit/p_offset
 ck('1 pessoa = 1 linha: 3 linhas de dados + cabeçalho', c.rows.length === 4, String(c.rows.length))
 ck('cabeçalho fixo: Nome, Telefone, Email, Classificação, Funções, Etapa, Atendimento, Sem contato +48h, Unidade, Ministérios, Primeira visita, Cadastro, Origem, Qtd contatos',
   H.slice(0, 14).join('|') === 'Nome|Telefone|Email|Classificação|Funções|Etapa|Atendimento|Sem contato +48h|Unidade|Ministérios|Primeira visita|Cadastro|Origem|Qtd contatos', H.slice(0, 14).join('|'))
-ck('colunas dinâmicas até o maior ordinal (3): 1º/2º/3º contato — data / resultado / responsável', H.length === 14 + 9 && H[14] === '1º contato — data' && H[15] === '1º contato — resultado' && H[16] === '1º contato — responsável' && H[20] === '3º contato — data' && H[22] === '3º contato — responsável', H.slice(14).join('|'))
+ck('colunas dinâmicas até o maior ordinal (3): 1º/2º/3º contato — data / resultado / responsável', H.length === 14 + 9 + 2 && H[14] === '1º contato — data' && H[15] === '1º contato — resultado' && H[16] === '1º contato — responsável' && H[20] === '3º contato — data' && H[22] === '3º contato — responsável', H.slice(14).join('|'))
 const byName = (n) => c.rows.find(r => r[0].startsWith(n))
 const z = byName('Zélia'), j = byName('João'), m = byName('Maria')
 ck('aspas, vírgula e acentos preservados no nome (escape RFC 4180)', z[0] === 'Zélia "Dona" Souza, da Silva' && j[0] === 'João Ação', z[0])
@@ -278,7 +284,7 @@ await page.locator('[data-testid="estado-todos"]').click(); await page.waitForTi
 // Busca → p_search
 await page.locator('input[placeholder*="Buscar"]').fill('maria'); await page.waitForTimeout(1200)
 c = await exportAndRead()
-ck('busca "maria": RPC recebe p_search e exporta só Maria; colunas dinâmicas seguem o universo (3 contatos)', exportCalls[3].p_search === 'maria' && c.rows.length === 2 && c.rows[1][0] === 'Maria Três' && c.rows[0].length === 23)
+ck('busca "maria": RPC recebe p_search e exporta só Maria; colunas dinâmicas seguem o universo (3 contatos)', exportCalls[3].p_search === 'maria' && c.rows.length === 2 && c.rows[1][0] === 'Maria Três' && c.rows[0].length === 25)
 await page.locator('input[placeholder*="Buscar"]').fill(''); await page.waitForTimeout(800)
 
 // Unidade → p_unit_id + nome do arquivo
@@ -289,7 +295,18 @@ ck('unidade Central: RPC recebe p_unit_id da unidade, exporta 2 linhas, arquivo 
 // universo sem contatos → nenhuma coluna dinâmica
 await unitSel.selectOption({ label: 'Sem unidade definida' }); await page.waitForTimeout(1500)
 c = await exportAndRead()
-ck('sem unidade: 1 linha (João), max_contacts 1 → só 3 colunas dinâmicas; arquivo pessoas-sem-unidade-*.csv', exportCalls[5].p_unit_id === 'none' && c.rows.length === 2 && c.rows[0].length === 17 && /^pessoas-sem-unidade-/.test(c.filename), c.rows[0].length + ' ' + c.filename)
+ck('sem unidade: 1 linha (João), max_contacts 1 → só 3 colunas dinâmicas; arquivo pessoas-sem-unidade-*.csv', exportCalls[5].p_unit_id === 'none' && c.rows.length === 2 && c.rows[0].length === 19 && /^pessoas-sem-unidade-/.test(c.filename), c.rows[0].length + ' ' + c.filename)
+// Item 18 — novas colunas e exportação > 1.000 pessoas (download real do Blob)
+await unitSel.selectOption({ label: 'Todas as unidades' }); await page.waitForTimeout(1200)
+await page.locator('input[placeholder*="Buscar"]').fill('GRANDE'); await page.waitForTimeout(1200)
+c = await exportAndRead()
+const HB = c.rows[0]
+ck('item 18: "Etapa desde" e "Dias na etapa" são as 2 últimas colunas (nenhuma coluna anterior se desloca)', HB.length === 14 + 2 && HB[14] === 'Etapa desde' && HB[15] === 'Dias na etapa' && HB.slice(0, 14).join('|') === 'Nome|Telefone|Email|Classificação|Funções|Etapa|Atendimento|Sem contato +48h|Unidade|Ministérios|Primeira visita|Cadastro|Origem|Qtd contatos', HB.join('|'))
+ck('item 18: 1.200 pessoas → 1.200 linhas + cabeçalho (sem corte em 1.000/1.001)', c.rows.length === 1201 && c.rows[1200][0] === 'Grande 1200' && c.rows[1][0] === 'Grande 0001', String(c.rows.length))
+const withStage = c.rows.slice(1).filter(r => r[15] !== '')
+ck('item 18: com etapa → data de entrada dd/mm/aaaa e dias; sem registro → ambos vazios (nada inventado)', c.rows[1][14] === '15/08/2026' && c.rows[1][15] === '56' && c.rows[2][14] === '' && c.rows[2][15] === '' && withStage.length === 600, withStage.length + ' ' + c.rows[1].slice(-2).join('/'))
+ck('item 18: arquivo é um único download com BOM e tipo text/csv', c.bom === true && /text\/csv/.test(c.type) && /^pessoas-todas-\d{8}\.csv$/.test(c.filename), c.filename)
+await page.locator('input[placeholder*="Buscar"]').fill(''); await page.waitForTimeout(500)
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close();
 const failed = results.filter(x => !x).length;
