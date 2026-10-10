@@ -33,6 +33,35 @@ export function useMinistryMembers(ministryId: string | null | undefined) {
   })
 }
 
+export interface MinistryMemberOrigin {
+  person_id: string
+  referred_by_name: string | null
+  referred_at: string | null
+  added_by_name: string | null
+  added_at: string | null
+}
+
+/**
+ * Origem do vínculo (ata IGV, item 19): quem encaminhou e quem incluiu no ministério.
+ * Complemento de leitura — se a RPC não existir ou o usuário não puder gerir o ministério,
+ * a lista continua funcionando sem a origem.
+ */
+export function useMinistryMemberOrigins(ministryId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['ministry-member-origins', ministryId],
+    queryFn: async (): Promise<Record<string, MinistryMemberOrigin>> => {
+      if (!ministryId) return {}
+      const { data, error } = await rpc('get_ministry_member_origins', { p_ministry_id: ministryId })
+      if (error) return {}
+      const map: Record<string, MinistryMemberOrigin> = {}
+      for (const r of (data ?? []) as MinistryMemberOrigin[]) map[r.person_id] = r
+      return map
+    },
+    enabled: !!ministryId,
+    staleTime: 15_000,
+  })
+}
+
 /** Contagem de pessoas por ministério (ministry_members), para os cards. */
 export function useMinistryMemberCounts(churchId: string | null | undefined) {
   return useQuery({
@@ -133,6 +162,7 @@ export function useSyncPersonMinistries() {
       void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
       for (const id of [...(res?.added ?? []), ...(res?.removed ?? [])]) {
         void queryClient.invalidateQueries({ queryKey: ['ministry-members', id] })
+        void queryClient.invalidateQueries({ queryKey: ['ministry-member-origins', id] })
       }
     },
   })
@@ -142,6 +172,7 @@ function useInvalidateMembers() {
   const queryClient = useQueryClient()
   return (ministryId: string, churchId: string, personId?: string) => {
     void queryClient.invalidateQueries({ queryKey: ['ministry-members', ministryId] })
+    void queryClient.invalidateQueries({ queryKey: ['ministry-member-origins', ministryId] })
     void queryClient.invalidateQueries({ queryKey: ['ministry-member-counts', churchId] })
     void queryClient.invalidateQueries({ queryKey: ['ministerios', churchId] })
     // Bidirecional: o lado "Editar Pessoa" lê a mesma relação
