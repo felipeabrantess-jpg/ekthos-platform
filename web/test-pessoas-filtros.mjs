@@ -211,14 +211,15 @@ const U1 = '11111111-1111-4111-8111-111111111111'
 const DB = [] // pessoas da igreja mockada
 const mk = (n, cls, stage, care, unit, created, name) => DB.push({ id: `p${n}`, cls, stage, care, unit, created, name: name || `Pessoa ${String(n).padStart(2, '0')} ${cls || 'nc'}` })
 // 12 visitantes sem unidade (6 recentes, 6 antigos), etapa visitante
-for (let i = 1; i <= 12; i++) mk(i, 'visitor', 'visitante', i % 3 === 0 ? 'em_atendimento' : i % 3 === 1 ? 'nao_atendida' : 'atendida', null, i <= 6 ? '2026-10-05' : '2026-01-10')
+const RECENT = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10)   // dentro de "7 dias" em qualquer data de execução
+for (let i = 1; i <= 12; i++) mk(i, 'visitor', 'visitante', i % 3 === 0 ? 'em_atendimento' : i % 3 === 1 ? 'nao_atendida' : 'atendida', null, i <= 6 ? RECENT : '2026-01-10')
 // 5 membros sem unidade (2 na etapa membro, 1 líder, 1 novo_convertido, 1 sem etapa)
 mk(13, 'member', 'membro', 'atendida', null, '2025-03-01', 'Sidney Membro'); mk(14, 'member', 'membro', 'em_atendimento', null, '2025-03-01')
 mk(15, 'member', 'lider', 'atendida', null, '2025-03-01'); mk(16, 'member', 'novo_convertido', 'nao_atendida', null, '2026-09-30'); mk(17, 'member', null, 'cancelado', null, '2025-03-01')
 // 4 não classificados sem unidade (3 sem etapa, 1 novo_convertido)
 mk(18, null, null, 'nao_atendida', null, '2026-02-02'); mk(19, null, null, 'em_atendimento', null, '2026-02-02'); mk(20, null, null, 'atendida', null, '2026-02-02'); mk(21, null, 'novo_convertido', 'nao_atendida', null, '2026-10-01')
 // 3 pessoas na Unidade Central (não devem aparecer em "Sem unidade")
-mk(22, 'visitor', 'visitante', 'nao_atendida', U1, '2026-10-06'); mk(23, 'member', 'membro', 'atendida', U1, '2025-01-01'); mk(24, null, null, 'nao_atendida', U1, '2026-02-02')
+mk(22, 'visitor', 'visitante', 'nao_atendida', U1, RECENT); mk(23, 'member', 'membro', 'atendida', U1, '2025-01-01'); mk(24, null, null, 'nao_atendida', U1, '2026-02-02')
 const PAGE = 10 // simula PEOPLE_PAGE_SIZE? não: o front manda p_limit; o mock respeita p_limit/p_offset reais
 const matches = (p, b) => {
   if (b.p_church_id && b.p_church_id !== CH) return false
