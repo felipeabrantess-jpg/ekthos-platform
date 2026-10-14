@@ -4,7 +4,7 @@
 O app do fiel (`/igv`) é uma **PWA (Progressive Web App)** completa:
 - Instalável no Android via Chrome (banner automático)
 - Instalável no iPhone via Safari → "Adicionar à Tela de Início"
-- Funciona offline (service worker + cache `igv-pwa-v3`)
+- Funciona offline (service worker + cache `igv-pwa-v4`, network-first)
 
 ---
 
