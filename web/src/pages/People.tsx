@@ -22,7 +22,7 @@ import {
   type PeoplePageFilters,
 } from '@/features/people/hooks/usePeoplePage'
 import { useUnit } from '@/contexts/UnitContext'
-import { withUnitParam } from '@/lib/filters/unitScope'
+import { withUnitParam, UNIT_ALL } from '@/lib/filters/unitScope'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
 import { useAcolhimentoStatus, getCareStatusBadge } from '@/features/people/hooks/useAcolhimentoStatus'
@@ -521,7 +521,7 @@ function tabToStageKey(tab: PeopleTab): string | undefined {
 
 export default function People() {
   const { churchId } = useAuth()
-  const { selectedUnit, units: churchUnits, isLoading: unitLoading } = useUnit()
+  const { selectedUnit, setSelectedUnit, units: churchUnits, isLoading: unitLoading } = useUnit()
   const navigate                        = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const queryClient                     = useQueryClient()
@@ -636,6 +636,13 @@ export default function People() {
   const isLoading = unitLoading || pageLoading
   const items = useMemo(() => (pageData?.items ?? []).filter(p => !deletingId || p.id !== deletingId), [pageData, deletingId])
   const total = pageData?.total ?? 0
+
+  // Item 24 (ata IGV): lista vazia numa unidade, mas a pessoa existe em outra (regra histórica de unidades:
+  // cadastros anteriores a 28/06/2026 ficam em "Sem unidade"). Só leitura: mesma consulta, todas as unidades, 1 linha.
+  const showOtherUnitsHint = !isLoading && !isError && items.length === 0 && total === 0 && selectedUnit !== UNIT_ALL && !isBirthdayTab
+  const { data: otherUnitsData } = usePeoplePage(
+    churchId ?? '', { ...pageFilters, unit: UNIT_ALL, page: 0, pageSize: 1 }, showOtherUnitsHint)
+  const otherUnitsTotal = showOtherUnitsHint ? (otherUnitsData?.total ?? 0) : 0
 
   // Badges das abas — mesmos predicados (unidade, deleted, left_at) da lista
   const { data: stageCounts } = usePeopleStageCounts(churchId ?? '', selectedUnit)
@@ -1080,6 +1087,24 @@ export default function People() {
               ? <Button variant="secondary" data-testid="btn-limpar-filtros" onClick={clearFilters}>Limpar filtros</Button>
               : isGeralTab && !search ? <Button onClick={handleNewPerson}>+ Nova Pessoa</Button> : undefined}
           />
+          {otherUnitsTotal > 0 && (
+            <div
+              className="mx-6 mb-6 -mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+              data-testid="outras-unidades"
+            >
+              <span>
+                {otherUnitsTotal === 1 ? '1 pessoa' : `${otherUnitsTotal.toLocaleString('pt-BR')} pessoas`} com esses mesmos filtros {otherUnitsTotal === 1 ? 'está' : 'estão'} em outra unidade.
+              </span>
+              <button
+                type="button"
+                data-testid="btn-ver-todas-unidades"
+                className="font-semibold underline underline-offset-2 hover:text-amber-900"
+                onClick={() => { setSelectedUnit(UNIT_ALL); setCurrentPage(0) }}
+              >
+                Ver em todas as unidades
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <>

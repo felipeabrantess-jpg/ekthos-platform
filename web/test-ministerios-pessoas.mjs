@@ -148,6 +148,18 @@ ck('comum: nenhum card tem botão "Pessoas"/"Ver pessoas"', (await page.locator(
 ck('comum: cards visíveis, sem contador de pessoas nem botão', (await page.locator('h3:has-text("Louvor")').count()) === 1 && (await page.locator('[data-testid="member-count"]').count()) === 0);
 await page.screenshot({ path: 'ministerios-comum.png' });
 
+// ── Item 24: da lista do ministério para o cadastro em Pessoas (todas as unidades) ──
+await loginAs('u-admin', 'admin');
+const membersBefore = JSON.stringify(members)
+await card('Louvor').locator('[data-testid="btn-pessoas"]').click(); await page.waitForTimeout(800);
+const linkBtn = page.locator('[data-testid="pessoa-item"] [data-testid="btn-ver-em-pessoas"]').first();
+const linkCount = await page.locator('[data-testid="btn-ver-em-pessoas"]').count();
+if (linkCount > 0) { await linkBtn.click(); await page.waitForTimeout(1200); }
+const nu = new URL(page.url());
+ck('item 24: "Ver cadastro em Pessoas" abre /pessoas em Todas as unidades já buscando a pessoa',
+  linkCount > 0 && nu.pathname === '/pessoas' && nu.searchParams.get('unidade') === 'all' && !!nu.searchParams.get('q'), page.url());
+ck('item 24: nenhum vínculo foi alterado pela navegação', JSON.stringify(members) === membersBefore);
+
 // ── volunteers nunca tocada por escrita ───────────────────────
 ck('volunteers: nenhuma escrita (POST/PATCH/DELETE) em todo o fluxo', volunteersTouched.every(x => x.startsWith('GET')) && JSON.stringify(volunteers) === volunteersSnapshot, volunteersTouched.join(' | ') || 'nenhum acesso');
 ck('nenhuma RPC/tabela de voluntários usada pela tela', !rpcCalls.some(c => /volunteer/i.test(c.name)) && volunteersTouched.length === 0);
