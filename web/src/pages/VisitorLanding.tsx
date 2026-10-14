@@ -50,7 +50,11 @@ const EMAIL_REGEX     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // ── Máscara de telefone BR ───────────────────────────────────
 
 function maskPhone(value: string): string {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
+  let all = value.replace(/\D/g, '')
+  // DDI do Brasil colado/digitado (+55 21 9...): 12 ou 13 dígitos começando em 55 → remove o 55 antes da máscara.
+  // Número nacional tem no máx. 11 dígitos, então um DDD 55 (RS) digitado normalmente nunca é confundido com DDI.
+  if ((all.length === 12 || all.length === 13) && all.startsWith('55')) all = all.slice(2)
+  const digits = all.slice(0, 11)
   if (digits.length === 0)  return ''
   if (digits.length <= 2)   return `(${digits}`
   if (digits.length <= 6)   return `(${digits.slice(0,2)}) ${digits.slice(2)}`
