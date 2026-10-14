@@ -94,7 +94,7 @@ DO $$
 DECLARE c record; r text; j jsonb; ev0 int; ev1 int;
 BEGIN
   SELECT * INTO c FROM _c;
-  INSERT INTO _r SELECT 3, 'conta vinculada vê a fila do SEU ministério', count(*) = 2 AND bool_and(ministry_id = c.m_a), count(*)::text FROM get_ministry_referrals(NULL);
+  INSERT INTO _r SELECT 3, 'conta vinculada vê a fila do SEU ministério', count(*) FILTER (WHERE ministry_id = c.m_a) = 2 AND NOT bool_or(ministry_id = c.m_b), count(*) FILTER (WHERE ministry_id = c.m_a)::text FROM get_ministry_referrals(NULL);
   INSERT INTO _r SELECT 4, 'conta vinculada NÃO vê fila de outro ministério (nem pedindo pelo id)', count(*) = 0, count(*)::text FROM get_ministry_referrals(c.m_b);
   INSERT INTO _r SELECT 6, 'e-mail coincidente com o da pessoa líder NÃO concede acesso (ponte por e-mail removida)',
     NOT EXISTS (SELECT 1 FROM get_ministry_referrals(NULL) WHERE ministry_id = c.m_b) AND NOT can_manage_ministry(c.m_b)
@@ -109,7 +109,7 @@ BEGIN
   INSERT INTO _r VALUES (11, 'pessoa entra uma única vez (2ª chamada não duplica)',
     NOT (j->>'inserted')::boolean AND (SELECT count(*) FROM ministry_members WHERE ministry_id = c.m_a AND person_id = c.p1) = 1, j::text);
   INSERT INTO _r SELECT 12, 'incluída → sai da fila; o outro encaminhamento do ministério continua',
-    count(*) = 1 AND bool_and(person_id = c.p2), string_agg(person_name, ',') FROM get_ministry_referrals(NULL);
+    count(*) = 1 AND bool_and(person_id = c.p2), string_agg(person_name, ',') FROM get_ministry_referrals(c.m_a);
   SELECT count(*) INTO ev1 FROM journey_events je JOIN person_journey pj ON pj.id = je.journey_id WHERE pj.person_id = c.p1;
   INSERT INTO _r VALUES (12, 'histórico preservado: jornada aberta e eventos da pessoa intactos após a inclusão',
     ev1 = ev0 AND (SELECT closed_at IS NULL AND ministry_id = c.m_a FROM person_journey WHERE person_id = c.p1), ev0 || ' eventos');

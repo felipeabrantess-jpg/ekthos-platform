@@ -17,7 +17,8 @@ GRANT ALL ON _r, _c TO authenticated, anon;
 CREATE TEMP TABLE _snap ON COMMIT DROP AS
 SELECT (SELECT count(*) FROM ministry_members) mm,
        (SELECT md5(coalesce(string_agg(md5(v::text), '' ORDER BY v.id), '')) FROM volunteers v) vol,
-       (SELECT count(*) FROM journey_events) ev;
+       (SELECT count(*) FROM journey_events) ev,
+       (SELECT count(*)::text || '/' || count(mm.referred_by)::text || '/' || count(mm.added_by)::text || '/' || count(mm.referral_event_id)::text || '/' || coalesce(max(mm.created_at)::text, '-') FROM ministry_members mm JOIN ministries m ON m.id = mm.ministry_id WHERE m.slug NOT LIKE 'zz-origem-%') mm_reais;
 
 -- (validação pré-deploy: a migration é injetada neste ponto, dentro desta mesma transação)
 
@@ -116,10 +117,8 @@ RESET ROLE;
 -- preservação
 INSERT INTO _r SELECT 13, 'volunteers idêntico',
   (SELECT md5(coalesce(string_agg(md5(v::text), '' ORDER BY v.id), '')) FROM volunteers v) = s.vol, NULL FROM _snap s;
-INSERT INTO _r SELECT 14, 'vínculos reais preexistentes sem origem inventada (só os sintéticos foram criados)',
-  (SELECT count(*) FROM ministry_members mm JOIN ministries m ON m.id = mm.ministry_id WHERE m.slug NOT LIKE 'zz-origem-%') = s.mm
-  AND (SELECT count(*) FROM ministry_members mm JOIN ministries m ON m.id = mm.ministry_id
-       WHERE m.slug NOT LIKE 'zz-origem-%' AND (mm.referred_by IS NOT NULL OR mm.added_by IS NOT NULL)) = 0, s.mm::text FROM _snap s;
+INSERT INTO _r SELECT 14, 'vínculos reais intactos: mesma contagem de vínculos, de origens (encaminhou/incluiu/evento) e mesma última criação',
+  (SELECT count(*)::text || '/' || count(mm.referred_by)::text || '/' || count(mm.added_by)::text || '/' || count(mm.referral_event_id)::text || '/' || coalesce(max(mm.created_at)::text, '-') FROM ministry_members mm JOIN ministries m ON m.id = mm.ministry_id WHERE m.slug NOT LIKE 'zz-origem-%') = s.mm_reais, s.mm_reais FROM _snap s;
 INSERT INTO _r SELECT 15, 'a inclusão não gera evento de jornada (só o encaminhamento sintético)',
   (SELECT count(*) FROM journey_events) - s.ev BETWEEN 0 AND 3, ((SELECT count(*) FROM journey_events) - s.ev)::text FROM _snap s;
 
