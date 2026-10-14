@@ -19,6 +19,7 @@ async function open(base, church, role) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const ministries = [{ id: 'm1', church_id: church, name: 'Louvor', slug: 'louvor', description: null, leader_id: null, leader_user_id: role === 'admin' ? null : 'u1', is_active: true, people: null }];
   const writes = [];
+  const store = { url: null, rpc: [] };
   await ctx.route(`${SUPA}/**`, async (route) => {
     const url = route.request().url(); const method = route.request().method();
     if (method === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': '*' } });
@@ -26,8 +27,16 @@ async function open(base, church, role) {
     if (url.includes('/auth/v1/token')) return route.fulfill(json(mkSession(church, role)));
     if (url.includes('/auth/v1/user')) return route.fulfill(json(mkSession(church, role).user));
     if (url.includes('/rest/v1/user_roles')) return route.fulfill(json({ role }));
+    if (url.includes('/rest/v1/church_settings')) return route.fulfill(json(store.url ? { ministerios_docs_url: store.url } : { ministerios_docs_url: null }));
     if (url.includes('/rest/v1/rpc/')) {
       const name = url.split('/rest/v1/rpc/')[1].split('?')[0];
+      if (name === 'set_ministerios_docs_url') {
+        const p = JSON.parse(route.request().postData() || '{}').p_url ?? ''; store.rpc.push(p);
+        if (role !== 'admin' && role !== 'admin_departments') return route.fulfill(json({ code: '42501', message: 'FORBIDDEN' }, 403));
+        const v = p.trim();
+        if (v && !/^https:\/\/\S+$/i.test(v)) return route.fulfill(json({ code: '22023', message: 'INVALID_URL' }, 400));
+        store.url = v || null; return route.fulfill(json(store.url));
+      }
       if (name === 'get_my_tenant_context') return route.fulfill(json({ effective_church_id: church, church_name: 'T', church_status: 'configured', is_impersonating: false, role, is_ekthos_admin: false }));
       if (name === 'upsert_session_token') return route.fulfill(json('tok'));
       if (name === 'get_ministry_member_counts') return route.fulfill(json([{ ministry_id: 'm1', cnt: 3 }]));
@@ -42,7 +51,7 @@ async function open(base, church, role) {
   await page.goto(`${base}/login`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   for (let i = 0; i < 3; i++) { try { await page.evaluate(({ k, s }) => { localStorage.clear(); localStorage.setItem(k, JSON.stringify(s)); }, { k: 'sb-mlqjywqnchilvgkbvicd-auth-token', s: mkSession(church, role) }); break; } catch { await page.waitForTimeout(500); } }
   await page.goto(`${base}/ministerios`, { waitUntil: 'networkidle', timeout: 30000 }); await page.waitForTimeout(1200);
-  return { ctx, page, writes };
+  return { ctx, page, writes, store };
 }
 const up = async (base) => { try { return (await fetch(base)).ok; } catch { return false; } };
 const doc = (page) => page.locator('[data-testid="btn-documentacao"]');
@@ -82,6 +91,36 @@ if (await up('http://localhost:5174')) {
     await ctx.close();
   }
 } else console.log('(servidor :5174 fora do ar — cenário "com link" não executado)');
+
+// ── D. item 14: campo + "Enviar" dentro do sistema (sem variável de ambiente) ──
+{
+  const { ctx, page, store } = await open('http://localhost:5173', IGV, 'admin');
+  const cfg = page.locator('[data-testid="btn-configurar-documentacao"]');
+  ck('D: admin vê "Configurar link"; botão Documentação ainda desabilitado (sem link)', (await cfg.count()) === 1 && (await cfg.innerText()) === 'Configurar link' && await doc(page).isDisabled());
+  await cfg.click(); await page.waitForTimeout(300);
+  ck('D: modal tem campo de endereço e botão "Enviar"', (await page.locator('[data-testid="input-docs-url"]').count()) === 1 && (await page.locator('[data-testid="btn-enviar-docs-url"]').innerText()) === 'Enviar');
+  await page.locator('[data-testid="input-docs-url"]').fill('http://inseguro.com/pasta');
+  await page.locator('[data-testid="btn-enviar-docs-url"]').click(); await page.waitForTimeout(600);
+  ck('D: endereço http é recusado com mensagem clara e o botão segue desabilitado', (await page.getByText('Informe um endereço válido que comece com https://').count()) === 1 && await doc(page).isDisabled() && store.url === null);
+  await page.locator('[data-testid="input-docs-url"]').fill('https://igv.sharepoint.com/pasta-ministerios');
+  await page.locator('[data-testid="btn-enviar-docs-url"]').click(); await page.waitForTimeout(800);
+  ck('D: https válido grava via RPC, fecha o modal e o botão vira link para o endereço informado', store.url === 'https://igv.sharepoint.com/pasta-ministerios' && (await page.locator('[data-testid="input-docs-url"]').count()) === 0
+    && (await doc(page).getAttribute('href')) === 'https://igv.sharepoint.com/pasta-ministerios' && (await doc(page).getAttribute('rel')) === 'noopener noreferrer', String(store.url));
+  ck('D: depois de configurado o atalho passa a "Alterar link"', (await cfg.innerText()) === 'Alterar link');
+  await cfg.click(); await page.waitForTimeout(300);
+  ck('D: o campo abre preenchido com o link atual', (await page.locator('[data-testid="input-docs-url"]').inputValue()) === 'https://igv.sharepoint.com/pasta-ministerios');
+  await page.locator('[data-testid="input-docs-url"]').fill('');
+  await page.locator('[data-testid="btn-enviar-docs-url"]').click(); await page.waitForTimeout(800);
+  ck('D: enviar em branco remove o link (botão volta a desabilitado)', store.url === null && await doc(page).isDisabled());
+  await page.screenshot({ path: 'ministerios-documentacao-configuracao.png' });
+  await ctx.close();
+}
+// ── E. quem não é administração não vê o campo; link já configurado vale para todos ──
+{
+  const { ctx, page } = await open('http://localhost:5173', IGV, 'ministry_leader');
+  ck('E: líder de ministério NÃO vê "Configurar link"', (await page.locator('[data-testid="btn-configurar-documentacao"]').count()) === 0);
+  await ctx.close();
+}
 
 await browser.close();
 const failed = results.filter(x => !x).length;
