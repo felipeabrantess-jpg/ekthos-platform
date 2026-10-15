@@ -10,9 +10,9 @@
  *  - quebras de linha dentro de um campo viram "\n" (o Excel mantém dentro da célula); o fim de linha do registro é "\r\n";
  *  - proteção contra injeção de fórmula (OWASP "CSV injection"): texto livre que começa com = + - @ TAB ou CR recebe
  *    um apóstrofo à frente. Nomes e e-mails vêm de formulários públicos (QR / seja-membro), então isso é necessário;
- *  - telefone: o Excel converte "+5521966900021" / "21966900021" em número (notação científica, perde o "+"). Telefones
- *    brasileiros reconhecíveis saem no formato "+55 (21) 96690-0021" / "(21) 96690-0021", que o Excel mantém como texto.
- *    Valores não reconhecíveis (ex.: "972860835") saem exatamente como estão.
+ *  - telefone: o Excel converte "+5521966900021" / "21966900021" / "972860835" em número (notação científica, perde o
+ *    "+" e zeros) e trata "+..." como fórmula. Telefones brasileiros reconhecíveis são legíveis ("+55 (21) 96690-0021");
+ *    internacionais e sem DDD mantêm o valor original; em TODOS os casos a célula sai como texto (ver phoneCell).
  */
 
 export const CSV_DELIMITER = ';'
@@ -48,6 +48,23 @@ export function formatPhoneForExcel(raw: string | null | undefined): string {
   const rest = national.slice(2)
   const local = rest.length === 9 ? `${rest.slice(0, 5)}-${rest.slice(5)}` : `${rest.slice(0, 4)}-${rest.slice(4)}`
   return `${ddi ? '+55 ' : ''}(${ddd}) ${local}`
+}
+
+/** Caracteres que um telefone pode ter; qualquer outra coisa não é tratada como telefone. */
+const PHONE_LIKE = /^[+\d\s().\-]+$/
+
+/**
+ * Célula de telefone para o Excel: SEMPRE texto.
+ * O Excel converte "+5521966900021", "21966900021" ou "972860835" em número (notação científica, perde "+" e zeros) e
+ * pode tratar um valor iniciado em "+" como fórmula. Para telefones (só dígitos, + ( ) - . e espaço) a célula sai como
+ * ="valor" — uma fórmula-constante que o Excel exibe como texto. O conteúdo não contém aspas nem operadores além de
+ * + - ( ), então não há como carregar código. Valor com qualquer outro caractere NÃO é embrulhado: recebe a proteção
+ * de fórmula comum (apóstrofo se começar com = + - @ TAB CR).
+ */
+export function phoneCell(raw: string | null | undefined): string {
+  const shown = formatPhoneForExcel(raw)
+  if (!shown) return ''
+  return PHONE_LIKE.test(shown) ? `="${shown}"` : protectFormula(shown)
 }
 
 /** Junta linhas já formatadas em texto CSV (sem BOM; o BOM é prefixado por quem grava o arquivo). */

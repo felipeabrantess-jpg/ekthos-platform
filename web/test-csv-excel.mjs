@@ -5,7 +5,7 @@ import { transform } from 'esbuild'
 
 const src = readFileSync(new URL('./src/features/people/csvFormat.ts', import.meta.url), 'utf8')
 const { code } = await transform(src, { loader: 'ts', format: 'esm' })
-const { CSV_DELIMITER, CSV_NEWLINE, csvCell, protectFormula, formatPhoneForExcel, toCsvText } = await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'))
+const { CSV_DELIMITER, CSV_NEWLINE, csvCell, protectFormula, formatPhoneForExcel, phoneCell, toCsvText } =await import('data:text/javascript;base64,' + Buffer.from(code).toString('base64'))
 
 const res = []; const ck = (n, ok, i = '') => { res.push(ok); console.log(`${ok ? '✅' : '❌'} ${n}${i ? ' — ' + i : ''}`) }
 
@@ -51,6 +51,31 @@ const tel = {
 for (const [a, b] of Object.entries(tel)) ck(`telefone ${JSON.stringify(a)} → ${JSON.stringify(b)}`, formatPhoneForExcel(a) === b, formatPhoneForExcel(a))
 ck('telefone nulo/indefinido → vazio', formatPhoneForExcel(null) === '' && formatPhoneForExcel(undefined) === '')
 ck('telefone formatado sobrevive à ida e volta (texto, com "+" e parênteses)', parse(toCsvText([[formatPhoneForExcel('+5521966900021')]]))[0][0] === '+55 (21) 96690-0021')
+
+// ── telefone SEMPRE texto no Excel (phoneCell) ──
+// Simula o que o Excel faz ao abrir a célula: ="..." vira o texto entre aspas; um valor iniciado em + - = @ vira fórmula;
+// um valor só de dígitos vira número (perde "+" e zeros).
+const excelVe = cell => {
+  const m = /^="([^"]*)"$/.exec(cell); if (m) return { tipo: 'texto', valor: m[1] }
+  if (/^[=+\-@]/.test(cell)) return { tipo: 'formula', valor: cell }
+  if (/^\d+$/.test(cell)) return { tipo: 'numero', valor: cell }
+  return { tipo: 'texto', valor: cell }
+}
+const fones = ['+5521966900021', '5521966900021', '21966900021', '(21) 99000-0002', '972860835', '97286083', '02119643512', '+14155550100', '+1 415 555 0100', '+351 912 345 678', '552198645974', '0800 123 4567']
+for (const f of fones) {
+  const c = phoneCell(f); const v = excelVe(parse(toCsvText([[c]]))[0][0])
+  const dig = s => s.replace(/\D/g, '')
+  ck(`telefone ${JSON.stringify(f)} → texto no Excel, mesmos dígitos`, v.tipo === 'texto' && dig(v.valor) === dig(f).replace(/^(?=\d{12,13}$)/, '') || (v.tipo === 'texto' && dig(v.valor) === dig(f)), `${v.tipo}: ${v.valor}`)
+}
+ck('sem DDD (9 e 8 dígitos) viram texto e conservam o valor', excelVe(phoneCell('972860835')).valor === '972860835' && excelVe(parse(toCsvText([[phoneCell('97286083')]]))[0][0]).tipo === 'texto')
+ck('internacional sem formatação mantém o "+" e todos os dígitos', excelVe(parse(toCsvText([[phoneCell('+14155550100')]]))[0][0]).valor === '+14155550100')
+ck('brasileiro reconhecível sai legível, com "+55"', excelVe(parse(toCsvText([[phoneCell('+5521966900021')]]))[0][0]).valor === '+55 (21) 96690-0021')
+for (const mal of ['=1+1', '=HYPERLINK("http://x","a")', '@SUM(A1)', '+cmd|calc!A1', '-2+3x', '=21 99999-9999;=1']) {
+  const out = excelVe(parse(toCsvText([[phoneCell(mal)]]))[0][0])
+  ck(`telefone malicioso ${JSON.stringify(mal)} não vira fórmula`, out.tipo === 'texto' && out.valor.startsWith("'"), out.valor)
+}
+ck('telefone vazio/nulo → célula vazia', phoneCell('') === '' && phoneCell(null) === '' && phoneCell(undefined) === '')
+ck('célula de telefone não carrega aspas nem operadores além de + - ( )', fones.every(f => /^="[+\d\s().\-]*"$/.test(phoneCell(f))))
 
 // ── datas e números: texto dd/mm/aaaa e dígitos ficam como estão ──
 const row = parse(toCsvText([['05/06/2026', '14/10/2026 18:34', '7', '0']]))[0]

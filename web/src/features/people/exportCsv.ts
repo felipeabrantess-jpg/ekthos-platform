@@ -17,7 +17,7 @@ import { getCareStatusBadge } from './hooks/useAcolhimentoStatus'
 import { resultLabel, channelLabel } from '@/features/atendimento/contactLabels'
 import { UNIT_ALL, UNIT_NONE, type UnitScope } from '@/lib/filters/unitScope'
 import { classificationLabel, ROLE_BASIS_LABEL, type PersonClassification } from './classification'
-import { csvCell, formatPhoneForExcel, protectFormula, toCsvText } from './csvFormat'
+import { csvCell, phoneCell, protectFormula, toCsvText } from './csvFormat'
 
 export { csvCell }
 
@@ -101,7 +101,7 @@ export function buildPeopleHeader(maxContacts: number, alertHours = 48): string[
 export function buildPeopleRow(r: ExportRow, maxContacts: number): string[] {
   const row = [
     // texto livre vem de formulários públicos → protegido contra injeção de fórmula; telefone sai em formato que o Excel não converte em número
-    protectFormula(r.name ?? ''), formatPhoneForExcel(r.phone), protectFormula(r.email ?? ''),
+    protectFormula(r.name ?? ''), phoneCell(r.phone), protectFormula(r.email ?? ''),
     classificationLabel(r.classification),
     protectFormula((r.classification?.roles ?? []).map(x => `${ROLE_BASIS_LABEL[x.basis] ?? x.role}${x.ref_name ? ` (${x.ref_name})` : ''}`).join(' | ')),
     protectFormula(r.etapa ?? ''),
