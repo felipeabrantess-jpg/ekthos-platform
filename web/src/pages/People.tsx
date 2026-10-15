@@ -16,7 +16,8 @@ import { supabase } from '@/lib/supabase'
 import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Check, Phone, Heart, Download } from 'lucide-react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useDeletePerson } from '@/features/people/hooks/usePeople'
-import { buildPeopleCsv, type ExportPayload } from '@/features/people/exportCsv'
+import { buildPeopleCsv, type ExportPayload, type ExportRow } from '@/features/people/exportCsv'
+import { fetchAllExportPages, isMissingFunctionError, type ExportPageResult } from '@/features/people/exportPaging'
 import {
   usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE, PEOPLE_SORT_KEYS,
   type PeoplePageFilters, type PeopleSortKey, type PeopleSortDir,
@@ -840,10 +841,27 @@ export default function People() {
     try {
       const { p_limit: _l, p_offset: _o, ...args } = buildPeoplePageArgs(churchId!, pageFilters)
       void _l; void _o
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('export_people_rows', args)
-      if (error) throw new Error(error.message)
-      const csv = buildPeopleCsv(data as ExportPayload, { unitScope: selectedUnit, units: churchUnits })
+      // Exportação paginada por cursor (cada chamada < 1 s, nunca encosta no statement_timeout de 8 s).
+      // Fallback: se a função paginada ainda não existir no banco, usa o RPC de chamada única.
+      let payload: ExportPayload
+      try {
+        payload = await fetchAllExportPages<ExportRow>(async cursor => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data, error } = await (supabase.rpc as any)('export_people_rows_page', {
+            ...args, p_after_created_at: cursor.createdAt, p_after_id: cursor.id, p_limit: 1000,
+          })
+          if (error) throw Object.assign(new Error(error.message), { code: error.code })
+          return data as ExportPageResult<ExportRow>
+        })
+      } catch (pageErr) {
+        const e = pageErr as { message?: string; code?: string }
+        if (!isMissingFunctionError(e?.message, e?.code)) throw pageErr
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.rpc as any)('export_people_rows', args)
+        if (error) throw new Error(error.message)
+        payload = data as ExportPayload
+      }
+      const csv = buildPeopleCsv(payload, { unitScope: selectedUnit, units: churchUnits })
       const blob = new Blob(['\uFEFF' + csv.text], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
