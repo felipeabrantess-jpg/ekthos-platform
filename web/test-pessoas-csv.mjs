@@ -242,7 +242,7 @@ await page.addInitScript(() => {
   URL.createObjectURL = (blob) => { blob.arrayBuffer().then(ab => { const u8 = new Uint8Array(ab); window.__csv.push({ text: new TextDecoder('utf-8', { ignoreBOM: true }).decode(u8), bom: u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF, type: blob.type }) }); return orig(blob) }
   HTMLAnchorElement.prototype.click = function () { window.__csv.push({ filename: this.download }) }
 })
-const parseCsv = (text) => text.replace(/^﻿/, '').split('\r\n').map(line => { const out = []; let cur = '', q = false; for (let i = 0; i < line.length; i++) { const ch = line[i]; if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++ } else if (ch === '"') q = false; else cur += ch } else if (ch === '"') q = true; else if (ch === ',') { out.push(cur); cur = '' } else cur += ch } out.push(cur); return out })
+const parseCsv = (text) => text.replace(/^﻿/, '').split('\r\n').map(line => { const out = []; let cur = '', q = false; for (let i = 0; i < line.length; i++) { const ch = line[i]; if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++ } else if (ch === '"') q = false; else cur += ch } else if (ch === '"') q = true; else if (ch === ';') { out.push(cur); cur = '' } else cur += ch } out.push(cur); return out })
 const exportAndRead = async () => {
   await page.evaluate(() => { window.__csv = [] })
   await page.locator('[data-testid="btn-exportar-csv"]').click()
