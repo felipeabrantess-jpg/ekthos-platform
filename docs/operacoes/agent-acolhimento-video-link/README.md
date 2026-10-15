@@ -1,6 +1,6 @@
 # Vídeo de boas-vindas da IGV por link estável (template acolhimento_boasvindas aprovado)
 
-Estado: **preparado e testado; NÃO publicado.** Canal e agente continuam inativos; nenhuma mensagem foi enviada.
+Estado (15/10/2026): **PUBLICADO** — `agent-acolhimento` v57 (deploy exclusivo desta correção; `_shared` de produção preservados byte a byte) e URL gravada em `metadata.meta_media.acolhimento_boasvindas_video_url` do canal da IGV. Canal inativo, grant do acolhimento 0, nenhuma mensagem enviada. **Falta:** teste real de recebimento (`teste-controlado.mjs`, com autorização) antes de ativar.
 
 ## Problema (diagnóstico de 15/10)
 O agente enviava o vídeo por `video.id` (media id `1770957757241974`, upload no número antigo). A Meta expira a mídia
@@ -43,7 +43,7 @@ WHERE church_id = '6c127559-874a-4748-8fce-55d4079613a5' AND status = 'failed'
   AND content::text LIKE '%"link"%' ORDER BY created_at DESC LIMIT 50;
 ```
 
-## Aplicação (SOMENTE com autorização) — nesta ordem
+## Aplicação (executada em 15/10/2026, nesta ordem)
 1. Deploy de `agent-acolhimento` com `_shared/d0-welcome.ts` (index corrigido). Função blindada: publicar com diff
    revisado e `verify_jwt=false`, como em produção. O `index.ts` do repositório está **atrás** da v56 publicada;
    o patch foi feito sobre o código **publicado**.

@@ -55,6 +55,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic        from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 import { AGENT_TOOLS, executeTool, checkAntiSpam } from '../_shared/agent-tools.ts'
 import { logAgentExecution } from '../_shared/log-agent-execution.ts'
+import { planD0Welcome } from '../_shared/d0-welcome.ts'
 
 const SUPABASE_URL              = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -510,6 +511,73 @@ async function forceCRMUpdate(
   }
 }
 
+// ─────────────────────────────────────────────────────────────────
+// D+0 TEMPLATE INTERCEPT
+// Enfileira o template de boas-vindas deterministicamente quando configurado (ver _shared/d0-welcome.ts).
+// Prioridade:
+//   1. metadata.meta_media.acolhimento_boasvindas_video_url  → template APROVADO acolhimento_boasvindas com o vídeo
+//      por LINK HTTPS estável (Storage). Verificado antes do envio; se indisponível NÃO envia e NÃO troca por texto
+//      (retorna objeto de falha explícita — o chamador registra e reagenda).
+//   2. metadata.meta_templates.acolhimento                   → template de texto (sem mídia)
+//   3. metadata.meta_media_ids.acolhimento_boasvindas        → legado (media id, expira)
+// Retorna: 'D0_template_dispatched' | null (fallback ao Claude, só quando NADA de vídeo está configurado)
+//          | { status, reason } (falha explícita do vídeo — nada foi enviado).
+// ─────────────────────────────────────────────────────────────────
+async function tryD0WelcomeTemplate(
+  churchId: string,
+  personId: string,
+  journeyId: string,
+): Promise<string | null | { status: string; reason: string }> {
+  // 1. Configuração do canal ativo da igreja
+  const { data: channel } = await supabaseAdmin.from('church_whatsapp_channels').select('metadata').eq('church_id', churchId).eq('active', true).order('created_at', {
+    ascending: false
+  }).limit(1).maybeSingle();
+  // 2. Primeiro nome: first_name → primeira palavra de name → 'amigo'
+  //    visitor-capture grava em people.name; first_name fica NULL para cadastros do QR
+  const { data: person } = await supabaseAdmin.from('people').select('first_name, name').eq('id', personId).eq('church_id', churchId).maybeSingle();
+  const firstName = (person?.first_name ?? '').trim() || (person?.name ?? '').trim().split(' ')[0] || 'amigo';
+  // 3. Plano (vídeo por link verificado | texto | legado | nada)
+  const plan = await planD0Welcome(channel?.metadata ?? null, firstName);
+  if (plan.kind === 'none') {
+    console.log(`[agent-acolhimento] D+0 sem template configurado church=${churchId} — fallback Claude`);
+    return null;
+  }
+  if (plan.kind === 'video_unavailable') {
+    // Falha EXPLÍCITA: não envia, não troca por texto, não avança a jornada.
+    console.error(`[agent-acolhimento] D+0 VIDEO_INDISPONIVEL reason=${plan.reason} url=${plan.videoUrl} church=${churchId} person=${personId} journey=${journeyId} — nada enviado, sem substituição por texto`);
+    return { status: 'video_unavailable', reason: plan.reason };
+  }
+  if (plan.kind === 'legacy_media_id') {
+    console.warn(`[agent-acolhimento] D+0 usando ${plan.warning} church=${churchId}`);
+  }
+  const templateContent = JSON.stringify({
+    type: 'template',
+    name: plan.template,
+    language: 'pt_BR',
+    components: plan.components
+  });
+  const enqueueResult = await executeTool('enqueue_message', {
+    person_id: personId,
+    message: templateContent
+  }, churchId, AGENT_SLUG);
+  if (!enqueueResult.ok) {
+    console.error('[agent-acolhimento] D+0 enqueue_message falhou:', JSON.stringify(enqueueResult));
+    // vídeo configurado: falha explícita (sem cair em texto livre); demais casos mantêm o fallback anterior
+    if (plan.kind === 'video_link') return { status: 'enqueue_failed', reason: String((enqueueResult as { error?: unknown }).error ?? 'enqueue_failed').slice(0, 120) };
+    return null // fallback para Claude
+    ;
+  }
+  // 4. Avançar journey → D+3
+  const resolvedTemplate = plan.kind === 'video_link' ? `${plan.template} (vídeo por link)` : plan.kind === 'text_template' ? plan.template : 'acolhimento_boasvindas (legado)';
+  await executeTool('update_acolhimento_journey', {
+    journey_id: journeyId,
+    next_touchpoint: 'D+3',
+    touchpoint_summary: `Template ${resolvedTemplate} — D+0`
+  }, churchId, AGENT_SLUG);
+  console.log(`[agent-acolhimento] D+0 template dispatched template=${resolvedTemplate} kind=${plan.kind} church=${churchId} person=${personId} firstName=${firstName}`);
+  return 'D0_template_dispatched';
+}
+
 async function processJourney(
   journeyId:   string,
   churchId:    string,
@@ -599,6 +667,66 @@ async function processJourney(
       return { ok: false, error: 'credit_exhausted', result: 'blocked_no_credits' }
     }
     // ── fim B3 FIX ────────────────────────────────────────────────────────────
+
+    // ── D+0 TEMPLATE INTERCEPT ────────────────────────────────────────────────
+    if (locked.current_touchpoint === 'D+0') {
+      const d0Result = await tryD0WelcomeTemplate(churchId, personId, journeyId);
+      if (d0Result !== null && typeof d0Result === 'object') {
+        // Falha explícita do vídeo de boas-vindas: nada foi enviado, nenhum crédito debitado, jornada NÃO avança.
+        // Reagenda em 1 h (volta a 'pending') e registra o erro em agent_executions — identificável, sem texto no lugar.
+        const retryAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        await supabaseAdmin.from('acolhimento_journey').update({
+          status: 'pending',
+          next_touchpoint_at: retryAt
+        }).eq('id', journeyId).eq('church_id', churchId);
+        await logAgentExecution(supabaseAdmin, {
+          church_id: churchId,
+          agent_slug: AGENT_SLUG,
+          model: MODEL,
+          trigger_type: triggerType,
+          status: 'error',
+          duration_ms: Date.now() - t0,
+          error: `d0_video_${d0Result.status}:${d0Result.reason}`
+        });
+        return {
+          ok: false,
+          error: 'd0_video_unavailable',
+          result: `d0_video_${d0Result.reason}`
+        };
+      }
+      if (d0Result !== null) {
+        await forceCRMUpdate(churchId, personId, journeyId, triggerType);
+        try {
+          await supabaseAdmin.rpc('debit_agent_credits', {
+            p_church_id: churchId,
+            p_agent_slug: AGENT_SLUG,
+            p_credits: 1,
+            p_operation_type: 'touchpoint',
+            p_related_entity_id: journeyId,
+            p_description: `Touchpoint D+0 template — ${personId}`
+          });
+        } catch (e) {
+          console.warn('[agent-acolhimento] debit D+0 template:', e);
+        }
+        await logAgentExecution(supabaseAdmin, {
+          church_id: churchId,
+          agent_slug: AGENT_SLUG,
+          model: MODEL,
+          trigger_type: triggerType,
+          status: 'success',
+          duration_ms: Date.now() - t0,
+          input_tokens: 0,
+          output_tokens: 0,
+          cache_read_tokens: 0,
+          cache_creation_tokens: 0
+        });
+        return {
+          ok: true,
+          result: d0Result
+        };
+      }
+    }
+    // ── fim D+0 TEMPLATE INTERCEPT ────────────────────────────────────────────
 
     const userMessage = `
 Processe o touchpoint atual da jornada de acolhimento.
