@@ -17,6 +17,9 @@ import { getCareStatusBadge } from './hooks/useAcolhimentoStatus'
 import { resultLabel, channelLabel } from '@/features/atendimento/contactLabels'
 import { UNIT_ALL, UNIT_NONE, type UnitScope } from '@/lib/filters/unitScope'
 import { classificationLabel, ROLE_BASIS_LABEL, type PersonClassification } from './classification'
+import { csvCell, phoneCell, protectFormula, toCsvText } from './csvFormat'
+
+export { csvCell }
 
 export interface ExportContact {
   ordinal: number
@@ -81,9 +84,6 @@ export function fmtDateTime(iso: string | null | undefined): string {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-/** Escapa um valor para CSV (RFC 4180): aspas duplas sempre, aspas internas duplicadas. */
-export const csvCell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
-
 export const ordinalLabel = (n: number) => `${n}º contato`
 
 export function buildPeopleHeader(maxContacts: number, alertHours = 48): string[] {
@@ -100,13 +100,14 @@ export function buildPeopleHeader(maxContacts: number, alertHours = 48): string[
 
 export function buildPeopleRow(r: ExportRow, maxContacts: number): string[] {
   const row = [
-    r.name ?? '', r.phone ?? '', r.email ?? '',
+    // texto livre vem de formulários públicos → protegido contra injeção de fórmula; telefone sai em formato que o Excel não converte em número
+    protectFormula(r.name ?? ''), phoneCell(r.phone), protectFormula(r.email ?? ''),
     classificationLabel(r.classification),
-    (r.classification?.roles ?? []).map(x => `${ROLE_BASIS_LABEL[x.basis] ?? x.role}${x.ref_name ? ` (${x.ref_name})` : ''}`).join(' | '),
-    r.etapa ?? '',
+    protectFormula((r.classification?.roles ?? []).map(x => `${ROLE_BASIS_LABEL[x.basis] ?? x.role}${x.ref_name ? ` (${x.ref_name})` : ''}`).join(' | ')),
+    protectFormula(r.etapa ?? ''),
     getCareStatusBadge(r.care_state)?.label ?? 'Não atendida',
     r.care_alert ? 'Sim' : 'Não',
-    r.unit_name ?? '', r.ministerios ?? '',
+    protectFormula(r.unit_name ?? ''), protectFormula(r.ministerios ?? ''),
     fmtDate(r.first_visit_date), fmtDate(r.created_at),
     r.source ? (SOURCE_LABEL[r.source] ?? r.source) : '',
     String(r.contacts_count ?? 0),
@@ -116,7 +117,7 @@ export function buildPeopleRow(r: ExportRow, maxContacts: number): string[] {
     const c = contacts[n - 1]
     if (c && c.ordinal === n) {
       const res = resultLabel(c.result)
-      row.push(fmtDateTime(c.contact_date), c.channel ? `${res} (${channelLabel(c.channel)})` : res, c.actor_name ?? '')
+      row.push(fmtDateTime(c.contact_date), c.channel ? `${res} (${channelLabel(c.channel)})` : res, protectFormula(c.actor_name ?? ''))
     } else {
       row.push('', '', '')
     }
@@ -129,7 +130,8 @@ export function buildPeopleCsv(payload: ExportPayload, opts: { unitScope?: UnitS
   const maxContacts = Math.max(0, Number(payload.max_contacts ?? 0))
   const header = buildPeopleHeader(maxContacts, payload.alert_threshold_hours ?? 48)
   const lines = [header, ...(payload.rows ?? []).map(r => buildPeopleRow(r, maxContacts))]
-  const text = lines.map(l => l.map(csvCell).join(',')).join('\r\n')
+  // delimitador ";" (Excel pt-BR) — ver csvFormat.ts; o BOM UTF-8 é prefixado por quem grava o arquivo
+  const text = toCsvText(lines)
   const scope = opts.unitScope === UNIT_ALL || !opts.unitScope ? 'todas'
     : opts.unitScope === UNIT_NONE ? 'sem-unidade'
     : (opts.units?.find(u => u.id === opts.unitScope)?.name ?? 'unidade').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')

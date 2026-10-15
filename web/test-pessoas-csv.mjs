@@ -216,7 +216,11 @@ async function custom(r, u) {
       // 1.200 pessoas (> 1.000): prova que a exportação não é cortada; metade com etapa, metade sem registro (vazio)
       const big = Array.from({ length: 1200 }, (_, i) => ({ ...PEOPLE[1], id: 'big-' + i, name: 'Grande ' + String(i + 1).padStart(4, '0'), contacts_count: 0, contacts: [],
         etapa: i % 2 === 0 ? 'Visitante' : null, etapa_desde: i % 2 === 0 ? '2026-08-15T13:00:00+00:00' : null, dias_na_etapa: i % 2 === 0 ? 56 : null }))
-      return F(json({ total: big.length, max_contacts: 0, alert_threshold_hours: 48, rows: big }))
+      // contrato paginado (export_people_rows_page): p_limit + cursor (p_after_id) → has_more / next_after_*
+      const lim = body.p_limit ?? big.length
+      const start = body.p_after_id ? big.findIndex(r => r.id === body.p_after_id) + 1 : 0
+      const slice = big.slice(start, start + lim); const last = slice[slice.length - 1]
+      return F(json({ count: slice.length, max_contacts: 0, alert_threshold_hours: 48, has_more: start + lim < big.length, next_after_created_at: last ? last.created_at : null, next_after_id: last ? last.id : null, rows: slice }))
     }
     let rows = PEOPLE
     if (body.p_unit_id === '11111111-1111-4111-8111-111111111111') rows = rows.filter(p => p.unit_id === '11111111-1111-4111-8111-111111111111')
@@ -242,7 +246,7 @@ await page.addInitScript(() => {
   URL.createObjectURL = (blob) => { blob.arrayBuffer().then(ab => { const u8 = new Uint8Array(ab); window.__csv.push({ text: new TextDecoder('utf-8', { ignoreBOM: true }).decode(u8), bom: u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF, type: blob.type }) }); return orig(blob) }
   HTMLAnchorElement.prototype.click = function () { window.__csv.push({ filename: this.download }) }
 })
-const parseCsv = (text) => text.replace(/^﻿/, '').split('\r\n').map(line => { const out = []; let cur = '', q = false; for (let i = 0; i < line.length; i++) { const ch = line[i]; if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++ } else if (ch === '"') q = false; else cur += ch } else if (ch === '"') q = true; else if (ch === ',') { out.push(cur); cur = '' } else cur += ch } out.push(cur); return out })
+const parseCsv = (text) => text.replace(/^﻿/, '').split('\r\n').map(line => { const out = []; let cur = '', q = false; for (let i = 0; i < line.length; i++) { const ch = line[i]; if (q) { if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++ } else if (ch === '"') q = false; else cur += ch } else if (ch === '"') q = true; else if (ch === ';') { out.push(cur); cur = '' } else cur += ch } out.push(cur); return out })
 const exportAndRead = async () => {
   await page.evaluate(() => { window.__csv = [] })
   await page.locator('[data-testid="btn-exportar-csv"]').click()
@@ -257,7 +261,7 @@ let c = await exportAndRead()
 const H = c.rows[0]
 ck('CSV começa com BOM UTF-8 e tipo text/csv (compatível com Excel)', c.bom === true && /text\/csv/.test(c.type), c.type)
 ck('nome do arquivo: pessoas-todas-AAAAMMDD.csv', /^pessoas-todas-\d{8}\.csv$/.test(c.filename), c.filename)
-ck('RPC export_people_rows chamada com os filtros da lista (sem p_limit/p_offset)', exportCalls.length === 1 && !('p_limit' in exportCalls[0]) && !('p_offset' in exportCalls[0]) && exportCalls[0].p_unit_id === null, JSON.stringify(exportCalls[0]))
+ck('RPC export_people_rows_page chamada com os filtros da lista + cursor (p_limit 1000, sem p_offset)', exportCalls.length === 1 && exportCalls[0].p_limit === 1000 && exportCalls[0].p_after_id === null && exportCalls[0].p_after_created_at === null && !('p_offset' in exportCalls[0]) && exportCalls[0].p_unit_id === null, JSON.stringify(exportCalls[0]))
 ck('1 pessoa = 1 linha: 3 linhas de dados + cabeçalho', c.rows.length === 4, String(c.rows.length))
 ck('cabeçalho fixo: Nome, Telefone, Email, Classificação, Funções, Etapa, Atendimento, Sem contato +48h, Unidade, Ministérios, Primeira visita, Cadastro, Origem, Qtd contatos',
   H.slice(0, 14).join('|') === 'Nome|Telefone|Email|Classificação|Funções|Etapa|Atendimento|Sem contato +48h|Unidade|Ministérios|Primeira visita|Cadastro|Origem|Qtd contatos', H.slice(0, 14).join('|'))
@@ -303,6 +307,7 @@ c = await exportAndRead()
 const HB = c.rows[0]
 ck('item 18: "Etapa desde" e "Dias na etapa" são as 2 últimas colunas (nenhuma coluna anterior se desloca)', HB.length === 14 + 2 && HB[14] === 'Etapa desde' && HB[15] === 'Dias na etapa' && HB.slice(0, 14).join('|') === 'Nome|Telefone|Email|Classificação|Funções|Etapa|Atendimento|Sem contato +48h|Unidade|Ministérios|Primeira visita|Cadastro|Origem|Qtd contatos', HB.join('|'))
 ck('item 18: 1.200 pessoas → 1.200 linhas + cabeçalho (sem corte em 1.000/1.001)', c.rows.length === 1201 && c.rows[1200][0] === 'Grande 1200' && c.rows[1][0] === 'Grande 0001', String(c.rows.length))
+ck('item 18: 1.200 pessoas vieram em 2 páginas por cursor (1.000 + 200), 2ª página com p_after_id da 1ª', (() => { const g = exportCalls.filter(b => b.p_search === 'GRANDE'); return g.length === 2 && g[0].p_after_id === null && g[1].p_after_id === 'big-999' && g[1].p_limit === 1000 })(), JSON.stringify(exportCalls.filter(b => b.p_search === 'GRANDE').map(b => [b.p_after_id, b.p_limit])))
 const withStage = c.rows.slice(1).filter(r => r[15] !== '')
 ck('item 18: com etapa → data de entrada dd/mm/aaaa e dias; sem registro → ambos vazios (nada inventado)', c.rows[1][14] === '15/08/2026' && c.rows[1][15] === '56' && c.rows[2][14] === '' && c.rows[2][15] === '' && withStage.length === 600, withStage.length + ' ' + c.rows[1].slice(-2).join('/'))
 ck('item 18: arquivo é um único download com BOM e tipo text/csv', c.bom === true && /text\/csv/.test(c.type) && /^pessoas-todas-\d{8}\.csv$/.test(c.filename), c.filename)
