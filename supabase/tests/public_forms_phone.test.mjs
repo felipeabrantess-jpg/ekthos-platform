@@ -126,6 +126,45 @@ async function runAll(dirOf) {
       const r2 = await (await post(h24, { slug: 'igv', name: 'Carla Outra', phone: '21 97777 1111' })).json()
       o.aviso = { existente: e.body, membro: m.body, novo: n.body, slugInvalido: x.body, novoDepoisRepetido: r1, repetido24h: r2, pessoasAposRepetir: o24.t.people.length, nomeMantido: o24.t.people[0]?.name } }
 
+    // ── itens 8/12/28: recadastro depois da exclusão (dedup 24h só com pessoa ativa) ──
+    { const recente = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+      const rl = (phone, church = IGV) => [{ id: 'rl-1', ip: '10.9.9.9', phone, church_id: church, was_blocked: false, submitted_at: recente }]
+      const excluida = { ...marcelo('+5521977771111'), id: 'excluida', name: 'Carla Antiga', deleted_at: recente }
+      const seed = (people, phone = '+5521977771111') => makeDb({ ...qr(), people, visitor_capture_rate_limits: rl(phone) })
+      // a) pessoa excluída há 10 min + envio aceito há 10 min → recadastro cria pessoa nova
+      { const db = seed([excluida]); const h = await load(dirOf('visitor-capture'), db)
+        const r = await (await post(h, { slug: 'igv', name: 'Carla Nova', phone: '(21) 97777-1111', entry_type: 'visitante' })).json()
+        const nova = db.t.people.find(p => p.id !== 'excluida')
+        o.recad = { resp: r, pessoas: db.t.people.length, nova: nova && { name: nova.name, source: nova.source, unit: nova.unit_id, church: nova.church_id, deleted: nova.deleted_at },
+          antigaIntacta: ident(db.t.people.find(p => p.id === 'excluida')) === ident(excluida) && db.t.people.find(p => p.id === 'excluida').deleted_at === recente,
+          pipeline: db.rpcCalls.some(c => c.name === 'capture_visitor_to_pipeline' && c.args.p_person_id === nova?.id),
+          bloqueios: db.t.visitor_capture_rate_limits.filter(x => x.was_blocked).length } }
+      // b) "já sou membro" com cadastro excluído → cria (needs_review), não bloqueia
+      { const db = seed([excluida]); const h = await load(dirOf('visitor-capture'), db)
+        const r = await (await post(h, { slug: 'igv', name: 'Carla Nova', phone: '21977771111', entry_type: 'ja_sou_membro' })).json()
+        o.recadMembro = { resp: r, ativas: db.t.people.filter(p => !p.deleted_at).length } }
+      // c) controle: pessoa ATIVA + envio aceito há 10 min → continua bloqueado, nada muda
+      { const ativa = { ...excluida, id: 'ativa', deleted_at: null }
+        const db = seed([ativa]); const h = await load(dirOf('visitor-capture'), db)
+        const r = await (await post(h, { slug: 'igv', name: 'Outro Nome', phone: '(21) 97777-1111', entry_type: 'visitante' })).json()
+        o.ativaBloqueada = { resp: r, pessoas: db.t.people.length, identidade: ident(db.t.people[0]) === ident(ativa), contatoIntacto: db.t.people[0].last_contact_at === null,
+          bloqueio: db.t.visitor_capture_rate_limits.some(x => x.was_blocked && x.block_reason === 'duplicate_24h') } }
+      // d) recadastro seguido de reenvio imediato → o 2º é bloqueado (a pessoa nova já está ativa)
+      { const db = seed([excluida]); const h = await load(dirOf('visitor-capture'), db)
+        await post(h, { slug: 'igv', name: 'Carla Nova', phone: '(21) 97777-1111' })
+        const r2 = await (await post(h, { slug: 'igv', name: 'Carla Repetida', phone: '21 97777-1111' })).json()
+        o.recadRepetido = { resp: r2, ativas: db.t.people.filter(p => !p.deleted_at).map(p => p.name) } }
+      // e) isolamento: envio aceito do mesmo telefone em OUTRA igreja não interfere
+      { const db = makeDb({ ...qr(), people: [], visitor_capture_rate_limits: rl('+5521977771111', OUTRA) }); const h = await load(dirOf('visitor-capture'), db)
+        const r = await (await post(h, { slug: 'igv', name: 'Carla Nova', phone: '(21) 97777-1111' })).json()
+        o.recadTenant = { resp: r, pessoasIgv: db.t.people.filter(p => p.church_id === IGV).length } }
+      // f) limite por IP segue valendo mesmo para telefone sem pessoa ativa
+      { const ip = '10.0.0.77'
+        const envios = Array.from({ length: 5 }, (_, i) => ({ id: 'ip-' + i, ip, phone: '+55219000000' + i, church_id: IGV, was_blocked: false, submitted_at: recente }))
+        const db = makeDb({ ...qr(), people: [excluida], visitor_capture_rate_limits: envios }); const h = await load(dirOf('visitor-capture'), db)
+        const res = await h(new Request('http://x/fn', { method: 'POST', headers: { origin: 'https://app.ekthoschurch.com', 'content-type': 'application/json', 'x-forwarded-for': ip }, body: JSON.stringify({ slug: 'igv', name: 'Carla Nova', phone: '(21) 97777-1111' }) }))
+        o.recadIp = { resp: await res.json(), ativas: db.t.people.filter(p => !p.deleted_at).length, motivo: db.t.visitor_capture_rate_limits.filter(x => x.was_blocked).map(x => x.block_reason) } } }
+
     // ── igv-public-enrollment ───────────────────────────────
     const course = () => ({ church_courses: [{ id: 'course-1', church_id: IGV, title: 'Curso', is_public: true, active: true, max_capacity: null, enrolled_count: 0 }] })
     { const db = makeDb({ ...course(), people: [marcelo('21999990000')] }); const h = await load(dirOf('igv-public-enrollment'), db)
@@ -170,6 +209,13 @@ ck('Aviso: slug inexistente → resposta genérica (não revela nada)', N.aviso.
 ck('Aviso: reenvio em 24h → avisa e não duplica nem renomeia', N.aviso.novoDepoisRepetido?.already_registered === undefined && N.aviso.repetido24h?.already_registered === true && N.aviso.pessoasAposRepetir === 1 && N.aviso.nomeMantido === 'Carla Nova', J({ r1: N.aviso.novoDepoisRepetido, r2: N.aviso.repetido24h, p: N.aviso.pessoasAposRepetir, nome: N.aviso.nomeMantido }))
 ck('QR: telefone novo → cadastro criado como antes (nome, origem, unidade, "Convidado por")', N.vc_novo.pessoas === 1 && N.vc_novo.name === 'Carla Nova' && N.vc_novo.phone === '+5521977771111' && N.vc_novo.source === 'qr_code' && N.vc_novo.obs === 'Convidado por: Fulano' && N.vc_novo.unit === 'unit-1' && N.vc_novo.church === IGV, J(N.vc_novo))
 ck('QR: mesmo telefone em outra igreja → cria na igreja do QR; a outra fica intacta', N.vc_tenant.criouNaIgv && N.vc_tenant.outraIntacta && N.vc_tenant.total === 2)
+ck('Recadastro: pessoa excluída + envio aceito há 10 min → cria pessoa nova (QR, unidade, igreja) e segue para o pipeline', N.recad.resp?.success === true && N.recad.resp?.already_registered === undefined && N.recad.pessoas === 2 && N.recad.nova?.name === 'Carla Nova' && N.recad.nova?.source === 'qr_code' && N.recad.nova?.unit === 'unit-1' && N.recad.nova?.church === IGV && N.recad.nova?.deleted === null && N.recad.pipeline && N.recad.bloqueios === 0, J(N.recad))
+ck('Recadastro: o registro excluído fica intacto (não é reativado nem alterado)', N.recad.antigaIntacta)
+ck('Recadastro "já sou membro" com cadastro excluído → cria, não bloqueia', N.recadMembro.resp?.already_registered === undefined && N.recadMembro.ativas === 1, J(N.recadMembro))
+ck('Controle: pessoa ATIVA + envio em 24h → segue bloqueado (already_registered), sem tocar no cadastro', N.ativaBloqueada.resp?.already_registered === true && N.ativaBloqueada.pessoas === 1 && N.ativaBloqueada.identidade && N.ativaBloqueada.contatoIntacto && N.ativaBloqueada.bloqueio, J(N.ativaBloqueada))
+ck('Recadastro + reenvio imediato → o 2º é bloqueado; só 1 pessoa ativa, nome do 1º mantido', N.recadRepetido.resp?.already_registered === true && J(N.recadRepetido.ativas) === J(['Carla Nova']), J(N.recadRepetido))
+ck('Isolamento: envio do mesmo telefone em outra igreja não interfere', N.recadTenant.resp?.already_registered === undefined && N.recadTenant.pessoasIgv === 1, J(N.recadTenant))
+ck('Abuso: limite de 5/h por IP continua bloqueando (silencioso) mesmo sem pessoa ativa', N.recadIp.ativas === 0 && J(N.recadIp.motivo) === J(['ip_rate_limit']) && N.recadIp.resp?.already_registered === undefined, J(N.recadIp))
 ck('Curso IGV: telefone existente (outro formato) → não cria, não renomeia; inscrição vinculada à pessoa certa', N.curso_existente.status === 200 && N.curso_existente.pessoas === 1 && N.curso_existente.identidade && N.curso_existente.inscricao === 1 && N.curso_existente.vinculo === 'marcelo', J(N.curso_existente))
 ck('Curso IGV: telefone novo → cria como antes', N.curso_novo.status === 200 && N.curso_novo.pessoas === 1 && N.curso_novo.name === 'Carla Nova' && N.curso_novo.source === 'curso_igv' && N.curso_novo.vinculo, J(N.curso_novo))
 ck('Oração IGV: telefone existente (outro formato) → não cria, não renomeia; pedido vinculado à pessoa certa', N.oracao_existente.pessoas === 1 && N.oracao_existente.identidade && N.oracao_existente.pedidos === 1 && N.oracao_existente.vinculo === 'marcelo' && N.oracao_existente.status < 300, J(N.oracao_existente))
@@ -181,6 +227,7 @@ if (CONTROL) {
   const O = await runAll((f) => join(CONTROL, f, 'index.ts'))
   console.log('\n— controle: versões anteriores (o teste precisa detectar a sobrescrita antiga) —')
   ck('CONTROLE QR: a versão anterior renomeava/trocava observações', O.vc_existente.identidade === false)
+  ck('CONTROLE Recadastro: a versão anterior bloqueava o recadastro da pessoa excluída', O.recad.resp?.already_registered === true && O.recad.pessoas === 1, J(O.recad))
   ck('CONTROLE Curso: a versão anterior não achava outro formato (duplicava) ou renomeava', O.curso_existente.identidade === false || O.curso_existente.pessoas !== 1 || O.curso_existente.vinculo !== 'marcelo', J(O.curso_existente))
   ck('CONTROLE Oração: idem', O.oracao_existente.identidade === false || O.oracao_existente.pessoas !== 1 || O.oracao_existente.vinculo !== 'marcelo', J(O.oracao_existente))
   ck('CONTROLE Gabinete: idem', O.gabinete_existente.identidade === false || O.gabinete_existente.pessoas !== 1 || O.gabinete_existente.vinculo !== 'marcelo', J(O.gabinete_existente))

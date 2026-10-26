@@ -315,6 +315,11 @@ export function useDeletePerson() {
       void queryClient.invalidateQueries({ queryKey: ['people-stage-counts', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['people-count', churchId] })
       void queryClient.invalidateQueries({ queryKey: ['dashboard-stats', churchId] })
+      // A exclusão desfaz liderança, vínculos e encaminhamentos no banco (trigger people_unlink_on_delete)
+      for (const key of ['ministries', 'ministries-options', 'ministries_list', 'ministry-members', 'ministry-member-counts',
+                         'ministry-member-origins', 'ministry-referrals', 'ministry-volunteers', 'groups', 'leaders']) {
+        void queryClient.invalidateQueries({ queryKey: [key] })
+      }
     },
   })
 }
