@@ -559,7 +559,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
   // "Tentou falar?" = houve uma TENTATIVA (ligação, mensagem, visita), atendida ou não. Toda tentativa
   // é um contato operacional com ordinal (1º, 2º, 3º…) — inclusive "Não atendeu" / "Sem resposta".
   // "Não" = não tentou falar; só está corrigindo/atualizando dados (nenhum pastoral_contact).
-  const [hadContact, setHadContact] = useState<boolean | null>(null)
+  const [hadContact, setHadContact] = useState<boolean | null>(false)
   const [notes,      setNotes]      = useState('')
   const [stageId,    setStageId]    = useState<string>(journey?.stage_id ?? '')
   const [nextStep,   setNextStep]   = useState('')

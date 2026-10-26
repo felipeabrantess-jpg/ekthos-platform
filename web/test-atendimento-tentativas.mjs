@@ -274,6 +274,8 @@ ck('1. abre: "Próximo: 1º contato", pergunta "Você tentou falar com a pessoa 
   && (await page.locator('[data-testid="tentou-falar-sim"][aria-checked="true"]').count()) === 0
   && (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0
   && await saveBtn().isDisabled());
+ck('   ata 24/10: "Não tentei" já vem marcado (salvar dados não exige escolher e não registra tentativa)',
+  (await page.locator('[data-testid="tentou-falar-nao"][aria-checked="true"]').count()) === 1);
 // 2. "Você tentou falar?" → SIM
 await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200);
 ck('2. "Sim, tentei" abre canal / resultado / anotações para o 1º contato', (await txt('[data-testid="titulo-registrar"]')) === 'Registrar 1º contato' && (await resultSelect().count()) === 1 && (await page.locator('textarea[placeholder*="tentativa"]').count()) === 1);

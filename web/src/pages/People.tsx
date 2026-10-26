@@ -1084,7 +1084,7 @@ export default function People() {
       {showFilters && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="atendimento-filtros">
           <div className={`flex flex-wrap items-center gap-2 transition-opacity ${careStale ? 'opacity-50' : ''}`} data-testid="atendimento-estados" aria-busy={careStale}>
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses contam as pessoas da lista atual (unidade, aba, classificação, origem, busca e datas).">Estados (da lista atual):</span>
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses contam as pessoas da lista atual (unidade, aba, classificação, origem, busca e datas).">STATUS (da lista atual):</span>
             {([
               { value: '', label: `Todos (${careStatusData?.total ?? '…'})` },
               { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
