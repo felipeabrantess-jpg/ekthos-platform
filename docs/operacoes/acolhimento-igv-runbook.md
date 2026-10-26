@@ -32,11 +32,32 @@ Créditos do agente (IGV): 599 em 26/10 18:01 BRT (`church_agent_credits`).
 - Situação: o secret **não existe** (`WA_APP_SECRET` e `META_APP_SECRET` ausentes em 26/10). O `webhook-receiver`
   aceita eventos sem validar a assinatura `x-hub-signature-256` (log: "WA_APP_SECRET ausente — … fail-open").
 - O código **já valida** quando o secret existe (HMAC-SHA256 do corpo cru). Não precisa de deploy para ligar.
-- Procedimento (Felipe): Meta for Developers → app **Ekthos IGV** (`1356690759261795`) → Configurações → Básico →
-  "Chave secreta do app" → copiar → Supabase → Edge Functions → Secrets → `WA_APP_SECRET`.
-- Risco: secret errado = todos os webhooks da Meta recebem 401 (respostas de pessoas e recibos deixam de entrar;
-  **os envios não param**). Validar logo após: um evento real deve aparecer sem "signature mismatch"; se aparecer,
-  apagar o secret (volta ao comportamento atual).
+- O que o secret afeta: **só a entrada** (webhook). Envios (agente → fila → dispatcher → Meta) não leem esse secret
+  e continuam funcionando mesmo se ele estiver errado.
+- Por que um erro não perde mensagens: a Meta reenvia webhooks recusados (não-200) com intervalos crescentes por
+  vários dias; após a correção, os eventos pendentes chegam de novo.
+
+### Procedimento seguro (fora de horário de culto/pico)
+1. **Pré-checagem (leitura):** Meta for Developers → app **Ekthos IGV** (`1356690759261795`) → WhatsApp → Configuração →
+   Webhook: a URL de callback deve ser a do `webhook-receiver` deste projeto e o campo `messages` deve estar assinado.
+   É o **mesmo app** que assina os eventos; secret de outro app = 100% de recusa.
+2. **Copiar a chave:** Configurações do app → Básico → "Chave secreta do app" → Mostrar → copiar (32 caracteres hex).
+   Não colar em chat, e-mail ou repositório.
+3. **Cadastrar:** Supabase → Edge Functions → Secrets → `WA_APP_SECRET` = chave. Anotar o horário.
+4. **Validar em até 5 minutos:** no painel da Meta (Webhook → campo `messages` → **Testar**) enviar o evento de teste
+   (não gera mensagem para ninguém). Conferir os logs do `webhook-receiver`:
+   - sucesso: a linha "WA_APP_SECRET ausente…" **não** aparece mais e **não** há "meta signature mismatch — 401";
+   - falha: aparece "meta signature mismatch — 401".
+5. **Validação real:** na próxima resposta de alguém no WhatsApp da IGV, a mensagem deve entrar na conversa
+   normalmente (sem 401 no log).
+
+### Recuperação imediata (se aparecer "signature mismatch")
+- Supabase → Edge Functions → Secrets → **apagar** `WA_APP_SECRET` (ou `npx supabase secrets unset WA_APP_SECRET
+  --project-ref mlqjywqnchilvgkbvicd`). O `webhook-receiver` volta ao comportamento de hoje (sem verificação) nas
+  próximas chamadas; nenhum deploy é necessário. A Meta reenvia os eventos recusados.
+- Depois, conferir se a chave copiada é do app certo (passo 1) antes de tentar de novo.
+- Critério de recuo: qualquer 401 de assinatura em evento legítimo, ou ausência de eventos de entrada > 30 min em
+  horário de movimento logo após a configuração.
 
 ## 4. Recibos de entrega (alteração separada, não publicada)
 Branch `fix/webhook-meta-assinatura-status`: o `webhook-receiver` grava `value.statuses[]` em
