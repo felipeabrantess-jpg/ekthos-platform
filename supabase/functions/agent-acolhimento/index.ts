@@ -572,7 +572,8 @@ async function tryD0WelcomeTemplate(
   await executeTool('update_acolhimento_journey', {
     journey_id: journeyId,
     next_touchpoint: 'D+3',
-    touchpoint_summary: `Template ${resolvedTemplate} — D+0`
+    // "enfileirado" ≠ "enviado": a confirmação do provedor fica em channel_dispatch_queue (status/provider_response)
+    touchpoint_summary: `D+0 enfileirado (aguardando confirmação do WhatsApp): template ${resolvedTemplate}`
   }, churchId, AGENT_SLUG);
   console.log(`[agent-acolhimento] D+0 template dispatched template=${resolvedTemplate} kind=${plan.kind} church=${churchId} person=${personId} firstName=${firstName}`);
   return 'D0_template_dispatched';
@@ -594,7 +595,7 @@ async function processJourney(
     .eq('church_id', churchId)
     .eq('status', 'pending')
     .lte('next_touchpoint_at', new Date().toISOString())
-    .select('id, person_id, current_touchpoint')
+    .select('id, person_id, current_touchpoint, next_touchpoint_at, touchpoints_sent')
     .maybeSingle()
 
   if (!locked) {
@@ -602,6 +603,33 @@ async function processJourney(
   }
 
   const personId = locked.person_id
+
+  // Ata IGV 24/10: sem canal de WhatsApp ATIVO não há contato possível. Não chama o modelo, não registra
+  // envio, não avança a jornada — bloqueio explícito em agent_executions e nova tentativa em 6 h.
+  const { data: activeChannel } = await supabaseAdmin
+    .from('church_whatsapp_channels')
+    .select('id')
+    .eq('church_id', churchId)
+    .eq('active', true)
+    .limit(1)
+    .maybeSingle()
+  if (!activeChannel) {
+    await supabaseAdmin
+      .from('acolhimento_journey')
+      .update({ status: 'pending', next_touchpoint_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString() })
+      .eq('id', journeyId)
+      .eq('church_id', churchId)
+    await logAgentExecution(supabaseAdmin, {
+      church_id:    churchId,
+      agent_slug:   AGENT_SLUG,
+      model:        MODEL,
+      trigger_type: triggerType,
+      status:       'error',
+      duration_ms:  Date.now() - t0,
+      error:        'blocked_no_active_channel',
+    })
+    return { ok: false, error: 'no_active_channel', result: 'blocked_no_active_channel' }
+  }
 
   try {
     const { church, agentConfig, resolved } = await fetchChurchConfig(churchId)
@@ -768,6 +796,50 @@ Seja conciso, pastoral e humano.
         .update({ status: 'pending' })
         .eq('id', journeyId)
         .eq('church_id', churchId)
+    }
+
+    // Ata IGV 24/10: o modelo não pode declarar contato que não aconteceu. Se nenhuma mensagem desta pessoa
+    // entrou na fila de envio durante esta execução, a jornada volta exatamente ao estado anterior
+    // (touchpoint, horário e histórico) e a execução é registrada como erro — sem débito de crédito.
+    const { data: personConvs } = await supabaseAdmin
+      .from('conversations')
+      .select('id')
+      .eq('church_id', churchId)
+      .eq('person_id', personId)
+    const convIds = (personConvs ?? []).map((c: { id: string }) => c.id)
+    let enqueuedCount = 0
+    if (convIds.length > 0) {
+      const { count } = await supabaseAdmin
+        .from('channel_dispatch_queue')
+        .select('id', { count: 'exact', head: true })
+        .eq('church_id', churchId)
+        .in('conversation_id', convIds)
+        .gte('created_at', new Date(t0).toISOString())
+      enqueuedCount = count ?? 0
+    }
+    if (enqueuedCount === 0) {
+      await supabaseAdmin
+        .from('acolhimento_journey')
+        .update({
+          status:             'pending',
+          current_touchpoint: locked.current_touchpoint,
+          next_touchpoint_at: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+          touchpoints_sent:   locked.touchpoints_sent ?? [],
+        })
+        .eq('id', journeyId)
+        .eq('church_id', churchId)
+      await logAgentExecution(supabaseAdmin, {
+        church_id:     churchId,
+        agent_slug:    AGENT_SLUG,
+        model:         MODEL,
+        trigger_type:  triggerType,
+        status:        'error',
+        duration_ms:   Date.now() - t0,
+        input_tokens:  usage.input_tokens,
+        output_tokens: usage.output_tokens,
+        error:         'no_message_enqueued_journey_reverted',
+      })
+      return { ok: false, error: 'no_message_enqueued', result: 'journey_reverted' }
     }
 
     // Fix B: garantir rastro no CRM independente das tools chamadas pelo LLM
