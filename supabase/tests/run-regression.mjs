@@ -16,9 +16,8 @@ try { msg = JSON.parse(text).message ?? text } catch { /* resposta não-JSON */ 
 const i = msg.indexOf('RESULTADO:')
 if (i < 0) { console.log('SEM RESULTADO — resposta:', msg.slice(0, 2000)); process.exit(2) }
 const start = msg.indexOf('[', i)
-let depth = 0, end = start
-for (; end < msg.length; end++) { if (msg[end] === '[') depth++; else if (msg[end] === ']' && --depth === 0) break }
-const rows = JSON.parse(msg.slice(start, end + 1))
+let end = msg.indexOf('\nCONTEXT:', start); if (end < 0) end = msg.length
+const rows = JSON.parse(msg.slice(start, end).trim())
 let fail = 0
 for (const x of rows) { if (!x.ok) fail++; console.log(`${x.ok ? '✅' : '❌'} ${x.n}. ${x.teste}${x.info ? ' — ' + x.info : ''}`) }
 console.log(`\n=== ${rows.length - fail}/${rows.length} OK ===`)

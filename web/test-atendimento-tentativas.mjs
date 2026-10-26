@@ -208,6 +208,7 @@ function mkContacts(n, personId, closed = false) {
 // estado "do banco" por pessoa
 const people = {};
 for (const n of [0, 1, 2, 3, 4, 6, 7]) people[`p${n}`] = { id: `p${n}`, name: `Pessoa ${n} contatos`, contacts: mkContacts(n, `p${n}`), journey: n > 0 ? { id: `p${n}-j`, closed_at: null, outcome: null, version: 1, stage_id: 's1' } : null };
+people.pnova = { id: 'pnova', name: 'Pessoa nova sem jornada', contacts: [], journey: null };
 people.pclosed = { id: 'pclosed', name: 'Pessoa encerrada', contacts: mkContacts(2, 'pclosed', true), journey: { id: 'pclosed-j', closed_at: '2026-09-20T10:00:00Z', outcome: 'nao_quer_contato', version: 3, stage_id: 's1' } };
 const registerCalls = [];
 
@@ -234,7 +235,9 @@ async function custom(r, u) {
     if (u.includes('journey_suggest_stage')) return F(json({ stage_id: 's1', stage_name: 'Visitante', reason: 'mock' }));
     if (u.includes('journey_register_attendance')) {
       registerCalls.push(body); const p = people[body.p_person_id];
-      if (!p.journey && !body.p_new_stage_id) return F(json({ code: 'P0001', message: 'JOURNEY_REQUIRED' }, 400));
+      // regra do banco (20261027120000): só tentativa, encaminhamento ou encerramento exigem etapa quando não há jornada
+      if (!p.journey && !body.p_new_stage_id && (body.p_register_contact !== false || body.p_ministry_id || body.p_close_journey)) return F(json({ code: 'P0001', message: 'JOURNEY_REQUIRED' }, 400));
+      if (!p.journey && !body.p_new_stage_id) return F(json({ ok: true, journey_id: null }));
       if (!p.journey) p.journey = { id: `${p.id}-j`, closed_at: null, outcome: null, version: 1, stage_id: body.p_new_stage_id };
       if (body.p_register_contact === false) return F(json({ ok: true }));
       const n = p.contacts.length + 1;
@@ -339,6 +342,20 @@ ck('"Não tentei" sem mudar nada: Salvar desabilitado, aviso "Preencha ao menos 
 await saveBtn().click({ force: true }).catch(() => {}); await page.waitForTimeout(500);
 ck('   clique forçado não cria tentativa falsa', registerCalls.length === before && people.p0.contacts.length === 3);
 
+// ── Reunião IGV 26/10: "Não tentei" em pessoa SEM jornada salva só a observação, sem exigir etapa ──
+await open('pnova');
+ck('pessoa sem jornada: "Não tentei" já marcado e nenhum aviso "Selecione uma etapa"', (await page.locator('[data-testid="tentou-falar-nao"][aria-checked="true"]').count()) === 1 && (await page.locator('text=Selecione uma etapa para iniciar a jornada').count()) === 0)
+await page.locator('input[placeholder*="Contexto pastoral"]').fill('visitou com a família')
+ck('   preencheu só a observação → Salvar habilita (sem exigir etapa nem resultado de ligação)', !(await saveBtn().isDisabled()) && (await page.locator('text=Informe se você tentou falar').count()) === 0)
+const antesN = registerCalls.length
+await saveBtn().click(); await page.waitForTimeout(1500)
+const cn = registerCalls[antesN]
+ck('   salva: p_register_contact=false, sem etapa, com a observação; nenhuma jornada nem tentativa criada', registerCalls.length === antesN + 1 && cn.p_register_contact === false && !cn.p_new_stage_id && cn.p_people_updates?.observacoes_pastorais === 'visitou com a família' && people.pnova.journey === null && people.pnova.contacts.length === 0, JSON.stringify({ reg: cn?.p_register_contact, stage: cn?.p_new_stage_id ?? null }))
+ck('   toast de sucesso (nenhuma tentativa registrada), sem erro', (await page.locator('text=nenhuma tentativa de contato registrada').count()) >= 1 && (await page.locator('text=JOURNEY_REQUIRED').count()) === 0)
+// controle: "Sim, tentei" em pessoa sem jornada continua exigindo a etapa
+await open('pnova')
+await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200)
+ck('   controle: "Sim, tentei" sem jornada continua exigindo etapa (Salvar desabilitado + aviso)', await saveBtn().isDisabled() && (await page.locator('text=Selecione uma etapa para iniciar a jornada').count()) >= 1)
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '));
 await browser.close();
 const failed = results.filter(x => !x).length;
