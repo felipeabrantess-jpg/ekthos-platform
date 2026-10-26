@@ -7,7 +7,7 @@
 //
 // Segurança:
 //   - CORS: whitelist de origens (nunca wildcard)
-//   - Rate limit: 5/h por IP + dedup 24h por (phone + church_id)
+//   - Rate limit: 5/h por IP + dedup 24h por (phone + church_id) enquanto houver pessoa ativa
 //   - Bloqueios silenciosos: retornam 200 OK (anti-bot / anti-enumeration)
 //   - Slug inválido retorna 200 success (anti-enumeration de slugs)
 //   - Erros internos nunca expostos ao cliente
@@ -235,26 +235,7 @@ Deno.serve(async (req: Request) => {
       return ok200(headers)
     }
 
-    // ── 4. Dedup: 1 submissão por (phone + church_id) em 24h ─
-    const dedupWindow = new Date(Date.now() - DEDUP_HOURS * 60 * 60 * 1000).toISOString()
-    const { count: dupCount } = await supabase
-      .from('visitor_capture_rate_limits')
-      .select('id', { count: 'exact', head: true })
-      .eq('phone', phoneClean)
-      .eq('church_id', churchId)
-      .eq('was_blocked', false)
-      .gte('submitted_at', dedupWindow)
-
-    if ((dupCount ?? 0) >= 1) {
-      await supabase.from('visitor_capture_rate_limits').insert({
-        ip, phone: phoneClean, church_id: churchId, user_agent: userAgent,
-        was_blocked: true, block_reason: 'duplicate_24h',
-      })
-      console.warn('[visitor-capture] Dedup 24h:', phoneClean, '@', churchId)
-      return alreadyRegistered(headers)
-    }
-
-    // ── 5. Localizar pessoa pelo telefone ─────────────────
+    // ── 4. Localizar pessoa pelo telefone ─────────────────
     // Regra: 1 pessoa = 1 telefone por igreja. Busca pela forma canônica
     // (phone_normalized), em qualquer formato gravado, com/sem 9º dígito (R8b).
     const phones = phoneVariants(phoneClean)
@@ -269,6 +250,30 @@ Deno.serve(async (req: Request) => {
       .order('created_at', { ascending: true })
       .limit(1)
       .maybeSingle()
+
+    // ── 5. Dedup: 1 submissão por (phone + church_id) em 24h ─
+    // Só vale enquanto existe pessoa ATIVA com este telefone (ata IGV itens 8/12/28): se o cadastro
+    // foi excluído, o recadastro é legítimo e não pode ser barrado pelo histórico de envios.
+    // Abuso continua contido pelo limite por IP (passo 3) e pela unicidade de telefone no banco.
+    if (existing?.id) {
+      const dedupWindow = new Date(Date.now() - DEDUP_HOURS * 60 * 60 * 1000).toISOString()
+      const { count: dupCount } = await supabase
+        .from('visitor_capture_rate_limits')
+        .select('id', { count: 'exact', head: true })
+        .eq('phone', phoneClean)
+        .eq('church_id', churchId)
+        .eq('was_blocked', false)
+        .gte('submitted_at', dedupWindow)
+
+      if ((dupCount ?? 0) >= 1) {
+        await supabase.from('visitor_capture_rate_limits').insert({
+          ip, phone: phoneClean, church_id: churchId, user_agent: userAgent,
+          was_blocked: true, block_reason: 'duplicate_24h',
+        })
+        console.warn('[visitor-capture] Dedup 24h:', phoneClean, '@', churchId)
+        return alreadyRegistered(headers)
+      }
+    }
 
     // ── R8: fluxo "Já sou membro" ──────────────────────
     if (entryType === 'ja_sou_membro') {
