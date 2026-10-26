@@ -89,7 +89,8 @@ const cityInput = () => page.locator('input[placeholder*="Cidade"], label:has-te
 
 // ── ITEM 10 ──
 await open('p1');
-ck('intenção obrigatória: sem escolher "Você tentou falar?", Salvar fica desabilitado com aviso', await saveBtn().isDisabled() && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 1 && (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
+// ata 24/10: "Não tentei" vem marcado — sem aviso de escolha, sem campos de tentativa, Salvar só com alteração real
+ck('abre com "Não tentei" marcado: sem aviso, sem bloco de tentativa, Salvar desabilitado (nada alterado)', await saveBtn().isDisabled() && (await page.locator('[data-testid="tentou-falar-nao"][aria-checked="true"]').count()) === 1 && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 0 && (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
 await page.locator('[data-testid="tentou-falar-nao"]').click(); await page.waitForTimeout(200);
 ck('"Não": campos de canal/resultado/anotações do contato ficam ocultos', (await page.locator('[data-testid="bloco-registrar-contato"]').count()) === 0);
 ck('"Não" sem nenhuma alteração: nada a salvar', await saveBtn().isDisabled());
