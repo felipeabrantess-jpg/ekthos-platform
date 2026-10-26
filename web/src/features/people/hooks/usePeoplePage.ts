@@ -23,6 +23,13 @@ export type PeopleSortKey = 'nome' | 'telefone' | 'atendimento' | 'contatos' | '
 export const PEOPLE_SORT_KEYS: readonly PeopleSortKey[] = ['nome', 'telefone', 'atendimento', 'contatos', 'cadastro']
 export type PeopleSortDir = 'asc' | 'desc'
 
+/** Filtro Contato (ata IGV): tentativas reais registradas no Atendimento. */
+export type ContactFilter = 'com_contato' | 'sem_contato' | 'contato_realizado'
+export const CONTACT_FILTERS: readonly ContactFilter[] = ['com_contato', 'sem_contato', 'contato_realizado']
+export const CONTACT_FILTER_LABEL: Record<ContactFilter, string> = {
+  com_contato: 'Com contato', sem_contato: 'Sem contato', contato_realizado: 'Contato realizado',
+}
+
 export interface PeoplePageFilters {
   unit: UnitScope
   /** pipeline_stages.stage_key, STAGE_KEY_NONE, ou undefined = todas as etapas */
@@ -40,6 +47,8 @@ export interface PeoplePageFilters {
   classification?: ClassificationFilter
   /** Funções (só Membros): member_only | volunteer | leader | leader_volunteer */
   role?: RoleFilter
+  /** Contato: com tentativa | sem tentativa | com contato realizado */
+  contact?: ContactFilter
   /** Ordenação por coluna; sem valor = ordem padrão (cadastro mais recente primeiro). */
   sortBy?: PeopleSortKey
   sortDir?: PeopleSortDir
@@ -72,6 +81,8 @@ export function buildPeoplePageArgs(churchId: string, f: PeoplePageFilters) {
     p_offset:       page * pageSize,
     // só envia quando o usuário escolheu uma coluna: sem isso a chamada é idêntica à anterior
     ...(f.sortBy ? { p_sort_by: f.sortBy, p_sort_dir: f.sortDir ?? 'asc' } : {}),
+    // idem para o filtro Contato (lista, contadores e CSV recebem o mesmo argumento)
+    ...(f.contact ? { p_contact: f.contact } : {}),
   }
 }
 

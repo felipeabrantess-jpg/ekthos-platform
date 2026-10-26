@@ -205,6 +205,7 @@ const PEOPLE = [
     { ordinal: 2, event_id: 'ev3', contact_date: '2026-09-12T13:00:00Z', result: 'sem_resposta', channel: 'whatsapp', notes: null, actor_id: '11111111-1111-4111-8111-111111111111', actor_name: 'Mirian Secretaria' },
     { ordinal: 3, event_id: 'ev4', contact_date: '2026-09-13T13:00:00Z', result: 'realizado', channel: 'presencial', notes: 'ok', actor_id: 'u2', actor_name: 'Pr. Valdir' }] },
 ]
+const pageCalls = [], countCalls = []
 async function custom(r, u) {
   const F = async (x) => { await r.fulfill(x); return true; }
   if (!u.includes('/rest/v1/rpc/')) return false
@@ -228,8 +229,12 @@ async function custom(r, u) {
     if (body.p_care_status === 'sem_contato_48h') rows = rows.filter(p => p.care_alert)
     if (body.p_care_status && body.p_care_status !== 'sem_contato_48h') rows = rows.filter(p => p.care_state === body.p_care_status)
     if (body.p_search) rows = rows.filter(p => p.name.toLowerCase().includes(body.p_search.toLowerCase()))
+    if (body.p_contact === 'com_contato') rows = rows.filter(p => p.contacts_count > 0)
+    if (body.p_contact === 'sem_contato') rows = rows.filter(p => p.contacts_count === 0)
     return F(json({ total: rows.length, max_contacts: Math.max(0, ...rows.map(p => p.contacts_count)), alert_threshold_hours: 48, rows }))
   }
+  if (u.includes('get_care_status_counts')) countCalls.push(body)
+  if (u.includes('get_people_page')) pageCalls.push(body)
   if (u.includes('get_care_status_counts')) return F(json({ nao_atendida: 1, em_atendimento: 2, atendida: 0, cancelado: 0, total: 3, sem_contato_48h: 2, alert_threshold_hours: 48 }))
   if (u.includes('get_people_page')) { const rows = PEOPLE.map(p => ({ ...MOCK_PEOPLE[0], id: p.id, name: p.name, person_pipeline: [], unit_id: p.unit_id, care_state: p.care_state, care_alert: p.care_alert })); return F(json(rows.map(x => ({ row_data: x, total_count: rows.length })))) }
   if (u.includes('get_people_stage_counts')) return F(json({ total: 3, aniversarios: 0, sem_etapa: 0, stages: [{ stage_id: 'stage-visit', stage_key: 'visitante', name: 'Visitante', order_index: 1, cnt: 2 }] }))
@@ -312,6 +317,25 @@ const withStage = c.rows.slice(1).filter(r => r[15] !== '')
 ck('item 18: com etapa → data de entrada dd/mm/aaaa e dias; sem registro → ambos vazios (nada inventado)', c.rows[1][14] === '15/08/2026' && c.rows[1][15] === '56' && c.rows[2][14] === '' && c.rows[2][15] === '' && withStage.length === 600, withStage.length + ' ' + c.rows[1].slice(-2).join('/'))
 ck('item 18: arquivo é um único download com BOM e tipo text/csv', c.bom === true && /text\/csv/.test(c.type) && /^pessoas-todas-\d{8}\.csv$/.test(c.filename), c.filename)
 await page.locator('input[placeholder*="Buscar"]').fill(''); await page.waitForTimeout(500)
+// ── Filtro Contato (ata IGV) ──
+const semContatoAntes = pageCalls.every(b => !('p_contact' in b)) && countCalls.every(b => !('p_contact' in b)) && exportCalls.every(b => !('p_contact' in b))
+ck('Filtro Contato: sem escolha, nenhuma chamada envia p_contact (chamadas idênticas às de hoje)', semContatoAntes)
+await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1000)
+const opts = await page.locator('[data-testid="filtro-contato"] option').allTextContents()
+ck('Filtro Contato: opções "Contato: todos", "Com contato", "Sem contato", "Contato realizado"', JSON.stringify(opts) === JSON.stringify(['Contato: todos', 'Com contato', 'Sem contato', 'Contato realizado']), JSON.stringify(opts))
+const nP = pageCalls.length, nC = countCalls.length
+await page.locator('[data-testid="filtro-contato"]').selectOption('com_contato'); await page.waitForTimeout(1200)
+const lp = pageCalls.slice(nP).pop(), lc = countCalls.slice(nC).pop()
+ck('Filtro Contato: lista (get_people_page) recebe p_contact=com_contato e volta à 1ª página', lp?.p_contact === 'com_contato' && lp?.p_offset === 0, JSON.stringify(lp && { p_contact: lp.p_contact, p_offset: lp.p_offset }))
+ck('Filtro Contato: contadores (get_care_status_counts) recebem o mesmo p_contact', lc?.p_contact === 'com_contato', JSON.stringify(lc && lc.p_contact))
+ck('Filtro Contato: URL guarda ?contato=com_contato', new URL(page.url()).searchParams.get('contato') === 'com_contato', page.url())
+c = await exportAndRead()
+const le = exportCalls[exportCalls.length - 1]
+ck('Filtro Contato: CSV recebe o mesmo p_contact e exporta só quem tem contato (João, Maria)', le.p_contact === 'com_contato' && c.rows.length === 3 && c.rows.slice(1).every(r => Number(r[13]) > 0), JSON.stringify({ p: le.p_contact, linhas: c.rows.length }))
+await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1000)
+ck('Filtro Contato: recarregar a página mantém o filtro', (await page.locator('[data-testid="filtro-contato"]').inputValue()) === 'com_contato')
+await page.locator('[data-testid="filtro-contato"]').selectOption(''); await page.waitForTimeout(1000)
+ck('Filtro Contato: voltar para "todos" remove o parâmetro da lista e da URL', !('p_contact' in pageCalls[pageCalls.length - 1]) && !new URL(page.url()).searchParams.has('contato'))
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close();
 const failed = results.filter(x => !x).length;

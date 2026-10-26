@@ -20,6 +20,7 @@ import { buildPeopleCsv, type ExportPayload, type ExportRow } from '@/features/p
 import { fetchAllExportPages, isMissingFunctionError, type ExportPageResult } from '@/features/people/exportPaging'
 import {
   usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE, PEOPLE_SORT_KEYS,
+  CONTACT_FILTERS, CONTACT_FILTER_LABEL, type ContactFilter,
   type PeoplePageFilters, type PeopleSortKey, type PeopleSortDir,
 } from '@/features/people/hooks/usePeoplePage'
 import { useUnit } from '@/contexts/UnitContext'
@@ -571,6 +572,8 @@ export default function People() {
   // Classificação única (Release 1): visitante / membro / não classificado + função
   const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>(() => fromUrl('cls', ['visitor', 'member', 'none'] as const))
   const [roleFilter, setRoleFilter] = useState<RoleFilter>(() => fromUrl('funcao', ['member_only', 'volunteer', 'leader', 'leader_volunteer'] as const))
+  // Filtro Contato (ata IGV): ?contato=com_contato|sem_contato|contato_realizado
+  const [contactFilter, setContactFilter] = useState<ContactFilter | ''>(() => fromUrl('contato', CONTACT_FILTERS))
   const [createdFrom, setCreatedFrom]   = useState(() => dateFromUrl('de'))
   const [createdTo, setCreatedTo]       = useState(() => dateFromUrl('ate'))
   const [currentPage, setCurrentPage]   = useState(() => { const n = parseInt(searchParams.get('pagina') ?? '', 10); return Number.isFinite(n) && n > 1 ? n - 1 : 0 })
@@ -590,14 +593,14 @@ export default function People() {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       const put = (k: string, v: string) => { if (v) next.set(k, v); else next.delete(k) }
-      put('cls', classificationFilter); put('funcao', roleFilter); put('estado', careFilter); put('origem', sourceFilter)
+      put('cls', classificationFilter); put('funcao', roleFilter); put('estado', careFilter); put('origem', sourceFilter); put('contato', contactFilter)
       put('q', search); put('de', createdFrom); put('ate', createdTo)
       put('pagina', currentPage > 0 ? String(currentPage + 1) : '')
       put('ordem', sortBy); put('dir', sortBy && sortDir === 'desc' ? 'desc' : '')
       put('periodo', activeStageKey === 'visitante' && dateFilter !== '30' ? dateFilter : '')
       return next.toString() === prev.toString() ? prev : next
     }, { replace: true })
-  }, [classificationFilter, roleFilter, careFilter, sourceFilter, search, createdFrom, createdTo, currentPage, sortBy, sortDir, dateFilter, activeStageKey, setSearchParams])
+  }, [classificationFilter, roleFilter, careFilter, sourceFilter, contactFilter, search, createdFrom, createdTo, currentPage, sortBy, sortDir, dateFilter, activeStageKey, setSearchParams])
 
   // Período (só etapa visitante): converte em intervalo de cadastro
   const periodRange = useMemo(() => {
@@ -628,6 +631,7 @@ export default function People() {
     careStatus:  careFilter || undefined,
     classification: classificationFilter || undefined,
     role:        roleFilter || undefined,
+    contact:     contactFilter || undefined,
     source:      sourceFilter || undefined,
     search:      search || undefined,
     birthMonth:  isBirthdayTab ? currentMonth : undefined,
@@ -688,7 +692,7 @@ export default function People() {
   const { data: careStatusData, isPlaceholderData: careStale } = useAcolhimentoStatus(churchId ?? '', {
     unit: pageFilters.unit, stageKey: pageFilters.stageKey, source: pageFilters.source, search: pageFilters.search,
     birthMonth: pageFilters.birthMonth, createdFrom: pageFilters.createdFrom, createdTo: pageFilters.createdTo,
-    classification: pageFilters.classification, role: pageFilters.role,
+    classification: pageFilters.classification, role: pageFilters.role, contact: pageFilters.contact,
   })
   const { data: allTags = [] } = useTags(churchId ?? '')
   const deletePerson = useDeletePerson()
@@ -746,13 +750,14 @@ export default function People() {
     classificationFilter ? CLASSIFICATION_LABEL[classificationFilter] : '',
     roleFilter ? ROLE_FILTER_LABEL[roleFilter] : '',
     careFilter ? CARE_FILTER_LABEL[careFilter] : '',
+    contactFilter ? `Contato: ${CONTACT_FILTER_LABEL[contactFilter]}` : '',
     sourceFilter ? `Origem: ${sourceFilter === 'qr_code' ? 'QR Code' : sourceFilter === 'manual' ? 'Manual' : sourceFilter === 'import_xlsx' ? 'Importação' : sourceFilter}` : '',
     activeStageKey === 'visitante' && dateFilter !== 'all' && dateFilter !== 'custom' ? `Período: ${dateFilter} dias` : '',
     (activeStageKey !== 'visitante' || dateFilter === 'custom') && (createdFrom || createdTo) ? `Cadastro: ${createdFrom || '…'} – ${createdTo || '…'}` : '',
     search ? `Busca: "${search}"` : '',
   ].filter(Boolean)
   function clearFilters() {
-    setClassificationFilter(''); setRoleFilter(''); setCareFilter(''); setSourceFilter('')
+    setClassificationFilter(''); setRoleFilter(''); setCareFilter(''); setSourceFilter(''); setContactFilter('')
     setCreatedFrom(''); setCreatedTo(''); setSearch(''); setDateFilter('all'); setCurrentPage(0)
   }
 
@@ -986,6 +991,17 @@ export default function People() {
             <option value="qr_code">QR Code</option>
             <option value="manual">Manual</option>
             <option value="import_xlsx">Importação</option>
+          </select>
+
+          <select
+            value={contactFilter}
+            onChange={e => { setContactFilter(e.target.value as ContactFilter | ''); setCurrentPage(0) }}
+            data-testid="filtro-contato"
+            title="Tentativas de contato registradas no Atendimento"
+            className="px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
+          >
+            <option value="">Contato: todos</option>
+            {CONTACT_FILTERS.map(v => <option key={v} value={v}>{CONTACT_FILTER_LABEL[v]}</option>)}
           </select>
 
           {(activeStageKey !== 'visitante' || dateFilter === 'custom') && (
