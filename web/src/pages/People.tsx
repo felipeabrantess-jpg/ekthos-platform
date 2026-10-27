@@ -625,18 +625,21 @@ export default function People() {
   const monthRef     = `${now.getFullYear()}-${String(currentMonth).padStart(2, '0')}`
 
   // ── ÚNICA query de lista + contador ──────────────────────────────────────
+  // Aba Aniversários não mostra os filtros da lista (busca, origem, Contato, classificação, STATUS, cadastro):
+  // eles não podem continuar valendo escondidos — senão a lista de aniversariantes vem incompleta (homologação IGV 26/10).
+  const listFilters = !isBirthdayTab
   const pageFilters: PeoplePageFilters = {
     unit:        selectedUnit,
     stageKey:    activeStageKey,
-    careStatus:  careFilter || undefined,
-    classification: classificationFilter || undefined,
-    role:        roleFilter || undefined,
-    contact:     contactFilter || undefined,
-    source:      sourceFilter || undefined,
-    search:      search || undefined,
+    careStatus:  listFilters ? careFilter || undefined : undefined,
+    classification: listFilters ? classificationFilter || undefined : undefined,
+    role:        listFilters ? roleFilter || undefined : undefined,
+    contact:     listFilters ? contactFilter || undefined : undefined,
+    source:      listFilters ? sourceFilter || undefined : undefined,
+    search:      listFilters ? search || undefined : undefined,
     birthMonth:  isBirthdayTab ? currentMonth : undefined,
-    createdFrom: (activeStageKey === 'visitante' ? periodRange.from : createdFrom) || undefined,
-    createdTo:   (activeStageKey === 'visitante' ? periodRange.to   : createdTo)   || undefined,
+    createdFrom: listFilters ? ((activeStageKey === 'visitante' ? periodRange.from : createdFrom) || undefined) : undefined,
+    createdTo:   listFilters ? ((activeStageKey === 'visitante' ? periodRange.to   : createdTo)   || undefined) : undefined,
     sortBy:      !isBirthdayTab && sortBy ? sortBy : undefined,
     sortDir:     sortDir,
     page:        currentPage,
