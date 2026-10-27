@@ -19,7 +19,7 @@ const people = {
   p2: { name: 'Bruno Cancelado', city: null, journey: { id: 'j2', closed_at: '2026-09-20T10:00:00Z', outcome: 'nao_quer_contato', version: 3, stage_id: 's1' }, contacts: 2, events: [] },
   p3: { name: 'Carla Nunca', city: null, journey: null, contacts: 0, events: [] },
 };
-const careState = (p) => !p.journey ? 'nao_atendida' : !p.journey.closed_at ? 'em_atendimento' : ['nao_quer_contato', 'mudou_de_igreja'].includes(p.journey.outcome) ? 'cancelado' : 'atendida';
+const careState = (p) => !p.journey ? 'nao_atendida' : !p.journey.closed_at ? (p.contacts > 0 ? 'em_atendimento' : 'nao_atendida') : ['nao_quer_contato', 'mudou_de_igreja'].includes(p.journey.outcome) ? 'cancelado' : 'atendida';
 const counts = () => { const c = { nao_atendida: 0, em_atendimento: 0, atendida: 0, cancelado: 0 }; for (const p of Object.values(people)) c[careState(p)]++; return { ...c, total: Object.keys(people).length, sem_contato_48h: 0 }; };
 const contactsOf = (p) => Array.from({ length: p.contacts }, (_, i) => ({ event_id: `ev${i + 1}`, ordinal: i + 1, event_at: `2026-09-1${i}T10:00:00Z`, contact_date: `2026-09-1${i}T10:00:00Z`, actor_id: 'u1', actor_name: 'João', channel: 'whatsapp', result: 'realizado', notes: `c${i + 1}`, journey_id: p.journey?.id, journey_closed_at: p.journey?.closed_at ?? null, journey_outcome: p.journey?.outcome ?? null }));
 const row = (id) => ({ id, church_id: CH, name: people[id].name, phone: '+55219999' + id.slice(1).padStart(5, '0'), email: null, person_stage: 'visitante', created_at: '2026-09-01T00:00:00Z', updated_at: '2026-09-01T00:00:00Z', deleted_at: null, left_at: null, unit_id: null, source: 'manual', optout: false, person_pipeline: [], person_tags: [], acolhimento_journey: [], name_sort: people[id].name.toLowerCase(), care_state: careState(people[id]) });
@@ -45,6 +45,7 @@ await ctx.route(`${SUPA}/**`, async (route) => {
       case 'get_people_stage_counts': return route.fulfill(json({ total: 3, aniversarios: 0, sem_etapa: 3, stages: [] }));
       case 'get_care_status_counts': return route.fulfill(json(counts()));
       case 'get_contact_counts': return route.fulfill(json(Object.entries(people).map(([id, p]) => ({ person_id: id, cnt: p.contacts }))));
+      case 'person_care_state': return route.fulfill(json(careState(people[body.p_person_id])));
       case 'get_person_contacts': return route.fulfill(json(contactsOf(people[body.p_person_id])));
       case 'get_person_timeline': return route.fulfill(json(people[body.p_person_id].events));
       case 'journey_suggest_stage': return route.fulfill(json({ stage_id: 's1', stage_name: 'Visitante', reason: 'mock' }));
@@ -110,6 +111,9 @@ ck('resultado que encerra só vale quando houve contato (aviso de encerramento o
 await page.screenshot({ path: 'atendimento-houve-contato.png', fullPage: true });
 
 // ── REABERTURA ──
+await open('p2');
+await open('p3');
+ck('pessoa sem atendimento: selo STATUS: NÃO ATENDIDA (mesma regra da lista)', (await txt('[data-testid="status-jornada"]')) === 'STATUS: NÃO ATENDIDA');
 await open('p2');
 ck('atendimento encerrado: status CANCELADO (desfecho Não quer contato) e botão "Reabrir atendimento"', (await txt('[data-testid="status-jornada"]')).startsWith('STATUS: CANCELADO') && (await page.locator('[data-testid="btn-reabrir"]').count()) === 1);
 await open('p1');
