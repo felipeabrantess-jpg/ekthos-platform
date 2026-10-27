@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -371,9 +372,10 @@ function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, 
           </button>
         </div>
       )}
-      {cancelOpen && (
+      {/* portal no body: ancestral com transform/animação prende position:fixed ao cartão */}
+      {cancelOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar" data-testid="janela-cancelar">
-          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl p-5 space-y-4">
+          <div className="w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl p-5 space-y-4">
             <div>
               <h2 id="titulo-cancelar" className="text-base font-semibold text-ekthos-black">Cancelar atendimento</h2>
               <p className="text-xs text-text-secondary mt-1">
@@ -411,7 +413,8 @@ function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, 
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {/* Reabrir atendimento encerrado por engano — confirmação + motivo obrigatório; nada é apagado */}
