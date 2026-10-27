@@ -313,6 +313,34 @@ export function useReopenJourney() {
   })
 }
 
+/** Motivos aceitos por journey_cancel (mesma lista de care_cancel_outcomes() no banco). */
+export type CancelReason = 'nao_quer_contato' | 'mudou_de_igreja' | 'outro_motivo'
+export const CANCEL_REASONS: { value: CancelReason; label: string; hint: string }[] = [
+  { value: 'nao_quer_contato', label: 'Não quer contato', hint: 'Também cancela as mensagens automáticas de acolhimento que ainda não foram enviadas.' },
+  { value: 'mudou_de_igreja',  label: 'Mudou de igreja',  hint: 'Encerra o atendimento; o acolhimento automático não é alterado.' },
+  { value: 'outro_motivo',     label: 'Outro motivo',     hint: 'Descreva o motivo na observação (obrigatória).' },
+]
+
+/** Cancela o atendimento (journey_cancel): STATUS CANCELADO, cadastro e histórico mantidos. */
+export function useCancelJourney() {
+  const queryClient = useQueryClient()
+  const { churchId } = useAuth()
+  return useMutation({
+    mutationFn: async ({ personId, reason, notes }: { personId: string; reason: CancelReason; notes?: string }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('journey_cancel', { p_person_id: personId, p_reason: reason, p_notes: notes || null })
+      if (error) throw new Error((error as { message: string }).message)
+      return data as { journey_id: string; care_state: string; acolhimento_cancelado: number; fila_cancelada: number }
+    },
+    onSuccess: (_data, { personId }) => {
+      for (const key of ['person-journey', 'person-journey-status', 'person-timeline', 'person-contacts'])
+        void queryClient.invalidateQueries({ queryKey: [key, personId] })
+      for (const key of ['people-page', 'acolhimento-status-counts', 'care-queue'])
+        void queryClient.invalidateQueries({ queryKey: [key, churchId] })
+    },
+  })
+}
+
 // ── Mutation ─────────────────────────────────────────────────
 
 interface RegisterArgs {

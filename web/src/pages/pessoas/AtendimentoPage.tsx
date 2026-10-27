@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
@@ -15,6 +16,9 @@ import {
   useSuggestStage,
   useRegisterAttendance,
   useReopenJourney,
+  useCancelJourney,
+  CANCEL_REASONS,
+  type CancelReason,
   usePersonTimeline,
   usePersonContacts,
   usePersonJourneyStatus,
@@ -63,9 +67,13 @@ const MARITAL_STATUS_LABEL: Record<string, string> = {
 
 const OUTCOME_CLOSES_JOURNEY = new Set(['nao_quer_contato', 'mudou_de_igreja'])
 
+// Mesmos perfis de can_register_attendance() no banco (o banco continua sendo a barreira)
+const ATTENDANCE_ROLES = new Set(['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'cell_leader', 'secretary'])
+
 const EVENT_KIND_LABEL: Record<string, string> = {
   journey_opened:        'Jornada iniciada',
   journey_reopened:      'Atendimento reaberto',
+  journey_cancelled:     'Atendimento cancelado',
   stage_advance:         'Avançou de etapa',
   pastoral_contact:      'Contato pastoral',
   journey_assign:        'Responsável atribuído',
@@ -196,6 +204,7 @@ function TimelineIcon({ item }: { item: TimelineItem }) {
     stage_advance:     { bg: 'bg-emerald-50', icon: <CheckCircle2 size={12} className="text-emerald-500" /> },
     journey_opened:    { bg: 'bg-purple-50',  icon: <Sparkles size={12} className="text-purple-500" /> },
     journey_reopened:  { bg: 'bg-amber-50',   icon: <AlertCircle size={12} className="text-amber-500" /> },
+    journey_cancelled: { bg: 'bg-red-50',     icon: <AlertCircle size={12} className="text-red-500" /> },
     journey_assign:    { bg: 'bg-amber-50',   icon: <User size={12} className="text-amber-500" /> },
     ministry_referral: { bg: 'bg-indigo-50',  icon: <Building2 size={12} className="text-indigo-500" /> },
   }
@@ -245,6 +254,7 @@ const ordinal = (n: number) => `${n}º`
 const JOURNEY_OUTCOME_LABEL: Record<string, string> = {
   nao_quer_contato: 'Não quer contato',
   mudou_de_igreja:  'Mudou de igreja',
+  outro_motivo:     'Outro motivo',
   manual:           'Encerrada manualmente',
 }
 
@@ -268,6 +278,37 @@ function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, 
   const [reopenOpen, setReopenOpen] = useState(false)
   const [reopenReason, setReopenReason] = useState('')
   const [reopenError, setReopenError] = useState<string | null>(null)
+  // Cancelar atendimento (reunião IGV 26/10): ação explícita, motivo obrigatório, confirmação
+  const { role } = useAuth()
+  const canAttend = ATTENDANCE_ROLES.has(String(role ?? ''))
+  const cancel = useCancelJourney()
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState<CancelReason | ''>('')
+  const [cancelNotes, setCancelNotes] = useState('')
+  const [cancelError, setCancelError] = useState<string | null>(null)
+  const cancelNeedsNotes = cancelReason === 'outro_motivo'
+  const canConfirmCancel = !!cancelReason && (!cancelNeedsNotes || cancelNotes.trim() !== '') && !cancel.isPending
+
+  function closeCancel() { setCancelOpen(false); setCancelReason(''); setCancelNotes(''); setCancelError(null) }
+  async function handleCancel() {
+    if (!cancelReason) { setCancelError('Escolha o motivo do cancelamento.'); return }
+    if (cancelNeedsNotes && !cancelNotes.trim()) { setCancelError('Descreva o motivo na observação.'); return }
+    setCancelError(null)
+    try {
+      const r = await cancel.mutateAsync({ personId, reason: cancelReason, notes: cancelNotes.trim() || undefined })
+      closeCancel()
+      onToast(r.acolhimento_cancelado > 0 || r.fila_cancelada > 0
+        ? 'Atendimento cancelado. As mensagens automáticas de acolhimento pendentes também foram canceladas.'
+        : 'Atendimento cancelado. O cadastro e o histórico foram mantidos.', 'success')
+    } catch (err) {
+      const m = err instanceof Error ? err.message : ''
+      setCancelError(
+        m.includes('FORBIDDEN') ? 'Seu perfil não pode cancelar atendimentos.'
+        : m.includes('NOTES_REQUIRED') ? 'Descreva o motivo na observação.'
+        : m.includes('REASON_REQUIRED') ? 'Escolha o motivo do cancelamento.'
+        : 'Não foi possível cancelar o atendimento. Tente novamente.')
+    }
+  }
 
   async function handleReopen() {
     if (!journeyStatus?.id) return
@@ -313,10 +354,68 @@ function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, 
             data-testid="status-jornada"
             className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${closed ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}
           >
-            {closed ? `STATUS: ENCERRADO · ${outcomeLabel(journeyStatus.outcome)}` : 'STATUS: EM ATENDIMENTO'}
+            {closed ? `STATUS: ${CANCEL_REASONS.some(r => r.value === journeyStatus.outcome) ? 'CANCELADO' : 'ENCERRADO'} · ${outcomeLabel(journeyStatus.outcome)}` : 'STATUS: EM ATENDIMENTO'}
           </span>
         )}
       </div>
+
+      {/* Cancelar atendimento — ação explícita (sem jornada aberta ou em atendimento); o banco valida perfil e igreja */}
+      {!closed && canAttend && (
+        <div className="mt-3">
+          <button
+            type="button"
+            data-testid="btn-cancelar-atendimento"
+            onClick={() => { setCancelOpen(true); setCancelError(null) }}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+          >
+            Cancelar atendimento
+          </button>
+        </div>
+      )}
+      {/* portal no body: ancestral com transform/animação prende position:fixed ao cartão */}
+      {cancelOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="titulo-cancelar" data-testid="janela-cancelar">
+          <div className="w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white shadow-xl p-5 space-y-4">
+            <div>
+              <h2 id="titulo-cancelar" className="text-base font-semibold text-ekthos-black">Cancelar atendimento</h2>
+              <p className="text-xs text-text-secondary mt-1">
+                O STATUS passa para <strong>CANCELADO</strong>. O cadastro e todo o histórico são mantidos, e o atendimento pode ser reaberto depois.
+              </p>
+            </div>
+            <fieldset className="space-y-2">
+              <legend className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Motivo *</legend>
+              {CANCEL_REASONS.map(opt => (
+                <label key={opt.value} className={`flex items-start gap-2 rounded-xl border px-3 py-2 cursor-pointer ${cancelReason === opt.value ? 'border-red-300 bg-red-50' : 'border-border-default hover:bg-bg-hover'}`}>
+                  <input type="radio" name="motivo-cancelamento" value={opt.value} data-testid={`cancelar-motivo-${opt.value}`}
+                    checked={cancelReason === opt.value} onChange={() => setCancelReason(opt.value)} className="mt-0.5" />
+                  <span>
+                    <span className="text-sm font-medium text-text-primary">{opt.label}</span><br />
+                    <span className="text-xs text-text-secondary">{opt.hint}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <label className="block">
+              <span className="text-xs text-text-secondary">Observação{cancelNeedsNotes ? ' *' : ' (opcional)'}</span>
+              <textarea data-testid="cancelar-observacao" value={cancelNotes} onChange={e => setCancelNotes(e.target.value)} rows={3}
+                placeholder="Ex.: pediu para não receber mais mensagens"
+                className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none" />
+            </label>
+            {cancelError && <p className="text-xs text-red-600" role="alert">{cancelError}</p>}
+            <div className="flex gap-2 justify-end">
+              <button type="button" onClick={closeCancel} disabled={cancel.isPending}
+                className="text-sm font-medium px-4 py-2 rounded-xl border border-border-default text-text-primary hover:bg-bg-hover">
+                Voltar
+              </button>
+              <button type="button" data-testid="btn-confirmar-cancelamento" onClick={() => { void handleCancel() }} disabled={!canConfirmCancel}
+                className="text-sm font-medium px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+                {cancel.isPending ? 'Cancelando…' : 'Confirmar cancelamento'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
 
       {/* Reabrir atendimento encerrado por engano — confirmação + motivo obrigatório; nada é apagado */}
       {closed && journeyStatus?.id && (
