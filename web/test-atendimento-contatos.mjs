@@ -298,7 +298,7 @@ for (const n of [0, 1, 2, 3, 4, 6, 7]) {
 // Encerrada
 await open('pclosed');
 const st = await txt('[data-testid="status-jornada"]');
-ck('jornada encerrada → STATUS: ENCERRADO · Não quer contato (2 contatos, próximo 3º)', st === 'STATUS: ENCERRADO · Não quer contato' && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 3º contato', st);
+ck('jornada encerrada → STATUS: CANCELADO · Não quer contato (2 contatos, próximo 3º)', st === 'STATUS: CANCELADO · Não quer contato' && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 3º contato', st);
 await page.screenshot({ path: 'atendimento-encerrada.png', fullPage: true });
 
 // Pessoa sem jornada: etapa obrigatória; salvar → 1º contato

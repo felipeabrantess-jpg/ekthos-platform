@@ -111,7 +111,7 @@ await page.screenshot({ path: 'atendimento-houve-contato.png', fullPage: true })
 
 // ── REABERTURA ──
 await open('p2');
-ck('atendimento encerrado: status ENCERRADO e botão "Reabrir atendimento"', (await txt('[data-testid="status-jornada"]')).startsWith('STATUS: ENCERRADO') && (await page.locator('[data-testid="btn-reabrir"]').count()) === 1);
+ck('atendimento encerrado: status CANCELADO (desfecho Não quer contato) e botão "Reabrir atendimento"', (await txt('[data-testid="status-jornada"]')).startsWith('STATUS: CANCELADO') && (await page.locator('[data-testid="btn-reabrir"]').count()) === 1);
 await open('p1');
 ck('atendimento em andamento: botão "Reabrir" não aparece', (await page.locator('[data-testid="btn-reabrir"]').count()) === 0);
 await open('p2');
