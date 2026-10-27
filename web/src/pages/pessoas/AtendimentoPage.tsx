@@ -22,6 +22,8 @@ import {
   usePersonTimeline,
   usePersonContacts,
   usePersonJourneyStatus,
+  usePersonCareState,
+  type CareState,
   useMinistries,
   type TimelineItem,
   type PersonContact,
@@ -263,10 +265,19 @@ function outcomeLabel(outcome: string | null): string {
   return JOURNEY_OUTCOME_LABEL[outcome] ?? RESULT_LABELS[outcome] ?? outcome
 }
 
-function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, onToast }: {
+// Selo de STATUS = person_care_state() (mesma regra da aba Pessoas); o desfecho só complementa o texto
+const CARE_STATE_BADGE: Record<CareState, { label: string; cls: string }> = {
+  nao_atendida:   { label: 'NÃO ATENDIDA',   cls: 'bg-amber-50 text-amber-700' },
+  em_atendimento: { label: 'EM ATENDIMENTO', cls: 'bg-emerald-50 text-emerald-700' },
+  atendida:       { label: 'ATENDIDA',       cls: 'bg-blue-50 text-blue-700' },
+  cancelado:      { label: 'CANCELADO',      cls: 'bg-red-50 text-red-600' },
+}
+
+function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, careState, personId, onToast }: {
   contacts: PersonContact[]
   isLoading: boolean
   journeyStatus: JourneyStatus | null | undefined
+  careState: CareState | null | undefined
   personId: string
   onToast: (msg: string, type: 'success' | 'error') => void
 }) {
@@ -349,12 +360,13 @@ function BlocoSequenciaContatos({ contacts, isLoading, journeyStatus, personId, 
             </>
           )}
         </div>
-        {journeyStatus && (
+        {careState && CARE_STATE_BADGE[careState] && (
           <span
             data-testid="status-jornada"
-            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${closed ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}`}
+            data-state={careState}
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${CARE_STATE_BADGE[careState].cls}`}
           >
-            {closed ? `STATUS: ${CANCEL_REASONS.some(r => r.value === journeyStatus.outcome) ? 'CANCELADO' : 'ENCERRADO'} · ${outcomeLabel(journeyStatus.outcome)}` : 'STATUS: EM ATENDIMENTO'}
+            STATUS: {CARE_STATE_BADGE[careState].label}{closed && journeyStatus?.outcome ? ` · ${outcomeLabel(journeyStatus.outcome)}` : ''}
           </span>
         )}
       </div>
@@ -1092,6 +1104,7 @@ export default function AtendimentoPage() {
   const { data: journey } = usePersonJourney(personId)
   const { data: contacts = [], isLoading: contactsLoading, isError: contactsError, refetch: refetchContacts } = usePersonContacts(personId)
   const { data: journeyStatus } = usePersonJourneyStatus(personId)
+  const { data: careState } = usePersonCareState(personId)
 
   const { data: stages = [] } = useQuery({
     queryKey: ['pipeline-stages', churchId],
@@ -1178,7 +1191,7 @@ export default function AtendimentoPage() {
 
       {/* Sequência de contatos (1º, 2º, 3º, 4º, … Nº) + status da jornada */}
       <div className="px-4 md:px-6 pb-3">
-        <BlocoSequenciaContatos contacts={contacts} isLoading={contactsLoading} journeyStatus={journeyStatus} personId={personId!} onToast={(msg, type) => setToast({ msg, type, key: Date.now() })} />
+        <BlocoSequenciaContatos contacts={contacts} isLoading={contactsLoading} journeyStatus={journeyStatus} careState={careState} personId={personId!} onToast={(msg, type) => setToast({ msg, type, key: Date.now() })} />
       </div>
 
       {/* E3: Duas colunas — formulário (esq, maior) + histórico (dir, sempre visível) */}

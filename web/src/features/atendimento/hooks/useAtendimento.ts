@@ -263,6 +263,25 @@ export function usePersonContacts(personId: string | undefined) {
   })
 }
 
+/** STATUS do atendimento — fonte única do sistema: person_care_state() no banco (a mesma da lista de Pessoas,
+ *  dos contadores e do CSV). A chave fica sob 'person-journey-status' para ser atualizada junto com as ações
+ *  (registrar, cancelar, reabrir), que já invalidam esse prefixo. */
+export type CareState = 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado'
+export function usePersonCareState(personId: string | undefined) {
+  return useQuery({
+    queryKey: ['person-journey-status', personId, 'care-state'],
+    queryFn: async (): Promise<CareState | null> => {
+      if (!personId) return null
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('person_care_state', { p_person_id: personId })
+      if (error) throw new Error((error as { message: string }).message)
+      return (data ?? null) as CareState | null
+    },
+    enabled: !!personId,
+    staleTime: 15_000,
+  })
+}
+
 /** Última jornada da pessoa (aberta ou encerrada) — só para exibir STATUS. */
 export interface JourneyStatus {
   id: string

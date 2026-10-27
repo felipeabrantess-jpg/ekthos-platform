@@ -229,6 +229,7 @@ async function custom(r, u) {
   if (u.includes('/rest/v1/rpc/')) {
     const body = JSON.parse(r.request().postData() || '{}');
     if (u.includes('get_my_tenant_context')) return F(json({ effective_church_id: CH, church_name: 'T', church_status: 'configured', is_impersonating: false, role: 'admin', is_ekthos_admin: false }));
+    if (u.includes('person_care_state')) { const p = people[body.p_person_id]; const st = !p?.journey ? 'nao_atendida' : !p.journey.closed_at ? (p.contacts.length > 0 ? 'em_atendimento' : 'nao_atendida') : ['nao_quer_contato', 'mudou_de_igreja', 'outro_motivo'].includes(p.journey.outcome) ? 'cancelado' : 'atendida'; return F(json(st)); }
     if (u.includes('get_person_contacts')) return F(json(people[body.p_person_id]?.contacts ?? []));
     if (u.includes('get_person_timeline')) return F(json([]));
     if (u.includes('journey_suggest_stage')) return F(json({ stage_id: 's1', stage_name: 'Visitante', reason: 'mock' }));
@@ -292,7 +293,7 @@ for (const n of [0, 1, 2, 3, 4, 6, 7]) {
     await page.screenshot({ path: 'atendimento-3-contatos.png', fullPage: true });
   }
   if (n === 7) await page.screenshot({ path: 'atendimento-7-contatos.png', fullPage: true });
-  if (n === 0) await page.screenshot({ path: 'atendimento-0-contatos.png', fullPage: true });
+  if (n === 0) { const s0 = await txt('[data-testid="status-jornada"]'); ck('0 contatos (sem atendimento) → STATUS: NÃO ATENDIDA', s0 === 'STATUS: NÃO ATENDIDA', s0); await page.screenshot({ path: 'atendimento-0-contatos.png', fullPage: true }); }
 }
 
 // Encerrada
