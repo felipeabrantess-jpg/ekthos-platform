@@ -107,12 +107,14 @@ export function useCellMembers(groupId: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cell_members')
-        .select('*, people ( id, name, phone, email, name_sort )')
+        .select('*, people ( id, name, phone, email, name_sort, deleted_at )')
         .eq('group_id', groupId)
         .order('name_sort', { ascending: true, referencedTable: 'people' })
 
       if (error) throw new Error(error.message)
-      return data ?? []
+      // pessoa excluída não aparece como membro da célula (reunião IGV 26/10)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (data ?? []).filter((r: any) => !r.people?.deleted_at)
     },
     enabled: Boolean(groupId),
   })

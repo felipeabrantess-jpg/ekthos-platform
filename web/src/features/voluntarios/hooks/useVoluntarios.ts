@@ -12,7 +12,7 @@ export function useVoluntarios(churchId: string, ministryId?: string) {
         .from('volunteers')
         .select(`
           *,
-          people!person_id ( id, name, phone, name_sort, left_at ),
+          people!person_id ( id, name, phone, name_sort, left_at, deleted_at ),
           ministries ( id, name )
         `)
         .eq('church_id', churchId)
@@ -27,7 +27,9 @@ export function useVoluntarios(churchId: string, ministryId?: string) {
 
       if (error) throw new Error(error.message)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const active = (data ?? []).filter(v => (v.people as any)?.left_at == null)
+      // fora: quem saiu da igreja e quem foi excluído (reunião IGV 26/10)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const active = (data ?? []).filter(v => (v.people as any)?.left_at == null && (v.people as any)?.deleted_at == null)
       return active as unknown as VolunteerWithPerson[]
     },
     enabled: Boolean(churchId),
