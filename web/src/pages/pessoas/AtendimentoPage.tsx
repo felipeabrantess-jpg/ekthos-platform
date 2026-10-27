@@ -584,7 +584,8 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
   const closingOutcome = hadContact === true && OUTCOME_CLOSES_JOURNEY.has(result)
 
   // ── E2: sem jornada → etapa obrigatória ───────────────────
-  const missingStageForNewJourney = !journey && !stageId
+  // Etapa só é exigida quando vai haver tentativa ou encaminhamento: "Não tentei" salva os dados sem abrir jornada (ata IGV 26/10)
+  const missingStageForNewJourney = !journey && !stageId && (hadContact === true || ministryId !== '')
 
   const anySignal = Object.values(context).some(Boolean)
 
