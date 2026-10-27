@@ -31,6 +31,7 @@
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { maskPhone, maskIp } from './log-mask.ts'
 
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -231,7 +232,7 @@ Deno.serve(async (req: Request) => {
         ip, phone: phoneClean, church_id: churchId, user_agent: userAgent,
         was_blocked: true, block_reason: 'ip_rate_limit',
       })
-      console.warn('[visitor-capture] IP bloqueado:', ip)
+      console.warn('[visitor-capture] IP bloqueado:', maskIp(ip))
       return ok200(headers)
     }
 
@@ -270,7 +271,7 @@ Deno.serve(async (req: Request) => {
           ip, phone: phoneClean, church_id: churchId, user_agent: userAgent,
           was_blocked: true, block_reason: 'duplicate_24h',
         })
-        console.warn('[visitor-capture] Dedup 24h:', phoneClean, '@', churchId)
+        console.warn('[visitor-capture] Dedup 24h:', maskPhone(phoneClean), '@', churchId)
         return alreadyRegistered(headers)
       }
     }
@@ -352,7 +353,7 @@ Deno.serve(async (req: Request) => {
       const { error: updErr } = await supabase.from('people').update(updates).eq('id', existing.id)
       if (updErr) console.warn('[visitor-capture] UPDATE person falhou (não crítico):', updErr.message)
       else if (existing.phone !== phoneClean) {
-        console.log('[visitor-capture] Dedup por variante de telefone:', existing.phone, '→', phoneClean)
+        console.log('[visitor-capture] Dedup por variante de telefone:', maskPhone(existing.phone), '→', maskPhone(phoneClean))
       }
       personId = existing.id as string
       console.log('[visitor-capture] Pessoa existente preservada (visita registrada):', personId)
