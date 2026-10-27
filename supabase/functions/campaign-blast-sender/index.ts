@@ -13,16 +13,19 @@
 //   { ok: boolean, message_id?: string, error?: string }
 //
 // Segurança:
-//   - verify_jwt: false (frontend chama com anon key)
+//   - verify_jwt: false, mas EXIGE sessão de ADMIN da igreja dona da campanha (authorize.ts)
+//   - destinatário: pessoa ativa da igreja (telefone do cadastro) ou número de teste (máx. 5 por campanha)
 //   - Lê instance_id/token do banco (campaign_blasts) — não do body
 //   - Client-Token lido do secret ZAPI_CLIENT_TOKEN
 //   - Não toca EFs blindadas nem channel_dispatch_queue
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { authorizeSend } from './authorize.ts'
 
 const SUPABASE_URL      = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ANON_KEY          = Deno.env.get('SUPABASE_ANON_KEY')!
 const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN') ?? ''
 const ZAPI_BASE         = 'https://api.z-api.io/instances'
 
@@ -168,6 +171,41 @@ Deno.serve(async (req) => {
     return resp({ ok: false, error: 'campanha cancelada' }, 409)
   }
 
+  // ── Autorização: admin logado da igreja da campanha + destinatário da campanha ──
+  const authHeader = req.headers.get('Authorization') ?? ''
+  let callerChurchId: string | null = null
+  let callerRole: string | null = null
+  if (/^Bearer\s+\S+/i.test(authHeader)) {
+    const { data: u } = await sb.auth.getUser(authHeader.replace(/^Bearer\s+/i, ''))
+    if (u?.user) {
+      // mesmas funções do RLS (respeitam a igreja efetiva/impersonação)
+      const asUser = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+      const [{ data: ch }, { data: role }] = await Promise.all([asUser.rpc('auth_church_id'), asUser.rpc('auth_user_role')])
+      callerChurchId = (ch as string | null) ?? null
+      callerRole = role ? String(role) : null
+    }
+  }
+  const personIdGiven = !!person_id
+  let person = null
+  if (personIdGiven) {
+    const { data } = await sb.from('people').select('church_id, phone, deleted_at, left_at').eq('id', person_id).maybeSingle()
+    person = data
+  }
+  let testSendsSoFar = 0
+  if (!personIdGiven) {
+    const { count } = await sb.from('campaign_blast_sends').select('id', { count: 'exact', head: true }).eq('blast_id', blast_id).is('person_id', null)
+    testSendsSoFar = count ?? 0
+  }
+  const auth = authorizeSend({ blastChurchId: blast.church_id, callerChurchId, callerRole, phone, person, personIdGiven, testSendsSoFar })
+  if (!auth.ok) {
+    console.warn(`[campaign-blast-sender] recusado blast=${String(blast_id).slice(0, 8)} status=${auth.status}: ${auth.error}`)
+    return resp({ ok: false, error: auth.error }, auth.status)
+  }
+  const phoneToSend = auth.phone
+
   // Cria o registro de envio (pending) antes de chamar Z-API
   const { data: sendRow, error: insertErr } = await sb
     .from('campaign_blast_sends')
@@ -175,7 +213,7 @@ Deno.serve(async (req) => {
       blast_id,
       church_id:   blast.church_id,
       person_id:   person_id ?? null,
-      phone,
+      phone:       phoneToSend,
       person_name: person_name ?? null,
       status:      'pending',
     })
@@ -187,7 +225,7 @@ Deno.serve(async (req) => {
     return resp({ ok: false, error: 'erro ao registrar envio' }, 500)
   }
 
-  const normalizedPhone = normalizePhone(phone)
+  const normalizedPhone = normalizePhone(phoneToSend)
   const now             = new Date().toISOString()
 
   // Chama Z-API: vídeo se tiver video_url, texto puro caso contrário
