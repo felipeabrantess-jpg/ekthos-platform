@@ -488,6 +488,7 @@ export default function Leaders() {
         .from('people')
         .select('id, name, email, phone, avatar_url')
         .in('id', Array.from(personIds))
+        .is('deleted_at', null)   // pessoa excluída não aparece como líder (reunião IGV 26/10)
         .is('left_at', null)
 
       if (!people) return []

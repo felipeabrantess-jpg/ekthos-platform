@@ -10,7 +10,7 @@ export function useMinisterios(churchId: string) {
         .from('ministries')
         .select(`
           *,
-          people:leader_id ( id, name, phone, email )
+          people:leader_id ( id, name, phone, email, deleted_at )
         `)
         .eq('church_id', churchId)
         .eq('is_active', true)
@@ -18,7 +18,11 @@ export function useMinisterios(churchId: string) {
 
       if (error) throw new Error(error.message)
 
-      const ministries = (data ?? []) as MinistryWithLeader[]
+      // Pessoa excluída não aparece como líder do ministério (reunião IGV 26/10)
+      const ministries = ((data ?? []) as MinistryWithLeader[]).map(m => {
+        const leader = (m as unknown as { people?: { deleted_at?: string | null } | null }).people
+        return leader?.deleted_at ? ({ ...m, people: null } as MinistryWithLeader) : m
+      })
       if (ministries.length === 0) return ministries
 
       // Pessoas do ministério = ministry_members (pertencimento canônico). Não conta volunteers.
@@ -137,13 +141,15 @@ export function useMinistryVolunteers(churchId: string, ministryId: string | nul
     queryFn: async (): Promise<MinistryVolunteer[]> => {
       const { data, error } = await supabase
         .from('volunteers')
-        .select('id, person_id, role, joined_at, people:person_id ( id, name, phone, email )')
+        .select('id, person_id, role, joined_at, people:person_id ( id, name, phone, email, deleted_at )')
         .eq('church_id', churchId)
         .eq('ministry_id', ministryId!)
         .eq('is_active', true)
         .order('joined_at', { ascending: false })
       if (error) throw new Error(error.message)
-      return (data ?? []) as unknown as MinistryVolunteer[]
+      // pessoa excluída não aparece como voluntária (reunião IGV 26/10)
+      return ((data ?? []) as unknown as Array<MinistryVolunteer & { people?: { deleted_at?: string | null } | null }>)
+        .filter(v => !v.people?.deleted_at) as MinistryVolunteer[]
     },
   })
 }
