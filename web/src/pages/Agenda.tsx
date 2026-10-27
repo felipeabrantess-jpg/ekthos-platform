@@ -21,6 +21,7 @@ import { Calendar, Plus, List, LayoutGrid, Rows3 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
 import { useAuth } from '@/hooks/useAuth'
+import { canAccess, type AppRole } from '@/hooks/useRole'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
@@ -78,7 +79,7 @@ const calendarStyles = `
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Agenda() {
-  const { churchId } = useAuth()
+  const { churchId, role } = useAuth()
   const navigate = useNavigate()
   const calendarRef = useRef<InstanceType<typeof FullCalendar>>(null)
 
@@ -181,13 +182,16 @@ export default function Agenda() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => navigate('/eventos')}
-            className="text-xs"
-          >
-            Gerenciar
-          </Button>
+          {/* /eventos tem a própria permissão (ROUTE_PERMISSIONS): só mostra o atalho para quem pode abrir */}
+          {canAccess(role as AppRole | null, '/eventos') && (
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/eventos')}
+              className="text-xs"
+            >
+              Gerenciar
+            </Button>
+          )}
           <Button onClick={handleCreate}>
             <Plus className="w-4 h-4 mr-1" />
             <span className="hidden sm:inline">Novo Evento</span>

@@ -433,18 +433,18 @@ export default function App() {
             <Route path="dashboard" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></ErrorBoundary>} />
             <Route path="agenda"          element={<ErrorBoundary><Suspense fallback={<PageLoader />}><Agenda /></Suspense></ErrorBoundary>} />
             <Route path="agenda-pastoral" element={<ErrorBoundary><RoleRoute path="agenda-pastoral"><Suspense fallback={<PageLoader />}><AgendaPastoral /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="eventos"         element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EventsList /></Suspense></ErrorBoundary>} />
-            <Route path="cursos"       element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CursosPage /></Suspense></ErrorBoundary>} />
-            <Route path="empresarios"  element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmpresariosPage /></Suspense></ErrorBoundary>} />
-            <Route path="oracao"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><OracaoPage /></Suspense></ErrorBoundary>} />
+            <Route path="eventos"         element={<ErrorBoundary><RoleRoute path="eventos"><Suspense fallback={<PageLoader />}><EventsList /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="cursos"       element={<ErrorBoundary><RoleRoute path="cursos"><Suspense fallback={<PageLoader />}><CursosPage /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="empresarios"  element={<ErrorBoundary><RoleRoute path="empresarios"><Suspense fallback={<PageLoader />}><EmpresariosPage /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="oracao"    element={<ErrorBoundary><RoleRoute path="oracao"><Suspense fallback={<PageLoader />}><OracaoPage /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="inscricoes" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><EmConstrucao name="Inscrições" previstoPara="2º semestre 2026" features={['Formulários de inscrição para eventos', 'Controle de vagas e lista de espera', 'Integração com Agenda']} /></Suspense></ErrorBoundary>} />
 
             <Route path="pessoas"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><People /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pessoas/flags"  element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><PeopleFlags /></Suspense></RoleRoute></ErrorBoundary>} />
             {/* Fase 3 — Atendimento Pastoral Conectado */}
             <Route path="pessoas/:id/atendimento" element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><AtendimentoPage /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="lideres"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="lideres"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><DiscipuladoPainel /></Suspense></RoleRoute></ErrorBoundary>} />
@@ -466,7 +466,7 @@ export default function App() {
             <Route path="cuidado/*" element={<Navigate to="/pessoas" replace />} />
 
             {/* ── Registro de Culto — Fatia 3 (CRM autenticado) ── */}
-            <Route path="culto/relatorios" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><RelatoriosCulto /></Suspense></ErrorBoundary>} />
+            <Route path="culto/relatorios" element={<ErrorBoundary><RoleRoute path="culto/relatorios"><Suspense fallback={<PageLoader />}><RelatoriosCulto /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Volunteer Pro (Braço separado do Tronco CRM) — D2 ── */}
             {/* Rotas canônicas: /volunteer/* com ModuleRoute volunteer-pro */}
@@ -479,11 +479,11 @@ export default function App() {
             {/* REMOVER na próxima release após todas as igrejas migrarem bookmarks */}
 
             {/* ── Campanha Blast ── */}
-            <Route path="campanha" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><CampanhaBlast /></Suspense></ErrorBoundary>} />
+            <Route path="campanha" element={<ErrorBoundary><RoleRoute path="campanha"><Suspense fallback={<PageLoader />}><CampanhaBlast /></Suspense></RoleRoute></ErrorBoundary>} />
 
             {/* ── Sprint 3C: Central de Conversas ── */}
-            <Route path="conversas"    element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
-            <Route path="conversas/:id" element={<ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></ErrorBoundary>} />
+            <Route path="conversas"    element={<ErrorBoundary><RoleRoute path="conversas"><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="conversas/:id" element={<ErrorBoundary><RoleRoute path="conversas"><Suspense fallback={<PageLoader />}><ConversationsPage /></Suspense></RoleRoute></ErrorBoundary>} />
 
             <Route path="agents" element={<ErrorBoundary><RoleRoute path="agentes"><Suspense fallback={<PageLoader />}><Agents /></Suspense></RoleRoute></ErrorBoundary>} />
 
