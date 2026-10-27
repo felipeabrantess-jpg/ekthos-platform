@@ -336,6 +336,17 @@ await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1000)
 ck('Filtro Contato: recarregar a página mantém o filtro', (await page.locator('[data-testid="filtro-contato"]').inputValue()) === 'com_contato')
 await page.locator('[data-testid="filtro-contato"]').selectOption(''); await page.waitForTimeout(1000)
 ck('Filtro Contato: voltar para "todos" remove o parâmetro da lista e da URL', !('p_contact' in pageCalls[pageCalls.length - 1]) && !new URL(page.url()).searchParams.has('contato'))
+// ── Homologação IGV 26/10: filtros escondidos não valem na aba Aniversários ──
+await page.goto(`${BASE}/pessoas?estado=em_atendimento&contato=com_contato&origem=qr_code&q=maria`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1200)
+const antesAniv = pageCalls[pageCalls.length - 1]
+ck('lista principal: filtros da URL aplicados (estado, contato, origem, busca)', antesAniv?.p_care_status === 'em_atendimento' && antesAniv?.p_contact === 'com_contato' && antesAniv?.p_source === 'qr_code' && antesAniv?.p_search === 'maria', JSON.stringify(antesAniv && { s: antesAniv.p_care_status, c: antesAniv.p_contact }))
+const nAniv = pageCalls.length
+await page.locator('button:has-text("Aniversários")').first().click(); await page.waitForTimeout(1500)
+const aniv = pageCalls.slice(nAniv).find(b => b.p_birth_month)
+ck('aba Aniversários: só unidade e mês — STATUS, Contato, origem e busca escondidos NÃO filtram', !!aniv && aniv.p_care_status === null && !('p_contact' in aniv) && aniv.p_source === null && aniv.p_search === null && aniv.p_classification === null, JSON.stringify(aniv && { mes: aniv.p_birth_month, s: aniv.p_care_status, c: aniv.p_contact ?? null, o: aniv.p_source, q: aniv.p_search }))
+await page.locator('button:has-text("Visão geral")').first().click(); await page.waitForTimeout(1500)
+const volta = pageCalls[pageCalls.length - 1]
+ck('voltar à Visão geral: os filtros escolhidos continuam valendo', volta?.p_care_status === 'em_atendimento' && volta?.p_contact === 'com_contato' && !volta?.p_birth_month, JSON.stringify(volta && { s: volta.p_care_status, c: volta.p_contact }))
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close();
 const failed = results.filter(x => !x).length;
