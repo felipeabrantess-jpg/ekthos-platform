@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 const [test, mig] = process.argv.slice(2)
 let sql = readFileSync(test, 'utf8')
-if (mig) sql = sql.replace('--@@MIGRATION@@', readFileSync(mig, 'utf8'))
+if (mig) { const m = readFileSync(mig, 'utf8'); sql = sql.replace('--@@MIGRATION@@', () => m) }  // função: não interpreta $$
 const r = await fetch('https://api.supabase.com/v1/projects/mlqjywqnchilvgkbvicd/database/query', {
   method: 'POST',
   headers: { Authorization: 'Bearer ' + process.env.SUPABASE_ACCESS_TOKEN, 'Content-Type': 'application/json' },
