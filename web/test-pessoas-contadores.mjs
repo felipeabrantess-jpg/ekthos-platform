@@ -232,53 +232,62 @@ const page = await ctx.newPage(); const errs = []; page.on('console', m => { if 
 await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' }).catch(() => {});
 for (let i = 0; i < 3; i++) { try { await page.evaluate(({ k, s }) => localStorage.setItem(k, JSON.stringify(s)), { k: 'sb-mlqjywqnchilvgkbvicd-auth-token', s: MOCK_SESSION }); break; } catch { await page.waitForTimeout(500); } }
 const txt = async (sel) => (await page.locator(sel).first().textContent().catch(() => '') || '').replace(/\s+/g, ' ').trim();
-const num = (s) => Number((s.match(/\((\d+)\)/) || [])[1])
-const readCounters = async () => ({
-  todos: num(await txt('[data-testid="estado-todos"]')), nao: num(await txt('[data-testid="estado-nao_atendida"]')), em: num(await txt('[data-testid="estado-em_atendimento"]')),
-  at: num(await txt('[data-testid="estado-atendida"]')), can: num(await txt('[data-testid="estado-cancelado"]')), alerta: num(await txt('[data-testid="alerta-sem-contato"]')),
-  header: Number(((await txt('h1 + p')).match(/^(\d+)/) || [])[1]),
-})
+// Tela simplificada (28/10): Todos = botão "Quem: Todos"; estados "Rótulo N"; alerta dentro de "Não atendida".
+const first = (t) => Number((t.match(/(\d+)/) || [])[1])
+const readCounters = async () => {
+  const na = await txt('[data-testid="estado-nao_atendida"]')
+  return {
+    todos: first(await txt('[data-testid="classificacao-todas"]')), nao: first(na), em: first(await txt('[data-testid="estado-em_atendimento"]')),
+    at: first(await txt('[data-testid="estado-atendida"]')), can: first(await txt('[data-testid="estado-cancelado"]')),
+    alerta: Number((na.match(/(\d+)\s*sem atendimento há/) || [])[1]),
+    header: Number(((await txt('h1 + p')).match(/^(\d+)/) || [])[1]),
+  }
+}
 const sameFilters = (a, b) => ['p_church_id', 'p_unit_id', 'p_stage_key', 'p_source', 'p_search', 'p_birth_month', 'p_created_from', 'p_created_to'].every(k => (a[k] ?? null) === (b[k] ?? null))
 const last = (arr) => arr[arr.length - 1]
+// contagem de "Todos" do MESMO universo da lista (ignora as contagens por etapa da janela Mais filtros)
+const lastCount = () => [...countCalls].reverse().find(b => !b.p_classification && (b.p_stage_key ?? null) === (last(pageCalls)?.p_stage_key ?? null)) ?? last(countCalls)
 
-// Visão geral, todas as unidades
+// Todas as pessoas, todas as unidades
 await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1200)
 let c = await readCounters()
-ck('ESTADOS e ALERTA em grupos separados; "Todos (7)" mostra o total do universo', (await page.locator('[data-testid="atendimento-estados"]').count()) === 1 && (await page.locator('[data-testid="atendimento-alerta"]').count()) === 1 && c.todos === 7, JSON.stringify(c))
+ck('Atendimento num grupo só, alerta dentro de "Não atendida"; "Todos 7" mostra o total do universo', (await page.locator('[data-testid="atendimento-estados"]').count()) === 1 && c.todos === 7, JSON.stringify(c))
 ck('reconciliação: Não atendida + Em atendimento + Atendida + Cancelado = Todos = cabeçalho da lista (2+3+1+1 = 7)', c.nao + c.em + c.at + c.can === c.todos && c.header === c.todos, JSON.stringify(c))
-ck('alerta "Sem contato +48h (3)" fora da soma dos estados (3 ≠ 7 − 7)', c.alerta === 3 && c.nao + c.em + c.at + c.can + c.alerta !== c.todos, JSON.stringify(c))
-ck('o botão do alerta não está no grupo de estados', (await page.locator('[data-testid="atendimento-estados"] [data-testid="alerta-sem-contato"]').count()) === 0 && (await page.locator('[data-testid="atendimento-alerta"] [data-testid="alerta-sem-contato"]').count()) === 1)
-ck('contador chamado com os MESMOS filtros da lista (sem p_care_status/p_limit/p_offset)', sameFilters(last(countCalls), last(pageCalls)) && !('p_care_status' in last(countCalls)) && !('p_limit' in last(countCalls)), JSON.stringify(last(countCalls)))
-ck('banner do alerta usa o threshold do banco (48h) e o número do alerta', /mais de 48h/.test(await txt('text=Aguardando nova tentativa')) && (await page.locator('text=(3)').count()) >= 1)
+ck('alerta "3 sem atendimento há 48h" fora da soma dos estados (3 ≠ 7 − 7)', c.alerta === 3 && c.nao + c.em + c.at + c.can + c.alerta !== c.todos, JSON.stringify(c))
+ck('o alerta não é um botão solto: "Sem atendimento há 48h" só aparece ao abrir "Não atendida"', (await page.locator('[data-testid="alerta-sem-contato"]').count()) === 0 && (await page.locator('[data-testid="atendimento-alerta"]').count()) === 0)
+ck('contador chamado com os MESMOS filtros da lista (sem p_care_status/p_limit/p_offset)', sameFilters(lastCount(), last(pageCalls)) && !('p_care_status' in lastCount()) && !('p_limit' in lastCount()), JSON.stringify(lastCount()))
+ck('sem faixa amarela; aviso usa o threshold do banco (48h)', (await page.locator('text=Aguardando nova tentativa').count()) === 0 && /há 48h/.test(await txt('[data-testid="estado-nao_atendida"]')))
 
-// Aba Visitante (etapa): contadores restritos à etapa
-await page.locator('button:has-text("Visitante")').first().click(); await page.waitForTimeout(1200)
+// Etapa Visitante (Mais filtros): contadores restritos à etapa
+await page.locator('[data-testid="btn-mais-filtros"]').click(); await page.waitForTimeout(400)
+await page.locator('[data-testid="etapa-visitante"]').click(); await page.locator('[data-testid="mais-filtros-fechar"]').click(); await page.waitForTimeout(1200)
 c = await readCounters()
-ck('aba Visitante: universo p0,p1,p7 → Todos (3) = cabeçalho; 1+2+0+0 = 3; alerta 2', c.todos === 3 && c.header === 3 && c.nao === 1 && c.em === 2 && c.at === 0 && c.can === 0 && c.alerta === 2, JSON.stringify(c))
-ck('aba Visitante: contador enviou p_stage_key=visitante, igual à lista', last(countCalls).p_stage_key === 'visitante' && sameFilters(last(countCalls), last(pageCalls)), JSON.stringify(last(countCalls)))
+ck('etapa Visitante: universo p0,p1,p7 → Todos 3 = cabeçalho; 1+2+0+0 = 3; alerta 2', c.todos === 3 && c.header === 3 && c.nao === 1 && c.em === 2 && c.at === 0 && c.can === 0 && c.alerta === 2, JSON.stringify(c))
+ck('etapa Visitante: contador enviou p_stage_key=visitante, igual à lista', lastCount().p_stage_key === 'visitante' && sameFilters(lastCount(), last(pageCalls)), JSON.stringify(lastCount()))
 
 // Busca
 await page.locator('input[placeholder*="Buscar"]').fill('p7'); await page.waitForTimeout(1500)
 c = await readCounters()
-ck('busca "p7" na aba Visitante: Todos (1) = cabeçalho; Em atendimento 1; alerta 1', c.todos === 1 && c.header === 1 && c.em === 1 && c.alerta === 1 && last(countCalls).p_search === 'p7' && sameFilters(last(countCalls), last(pageCalls)), JSON.stringify(c))
+ck('busca "p7" na etapa Visitante: Todos 1 = cabeçalho; Em atendimento 1; alerta 1', c.todos === 1 && c.header === 1 && c.em === 1 && c.alerta === 1 && lastCount().p_search === 'p7' && sameFilters(lastCount(), last(pageCalls)), JSON.stringify(c))
 await page.locator('input[placeholder*="Buscar"]').fill(''); await page.waitForTimeout(800)
 
-// Filtro de situação: clicar no alerta filtra a lista; contadores NÃO mudam (mesmo universo)
+// Recorte 48h: filtra a lista; contadores NÃO mudam (mesmo universo)
+await page.locator('[data-testid="estado-nao_atendida"]').click(); await page.waitForTimeout(800)
 await page.locator('[data-testid="alerta-sem-contato"]').click(); await page.waitForTimeout(1200)
 const rows = await page.locator('table tbody tr').count()
 c = await readCounters()
-ck('clicar em "Sem contato +48h": lista com 2 (p0, p7), contadores continuam os da aba (Todos 3)', rows === 2 && last(pageCalls).p_care_status === 'sem_contato_48h' && c.todos === 3 && !('p_care_status' in last(countCalls)), `rows=${rows} ${JSON.stringify(c)}`)
+ck('"Sem atendimento há 48h": lista com 2 (p0, p7), contadores continuam os da etapa (Todos 3)', rows === 2 && last(pageCalls).p_care_status === 'sem_contato_48h' && c.todos === 3 && !('p_care_status' in lastCount()), `rows=${rows} ${JSON.stringify(c)}`)
 await page.locator('[data-testid="estado-em_atendimento"]').click(); await page.waitForTimeout(1200)
 ck('clicar em "Em atendimento": lista com 2 (p1, p7)', (await page.locator('table tbody tr').count()) === 2 && last(pageCalls).p_care_status === 'em_atendimento')
 
 // Unidade global
-await page.locator('button:has-text("Visão geral")').first().click(); await page.waitForTimeout(800)
-await page.locator('[data-testid="estado-todos"]').click(); await page.waitForTimeout(600)
+await page.locator('[data-testid="chip-etapa"]').click(); await page.waitForTimeout(800)
+await page.locator('[data-testid="estado-em_atendimento"]').click(); await page.waitForTimeout(600)
 const unitSel = page.locator('select[aria-label="Unidade"]:visible').first()
 if (await unitSel.count()) {
   await unitSel.selectOption({ label: 'Unidade Central' }); await page.waitForTimeout(1500)
   c = await readCounters()
-  ck('unidade Central (u1: p0,p1,p3,p7): Todos (4) = cabeçalho; 1+2+1+0 = 4; alerta 2; p_unit_id enviado igual à lista', c.todos === 4 && c.header === 4 && c.nao + c.em + c.at + c.can === 4 && c.alerta === 2 && last(countCalls).p_unit_id === '11111111-1111-4111-8111-111111111111' && sameFilters(last(countCalls), last(pageCalls)), JSON.stringify(c) + ' ' + JSON.stringify(last(countCalls)))
+  ck('unidade Central (u1: p0,p1,p3,p7): Todos 4 = cabeçalho; 1+2+1+0 = 4; alerta 2; p_unit_id enviado igual à lista', c.todos === 4 && c.header === 4 && c.nao + c.em + c.at + c.can === 4 && c.alerta === 2 && lastCount().p_unit_id === '11111111-1111-4111-8111-111111111111' && sameFilters(lastCount(), last(pageCalls)), JSON.stringify(c) + ' ' + JSON.stringify(last(countCalls)))
 } else {
   ck('seletor de unidade presente', false, 'não encontrado')
 }

@@ -139,10 +139,13 @@ await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 30000 })
 const rowOf = (name) => page.locator('table tbody tr', { hasText: name }).first();
 ck('etiqueta da lista vem de care_state: Em atendimento / Cancelado / sem etiqueta para Não atendida',
   /Em atendimento/.test(await rowOf('Ana Em Atendimento').innerText()) && /Cancelado/.test(await rowOf('Bruno Cancelado').innerText()) && !/Atendida|Em atendimento|Cancelad/.test(await rowOf('Carla Nunca').innerText()));
-const chipTxt = await page.locator('button:has-text("Cancelado (")').first().innerText().catch(() => '');
-ck('filtro "Cancelado (1)" existe e os contadores somam o total (1+1+0+1 = 3)', /Cancelado \(1\)/.test(chipTxt) && (await page.locator('button:has-text("Não atendida (1)")').count()) === 1 && (await page.locator('button:has-text("Em atendimento (1)")').count()) === 1, chipTxt);
+// Tela simplificada (28/10): botões de Atendimento "Rótulo N" (data-testid estado-*); mesmas contas.
+const estN = async (k) => { const t = await page.locator(`[data-testid="estado-${k}"]`).first().innerText().catch(() => ''); const m = t.match(/(\d+)/); return m ? +m[1] : NaN; };
+const chipTxt = await page.locator('[data-testid="estado-cancelado"]').first().innerText().catch(() => '');
+const est = { na: await estN('nao_atendida'), ea: await estN('em_atendimento'), at: await estN('atendida'), ca: await estN('cancelado') };
+ck('filtro "Cancelado 1" existe e os contadores somam o total (1+1+0+1 = 3)', est.ca === 1 && est.na === 1 && est.ea === 1 && est.at === 0 && est.na + est.ea + est.at + est.ca === 3, JSON.stringify(est));
 calls.length = 0;
-await page.locator('button:has-text("Cancelado (")').first().click(); await page.waitForTimeout(900);
+await page.locator('[data-testid="estado-cancelado"]').first().click(); await page.waitForTimeout(900);
 const pg = [...calls].reverse().find(c => c.name === 'get_people_page');
 ck('filtro Cancelado → get_people_page com p_care_status=cancelado e lista só com Bruno', pg?.body.p_care_status === 'cancelado' && (await page.locator('table tbody tr').count()) === 1 && /Bruno/.test(await page.locator('table tbody tr').first().innerText()));
 

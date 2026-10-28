@@ -290,7 +290,7 @@ ck('ordenação + filtro de estado + página 2 na mesma consulta', lastBody()?.p
 await page.locator('table tbody tr').first().locator('button[title="Atender"]').first().click(); await page.waitForTimeout(1500)
 await page.goBack(); await page.waitForTimeout(2000)
 ck('Atender → Voltar devolve a mesma URL (ordem, filtro e página)', JSON.stringify(Object.fromEntries(new URL(page.url()).searchParams)) === JSON.stringify(antes) && lastBody()?.p_sort_by === 'nome', page.url().split('?')[1])
-await page.locator('[data-testid="estado-todos"]').click(); await page.waitForTimeout(1200)
+await page.locator('[data-testid="estado-nao_atendida"]').click(); await page.waitForTimeout(1200)  // tela simples: desmarcar = todos
 ck('trocar o filtro mantém a ordenação e volta à página 1', lastBody()?.p_sort_by === 'nome' && lastBody()?.p_offset === 0 && new URL(page.url()).searchParams.get('ordem') === 'nome')
 
 // troca real de unidade mantém a ordem escolhida

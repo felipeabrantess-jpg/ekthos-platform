@@ -252,7 +252,7 @@ const isOn = async (tid) => ((await page.locator(`[data-testid="${tid}"]`).getAt
 await page.locator('[data-testid="classificacao-member"]').click(); await page.waitForTimeout(900)
 await page.locator('[data-testid="estado-nao_atendida"]').click(); await page.waitForTimeout(900)
 await page.locator('input[placeholder^="Buscar"]').fill('Pessoa'); await page.waitForTimeout(1000)
-await page.locator('select').filter({ has: page.locator('option', { hasText: 'Importação' }) }).first().selectOption('manual'); await page.waitForTimeout(900)
+await page.locator('[data-testid="btn-mais-filtros"]').click(); await page.locator('[data-testid="filtro-origem"]').selectOption('manual'); await page.locator('[data-testid="mais-filtros-fechar"]').click(); await page.waitForTimeout(900)
 const u1 = new URL(page.url()).searchParams
 ck('filtros espelhados na URL (cls, estado, q, origem) e unidade preservada', u1.get('cls') === 'member' && u1.get('estado') === 'nao_atendida' && u1.get('q') === 'Pessoa' && u1.get('origem') === 'manual' && u1.get('unidade') === 'none', page.url().split('?')[1])
 
@@ -262,13 +262,13 @@ ck('Atender abre /pessoas/:id/atendimento', /\/pessoas\/[^/]+\/atendimento/.test
 await page.goBack(); await page.waitForTimeout(1800)
 ck('Voltar: classificação Membros continua ativa', await isOn('classificacao-member'))
 ck('Voltar: estado "Não atendida" continua ativo', await isOn('estado-nao_atendida'))
-ck('Voltar: busca e origem preservadas', (await page.locator('input[placeholder^="Buscar"]').inputValue()) === 'Pessoa' && (await page.locator('select').filter({ has: page.locator('option', { hasText: 'Importação' }) }).first().inputValue()) === 'manual')
+ck('Voltar: busca e origem preservadas', (await page.locator('input[placeholder^="Buscar"]').inputValue()) === 'Pessoa' && /Origem: Manual/.test(await page.locator('[data-testid="chip-origem"]').innerText().catch(() => '')))
 const lp = lastPage()
 ck('Voltar: a consulta usa exatamente os mesmos filtros e a mesma unidade', lp?.p_classification === 'member' && lp?.p_care_status === 'nao_atendida' && lp?.p_search === 'Pessoa' && lp?.p_source === 'manual' && lp?.p_unit_id === 'none', JSON.stringify({ c: lp?.p_classification, s: lp?.p_care_status, q: lp?.p_search, o: lp?.p_source, u: lp?.p_unit_id }))
 ck('Voltar: unidade continua "Sem unidade definida" na URL', new URL(page.url()).searchParams.get('unidade') === 'none')
 
 // Limpar filtros esvazia a URL; filtros inválidos na URL são ignorados
-await page.locator('[data-testid="classificacao-todas"]').click(); await page.locator('[data-testid="estado-todos"]').click(); await page.locator('input[placeholder^="Buscar"]').fill(''); await page.waitForTimeout(1000)
+await page.locator('[data-testid="classificacao-todas"]').click(); await page.locator('[data-testid="estado-nao_atendida"]').click(); await page.locator('input[placeholder^="Buscar"]').fill(''); await page.waitForTimeout(1000)
 const u2 = new URL(page.url()).searchParams
 ck('limpar filtros remove os parâmetros da URL', !u2.has('cls') && !u2.has('estado') && !u2.has('q') && u2.get('origem') === 'manual')
 await page.goto(`${BASE}/pessoas?tab=geral&unidade=none&cls=valor_invalido&estado=xyz&origem=xx&de=2026-13-99&pagina=abc`, { waitUntil: 'networkidle' }); await page.waitForTimeout(1500)
