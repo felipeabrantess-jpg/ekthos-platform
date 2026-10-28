@@ -19,8 +19,8 @@ import { useDeletePerson } from '@/features/people/hooks/usePeople'
 import { buildPeopleCsv, type ExportPayload, type ExportRow } from '@/features/people/exportCsv'
 import { fetchAllExportPages, isMissingFunctionError, type ExportPageResult } from '@/features/people/exportPaging'
 import {
-  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, STAGE_KEY_NONE, PEOPLE_SORT_KEYS,
-  CONTACT_FILTERS, CONTACT_FILTER_LABEL, type ContactFilter,
+  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, PEOPLE_SORT_KEYS,
+  type ContactFilter,
   type PeoplePageFilters, type PeopleSortKey, type PeopleSortDir,
 } from '@/features/people/hooks/usePeoplePage'
 import { useUnit } from '@/contexts/UnitContext'
@@ -28,12 +28,13 @@ import { withUnitParam, UNIT_ALL } from '@/lib/filters/unitScope'
 import { useBirthdayContacts, useToggleBirthdayContact, type BirthdayContact } from '@/features/people/hooks/useBirthdayContacts'
 import { useTags } from '@/features/people/hooks/useTags'
 import { useAcolhimentoStatus, getCareStatusBadge } from '@/features/people/hooks/useAcolhimentoStatus'
+import { usePeopleQuemCounts, useStageFilterCounts, type QuemKey } from '@/features/people/hooks/usePeopleQuemCounts'
+import MaisFiltrosDrawer, { type MaisFiltros } from '@/features/people/components/MaisFiltrosDrawer'
 import PersonModal from '@/features/people/components/PersonModal'
 import PersonDetailPanel from '@/features/people/components/PersonDetailPanel'
 import QrCodeModal from '@/features/qr-visitor/components/QrCodeModal'
 import { ImportacaoMembros } from '@/features/people/components/ImportacaoMembros'
 import { ClassificationBadge } from '@/features/people/components/ClassificationBadge'
-import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { CLASSIFICATION_LABEL, ROLE_FILTER_LABEL, type ClassificationFilter, type RoleFilter, type PersonClassification } from '@/features/people/classification'
 import { useAuth } from '@/hooks/useAuth'
 import Spinner from '@/components/ui/Spinner'
@@ -517,9 +518,6 @@ const LEGACY_TAB_ALIASES: Record<string, string> = {
   lideres:     'lider',
 }
 
-function tabToStageKey(tab: PeopleTab): string | undefined {
-  return tab.startsWith('stage:') ? tab.slice('stage:'.length) : undefined
-}
 
 export default function People() {
   const { churchId } = useAuth()
@@ -528,27 +526,27 @@ export default function People() {
   const [searchParams, setSearchParams] = useSearchParams()
   const queryClient                     = useQueryClient()
 
-  // ── Aba: 'geral' | 'aniversarios' | 'stage:<stage_key>' (URL ?tab=) ─────
+  // ── Visão: 'geral' | 'aniversarios' (URL ?tab=aniversarios). A etapa é um filtro de "Mais filtros" (?etapa=);
+  //    links antigos ?tab=stage:<key> / aliases abrem com a etapa já filtrada.
   const rawTab = searchParams.get('tab')
-  const initialTab: PeopleTab = (() => {
-    if (!rawTab || rawTab === 'geral') return 'geral'
-    if (rawTab === 'aniversarios') return 'aniversarios'
-    const key = LEGACY_TAB_ALIASES[rawTab] ?? rawTab.replace(/^stage:/, '')
-    return `stage:${key}`
+  const initialStage = (() => {
+    const e = searchParams.get('etapa'); if (e) return e
+    if (!rawTab || rawTab === 'geral' || rawTab === 'aniversarios') return ''
+    return LEGACY_TAB_ALIASES[rawTab] ?? rawTab.replace(/^stage:/, '')
   })()
-  const [activeTab, setActiveTabState] = useState<PeopleTab>(initialTab)
-  const activeStageKey = tabToStageKey(activeTab)
+  const [activeTab, setActiveTabState] = useState<PeopleTab>(rawTab === 'aniversarios' ? 'aniversarios' : 'geral')
+  const [stageFilter, setStageFilter] = useState<string>(initialStage)
+  const activeStageKey = stageFilter || undefined
   const isBirthdayTab  = activeTab === 'aniversarios'
   const isGeralTab     = activeTab === 'geral'
+  const [maisFiltrosOpen, setMaisFiltrosOpen] = useState(false)
 
-  function setActiveTab(tab: PeopleTab, opts: { keepSearch?: boolean } = {}) {
+  function setActiveTab(tab: PeopleTab) {
     setActiveTabState(tab)
-    if (!opts.keepSearch) setSearch('')
     setCurrentPage(0)
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
-      const key = tabToStageKey(tab)
-      next.set('tab', key ?? tab)
+      if (tab === 'aniversarios') next.set('tab', 'aniversarios'); else next.delete('tab')
       return next
     }, { replace: true })
   }
@@ -573,7 +571,8 @@ export default function People() {
   const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>(() => fromUrl('cls', ['visitor', 'member', 'none'] as const))
   const [roleFilter, setRoleFilter] = useState<RoleFilter>(() => fromUrl('funcao', ['member_only', 'volunteer', 'leader', 'leader_volunteer'] as const))
   // Filtro Contato (ata IGV): ?contato=com_contato|sem_contato|contato_realizado
-  const [contactFilter, setContactFilter] = useState<ContactFilter | ''>(() => fromUrl('contato', CONTACT_FILTERS))
+  // Filtro Contato saiu da tela (28/10): coberto pelo Atendimento. Mantido vazio (a RPC continua aceitando).
+  const [contactFilter, setContactFilter] = useState<ContactFilter | ''>('')
   const [createdFrom, setCreatedFrom]   = useState(() => dateFromUrl('de'))
   const [createdTo, setCreatedTo]       = useState(() => dateFromUrl('ate'))
   const [currentPage, setCurrentPage]   = useState(() => { const n = parseInt(searchParams.get('pagina') ?? '', 10); return Number.isFinite(n) && n > 1 ? n - 1 : 0 })
@@ -581,34 +580,19 @@ export default function People() {
   const [sortBy, setSortBy]   = useState<PeopleSortKey | ''>(() => fromUrl('ordem', PEOPLE_SORT_KEYS))
   const [sortDir, setSortDir] = useState<PeopleSortDir>(() => (searchParams.get('dir') === 'desc' ? 'desc' : 'asc'))
 
-  type DateFilter = '7' | '15' | '30' | 'custom' | 'all'
-  const validPeriodos: DateFilter[] = ['7', '15', '30', 'custom', 'all']
-  const periodoParam = searchParams.get('periodo') as DateFilter | null
-  const [dateFilter, setDateFilter] = useState<DateFilter>(
-    periodoParam && validPeriodos.includes(periodoParam) ? periodoParam :
-    activeStageKey === 'visitante' ? '30' : 'all'
-  )
   // Espelha os filtros na URL (replace: não polui o histórico; Voltar traz a tela como estava)
   useEffect(() => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       const put = (k: string, v: string) => { if (v) next.set(k, v); else next.delete(k) }
-      put('cls', classificationFilter); put('funcao', roleFilter); put('estado', careFilter); put('origem', sourceFilter); put('contato', contactFilter)
+      put('etapa', stageFilter); put('cls', classificationFilter); put('funcao', roleFilter); put('estado', careFilter); put('origem', sourceFilter); put('contato', contactFilter)
       put('q', search); put('de', createdFrom); put('ate', createdTo)
       put('pagina', currentPage > 0 ? String(currentPage + 1) : '')
       put('ordem', sortBy); put('dir', sortBy && sortDir === 'desc' ? 'desc' : '')
-      put('periodo', activeStageKey === 'visitante' && dateFilter !== '30' ? dateFilter : '')
+      put('periodo', '')
       return next.toString() === prev.toString() ? prev : next
     }, { replace: true })
-  }, [classificationFilter, roleFilter, careFilter, sourceFilter, contactFilter, search, createdFrom, createdTo, currentPage, sortBy, sortDir, dateFilter, activeStageKey, setSearchParams])
-
-  // Período (só etapa visitante): converte em intervalo de cadastro
-  const periodRange = useMemo(() => {
-    if (activeStageKey !== 'visitante' || dateFilter === 'all') return { from: '', to: '' }
-    if (dateFilter === 'custom') return { from: createdFrom, to: createdTo }
-    const d = new Date(Date.now() - parseInt(dateFilter, 10) * 24 * 60 * 60 * 1000)
-    return { from: d.toISOString().split('T')[0], to: '' }
-  }, [activeStageKey, dateFilter, createdFrom, createdTo])
+  }, [classificationFilter, roleFilter, careFilter, sourceFilter, contactFilter, search, createdFrom, createdTo, currentPage, sortBy, sortDir, stageFilter, setSearchParams])
 
   // ── Modais / seleção ─────────────────────────────────────────────────────
   const [modalOpen, setModalOpen]             = useState(false)
@@ -630,7 +614,7 @@ export default function People() {
   const listFilters = !isBirthdayTab
   const pageFilters: PeoplePageFilters = {
     unit:        selectedUnit,
-    stageKey:    activeStageKey,
+    stageKey:    listFilters ? activeStageKey : undefined,
     careStatus:  listFilters ? careFilter || undefined : undefined,
     classification: listFilters ? classificationFilter || undefined : undefined,
     role:        listFilters ? roleFilter || undefined : undefined,
@@ -638,8 +622,8 @@ export default function People() {
     source:      listFilters ? sourceFilter || undefined : undefined,
     search:      listFilters ? search || undefined : undefined,
     birthMonth:  isBirthdayTab ? currentMonth : undefined,
-    createdFrom: listFilters ? ((activeStageKey === 'visitante' ? periodRange.from : createdFrom) || undefined) : undefined,
-    createdTo:   listFilters ? ((activeStageKey === 'visitante' ? periodRange.to   : createdTo)   || undefined) : undefined,
+    createdFrom: listFilters ? createdFrom || undefined : undefined,
+    createdTo:   listFilters ? createdTo   || undefined : undefined,
     sortBy:      !isBirthdayTab && sortBy ? sortBy : undefined,
     sortDir:     sortDir,
     page:        currentPage,
@@ -700,68 +684,55 @@ export default function People() {
   const { data: allTags = [] } = useTags(churchId ?? '')
   const deletePerson = useDeletePerson()
 
-  const tabs = useMemo(() => {
-    const list: { id: PeopleTab; label: string; count: number | null }[] = [
-      { id: 'geral',        label: 'Visão geral',  count: stageCounts?.total ?? null },
-      { id: 'aniversarios', label: 'Aniversários', count: stageCounts?.aniversarios ?? null },
-    ]
-    for (const s of stageCounts?.stages ?? []) {
-      if (!s.stage_key) continue
-      list.push({ id: `stage:${s.stage_key}`, label: s.name, count: s.cnt })
-    }
-    list.push({ id: `stage:${STAGE_KEY_NONE}`, label: 'Sem etapa', count: stageCounts?.sem_etapa ?? null })
-    return list
-  }, [stageCounts])
-  const activeTabLabel = tabs.find(t => t.id === activeTab)?.label ?? 'Pessoas'
-
-  // ── Compatibilidade aba (etapa) × classificação ───────────────────────────
-  // Regra do banco (pipeline_stages.requires_classification, Release 1): uma etapa que exige
-  // 'member' só contém membros; uma que exige 'visitor' só contém visitantes. Logo "aba Visitante +
-  // Membros" ou "aba Membro + Não classificados" são vazias POR REGRA, não por dado. Para que cada
-  // classificação sempre mostre sua relação, a seleção incompatível leva a aba para "Visão geral"
-  // (unidade, estado, origem, cadastro e busca são preservados); e trocar para uma aba incompatível
-  // limpa só a classificação. Nada é escrito; a regra continua no banco (lida de pipeline_stages).
-  const { data: pipelineStages } = usePipelineStages(churchId ?? '')
-  const stageRequires = useMemo(() => {
-    const map: Record<string, 'member' | 'visitor' | null> = {}
-    for (const st of (pipelineStages ?? []) as unknown as { stage_key?: string | null; requires_classification?: 'member' | 'visitor' | null }[]) {
-      if (st.stage_key) map[st.stage_key] = st.requires_classification ?? null
-    }
-    return map
-  }, [pipelineStages])
-  function isCompatible(stageKey: string | undefined, cls: ClassificationFilter): boolean {
-    if (!stageKey || stageKey === STAGE_KEY_NONE || !cls) return true
-    const required = stageRequires[stageKey]
-    return required == null ? true : required === cls
+  // ── Números de "Quem" e das etapas: MESMA contagem do Atendimento, mesmos filtros (só varia classificação/etapa)
+  const careBase = {
+    unit: pageFilters.unit, stageKey: pageFilters.stageKey, source: pageFilters.source, search: pageFilters.search,
+    birthMonth: pageFilters.birthMonth, createdFrom: pageFilters.createdFrom, createdTo: pageFilters.createdTo,
+    role: pageFilters.role, contact: pageFilters.contact,
   }
+  const quem = usePeopleQuemCounts(churchId ?? '', careBase)
+  const drawerStages = useMemo(() => (stageCounts?.stages ?? []).filter(st => !!st.stage_key).map(st => ({ stage_key: st.stage_key as string, name: st.name })), [stageCounts])
+  const stageFilterCounts = useStageFilterCounts(churchId ?? '', { ...careBase, classification: pageFilters.classification }, drawerStages.map(st => st.stage_key), maisFiltrosOpen)
+  const stageName = (key: string) => drawerStages.find(st => st.stage_key === key)?.name ?? key
+
   function selectClassification(value: ClassificationFilter) {
     setClassificationFilter(value)
-    if (value !== 'member') setRoleFilter('')
     setCurrentPage(0)
-    if (!isCompatible(activeStageKey, value)) setActiveTab('geral', { keepSearch: true })
   }
-  function selectTab(tab: PeopleTab) {
-    setActiveTab(tab)
-    if (!isCompatible(tabToStageKey(tab), classificationFilter)) { setClassificationFilter(''); setRoleFilter('') }
+  // Clicar no estado já escolhido desmarca; "Sem atendimento há 48h" é um recorte de "Não atendida".
+  function selectCare(value: Exclude<CareFilter, ''>) {
+    setCareFilter(prev => (prev === value || (value === 'nao_atendida' && prev === 'sem_contato_48h')) ? '' : value)
+    setCurrentPage(0)
   }
-  // Filtros ativos (para o estado vazio) e limpeza — a unidade e a aba NÃO são tocadas
+  function changeMaisFiltros(next: Partial<MaisFiltros>) {
+    if (next.stageKey !== undefined) setStageFilter(next.stageKey)
+    if (next.source !== undefined) setSourceFilter(next.source)
+    if (next.createdFrom !== undefined) setCreatedFrom(next.createdFrom)
+    if (next.createdTo !== undefined) setCreatedTo(next.createdTo)
+    if (next.role !== undefined) setRoleFilter(next.role)
+    setCurrentPage(0)
+  }
+  // Filtros ligados (chips removíveis). Quem e Atendimento ficam visíveis nos próprios botões.
+  const SOURCE_LABEL: Record<string, string> = { qr_code: 'QR Code', manual: 'Manual', import_xlsx: 'Importação' }
+  const activeChips: { key: string; label: string; remove: () => void }[] = [
+    stageFilter ? { key: 'etapa', label: `Etapa: ${stageName(stageFilter)}`, remove: () => changeMaisFiltros({ stageKey: '' }) } : null,
+    sourceFilter ? { key: 'origem', label: `Origem: ${SOURCE_LABEL[sourceFilter] ?? sourceFilter}`, remove: () => changeMaisFiltros({ source: '' }) } : null,
+    createdFrom || createdTo ? { key: 'cadastro', label: `Cadastro: ${createdFrom || '…'} – ${createdTo || '…'}`, remove: () => changeMaisFiltros({ createdFrom: '', createdTo: '' }) } : null,
+    roleFilter ? { key: 'funcao', label: `Função: ${ROLE_FILTER_LABEL[roleFilter]}`, remove: () => changeMaisFiltros({ role: '' }) } : null,
+    search ? { key: 'busca', label: `Busca: "${search}"`, remove: () => { setSearch(''); setCurrentPage(0) } } : null,
+  ].filter((c): c is { key: string; label: string; remove: () => void } => c !== null)
   const CARE_FILTER_LABEL: Record<Exclude<CareFilter, ''>, string> = {
-    nao_atendida: 'Não atendida', em_atendimento: 'Em atendimento', atendida: 'Atendida', cancelado: 'Cancelado',
-    sem_contato_48h: `Sem contato +${careStatusData?.alertThresholdHours ?? 48}h`,
+    nao_atendida: 'Não atendidas', em_atendimento: 'Em atendimento', atendida: 'Atendida', cancelado: 'Cancelado',
+    sem_contato_48h: `Sem atendimento há ${careStatusData?.alertThresholdHours ?? 48}h`,
   }
   const activeFilterLabels: string[] = [
     classificationFilter ? CLASSIFICATION_LABEL[classificationFilter] : '',
-    roleFilter ? ROLE_FILTER_LABEL[roleFilter] : '',
     careFilter ? CARE_FILTER_LABEL[careFilter] : '',
-    contactFilter ? `Contato: ${CONTACT_FILTER_LABEL[contactFilter]}` : '',
-    sourceFilter ? `Origem: ${sourceFilter === 'qr_code' ? 'QR Code' : sourceFilter === 'manual' ? 'Manual' : sourceFilter === 'import_xlsx' ? 'Importação' : sourceFilter}` : '',
-    activeStageKey === 'visitante' && dateFilter !== 'all' && dateFilter !== 'custom' ? `Período: ${dateFilter} dias` : '',
-    (activeStageKey !== 'visitante' || dateFilter === 'custom') && (createdFrom || createdTo) ? `Cadastro: ${createdFrom || '…'} – ${createdTo || '…'}` : '',
-    search ? `Busca: "${search}"` : '',
+    ...activeChips.map(c => c.label),
   ].filter(Boolean)
   function clearFilters() {
     setClassificationFilter(''); setRoleFilter(''); setCareFilter(''); setSourceFilter(''); setContactFilter('')
-    setCreatedFrom(''); setCreatedTo(''); setSearch(''); setDateFilter('all'); setCurrentPage(0)
+    setStageFilter(''); setCreatedFrom(''); setCreatedTo(''); setSearch(''); setCurrentPage(0)
   }
 
   // Nº de contatos pastorais por pessoa (ids da página atual)
@@ -895,11 +866,22 @@ export default function People() {
           <h1 className="font-display text-xl md:text-2xl font-bold text-text-primary">Pessoas</h1>
           <p className={`text-xs md:text-sm text-text-secondary mt-1 transition-opacity ${pageStale ? 'opacity-50' : ''}`} title={pageStale ? 'Atualizando…' : undefined} aria-busy={pageStale}>
             {pageData
-              ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${!isGeralTab ? ` · ${activeTabLabel}` : ''}${classificationFilter ? ` · ${CLASSIFICATION_LABEL[classificationFilter]}` : ''}`
+              ? `${total.toLocaleString('pt-BR')} ${total === 1 ? 'pessoa' : 'pessoas'}${isBirthdayTab ? ' · Aniversariantes do mês' : ''}`
               : 'Carregando...'}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            data-testid="btn-aniversariantes"
+            onClick={() => setActiveTab(isBirthdayTab ? 'geral' : 'aniversarios')}
+            title={isBirthdayTab ? 'Voltar para a lista de pessoas' : 'Aniversariantes do mês, com controle de contato'}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${isBirthdayTab ? 'border-amber-400 bg-amber-100 text-amber-900' : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'}`}
+          >
+            <Gift size={15} strokeWidth={1.75} />
+            <span>{isBirthdayTab ? 'Voltar para Pessoas' : 'Aniversariantes'}</span>
+            {!isBirthdayTab && <span className="tabular-nums font-semibold">{stageCounts?.aniversarios ?? '…'}</span>}
+          </button>
           <button
             onClick={() => setQrModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
@@ -918,126 +900,78 @@ export default function People() {
         </div>
       </div>
 
-      {/* ── Abas (Visão geral, Aniversários, etapas do pipeline, Sem etapa) ── */}
-      <div className="flex gap-1 border-b border-border-default -mb-2 overflow-x-auto scrollbar-none pb-px">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => selectTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${
-              activeTab === tab.id
-                ? 'border-primary text-primary-text'
-                : 'border-transparent text-text-secondary active:text-text-primary'
-            }`}
-          >
-            {tab.id === 'aniversarios' && <Gift size={13} strokeWidth={2} />}
-            {tab.label}
-            {tab.count !== null && (
-              <span
-                className={`px-1.5 py-0.5 rounded-full font-semibold tabular-nums ${
-                  activeTab === tab.id ? 'bg-bg-hover text-primary-text' : 'bg-bg-hover text-text-tertiary'
-                }`}
-                style={{ fontSize: '10px' }}
-              >
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Período — só etapa Visitante */}
-      {activeStageKey === 'visitante' && (
-        <div className="flex flex-wrap items-center gap-2">
-          {(['all', '7', '15', '30'] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => { setDateFilter(v as DateFilter); setCurrentPage(0) }}
-              className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${
-                dateFilter === v ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary hover:text-text-primary bg-bg-hover'
-              }`}
-              style={dateFilter === v ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-            >
-              {v === 'all' ? 'Todos' : `${v} dias`}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => { setDateFilter('custom'); setCurrentPage(0) }}
-            className={`px-3 py-1.5 rounded-xl text-sm font-medium border border-border-default bg-bg-hover transition-colors ${
-              dateFilter === 'custom' ? 'text-primary-text' : 'text-text-secondary hover:text-text-primary'
-            }`}
-            style={dateFilter === 'custom' ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-          >
-            Personalizado
-          </button>
-        </div>
-      )}
-
-      {/* Linha de filtros: busca + tipo + origem + cadastro + CSV */}
+      {/* ── Quem × Atendimento (28/10): todos os números saem da mesma contagem, com os mesmos filtros ── */}
       {showFilters && (
-        <div className="flex flex-wrap gap-2">
-          <Input
-            placeholder="Buscar por nome, telefone ou e-mail..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(0) }}
-            className="w-full md:max-w-sm"
-          />
-
-          <select
-            value={sourceFilter}
-            onChange={e => { setSourceFilter(e.target.value); setCurrentPage(0) }}
-            className="px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-          >
-            <option value="">Todas as origens</option>
-            <option value="qr_code">QR Code</option>
-            <option value="manual">Manual</option>
-            <option value="import_xlsx">Importação</option>
-          </select>
-
-          <select
-            value={contactFilter}
-            onChange={e => { setContactFilter(e.target.value as ContactFilter | ''); setCurrentPage(0) }}
-            data-testid="filtro-contato"
-            title="Tentativas de contato registradas no Atendimento"
-            className="px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors"
-          >
-            <option value="">Contato: todos</option>
-            {CONTACT_FILTERS.map(v => <option key={v} value={v}>{CONTACT_FILTER_LABEL[v]}</option>)}
-          </select>
-
-          {(activeStageKey !== 'visitante' || dateFilter === 'custom') && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-text-tertiary whitespace-nowrap">Cadastro:</span>
-              <input
-                type="date"
-                value={createdFrom}
-                onChange={e => { setCreatedFrom(e.target.value); setCurrentPage(0) }}
-                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-white text-text-secondary"
-                title="Data de cadastro — início"
-              />
-              <span className="text-text-tertiary text-xs">–</span>
-              <input
-                type="date"
-                value={createdTo}
-                onChange={e => { setCreatedTo(e.target.value); setCurrentPage(0) }}
-                className="px-2 py-1.5 rounded-xl text-sm border border-border-default bg-white text-text-secondary"
-                title="Data de cadastro — fim"
-              />
-              {(createdFrom || createdTo) && (
-                <button
-                  type="button"
-                  onClick={() => { setCreatedFrom(''); setCreatedTo(''); setCurrentPage(0) }}
-                  className="text-xs text-text-tertiary hover:text-text-primary px-1.5 py-1 rounded-lg hover:bg-bg-hover transition-colors"
-                  title="Limpar filtro de data"
-                >
-                  ✕
+        <div className="space-y-3">
+          <div className={`flex flex-wrap items-center gap-2 transition-opacity ${quem.stale ? 'opacity-50' : ''}`} data-testid="quem-filtros">
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide w-24">Quem</span>
+            {([
+              { value: '' as ClassificationFilter,        key: 'todos' as QuemKey,   label: 'Todos' },
+              { value: 'visitor' as ClassificationFilter, key: 'visitor' as QuemKey, label: 'Visitantes' },
+              { value: 'member' as ClassificationFilter,  key: 'member' as QuemKey,  label: 'Membros' },
+              { value: 'none' as ClassificationFilter,    key: 'none' as QuemKey,    label: 'Não classificados' },
+            ]).map(opt => {
+              const on = classificationFilter === opt.value
+              return (
+                <button key={opt.key} type="button" data-testid={`classificacao-${opt.value || 'todas'}`} onClick={() => selectClassification(opt.value)}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${on ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'}`}
+                  style={on ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}>
+                  {opt.label}
+                  <span className="tabular-nums font-semibold">{(quem[opt.key] ?? '…').toLocaleString('pt-BR')}</span>
                 </button>
-              )}
+              )
+            })}
+          </div>
+
+          <div className={`flex flex-wrap items-center gap-2 transition-opacity ${careStale ? 'opacity-50' : ''}`} data-testid="atendimento-estados" aria-busy={careStale}>
+            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide w-24">Atendimento</span>
+            {([
+              { value: 'nao_atendida' as const,   label: 'Não atendida',   n: careStatusData?.naoAtendida },
+              { value: 'em_atendimento' as const, label: 'Em atendimento', n: careStatusData?.emAtendimento },
+              { value: 'atendida' as const,       label: 'Atendida',       n: careStatusData?.atendida },
+              { value: 'cancelado' as const,      label: 'Cancelado',      n: careStatusData?.cancelado },
+            ]).map(opt => {
+              const on = careFilter === opt.value || (opt.value === 'nao_atendida' && careFilter === 'sem_contato_48h')
+              return (
+                <button key={opt.value} type="button" data-testid={`estado-${opt.value}`} onClick={() => selectCare(opt.value)}
+                  className={`inline-flex flex-col items-start px-3 py-1.5 rounded-xl text-sm font-medium border transition-colors ${on ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'}`}
+                  style={on ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}>
+                  <span className="inline-flex items-center gap-1.5">{opt.label}<span className="tabular-nums font-semibold">{(opt.n ?? '…').toLocaleString('pt-BR')}</span></span>
+                  {opt.value === 'nao_atendida' && (
+                    <span className="text-[11px] font-normal text-amber-700">⚠ {(careStatusData?.semContato48h ?? '…').toLocaleString('pt-BR')} sem atendimento há {careStatusData?.alertThresholdHours ?? 48}h</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+
+          {(careFilter === 'nao_atendida' || careFilter === 'sem_contato_48h') && (
+            <div className="flex flex-wrap items-center gap-2 pl-0 md:pl-[6.5rem]" data-testid="nao-atendida-recorte">
+              <span className="text-xs text-text-tertiary">Mostrar:</span>
+              {([
+                { value: 'nao_atendida' as const,    testid: 'nao-atendidas-todas', label: 'Não atendidas', n: careStatusData?.naoAtendida },
+                { value: 'sem_contato_48h' as const, testid: 'alerta-sem-contato',  label: `Sem atendimento há ${careStatusData?.alertThresholdHours ?? 48}h`, n: careStatusData?.semContato48h },
+              ]).map(opt => (
+                <button key={opt.value} type="button" data-testid={opt.testid} onClick={() => { setCareFilter(opt.value); setCurrentPage(0) }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-medium border transition-colors ${careFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'}`}
+                  style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}>
+                  {opt.label}<span className="tabular-nums font-semibold">{(opt.n ?? '…').toLocaleString('pt-BR')}</span>
+                </button>
+              ))}
             </div>
           )}
 
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              placeholder="Buscar por nome, telefone ou e-mail..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(0) }}
+              className="w-full md:max-w-sm"
+            />
+            <button type="button" data-testid="btn-mais-filtros" onClick={() => setMaisFiltrosOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors">
+              Mais filtros{activeChips.filter(c => c.key !== 'busca').length > 0 ? ` (${activeChips.filter(c => c.key !== 'busca').length})` : ''} ▾
+            </button>
           {total > 0 && (
             <button
               type="button"
@@ -1051,96 +985,32 @@ export default function People() {
               {exporting ? 'Gerando…' : 'CSV'}
             </button>
           )}
-        </div>
-      )}
-
-      {/* Classificação única (Release 1): Visitantes · Membros · Não classificados; funções só para Membros */}
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="classificacao-filtros">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses são totais da unidade selecionada; o total da lista atual (com aba, estado e busca) aparece no cabeçalho da página.">Classificação (total da unidade):</span>
-            {([
-              { value: '',        label: 'Todas' },
-              { value: 'visitor', label: `Visitantes (${stageCounts?.classificacao?.visitor ?? '…'})` },
-              { value: 'member',  label: `Membros (${stageCounts?.classificacao?.member ?? '…'})` },
-              { value: 'none',    label: `Não classificados (${stageCounts?.classificacao?.none ?? '…'})` },
-            ] as const).map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                data-testid={`classificacao-${opt.value || 'todas'}`}
-                onClick={() => selectClassification(opt.value as ClassificationFilter)}
-                aria-label={opt.label}
-                title={opt.value ? 'Total na unidade selecionada. Se a aba atual não comporta esta classificação, a lista passa para "Visão geral" (a unidade não muda).' : undefined}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                  classificationFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
-                }`}
-                style={classificationFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-              >
-                {opt.label}
-              </button>
-            ))}
           </div>
-          {classificationFilter === 'member' && (
-            <select
-              value={roleFilter}
-              data-testid="funcao-filtro"
-              onChange={e => { setRoleFilter(e.target.value as RoleFilter); setCurrentPage(0) }}
-              className="px-3 py-1.5 rounded-xl border border-border-default bg-white text-xs text-text-secondary hover:bg-bg-hover transition-colors"
-            >
-              <option value="">Todos os membros ({stageCounts?.classificacao?.member ?? '…'})</option>
-              <option value="member_only">{ROLE_FILTER_LABEL.member_only} ({stageCounts?.classificacao?.member_only ?? '…'})</option>
-              <option value="volunteer">{ROLE_FILTER_LABEL.volunteer} ({stageCounts?.classificacao?.volunteer ?? '…'})</option>
-              <option value="leader">{ROLE_FILTER_LABEL.leader} ({stageCounts?.classificacao?.leader ?? '…'})</option>
-              <option value="leader_volunteer">{ROLE_FILTER_LABEL.leader_volunteer} ({stageCounts?.classificacao?.leader_volunteer ?? '…'})</option>
-            </select>
+
+          {activeChips.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2" data-testid="filtros-ligados">
+              <span className="text-xs text-text-tertiary">Filtros ligados:</span>
+              {activeChips.map(c => (
+                <button key={c.key} type="button" data-testid={`chip-${c.key}`} onClick={c.remove} title="Remover filtro"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-bg-hover text-primary-text border border-border-default hover:bg-white">
+                  {c.label} <span aria-hidden="true">✕</span>
+                </button>
+              ))}
+              <button type="button" onClick={clearFilters} className="text-xs text-text-tertiary hover:text-text-primary underline underline-offset-2">Limpar filtros</button>
+            </div>
           )}
         </div>
       )}
 
-      {/* Atendimento — ESTADOS (exclusivos, somam o total da lista) × ALERTA (sobrepõe, não soma).
-          Contadores calculados no banco sobre o MESMO universo da lista (filtros acima). */}
-      {showFilters && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="atendimento-filtros">
-          <div className={`flex flex-wrap items-center gap-2 transition-opacity ${careStale ? 'opacity-50' : ''}`} data-testid="atendimento-estados" aria-busy={careStale}>
-            <span className="text-xs font-medium text-text-tertiary uppercase tracking-wide" title="Os números entre parênteses contam as pessoas da lista atual (unidade, aba, classificação, origem, busca e datas).">STATUS (da lista atual):</span>
-            {([
-              { value: '', label: `Todos (${careStatusData?.total ?? '…'})` },
-              { value: 'nao_atendida',    label: `Não atendida (${careStatusData?.naoAtendida   ?? '…'})` },
-              { value: 'em_atendimento',  label: `Em atendimento (${careStatusData?.emAtendimento ?? '…'})` },
-              { value: 'atendida',        label: `Atendida (${careStatusData?.atendida       ?? '…'})` },
-              { value: 'cancelado',       label: `Cancelado (${careStatusData?.cancelado      ?? '…'})` },
-            ] as const).map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                data-testid={`estado-${opt.value || 'todos'}`}
-                onClick={() => { setCareFilter(opt.value as CareFilter); setCurrentPage(0) }}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                  careFilter === opt.value ? 'border-primary text-primary-text bg-bg-hover' : 'border-border-default text-text-secondary bg-white hover:bg-bg-hover'
-                }`}
-                style={careFilter === opt.value ? { borderColor: 'var(--color-primary)', color: 'var(--color-primary)' } : {}}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2 md:border-l md:border-border-default md:pl-4" data-testid="atendimento-alerta">
-            <span className="text-xs font-medium text-amber-700 uppercase tracking-wide">Alerta:</span>
-            <button
-              type="button"
-              data-testid="alerta-sem-contato"
-              title="Pessoas aguardando nova tentativa de contato há mais tempo que o limite. É um alerta sobre o estado, não um quinto estado: não entra na soma."
-              onClick={() => { setCareFilter('sem_contato_48h'); setCurrentPage(0) }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                careFilter === 'sem_contato_48h' ? 'border-amber-500 text-amber-800 bg-amber-100' : 'border-amber-200 text-amber-700 bg-amber-50 hover:bg-amber-100'
-              }`}
-            >
-              Sem contato +{careStatusData?.alertThresholdHours ?? 48}h ({careStatusData?.semContato48h ?? '…'})
-            </button>
-          </div>
-        </div>
-      )}
+      <MaisFiltrosDrawer
+        open={maisFiltrosOpen}
+        onClose={() => setMaisFiltrosOpen(false)}
+        value={{ stageKey: stageFilter, source: sourceFilter, createdFrom, createdTo, role: roleFilter }}
+        onChange={changeMaisFiltros}
+        stages={drawerStages}
+        stageCounts={stageFilterCounts}
+        roleLabels={ROLE_FILTER_LABEL}
+      />
 
       {/* ── Loading / Error / Empty / Lista ─────────────────────── */}
       {isLoading ? (
@@ -1152,7 +1022,7 @@ export default function People() {
       ) : items.length === 0 ? (
         <div className="bg-bg-primary rounded-2xl border border-border-default shadow-sm overflow-hidden">
           <EmptyState
-            title={search ? 'Nenhuma pessoa encontrada' : isBirthdayTab ? 'Nenhum aniversariante este mês' : `Nenhuma pessoa em "${activeTabLabel}"`}
+            title={search ? 'Nenhuma pessoa encontrada' : isBirthdayTab ? 'Nenhum aniversariante este mês' : 'Nenhuma pessoa com esses filtros'}
             description={activeFilterLabels.length > 0
               ? `Filtros ativos: ${activeFilterLabels.join(' · ')}. A unidade selecionada no topo também limita a lista.`
               : search ? 'Tente buscar por outro nome ou telefone.' : 'Ajuste os filtros ou a unidade selecionada no topo da página.'}
@@ -1181,19 +1051,6 @@ export default function People() {
         </div>
       ) : (
         <>
-          {isGeralTab && !careFilter && careStatusData && (
-            <div
-              className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 cursor-pointer hover:bg-amber-100 transition-colors"
-              onClick={() => { setCareFilter('sem_contato_48h'); setCurrentPage(0) }}
-            >
-              <div>
-                <p className="text-sm font-semibold text-amber-800">Aguardando nova tentativa há mais de {careStatusData.alertThresholdHours}h</p>
-                <p className="text-xs text-amber-600 mt-0.5">Nunca tentadas desde o cadastro, ou cuja última tentativa não foi atendida / ficou sem resposta ({careStatusData.semContato48h})</p>
-              </div>
-              <span className="text-xs font-medium text-amber-700 shrink-0">Ver lista →</span>
-            </div>
-          )}
-
           {isBirthdayTab && (
             <div className="space-y-1.5 px-0.5">
               <div className="flex items-center justify-between">
