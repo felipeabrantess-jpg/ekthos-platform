@@ -10,6 +10,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useMinistryReferralPolicy } from '@/features/ministerios/hooks/useMinistryReferralPolicy'
 import {
   usePerson,
   usePersonJourney,
@@ -676,6 +677,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
   const [nextStep,   setNextStep]   = useState('')
   const [nextDue,    setNextDue]    = useState('')
   const [ministryId, setMinistryId] = useState<string>('')
+  const { data: referralPolicy } = useMinistryReferralPolicy()
 
   // ── E6: Completar dados ────────────────────────────────────
   const [nbhd,          setNbhd]          = useState(person.neighborhood     ?? '')
@@ -1008,8 +1010,8 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
       </div>
 
       {/* ── E7: Encaminhar para ministério ── */}
-      {ministries.length > 0 && (
-        <div className="space-y-2">
+      {ministries.length > 0 && referralPolicy?.can_refer !== false && (
+        <div className="space-y-2" data-testid="bloco-encaminhar">
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide flex items-center gap-1.5">
             <Building2 size={12} />
             Encaminhar para ministério
