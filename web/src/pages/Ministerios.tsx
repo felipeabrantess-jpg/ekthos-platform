@@ -34,6 +34,9 @@ import ModalPortal from '@/components/ui/ModalPortal'
 import { FileText, ExternalLink } from 'lucide-react'
 import { getMinistryDocsLink } from '@/features/ministerios/ministryDocs'
 import { useMinistryDocsUrl, useSaveMinistryDocsUrl, docsUrlErrorMessage } from '@/features/ministerios/hooks/useMinistryDocsUrl'
+import {
+  useDeclineMinistryReferral, declineErrorMessage,
+} from '@/features/ministerios/hooks/useMinistryReferralPolicy'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -279,6 +282,8 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
   const navigate = useNavigate()
   const { data: members = [], isLoading, isError } = useMinistryMembers(ministry.id)
   const { data: origins = {} } = useMinistryMemberOrigins(ministry.id)
+  // Item 15: quem foi encaminhado para este ministério e ainda não foi incluído (só para quem gere o ministério)
+  const { data: pendentes = [] } = useMinistryReferrals(ministry.id, canManageMembers)
   const addMember    = useAddMinistryMember()
   const removeMember = useRemoveMinistryMember()
   const [personId, setPersonId] = useState<string | null>(null)
@@ -339,6 +344,16 @@ function MembersModal({ open, onClose, churchId, ministry, canManageMembers }: M
           </div>
         )}
         {alreadyIn && <p className="text-xs text-amber-600">Esta pessoa já faz parte do ministério.</p>}
+        {canManageMembers && pendentes.length > 0 && (
+          <div className="space-y-2" data-testid="encaminhados-pendentes">
+            <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">
+              {pendentes.length} encaminhado{pendentes.length !== 1 ? 's' : ''} aguardando inclusão
+            </p>
+            <div className="grid grid-cols-1 gap-2 max-h-72 overflow-y-auto">
+              {pendentes.map((r) => <ReferralCard key={r.journey_id} referral={r} />)}
+            </div>
+          </div>
+        )}
         {error && <p className="text-sm text-red-500" data-testid="erro-pessoas">{error}</p>}
 
         <div className="border-t border-border-default pt-3">
@@ -420,6 +435,21 @@ function ReferralCard({ referral }: { referral: MinistryReferral }) {
   const queryClient = useQueryClient()
   const addMember = useAddMinistryMember()
   const [includeError, setIncludeError] = useState<string | null>(null)
+  const decline = useDeclineMinistryReferral()
+  const [declineOpen, setDeclineOpen] = useState(false)
+  const [declineReason, setDeclineReason] = useState('')
+  const [declineError, setDeclineError] = useState<string | null>(null)
+
+  async function handleDecline() {
+    if (!declineReason.trim() || decline.isPending) return
+    setDeclineError(null)
+    try {
+      await decline.mutateAsync({ journeyId: referral.journey_id, reason: declineReason.trim() })
+      setDeclineOpen(false)
+    } catch (err) {
+      setDeclineError(declineErrorMessage(err))
+    }
+  }
   const isUrgent = referral.dias_esperando >= 7
 
   // "Aceitar" o encaminhamento = incluir a pessoa no ministério (ministry_members),
@@ -490,7 +520,15 @@ function ReferralCard({ referral }: { referral: MinistryReferral }) {
         </p>
       )}
 
-      <div className="pt-1 flex items-center justify-end">
+      <div className="pt-1 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          data-testid="btn-recusar-encaminhamento"
+          onClick={(e) => { e.stopPropagation(); setDeclineReason(''); setDeclineError(null); setDeclineOpen(true) }}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+        >
+          Recusar
+        </button>
         <button
           type="button"
           data-testid="btn-incluir-no-ministerio"
@@ -506,6 +544,34 @@ function ReferralCard({ referral }: { referral: MinistryReferral }) {
           {includeError}
         </p>
       )}
+      {/* eventos do modal (portal) não devem chegar ao clique do card */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <Modal open={declineOpen} onClose={() => setDeclineOpen(false)} title="Recusar encaminhamento" size="sm">
+          <div className="space-y-4" data-testid="janela-recusar">
+            <p className="text-sm text-text-secondary">
+              <span className="font-medium text-text-primary">{referral.person_name}</span> sai da fila de {referral.ministry_name} e
+              volta para o Atendimento, que continua aberto. O motivo fica registrado no histórico da pessoa.
+            </p>
+            <label className="block text-sm">
+              <span className="text-text-secondary">Motivo da recusa (obrigatório)</span>
+              <textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                rows={3}
+                data-testid="recusar-motivo"
+                className="mt-1 w-full rounded-xl border border-border-default px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+            </label>
+            {declineError && <p className="text-xs text-red-600" role="alert">{declineError}</p>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="secondary" onClick={() => setDeclineOpen(false)}>Voltar</Button>
+              <Button type="button" onClick={() => void handleDecline()} disabled={!declineReason.trim() || decline.isPending} data-testid="btn-confirmar-recusa">
+                {decline.isPending ? 'Recusando...' : 'Recusar encaminhamento'}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </div>
     </div>
   )
 }

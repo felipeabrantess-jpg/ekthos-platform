@@ -16,7 +16,7 @@ export interface MinistryReferral {
   anotacao:        string | null
 }
 
-export function useMinistryReferrals(ministryId?: string | null) {
+export function useMinistryReferrals(ministryId?: string | null, enabled = true) {
   return useQuery({
     queryKey: ['ministry-referrals', ministryId ?? 'all'],
     queryFn: async (): Promise<MinistryReferral[]> => {
@@ -26,6 +26,7 @@ export function useMinistryReferrals(ministryId?: string | null) {
       if (error) throw new Error(error.message)
       return (data ?? []) as MinistryReferral[]
     },
+    enabled,
     staleTime: 30_000,
   })
 }
