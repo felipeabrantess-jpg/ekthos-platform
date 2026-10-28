@@ -23,7 +23,7 @@ const ROLES = ['admin', 'admin_departments', 'pastor_celulas', 'supervisor', 'ce
 const ROUTES = [
   ['/eventos', '/eventos'], ['/cursos', '/cursos'], ['/empresarios', '/empresarios'], ['/oracao', '/oracao'],
   ['/culto/relatorios', '/culto/relatorios'], ['/campanha', '/campanha'], ['/conversas', '/conversas'], ['/conversas/abc', '/conversas'],
-  ['/lideres', '/lideres'], ['/lideres/abc', '/lideres'],
+  ['/lideres', '/pessoas'], ['/lideres/abc', '/pessoas'],  // decisão 28/10: Líderes segue a permissão de Pessoas
   // regressão: já protegidas antes
   ['/pessoas', '/pessoas'], ['/ministerios', '/ministerios'], ['/financeiro', '/financeiro'],
 ];

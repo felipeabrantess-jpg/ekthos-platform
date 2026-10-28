@@ -443,8 +443,8 @@ export default function App() {
             <Route path="pessoas/flags"  element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><PeopleFlags /></Suspense></RoleRoute></ErrorBoundary>} />
             {/* Fase 3 — Atendimento Pastoral Conectado */}
             <Route path="pessoas/:id/atendimento" element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><AtendimentoPage /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="lideres"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
-            <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="lideres"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="lideres"        element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><Leaders /></Suspense></RoleRoute></ErrorBoundary>} />
+            <Route path="lideres/:id"    element={<ErrorBoundary><RoleRoute path="pessoas"><Suspense fallback={<PageLoader />}><LeaderDetail /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="consolidacao"   element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><Consolidation /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="aniversarios"   element={<ErrorBoundary><RoleRoute path="aniversarios"><Suspense fallback={<PageLoader />}><Aniversarios /></Suspense></RoleRoute></ErrorBoundary>} />
             <Route path="pipeline"       element={<ErrorBoundary><RoleRoute path="pipeline"><Suspense fallback={<PageLoader />}><DiscipuladoPainel /></Suspense></RoleRoute></ErrorBoundary>} />
