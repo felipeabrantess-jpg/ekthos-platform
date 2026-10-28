@@ -24,31 +24,37 @@ export type CareCountFilters = Omit<PeoplePageFilters, 'careStatus' | 'page' | '
  * (unidade, etapa, origem, busca, período…): get_care_status_counts usa o
  * mesmo people_filter_base de get_people_page. Nenhuma regra é recalculada aqui.
  */
+/** Chave de cache compartilhada (lista de STATUS e contadores de "Quem"/etapas usam a mesma). */
+export const careCountsKey = (churchId: string, f: CareCountFilters) => ['acolhimento-status-counts', churchId, f] as const
+
+/** Busca única dos contadores — a mesma usada por todos os números da tela Pessoas. */
+export async function fetchCareCounts(churchId: string, f: CareCountFilters): Promise<AcolhimentoStatusCounts> {
+  // Mesmos argumentos da lista, sem p_care_status / p_limit / p_offset
+  const { p_care_status: _c, p_limit: _l, p_offset: _o, ...args } = buildPeoplePageArgs(churchId, { ...f, careStatus: undefined })
+  void _c; void _l; void _o
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.rpc as any)('get_care_status_counts', args)
+  if (error) throw new Error(error.message)
+  const d = (data ?? {}) as Record<string, number>
+  return {
+    naoAtendida:   d.nao_atendida    ?? 0,
+    cancelado:     d.cancelado       ?? 0,
+    total:         d.total           ?? 0,
+    emAtendimento: d.em_atendimento  ?? 0,
+    atendida:      d.atendida        ?? 0,
+    semContato48h: d.sem_contato_48h ?? 0,
+    alertThresholdHours: d.alert_threshold_hours ?? 48,
+  }
+}
+
 export function useAcolhimentoStatus(churchId: string, filters: CareCountFilters | UnitScope = UNIT_ALL) {
   const f: CareCountFilters = typeof filters === 'object' && filters !== null && 'unit' in filters ? filters : { unit: filters as UnitScope }
   return useQuery({
-    queryKey: ['acolhimento-status-counts', churchId, f],
+    queryKey: careCountsKey(churchId, f),
     enabled: Boolean(churchId),
     staleTime: 60_000,
     placeholderData: prev => prev,
-    queryFn: async (): Promise<AcolhimentoStatusCounts> => {
-      // Mesmos argumentos da lista, sem p_care_status / p_limit / p_offset
-      const { p_care_status: _c, p_limit: _l, p_offset: _o, ...args } = buildPeoplePageArgs(churchId, { ...f, careStatus: undefined })
-      void _c; void _l; void _o
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase.rpc as any)('get_care_status_counts', args)
-      if (error) throw new Error(error.message)
-      const d = (data ?? {}) as Record<string, number>
-      return {
-        naoAtendida:   d.nao_atendida    ?? 0,
-        cancelado:     d.cancelado       ?? 0,
-        total:         d.total           ?? 0,
-        emAtendimento: d.em_atendimento  ?? 0,
-        atendida:      d.atendida        ?? 0,
-        semContato48h: d.sem_contato_48h ?? 0,
-        alertThresholdHours: d.alert_threshold_hours ?? 48,
-      }
-    },
+    queryFn: () => fetchCareCounts(churchId, f),
   })
 }
 
