@@ -104,21 +104,10 @@ await pend.locator('[data-testid="btn-incluir-no-ministerio"]').click(); await p
 ck('incluir pela janela de Pessoas: entra no ministério e some dos pendentes', members['m-louvor'].join() === 'p2' && (await page.locator('[data-testid="encaminhados-pendentes"]').count()) === 0, members['m-louvor'].join());
 await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 
-// 3. líder não vê nem configura a política
+// 3/4. regra fixa (decisão 28/10): ninguém configura "Quem pode encaminhar" pela tela
 ck('líder não vê "Quem pode encaminhar"', (await page.locator('[data-testid="btn-quem-encaminha"]').count()) === 0);
-
-// 4. ADMIN configura a política
 reset(); await loginAs('u-admin', 'admin');
-await page.locator('[data-testid="btn-quem-encaminha"]').click(); await page.waitForTimeout(400);
-ck('admin abre "Quem pode encaminhar" com a regra atual marcada (toda a equipe)', await page.locator('[data-testid="politica-equipe_atendimento"]').isChecked());
-await page.locator('[data-testid="politica-lideres_e_admins"]').check();
-calls = [];
-await page.locator('[data-testid="btn-salvar-politica"]').click(); await page.waitForTimeout(900);
-ck('salva pela RPC set_ministry_referral_policy', calls.some(c => c.name === 'set_ministry_referral_policy' && c.body.p_policy === 'lideres_e_admins') && policy === 'lideres_e_admins');
-await page.locator('[data-testid="btn-quem-encaminha"]').click(); await page.waitForTimeout(400);
-ck('reabrindo, mostra a regra salva', await page.locator('[data-testid="politica-lideres_e_admins"]').isChecked());
-await page.screenshot({ path: 'ministerios-quem-encaminha.png' });
-await page.locator('[data-testid="janela-quem-encaminha"] button:has-text("Cancelar")').click(); await page.waitForTimeout(300);
+ck('admin também não vê "Quem pode encaminhar" (regra fixa: líderes e administração)', (await page.locator('[data-testid="btn-quem-encaminha"]').count()) === 0);
 
 // 5. servidor recusa → mensagem amigável; admin recusa em qualquer ministério
 await recusar('Carla Kids').click(); await page.waitForTimeout(300);
