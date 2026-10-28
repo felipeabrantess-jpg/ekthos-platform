@@ -135,6 +135,25 @@ await open(`?unidade=${U1}`);
 await page.locator('[data-testid="btn-aniversariantes"]').click(); await page.waitForTimeout(1200);
 ck('Aniversariantes abre a visão de aniversariantes do mês (cards de contato)', /Aniversariantes de/.test(await bodyText()) && calls.some(c => c.name === 'get_people_page' && c.b.p_birth_month));
 
+// 10. Garantias herdadas de test-pessoas-filtros.mjs (aposentado: testava abas/período/total da unidade, que saíram)
+await open(`?unidade=${U1}`);
+const seq = ['member', 'none', 'visitor', 'todas', 'visitor', 'member', 'todas', 'none', 'member', 'visitor'];
+const esperado = { todas: 20, visitor: 14, member: 5, none: 1 };
+let okSeq = true; const info = [];
+for (const k of seq) {
+  await page.locator(`[data-testid="classificacao-${k}"]`).click(); await page.waitForTimeout(700);
+  const n = await listCount(); const b = await num(`[data-testid="classificacao-${k}"]`); const un = param('unidade');
+  if (n !== esperado[k] || b !== esperado[k] || un !== U1) { okSeq = false; info.push(`${k}:${n}/${b}/${un}`); }
+}
+ck('alternância repetida (10 trocas): lista = número do botão, unidade mantida', okSeq, info.join(' '));
+await page.locator('[data-testid="btn-mais-filtros"]').click(); await page.waitForTimeout(400);
+await page.locator('[data-testid="etapa-visitante"]').click(); await page.locator('[data-testid="filtro-origem"]').selectOption('manual');
+await page.locator('[data-testid="mais-filtros-fechar"]').click(); await page.waitForTimeout(900);
+await page.locator('text=Limpar filtros').first().click(); await page.waitForTimeout(1000);
+ck('"Limpar filtros": etapa, origem e Quem limpos; unidade mantida; lista volta a 20',
+  (await page.locator('[data-testid="filtros-ligados"]').count()) === 0 && !param('etapa') && !param('origem') && !param('cls') && param('unidade') === U1 && (await listCount()) === 20);
+ck('isolamento: todas as RPCs com p_church_id usam a igreja do token', calls.every(c => !c.b.p_church_id || c.b.p_church_id === CH));
+
 ck('sem erros de página', errors.length === 0, errors.join(' | ').slice(0, 200));
 await page.screenshot({ path: 'pessoas-tela-simples.png', fullPage: true });
 await browser.close();

@@ -242,7 +242,7 @@ s = await state(); ck('janela larga (1900px): conteúdo cabe, trilho desaparece 
 await page.setViewportSize({ width: 1000, height: 650 }); await page.waitForTimeout(500)
 s = await state(); ck('notebook (1000px): trilho volta e fica visível na base', s.overflow > 50 && s.rail && s.railVisibleInMain, JSON.stringify({ overflow: s.overflow, rail: s.rail }))
 // troca de aba (etapa vazia → tabela some → volta) e de página
-await page.locator('button:has-text("Visão geral")').first().click(); await page.waitForTimeout(800)
+await page.locator('[data-testid="classificacao-todas"]').click(); await page.waitForTimeout(800)  // tela simples: Quem = Todos
 await page.locator('[data-testid="estado-em_atendimento"]').click(); await page.waitForTimeout(800)
 s = await state(); ck('após trocar filtro: trilho presente e sincronizado (scrollLeft igual)', s.rail && s.railScrollLeft === s.contentScrollLeft, JSON.stringify({ rail: s.railScrollLeft, content: s.contentScrollLeft }))
 await page.locator('button[title="Próxima página"]').click().catch(() => {}); await page.waitForTimeout(800)

@@ -282,13 +282,14 @@ ck('pessoa com 3 contatos: ordem 1º Não atendeu, 2º Sem resposta (WhatsApp), 
   m[13] === '3' && m[15] === 'Não atendeu (Ligação)' && m[18] === 'Sem resposta (WhatsApp)' && m[21] === 'Contato realizado (Pessoalmente)' && m[22] === 'Pr. Valdir' && m[16] === 'Mirian Secretaria' && m[9] === 'Acolhimento | Louvor' && m[12] === 'Importação', m.join('|'))
 
 // Filtro de alerta → RPC recebe p_care_status e exporta só as alertadas
+await page.locator('[data-testid="estado-nao_atendida"]').click(); await page.waitForTimeout(600)
 await page.locator('[data-testid="alerta-sem-contato"]').click(); await page.waitForTimeout(800)
 c = await exportAndRead()
 ck('com filtro "Sem contato +48h": RPC recebe p_care_status=sem_contato_48h e exporta 2 linhas (Zélia, Maria)', exportCalls[1].p_care_status === 'sem_contato_48h' && c.rows.length === 3 && c.rows.slice(1).every(r => r[7] === 'Sim'), String(c.rows.length))
 await page.locator('[data-testid="estado-em_atendimento"]').click(); await page.waitForTimeout(800)
 c = await exportAndRead()
 ck('com filtro "Em atendimento": exporta 2 linhas, ambas Em atendimento', exportCalls[2].p_care_status === 'em_atendimento' && c.rows.length === 3 && c.rows.slice(1).every(r => r[6] === 'Em atendimento'))
-await page.locator('[data-testid="estado-todos"]').click(); await page.waitForTimeout(500)
+await page.locator('[data-testid="estado-em_atendimento"]').click(); await page.waitForTimeout(500)
 
 // Busca → p_search
 await page.locator('input[placeholder*="Buscar"]').fill('maria'); await page.waitForTimeout(1200)
@@ -317,36 +318,28 @@ const withStage = c.rows.slice(1).filter(r => r[15] !== '')
 ck('item 18: com etapa → data de entrada dd/mm/aaaa e dias; sem registro → ambos vazios (nada inventado)', c.rows[1][14] === '15/08/2026' && c.rows[1][15] === '56' && c.rows[2][14] === '' && c.rows[2][15] === '' && withStage.length === 600, withStage.length + ' ' + c.rows[1].slice(-2).join('/'))
 ck('item 18: arquivo é um único download com BOM e tipo text/csv', c.bom === true && /text\/csv/.test(c.type) && /^pessoas-todas-\d{8}\.csv$/.test(c.filename), c.filename)
 await page.locator('input[placeholder*="Buscar"]').fill(''); await page.waitForTimeout(500)
-// ── Filtro Contato (ata IGV) ──
-const semContatoAntes = pageCalls.every(b => !('p_contact' in b)) && countCalls.every(b => !('p_contact' in b)) && exportCalls.every(b => !('p_contact' in b))
-ck('Filtro Contato: sem escolha, nenhuma chamada envia p_contact (chamadas idênticas às de hoje)', semContatoAntes)
-await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1000)
-const opts = await page.locator('[data-testid="filtro-contato"] option').allTextContents()
-ck('Filtro Contato: opções "Contato: todos", "Com contato", "Sem contato", "Contato realizado"', JSON.stringify(opts) === JSON.stringify(['Contato: todos', 'Com contato', 'Sem contato', 'Contato realizado']), JSON.stringify(opts))
-const nP = pageCalls.length, nC = countCalls.length
-await page.locator('[data-testid="filtro-contato"]').selectOption('com_contato'); await page.waitForTimeout(1200)
-const lp = pageCalls.slice(nP).pop(), lc = countCalls.slice(nC).pop()
-ck('Filtro Contato: lista (get_people_page) recebe p_contact=com_contato e volta à 1ª página', lp?.p_contact === 'com_contato' && lp?.p_offset === 0, JSON.stringify(lp && { p_contact: lp.p_contact, p_offset: lp.p_offset }))
-ck('Filtro Contato: contadores (get_care_status_counts) recebem o mesmo p_contact', lc?.p_contact === 'com_contato', JSON.stringify(lc && lc.p_contact))
-ck('Filtro Contato: URL guarda ?contato=com_contato', new URL(page.url()).searchParams.get('contato') === 'com_contato', page.url())
-c = await exportAndRead()
-const le = exportCalls[exportCalls.length - 1]
-ck('Filtro Contato: CSV recebe o mesmo p_contact e exporta só quem tem contato (João, Maria)', le.p_contact === 'com_contato' && c.rows.length === 3 && c.rows.slice(1).every(r => Number(r[13]) > 0), JSON.stringify({ p: le.p_contact, linhas: c.rows.length }))
-await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1000)
-ck('Filtro Contato: recarregar a página mantém o filtro', (await page.locator('[data-testid="filtro-contato"]').inputValue()) === 'com_contato')
-await page.locator('[data-testid="filtro-contato"]').selectOption(''); await page.waitForTimeout(1000)
-ck('Filtro Contato: voltar para "todos" remove o parâmetro da lista e da URL', !('p_contact' in pageCalls[pageCalls.length - 1]) && !new URL(page.url()).searchParams.has('contato'))
+// ── Filtro Contato saiu da tela (28/10): nada pode filtrar por contato escondido ──
+ck('Filtro Contato: nenhuma chamada envia p_contact', pageCalls.every(b => !b.p_contact) && countCalls.every(b => !b.p_contact) && exportCalls.every(b => !b.p_contact))
+await page.goto(`${BASE}/pessoas?contato=com_contato`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1000)
+ck('Filtro Contato: não aparece na tela', (await page.locator('[data-testid="filtro-contato"]').count()) === 0)
+ck('Filtro Contato: link antigo ?contato=com_contato é ignorado (lista, contadores e URL)', !pageCalls[pageCalls.length - 1]?.p_contact && !countCalls[countCalls.length - 1]?.p_contact && !new URL(page.url()).searchParams.has('contato'))
 // ── Homologação IGV 26/10: filtros escondidos não valem na aba Aniversários ──
-await page.goto(`${BASE}/pessoas?estado=em_atendimento&contato=com_contato&origem=qr_code&q=maria`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1200)
+await page.goto(`${BASE}/pessoas?estado=em_atendimento&origem=qr_code&q=maria`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1200)
 const antesAniv = pageCalls[pageCalls.length - 1]
-ck('lista principal: filtros da URL aplicados (estado, contato, origem, busca)', antesAniv?.p_care_status === 'em_atendimento' && antesAniv?.p_contact === 'com_contato' && antesAniv?.p_source === 'qr_code' && antesAniv?.p_search === 'maria', JSON.stringify(antesAniv && { s: antesAniv.p_care_status, c: antesAniv.p_contact }))
+ck('lista principal: filtros da URL aplicados (estado, origem, busca)', antesAniv?.p_care_status === 'em_atendimento' && antesAniv?.p_source === 'qr_code' && antesAniv?.p_search === 'maria', JSON.stringify(antesAniv && { s: antesAniv.p_care_status, c: antesAniv.p_contact }))
 const nAniv = pageCalls.length
-await page.locator('button:has-text("Aniversários")').first().click(); await page.waitForTimeout(1500)
+await page.locator('[data-testid="btn-aniversariantes"]').click(); await page.waitForTimeout(1500)
 const aniv = pageCalls.slice(nAniv).find(b => b.p_birth_month)
-ck('aba Aniversários: só unidade e mês — STATUS, Contato, origem e busca escondidos NÃO filtram', !!aniv && aniv.p_care_status === null && !('p_contact' in aniv) && aniv.p_source === null && aniv.p_search === null && aniv.p_classification === null, JSON.stringify(aniv && { mes: aniv.p_birth_month, s: aniv.p_care_status, c: aniv.p_contact ?? null, o: aniv.p_source, q: aniv.p_search }))
-await page.locator('button:has-text("Visão geral")').first().click(); await page.waitForTimeout(1500)
+ck('Aniversariantes: só unidade e mês — STATUS, origem e busca escondidos NÃO filtram', !!aniv && aniv.p_care_status === null && !aniv.p_contact && aniv.p_source === null && aniv.p_search === null && aniv.p_classification === null, JSON.stringify(aniv && { mes: aniv.p_birth_month, s: aniv.p_care_status, c: aniv.p_contact ?? null, o: aniv.p_source, q: aniv.p_search }))
+await page.locator('[data-testid="btn-aniversariantes"]').click(); await page.waitForTimeout(1500)
 const volta = pageCalls[pageCalls.length - 1]
-ck('voltar à Visão geral: os filtros escolhidos continuam valendo', volta?.p_care_status === 'em_atendimento' && volta?.p_contact === 'com_contato' && !volta?.p_birth_month, JSON.stringify(volta && { s: volta.p_care_status, c: volta.p_contact }))
+// a lista volta do cache (sem nova chamada): confere a última consulta SEM mês de aniversário + URL e botões visíveis
+const voltaLista = [...pageCalls].reverse().find(b => !b.p_birth_month)
+const uv = new URL(page.url()).searchParams
+ck('voltar para Pessoas: os filtros escolhidos continuam valendo (lista, URL e botões)', voltaLista?.p_care_status === 'em_atendimento' && voltaLista?.p_source === 'qr_code' && voltaLista?.p_search === 'maria'
+  && uv.get('estado') === 'em_atendimento' && uv.get('origem') === 'qr_code' && uv.get('q') === 'maria' && !uv.has('tab')
+  && ((await page.locator('[data-testid="estado-em_atendimento"]').getAttribute('class')) || '').includes('border-primary'),
+  JSON.stringify({ s: voltaLista?.p_care_status, o: voltaLista?.p_source, url: page.url().split('?')[1] }))
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close();
 const failed = results.filter(x => !x).length;
