@@ -31,7 +31,7 @@ add(4, { unit: U2, cls: 'none', care: 'nao_atendida', h48: true, stage: null });
 const filt = (b) => P.filter(p =>
   (!b.p_unit_id || p.unit === b.p_unit_id) &&
   (!b.p_classification || p.cls === b.p_classification) &&
-  (!b.p_stage_key || p.stage === b.p_stage_key) &&
+  (!b.p_stage_key || (b.p_stage_key === '__none' ? !p.stage : p.stage === b.p_stage_key)) &&
   (!b.p_care_status || (b.p_care_status === 'sem_contato_48h' ? p.h48 : p.care === b.p_care_status)));
 const countsOf = (b) => { const l = filt({ ...b, p_care_status: null }); const c = s => l.filter(p => p.care === s).length;
   return { total: l.length, nao_atendida: c('nao_atendida'), em_atendimento: c('em_atendimento'), atendida: c('atendida'), cancelado: c('cancelado'), sem_contato_48h: l.filter(p => p.h48).length, alert_threshold_hours: 48 }; };
@@ -129,6 +129,17 @@ ck('trocar unidade: todas as contagens com a nova unidade, página volta a 1',
 // 8. Link antigo de aba de etapa
 await open(`?unidade=${U1}&tab=stage:visitante`);
 ck('link antigo ?tab=stage:visitante abre com chip "Etapa: Visitante" e lista filtrada (9)', /Etapa: Visitante/.test(await bodyText()) && lastPage()?.p_stage_key === 'visitante' && (await listCount()) === 9);
+
+// 8b. (revisão I1) remover a etapa vinda de link antigo não a traz de volta no F5
+await page.locator('[data-testid="chip-etapa"]').click(); await page.waitForTimeout(900);
+await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1200);
+ck('link antigo: etapa removida NÃO volta ao recarregar (tab antigo convertido)', !/Etapa:/.test(await bodyText()) && !param('tab') && !param('etapa') && (await listCount()) === 20, `tab=${param('tab')} etapa=${param('etapa')} lista=${await listCount()}`);
+
+// 8c. (revisão I2) "Sem etapa" continua disponível em Mais filtros, com número
+await page.locator('[data-testid="btn-mais-filtros"]').click(); await page.waitForTimeout(800);
+ck('"Sem etapa" existe em Mais filtros com número (2 pessoas sem etapa na unidade 1)', (await num('[data-testid="etapa-__none"]')) === 2, String(await num('[data-testid="etapa-__none"]')));
+await page.locator('[data-testid="etapa-__none"]').click(); await page.locator('[data-testid="mais-filtros-fechar"]').click(); await page.waitForTimeout(900);
+ck('"Sem etapa": chip legível e lista com 2', /Etapa: Sem etapa/.test(await bodyText()) && (await listCount()) === 2 && param('etapa') === '__none');
 
 // 9. Aniversariantes = visão de hoje
 await open(`?unidade=${U1}`);

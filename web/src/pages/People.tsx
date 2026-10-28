@@ -19,7 +19,7 @@ import { useDeletePerson } from '@/features/people/hooks/usePeople'
 import { buildPeopleCsv, type ExportPayload, type ExportRow } from '@/features/people/exportCsv'
 import { fetchAllExportPages, isMissingFunctionError, type ExportPageResult } from '@/features/people/exportPaging'
 import {
-  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, PEOPLE_SORT_KEYS,
+  usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, PEOPLE_SORT_KEYS, STAGE_KEY_NONE,
   type ContactFilter,
   type PeoplePageFilters, type PeopleSortKey, type PeopleSortDir,
 } from '@/features/people/hooks/usePeoplePage'
@@ -590,6 +590,8 @@ export default function People() {
       put('pagina', currentPage > 0 ? String(currentPage + 1) : '')
       put('ordem', sortBy); put('dir', sortBy && sortDir === 'desc' ? 'desc' : '')
       put('periodo', '')
+      // link antigo ?tab=stage:x já virou ?etapa=x: o tab antigo sai, senão a etapa removida voltaria no F5/Voltar
+      const legacyTab = next.get('tab'); if (legacyTab && legacyTab !== 'aniversarios') next.delete('tab')
       return next.toString() === prev.toString() ? prev : next
     }, { replace: true })
   }, [classificationFilter, roleFilter, careFilter, sourceFilter, contactFilter, search, createdFrom, createdTo, currentPage, sortBy, sortDir, stageFilter, setSearchParams])
@@ -691,7 +693,10 @@ export default function People() {
     role: pageFilters.role, contact: pageFilters.contact,
   }
   const quem = usePeopleQuemCounts(churchId ?? '', careBase)
-  const drawerStages = useMemo(() => (stageCounts?.stages ?? []).filter(st => !!st.stage_key).map(st => ({ stage_key: st.stage_key as string, name: st.name })), [stageCounts])
+  const drawerStages = useMemo(() => [
+    ...(stageCounts?.stages ?? []).filter(st => !!st.stage_key).map(st => ({ stage_key: st.stage_key as string, name: st.name })),
+    { stage_key: STAGE_KEY_NONE, name: 'Sem etapa' },   // a antiga aba "Sem etapa"
+  ], [stageCounts])
   const stageFilterCounts = useStageFilterCounts(churchId ?? '', { ...careBase, classification: pageFilters.classification }, drawerStages.map(st => st.stage_key), maisFiltrosOpen)
   const stageName = (key: string) => drawerStages.find(st => st.stage_key === key)?.name ?? key
 
