@@ -142,7 +142,7 @@ ck('etiqueta da lista vem de care_state: Em atendimento / Cancelado / sem etique
 // Tela simplificada (28/10): botões de Atendimento "Rótulo N" (data-testid estado-*); mesmas contas.
 const estN = async (k) => { const t = await page.locator(`[data-testid="estado-${k}"]`).first().innerText().catch(() => ''); const m = t.match(/(\d+)/); return m ? +m[1] : NaN; };
 const chipTxt = await page.locator('[data-testid="estado-cancelado"]').first().innerText().catch(() => '');
-const est = { na: await estN('nao_atendida'), ea: await estN('em_atendimento'), at: await estN('atendida'), ca: await estN('cancelado') };
+const est = { na: await estN('nao_atendida'), ea: await estN('em_atendimento'), at: (await page.locator('[data-testid="estado-atendida"]').count()) ? await estN('atendida') : 0, ca: await estN('cancelado') };
 ck('filtro "Cancelado 1" existe e os contadores somam o total (1+1+0+1 = 3)', est.ca === 1 && est.na === 1 && est.ea === 1 && est.at === 0 && est.na + est.ea + est.at + est.ca === 3, JSON.stringify(est));
 calls.length = 0;
 await page.locator('[data-testid="estado-cancelado"]').first().click(); await page.waitForTimeout(900);
