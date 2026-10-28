@@ -24,13 +24,13 @@ const norm = (raw) => { const d = String(raw ?? '').replace(/\D/g, '').replace(/
 // ── Supabase em memória ───────────────────────────────────────
 function makeDb() {
   const t = {
-    people: [], conversations: [], conversation_messages: [],
+    people: [], conversations: [], conversation_messages: [], whatsapp_message_statuses: [],
     church_whatsapp_channels: [
       { id: 'ch-1', church_id: C1, channel_type: 'chatpro', active: true, meta_phone_number_id: 'meta-1' },
       { id: 'ch-2', church_id: C2, channel_type: 'chatpro', active: true, meta_phone_number_id: 'meta-2' },
     ],
   }
-  const writes = []; let seq = 0
+  const writes = []; let seq = 0; const fail = new Set()
   const withGen = (table, r) => table === 'people' ? { ...r, phone_normalized: norm(r.phone) } : r
   function builder(table) {
     const st = { op: 'select', filters: [], orders: [], limit: null, head: false, count: false, payload: null, returning: false }
@@ -46,6 +46,15 @@ function makeDb() {
         t[table].push(r); writes.push({ table, op: 'insert', row: { ...st.payload } })
         return { data: [withGen(table, r)], error: null }
       }
+      if (fail.has(table)) return { data: null, error: { code: 'XX000', message: 'falha simulada em ' + table } }
+      if (st.op === 'upsert') {
+        const out = []
+        for (const p of st.payload) {
+          if (t[table].some(r => r.wamid === p.wamid && r.status === p.status)) continue
+          const r = { id: `${table}-${++seq}`, ...p }; t[table].push(r); out.push(r); writes.push({ table, op: 'upsert', row: { ...p } })
+        }
+        return { data: out, error: null }
+      }
       if (st.op === 'update') {
         const hit = t[table].filter(r => st.filters.every(f => f(withGen(table, r))))
         hit.forEach(r => Object.assign(r, st.payload)); writes.push({ table, op: 'update', ids: hit.map(r => r.id), set: { ...st.payload } })
@@ -60,6 +69,7 @@ function makeDb() {
       select(_cols, opts) { if (st.op === 'select') { st.head = !!opts?.head; st.count = !!opts?.count } else st.returning = true; return api },
       insert(p) { st.op = 'insert'; st.payload = p; return api },
       update(p) { st.op = 'update'; st.payload = p; return api },
+      upsert(p) { st.op = 'upsert'; st.payload = Array.isArray(p) ? p : [p]; return api },
       eq(c, v) { st.filters.push(r => r[c] === v); return api },
       is(c, v) { st.filters.push(r => (r[c] ?? null) === v); return api },
       order(c, o) { st.orders.push([c, o?.ascending !== false]); return api },
@@ -70,7 +80,7 @@ function makeDb() {
     }
     return api
   }
-  return { t, writes, client: { from: builder } }
+  return { t, writes, fail, client: { from: builder } }
 }
 
 // ── carrega a função real, trocando só o import do supabase-js ─
@@ -161,6 +171,28 @@ async function scenario(file) {
       db.t.conversations.push({ id: 'conv-h', church_id: C1, channel_id: 'ch-1', contact_phone: '5521999999999', person_id: null, ownership: 'human', agent_slug: null, unread_count: 2 })
       await post(handler, { phone: '5521999999999', body: 'Oi pastor', id: 'm-H' })
       out.H = { msgs: db.t.conversation_messages.length, ownership: db.t.conversations[0].ownership, person: db.t.conversations[0].person_id, unread: db.t.conversations[0].unread_count, triagem: fetchLog.some(f => f.url.includes('triagem')) } }
+    // S. recibos de entrega da Meta (statuses[]) → whatsapp_message_statuses
+    { const st = (id, status, ts, extra = {}) => ({ id, status, timestamp: ts, recipient_id: '5521966487878', ...extra })
+      const lote = (statuses, messages) => ({ object: 'whatsapp_business_account', entry: [{ changes: [{ field: 'messages', value: { metadata: { phone_number_id: 'meta-1' }, statuses, ...(messages ? { messages } : {}) } }] }] })
+      const { db, fetchLog, handler } = await fresh()
+      const r1 = await post(handler, lote([st('wamid.X', 'sent', '1761512222'), st('wamid.X', 'delivered', '1761512230')]), '?channel_id=ch-1')
+      await post(handler, lote([st('wamid.X', 'delivered', '1761512230')]), '?channel_id=ch-1')          // duplicata da Meta
+      await post(handler, lote([st('wamid.Y', 'failed', '1761512240', { errors: [{ code: 131026, title: 'Message undeliverable' }] })]), '?channel_id=ch-1')
+      const rows = db.t.whatsapp_message_statuses
+      out.S = { status: r1.status, linhas: rows.map(r => r.wamid + ':' + r.status), canal: rows.every(r => r.channel_id === 'ch-1'),
+        quando: rows.find(r => r.status === 'delivered')?.status_at, erro: rows.find(r => r.status === 'failed')?.errors?.[0]?.code,
+        semEfeitoInbound: db.t.people.length === 0 && db.t.conversations.length === 0 && db.t.conversation_messages.length === 0 && fetchLog.length === 0 }
+      // S2. lote com status + mensagem de texto: as duas coisas são processadas
+      { const { db, handler } = await fresh()
+        db.t.people.push({ id: 'marcelo', church_id: C1, name: 'Marcelo Souza', phone: '+5521999999999', created_at: '2026-01-01', deleted_at: null })
+        await post(handler, lote([st('wamid.Z', 'read', '1761512300')], [{ id: 'wamid-in', from: '5521999999999', timestamp: '1761512301', type: 'text', text: { body: 'Amém' } }]), '')
+        out.S2 = { status: db.t.whatsapp_message_statuses.map(r => r.status), msgs: db.t.conversation_messages.length, conv: db.t.conversations[0]?.person_id } }
+      // S3. falha ao gravar status NÃO derruba a mensagem recebida
+      { const { db, handler } = await fresh()
+        db.fail.add('whatsapp_message_statuses')
+        db.t.people.push({ id: 'marcelo', church_id: C1, name: 'Marcelo Souza', phone: '+5521999999999', created_at: '2026-01-01', deleted_at: null })
+        const r = await post(handler, lote([st('wamid.W', 'sent', '1761512400')], [{ id: 'wamid-in2', from: '5521999999999', timestamp: '1761512401', type: 'text', text: { body: 'Oi' } }]), '')
+        out.S3 = { status: r.status, msgs: db.t.conversation_messages.length } } }
   } finally { restore() }
   return out
 }
@@ -180,6 +212,11 @@ ck('mensagem duplicada ignorada; 2ª mensagem reaproveita conversa e pessoa', N.
 ck('Meta Cloud em lote: existente (outro formato) localizada; número novo vira Contato', N.F.people === 2 && N.F.convs[0] === 'marcelo' && N.F.msgs === 2, JSON.stringify(N.F))
 ck('par legado (real "+55" + Contato "55"): mantém o vínculo que já existia; nada novo é criado', N.G.people === 2 && N.G.convPerson === 'contato', JSON.stringify(N.G))
 ck('ownership=human: mensagem gravada, ownership preservado, triagem suprimida', N.H.msgs === 1 && N.H.ownership === 'human' && N.H.unread === 3 && !N.H.triagem && N.H.person === 'marcelo', JSON.stringify(N.H))
+
+ck('Meta statuses: grava sent e delivered (1 linha por status, com canal e horário da Meta), sem tocar em pessoas/conversas', N.S.status === 200 && JSON.stringify(N.S.linhas.slice(0, 2)) === JSON.stringify(['wamid.X:sent', 'wamid.X:delivered']) && N.S.canal && N.S.quando === new Date(1761512230000).toISOString() && N.S.semEfeitoInbound, JSON.stringify(N.S))
+ck('Meta statuses: duplicata ignorada; "failed" gravado com o código de erro da Meta', N.S.linhas.length === 3 && N.S.linhas[2] === 'wamid.Y:failed' && N.S.erro === 131026, JSON.stringify(N.S.linhas))
+ck('Meta lote com status + texto recebido: ambos processados', JSON.stringify(N.S2.status) === JSON.stringify(['read']) && N.S2.msgs === 1 && N.S2.conv === 'marcelo', JSON.stringify(N.S2))
+ck('falha ao gravar status não derruba a mensagem recebida (200 + mensagem gravada)', N.S3.status === 200 && N.S3.msgs === 1, JSON.stringify(N.S3))
 
 if (CONTROL) {
   const O = await scenario(CONTROL)
