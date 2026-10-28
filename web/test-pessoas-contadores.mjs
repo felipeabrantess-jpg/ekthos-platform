@@ -238,7 +238,7 @@ const readCounters = async () => {
   const na = await txt('[data-testid="estado-nao_atendida"]')
   return {
     todos: first(await txt('[data-testid="classificacao-todas"]')), nao: first(na), em: first(await txt('[data-testid="estado-em_atendimento"]')),
-    at: first(await txt('[data-testid="estado-atendida"]')), can: first(await txt('[data-testid="estado-cancelado"]')),
+    at: (await page.locator('[data-testid="estado-atendida"]').count()) ? first(await txt('[data-testid="estado-atendida"]')) : 0, can: first(await txt('[data-testid="estado-cancelado"]')),
     alerta: Number((na.match(/(\d+)\s*sem atendimento há/) || [])[1]),
     header: Number(((await txt('h1 + p')).match(/^(\d+)/) || [])[1]),
   }

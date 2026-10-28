@@ -12,6 +12,8 @@ export interface AcolhimentoStatusCounts {
   total:         number
   /** ALERTA operacional (sobrepõe um estado; NÃO entra na soma) */
   semContato48h: number
+  /** RECORTE do dia: pessoas com atendimento registrado hoje (Brasília). NÃO entra na soma */
+  atendidasHoje: number
   /** Threshold do alerta em horas, definido no banco (care_alert_threshold) */
   alertThresholdHours: number
 }
@@ -43,6 +45,7 @@ export async function fetchCareCounts(churchId: string, f: CareCountFilters): Pr
     emAtendimento: d.em_atendimento  ?? 0,
     atendida:      d.atendida        ?? 0,
     semContato48h: d.sem_contato_48h ?? 0,
+    atendidasHoje: d.atendidas_hoje  ?? 0,
     alertThresholdHours: d.alert_threshold_hours ?? 48,
   }
 }

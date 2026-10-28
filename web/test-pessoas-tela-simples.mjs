@@ -28,14 +28,16 @@ add(1, { unit: U1, cls: 'none', care: 'nao_atendida', h48: true, stage: null });
 add(6, { unit: U2, cls: 'visitor', care: 'nao_atendida', h48: true, stage: 'visitante' });
 add(4, { unit: U2, cls: 'none', care: 'nao_atendida', h48: true, stage: null });
 
+// Atendidas hoje (28/10): 3 pessoas da unidade 1 com atendimento registrado hoje
+const HOJE = { p9: { result: 'realizado', notes: 'conversamos', actor_name: 'Ana Secretária', registros_hoje: 2 }, p10: { result: 'sem_resposta', notes: null, actor_name: 'Ana Secretária', registros_hoje: 1 }, p13: { result: 'encaminhado', notes: 'Encaminhado para Louvor', actor_name: 'Pr. João', registros_hoje: 1 } };
 const filt = (b) => P.filter(p =>
   (!b.p_unit_id || p.unit === b.p_unit_id) &&
   (!b.p_classification || p.cls === b.p_classification) &&
   (!b.p_stage_key || (b.p_stage_key === '__none' ? !p.stage : p.stage === b.p_stage_key)) &&
-  (!b.p_care_status || (b.p_care_status === 'sem_contato_48h' ? p.h48 : p.care === b.p_care_status)));
+  (!b.p_care_status || (b.p_care_status === 'sem_contato_48h' ? p.h48 : b.p_care_status === 'atendidas_hoje' ? !!HOJE[p.id] : p.care === b.p_care_status)));
 const countsOf = (b) => { const l = filt({ ...b, p_care_status: null }); const c = s => l.filter(p => p.care === s).length;
-  return { total: l.length, nao_atendida: c('nao_atendida'), em_atendimento: c('em_atendimento'), atendida: c('atendida'), cancelado: c('cancelado'), sem_contato_48h: l.filter(p => p.h48).length, alert_threshold_hours: 48 }; };
-const row = (p) => ({ id: p.id, church_id: CH, name: p.name, phone: '5521900000000', email: null, unit_id: p.unit, care_state: p.care, care_status: p.care, created_at: '2026-10-01T00:00:00Z', deleted_at: null, left_at: null, source: 'manual', person_tags: [], person_pipeline: [], classification: { classification: p.cls === 'none' ? null : p.cls, roles: [] } });
+  return { total: l.length, nao_atendida: c('nao_atendida'), em_atendimento: c('em_atendimento'), atendida: c('atendida'), cancelado: c('cancelado'), sem_contato_48h: l.filter(p => p.h48).length, atendidas_hoje: l.filter(p => HOJE[p.id]).length, alert_threshold_hours: 48 }; };
+const row = (p) => ({ id: p.id, church_id: CH, name: p.name, phone: '5521900000000', email: null, unit_id: p.unit, care_state: p.care, care_status: p.care, created_at: '2026-10-01T00:00:00Z', deleted_at: null, left_at: null, source: 'manual', person_tags: [], person_pipeline: [], classification: { classification: p.cls === 'none' ? null : p.cls, roles: [] }, atendimento_hoje: HOJE[p.id] ? { person_id: p.id, at: new Date().toISOString(), ...HOJE[p.id] } : null });
 
 let calls = [];
 const results = []; const ck = (n, ok, info = '') => { results.push(ok); console.log(`${ok ? '✅' : '❌'} ${n}${info ? ' — ' + info : ''}`); };
@@ -89,7 +91,7 @@ ck('Quem: Todos 20 = Visitantes 14 + Membros 5 + Não classificados 1', q.todos 
 
 // 3. Atendimento fecha com o Quem escolhido
 await page.locator('[data-testid="classificacao-visitor"]').click(); await page.waitForTimeout(900);
-const a = { na: await num('[data-testid="estado-nao_atendida"]'), ea: await num('[data-testid="estado-em_atendimento"]'), at: await num('[data-testid="estado-atendida"]'), ca: await num('[data-testid="estado-cancelado"]') };
+const a = { na: await num('[data-testid="estado-nao_atendida"]'), ea: await num('[data-testid="estado-em_atendimento"]'), at: (await page.locator('[data-testid="estado-atendida"]').count()) ? await num('[data-testid="estado-atendida"]') : 0, ca: await num('[data-testid="estado-cancelado"]') };
 ck('Visitantes: Atendimento 9 + 4 + 0 + 1 = 14 e lista com 14', a.na === 9 && a.ea === 4 && a.at === 0 && a.ca === 1 && (await listCount()) === 14, JSON.stringify(a));
 ck('"Não atendida" mostra o aviso de 48h (8)', /8 sem atendimento há 48h/.test(await page.locator('[data-testid="estado-nao_atendida"]').innerText()));
 
@@ -164,6 +166,26 @@ await page.locator('text=Limpar filtros').first().click(); await page.waitForTim
 ck('"Limpar filtros": etapa, origem e Quem limpos; unidade mantida; lista volta a 20',
   (await page.locator('[data-testid="filtros-ligados"]').count()) === 0 && !param('etapa') && !param('origem') && !param('cls') && param('unidade') === U1 && (await listCount()) === 20);
 ck('isolamento: todas as RPCs com p_church_id usam a igreja do token', calls.every(c => !c.b.p_church_id || c.b.p_church_id === CH));
+
+// ── Atendidas hoje ─────────────────────────────────────────
+await page.goto(`${BASE}/pessoas?unidade=all`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(1500);
+ck('não existe mais o botão "Atendida" quando ninguém está nesse estado', (await page.locator('[data-testid="estado-atendida"]').count()) === 0);
+const nHoje = await num('[data-testid="estado-atendidas_hoje"]');
+ck('botão "Atendidas hoje 3"', /Atendidas hoje/.test(await page.locator('[data-testid="estado-atendidas_hoje"]').innerText()) && nHoje === 3, String(nHoje));
+const somaEstados = (await num('[data-testid="estado-nao_atendida"]')) + (await num('[data-testid="estado-em_atendimento"]')) + (await num('[data-testid="estado-cancelado"]'));
+ck('Atendidas hoje fica FORA da soma: Não atendida + Em atendimento + Cancelado = Todos', somaEstados === (await num('[data-testid="classificacao-todas"]')), String(somaEstados));
+calls = [];
+await page.locator('[data-testid="estado-atendidas_hoje"]').click(); await page.waitForTimeout(1500);
+const linhas = await page.locator('table tbody tr').count();
+ck('clicar: lista com as 3 atendidas hoje, filtro enviado ao banco', linhas === 3 && calls.some(c => c.name === 'get_people_page' && c.b.p_care_status === 'atendidas_hoje'), String(linhas));
+const det = await page.locator('table [data-testid="atendimento-hoje"]').allInnerTexts();
+ck('cada linha mostra o que rolou hoje (hora, resultado, quem)', det.length === 3 && det.every(t => /^Hoje \d{2}:\d{2}/.test(t)), det.join(' | '));
+ck('mostra resultado, quem atendeu, nº de registros e anotação', det.some(t => /Contato realizado · Ana Secretária · 2 registros/.test(t) && /conversamos/.test(t)) && det.some(t => /Sem resposta/.test(t)) && det.some(t => /Encaminhado · Pr\. João/.test(t) && /Louvor/.test(t)), det.join(' | '));
+ck('URL guarda o filtro (?estado=atendidas_hoje)', new URL(page.url()).searchParams.get('estado') === 'atendidas_hoje');
+await page.reload({ waitUntil: 'networkidle' }); await page.waitForTimeout(1500);
+ck('F5 mantém Atendidas hoje', (await page.locator('table tbody tr').count()) === 3);
+await page.locator('[data-testid="estado-atendidas_hoje"]').click(); await page.waitForTimeout(1200);
+ck('clicar de novo desmarca (lista volta ao total)', (await page.locator('table tbody tr').count()) > 3 && !new URL(page.url()).searchParams.get('estado'));
 
 ck('sem erros de página', errors.length === 0, errors.join(' | ').slice(0, 200));
 await page.screenshot({ path: 'pessoas-tela-simples.png', fullPage: true });

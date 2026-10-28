@@ -17,6 +17,7 @@ import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Check,
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useDeletePerson } from '@/features/people/hooks/usePeople'
 import { buildPeopleCsv, type ExportPayload, type ExportRow } from '@/features/people/exportCsv'
+import { resultLabel } from '@/features/atendimento/contactLabels'
 import { fetchAllExportPages, isMissingFunctionError, type ExportPageResult } from '@/features/people/exportPaging'
 import {
   usePeoplePage, usePeopleStageCounts, buildPeoplePageArgs, PEOPLE_PAGE_SIZE, PEOPLE_SORT_KEYS, STAGE_KEY_NONE,
@@ -61,7 +62,7 @@ class PanelErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
 
 /** 'geral' | 'aniversarios' | 'stage:<pipeline_stages.stage_key>' (fonte canônica) */
 type PeopleTab = 'geral' | 'aniversarios' | `stage:${string}`
-type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado' | 'sem_contato_48h'
+type CareFilter = '' | 'nao_atendida' | 'em_atendimento' | 'atendida' | 'cancelado' | 'sem_contato_48h' | 'atendidas_hoje'
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -143,6 +144,22 @@ interface PersonCardMobileProps {
   showCareBadge?: boolean
 }
 
+/** O que aconteceu HOJE com a pessoa (último registro do dia: resultado, hora, quem, anotação). Vem de get_people_page. */
+function AtendimentoHoje({ person }: { person: unknown }) {
+  const h = (person as { atendimento_hoje?: { at: string; result: string | null; notes: string | null; actor_name: string | null; registros_hoje: number } | null }).atendimento_hoje
+  if (!h) return null
+  const hora = new Date(h.at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+  return (
+    <div className="mt-1 text-[11px] leading-snug text-text-secondary max-w-xs" data-testid="atendimento-hoje">
+      <span className="font-semibold text-text-primary">Hoje {hora}</span>
+      {' · '}{resultLabel(h.result) || 'Atendimento'}
+      {h.actor_name && <> · {h.actor_name}</>}
+      {h.registros_hoje > 1 && <> · {h.registros_hoje} registros</>}
+      {h.notes && <span className="block text-text-tertiary truncate" title={h.notes}>{h.notes}</span>}
+    </div>
+  )
+}
+
 function PersonCardMobile({ person, allTags: _allTags, onView, onEdit, onDelete, onAtend, showBirthday, showCareBadge }: PersonCardMobileProps) {
   const bdayDay = showBirthday && person.birth_date
     ? new Date(person.birth_date + 'T00:00:00').getDate()
@@ -192,6 +209,7 @@ function PersonCardMobile({ person, allTags: _allTags, onView, onEdit, onDelete,
                 )
               })()}
             </div>
+            <AtendimentoHoje person={person} />
             {person.email && (
               <p className="text-xs text-text-secondary truncate mt-0.5">{person.email}</p>
             )}
@@ -311,6 +329,7 @@ function PersonRow({ person, allTags: _allTags, onView, onEdit, onDelete, onAten
               </span>
             )
           })()}
+          <AtendimentoHoje person={person} />
         </td>
       )}
       {contactCount !== undefined && (
@@ -566,7 +585,7 @@ export default function People() {
   }
   const [search, setSearch]             = useState(() => (searchParams.get('q') ?? '').slice(0, 120))
   const [sourceFilter, setSourceFilter] = useState<string>(() => fromUrl('origem', ['qr_code', 'manual', 'import_xlsx'] as const))
-  const [careFilter, setCareFilter]     = useState<CareFilter>(() => fromUrl('estado', ['nao_atendida', 'em_atendimento', 'atendida', 'cancelado', 'sem_contato_48h'] as const))
+  const [careFilter, setCareFilter]     = useState<CareFilter>(() => fromUrl('estado', ['nao_atendida', 'em_atendimento', 'atendida', 'cancelado', 'sem_contato_48h', 'atendidas_hoje'] as const))
   // Classificação única (Release 1): visitante / membro / não classificado + função
   const [classificationFilter, setClassificationFilter] = useState<ClassificationFilter>(() => fromUrl('cls', ['visitor', 'member', 'none'] as const))
   const [roleFilter, setRoleFilter] = useState<RoleFilter>(() => fromUrl('funcao', ['member_only', 'volunteer', 'leader', 'leader_volunteer'] as const))
@@ -727,7 +746,7 @@ export default function People() {
     search ? { key: 'busca', label: `Busca: "${search}"`, remove: () => { setSearch(''); setCurrentPage(0) } } : null,
   ].filter((c): c is { key: string; label: string; remove: () => void } => c !== null)
   const CARE_FILTER_LABEL: Record<Exclude<CareFilter, ''>, string> = {
-    nao_atendida: 'Não atendidas', em_atendimento: 'Em atendimento', atendida: 'Atendida', cancelado: 'Cancelado',
+    nao_atendida: 'Não atendidas', em_atendimento: 'Em atendimento', atendida: 'Atendida', cancelado: 'Cancelado', atendidas_hoje: 'Atendidas hoje',
     sem_contato_48h: `Sem atendimento há ${careStatusData?.alertThresholdHours ?? 48}h`,
   }
   const activeFilterLabels: string[] = [
@@ -933,8 +952,11 @@ export default function People() {
             {([
               { value: 'nao_atendida' as const,   label: 'Não atendida',   n: careStatusData?.naoAtendida },
               { value: 'em_atendimento' as const, label: 'Em atendimento', n: careStatusData?.emAtendimento },
-              { value: 'atendida' as const,       label: 'Atendida',       n: careStatusData?.atendida },
+              // estado "Atendida" (jornada encerrada com desfecho positivo) só aparece se existir — assim os estados sempre somam o total
+              ...((careStatusData?.atendida ?? 0) > 0 || careFilter === 'atendida' ? [{ value: 'atendida' as const, label: 'Atendida', n: careStatusData?.atendida }] : []),
               { value: 'cancelado' as const,      label: 'Cancelado',      n: careStatusData?.cancelado },
+              // recorte do dia: todo atendimento registrado hoje (qualquer resultado); não é estado e não entra na soma
+              { value: 'atendidas_hoje' as const, label: 'Atendidas hoje', n: careStatusData?.atendidasHoje },
             ]).map(opt => {
               const on = careFilter === opt.value || (opt.value === 'nao_atendida' && careFilter === 'sem_contato_48h')
               return (
