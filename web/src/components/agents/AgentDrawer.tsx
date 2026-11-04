@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react'
-import { X } from 'lucide-react'
+import { XIcon as X } from '@phosphor-icons/react'
 import { AgentChatInterface } from './AgentChatInterface'
 import { useAgentDrawer } from '@/contexts/AgentDrawerContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -83,7 +83,7 @@ function AgentListView({
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
           title="Fechar"
         >
-          <X size={16} strokeWidth={2} />
+          <X size={16} />
         </button>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">

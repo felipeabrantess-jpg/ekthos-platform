@@ -12,20 +12,13 @@
  * agent-financeiro (volta em Sprint Financeiro Pro)
  */
 
-import type { LucideIcon } from 'lucide-react'
-import {
-  MessageCircle,
-  Rocket,
-  UserPlus,
-  Heart,
-  Zap,
-  UserCheck,
-} from 'lucide-react'
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
+import { ChatCircleIcon as MessageCircle, RocketIcon as Rocket, UserPlusIcon as UserPlus, HeartIcon as Heart, LightningIcon as Zap, UserCheckIcon as UserCheck } from '@phosphor-icons/react'
 
 export interface AgentContent {
   slug:          string
   name:          string
-  Icon:          LucideIcon
+  Icon:          PhosphorIcon
   shortDesc:     string          // 1 linha — para cards
   longDesc:      string          // parágrafo — para detalhe
   howItWorks:    string[]        // 3-5 bullets

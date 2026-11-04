@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, TrendingUp, ArrowLeft, UserPlus, CheckSquare, Tag, Users, LogOut, Inbox, MessageSquare, Zap, Ticket, Bell } from 'lucide-react'
+import { SquaresFourIcon as LayoutDashboard, BuildingsIcon as Building2, TrendUpIcon as TrendingUp, ArrowLeftIcon as ArrowLeft, UserPlusIcon as UserPlus, CheckSquareIcon as CheckSquare, TagIcon as Tag, UsersIcon as Users, SignOutIcon as LogOut, TrayIcon as Inbox, ChatTextIcon as MessageSquare, LightningIcon as Zap, TicketIcon as Ticket, BellIcon as Bell } from '@phosphor-icons/react'
 import { useLogout } from '@/hooks/useAuth'
 import { usePendingActivations } from '@/hooks/usePendingActivations'
 
@@ -28,16 +28,16 @@ function NavItem({ to, label, icon, badge }: { to: string; label: string; icon: 
 }
 
 const BASE_NAV = [
-  { to: '/admin/cockpit',      label: 'Cockpit',      icon: <LayoutDashboard size={16} strokeWidth={1.75} /> },
-  { to: '/admin/leads',        label: 'Leads',        icon: <Inbox           size={16} strokeWidth={1.75} /> },
-  { to: '/admin/churches',     label: 'Igrejas',      icon: <Building2       size={16} strokeWidth={1.75} /> },
-  { to: '/admin/onboardings',  label: 'Onboardings',  icon: <UserPlus        size={16} strokeWidth={1.75} /> },
-  { to: '/admin/tasks',         label: 'Tarefas',      icon: <CheckSquare     size={16} strokeWidth={1.75} /> },
-  { to: '/admin/notifications', label: 'Alertas',      icon: <Bell            size={16} strokeWidth={1.75} /> },
-  { to: '/admin/revenue',      label: 'Receita',      icon: <TrendingUp      size={16} strokeWidth={1.75} /> },
-  { to: '/admin/pricing',      label: 'Pricing',      icon: <Tag             size={16} strokeWidth={1.75} /> },
-  { to: '/admin/afiliados',    label: 'Afiliados',    icon: <Users           size={16} strokeWidth={1.75} /> },
-  { to: '/admin/comunicacao',  label: 'Comunicação',  icon: <MessageSquare   size={16} strokeWidth={1.75} /> },
+  { to: '/admin/cockpit',      label: 'Cockpit',      icon: <LayoutDashboard size={16} /> },
+  { to: '/admin/leads',        label: 'Leads',        icon: <Inbox           size={16} /> },
+  { to: '/admin/churches',     label: 'Igrejas',      icon: <Building2       size={16} /> },
+  { to: '/admin/onboardings',  label: 'Onboardings',  icon: <UserPlus        size={16} /> },
+  { to: '/admin/tasks',         label: 'Tarefas',      icon: <CheckSquare     size={16} /> },
+  { to: '/admin/notifications', label: 'Alertas',      icon: <Bell            size={16} /> },
+  { to: '/admin/revenue',      label: 'Receita',      icon: <TrendingUp      size={16} /> },
+  { to: '/admin/pricing',      label: 'Pricing',      icon: <Tag             size={16} /> },
+  { to: '/admin/afiliados',    label: 'Afiliados',    icon: <Users           size={16} /> },
+  { to: '/admin/comunicacao',  label: 'Comunicação',  icon: <MessageSquare   size={16} /> },
 ]
 
 export default function AdminLayout() {
@@ -67,7 +67,7 @@ export default function AdminLayout() {
           onClick={() => navigate('/dashboard')}
           className="flex items-center gap-1.5 text-xs text-white/70 hover:text-white transition-colors"
         >
-          <ArrowLeft size={13} strokeWidth={2} />
+          <ArrowLeft size={13} />
           Voltar ao CRM
         </button>
       </div>
@@ -93,13 +93,13 @@ export default function AdminLayout() {
           <NavItem
             to="/admin/cockpit/ativacoes"
             label="Ativações"
-            icon={<Zap size={16} strokeWidth={1.75} />}
+            icon={<Zap size={16} />}
             badge={pendingCount}
           />
           <NavItem
             to="/admin/cockpit/cupons"
             label="Cupons"
-            icon={<Ticket size={16} strokeWidth={1.75} />}
+            icon={<Ticket size={16} />}
           />
 
           {/* Logout */}
@@ -108,7 +108,7 @@ export default function AdminLayout() {
               onClick={logout}
               className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/5 transition-all w-full"
             >
-              <LogOut size={16} strokeWidth={1.75} />
+              <LogOut size={16} />
               Sair
             </button>
           </div>

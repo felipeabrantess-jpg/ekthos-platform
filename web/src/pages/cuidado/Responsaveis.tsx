@@ -6,7 +6,7 @@
 
 import { useState }                              from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Copy, Check, ToggleLeft, ToggleRight, Trash2, HeartHandshake } from 'lucide-react'
+import { PlusIcon as Plus, CopyIcon as Copy, CheckIcon as Check, ToggleLeftIcon as ToggleLeft, ToggleRightIcon as ToggleRight, TrashIcon as Trash2, HandshakeIcon as HeartHandshake } from '@phosphor-icons/react'
 import { useAuth }  from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import Spinner      from '@/components/ui/Spinner'
@@ -297,8 +297,8 @@ function ResponsavelRow({ resp, churchId, linkBase }: RowProps) {
               title={resp.is_active ? 'Desativar' : 'Ativar'}
             >
               {resp.is_active
-                ? <ToggleRight size={18} strokeWidth={1.75} />
-                : <ToggleLeft  size={18} strokeWidth={1.75} />
+                ? <ToggleRight size={18} />
+                : <ToggleLeft  size={18} />
               }
             </button>
             {deletingId === resp.id ? (
@@ -324,7 +324,7 @@ function ResponsavelRow({ resp, churchId, linkBase }: RowProps) {
                 style={{ color: 'var(--text-tertiary)' }}
                 title="Excluir"
               >
-                <Trash2 size={15} strokeWidth={1.75} />
+                <Trash2 size={15} />
               </button>
             )}
           </div>
@@ -372,7 +372,7 @@ export default function Responsaveis() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <HeartHandshake size={22} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+          <HeartHandshake size={22} style={{ color: 'var(--color-primary)' }} />
           <div>
             <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
               Cuidado Pastoral
@@ -383,7 +383,7 @@ export default function Responsaveis() {
           </div>
         </div>
         <Button onClick={() => setModalOpen(true)}>
-          <Plus size={16} strokeWidth={2} className="mr-2" />
+          <Plus size={16} className="mr-2" />
           Novo Responsável
         </Button>
       </div>
@@ -406,7 +406,7 @@ export default function Responsaveis() {
         <>
           {responsaveis.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16">
-              <HeartHandshake size={40} strokeWidth={1.25} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
+              <HeartHandshake size={40} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 Nenhum responsável cadastrado ainda.
               </p>

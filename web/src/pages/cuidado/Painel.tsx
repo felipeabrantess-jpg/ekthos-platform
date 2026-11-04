@@ -6,7 +6,7 @@
 
 import { useState }  from 'react'
 import { useQuery }  from '@tanstack/react-query'
-import { HeartHandshake, ChevronDown, ChevronRight } from 'lucide-react'
+import { HandshakeIcon as HeartHandshake, CaretDownIcon as ChevronDown, CaretRightIcon as ChevronRight } from '@phosphor-icons/react'
 import { useAuth }   from '@/hooks/useAuth'
 import { supabase }  from '@/lib/supabase'
 import Spinner       from '@/components/ui/Spinner'
@@ -119,8 +119,8 @@ function ResponsavelPainelCard({ resp }: { resp: CareResponsible }) {
           })}
         </div>
         {expanded
-          ? <ChevronDown size={16} strokeWidth={2} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
-          : <ChevronRight size={16} strokeWidth={2} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+          ? <ChevronDown size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+          : <ChevronRight size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
         }
       </button>
 
@@ -239,7 +239,7 @@ export default function Painel() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <HeartHandshake size={22} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+        <HeartHandshake size={22} style={{ color: 'var(--color-primary)' }} />
         <div>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
             Painel de Cuidado
@@ -294,7 +294,7 @@ export default function Painel() {
         <>
           {responsaveis.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16">
-              <HeartHandshake size={40} strokeWidth={1.25} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
+              <HeartHandshake size={40} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 Nenhum responsável ativo ainda. Cadastre em{' '}
                 <a href="/cuidado/responsaveis" style={{ color: 'var(--color-primary)' }}>Responsáveis</a>.

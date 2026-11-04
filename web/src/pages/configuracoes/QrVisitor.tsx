@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QrCode, Copy, Check, Download, ToggleLeft, ToggleRight, MapPin } from 'lucide-react'
+import { QrCodeIcon as QrCode, CopyIcon as Copy, CheckIcon as Check, DownloadSimpleIcon as Download, ToggleLeftIcon as ToggleLeft, ToggleRightIcon as ToggleRight, MapPinIcon as MapPin } from '@phosphor-icons/react'
 import QRCode from 'qrcode'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'

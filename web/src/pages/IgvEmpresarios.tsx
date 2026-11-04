@@ -1,6 +1,6 @@
 import { useState, useEffect }   from 'react'
 import { Link }                   from 'react-router-dom'
-import { ChevronLeft, Briefcase, Plus } from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, BriefcaseIcon as Briefcase, PlusIcon as Plus } from '@phosphor-icons/react'
 import { supabase }               from '@/lib/supabase'
 import { IGV }                    from '@/lib/igv-public-data'
 
@@ -211,7 +211,7 @@ export default function IgvEmpresarios() {
           className="w-8 h-8 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={18} />
         </Link>
         <div>
           <p className="font-semibold text-white text-[1.02rem] leading-tight">Rede de Negócios</p>
@@ -233,7 +233,7 @@ export default function IgvEmpresarios() {
           className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-semibold text-[1.02rem] text-white mb-6 active:opacity-80 transition-opacity"
           style={{ backgroundColor: IGV.primaryColor }}
         >
-          <Plus size={18} strokeWidth={2.5} />
+          <Plus size={18} />
           Cadastrar meu negócio
         </Link>
 
@@ -250,7 +250,7 @@ export default function IgvEmpresarios() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: `${IGV.primaryColor}15` }}
             >
-              <Briefcase size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
+              <Briefcase size={26} style={{ color: IGV.primaryColor }} />
             </div>
             <p className="font-medium text-white/70">Em breve por aqui!</p>
             <p className="text-[1rem] mt-1">Os empresários da IGV serão listados aqui.</p>

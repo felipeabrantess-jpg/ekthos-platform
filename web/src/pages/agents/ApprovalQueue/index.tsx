@@ -10,17 +10,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Loader2,
-  AlertTriangle,
-  MessageSquare,
-  RefreshCw,
-  Settings,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, CheckCircleIcon as CheckCircle2, XCircleIcon as XCircle, ClockIcon as Clock, CircleNotchIcon as Loader2, WarningIcon as AlertTriangle, ChatTextIcon as MessageSquare, ArrowsClockwiseIcon as RefreshCw, GearIcon as Settings } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 

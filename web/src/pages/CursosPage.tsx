@@ -9,11 +9,7 @@ import { useState, useRef }                from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase }                        from '@/lib/supabase'
 import { useAuth }                         from '@/hooks/useAuth'
-import {
-  GraduationCap, Users, ChevronDown, ChevronUp,
-  Clock, MapPin, Loader2, Plus, Pencil, Power,
-  PowerOff, X, Upload, ImageIcon,
-} from 'lucide-react'
+import { GraduationCapIcon as GraduationCap, UsersIcon as Users, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, ClockIcon as Clock, MapPinIcon as MapPin, CircleNotchIcon as Loader2, PlusIcon as Plus, PencilIcon as Pencil, PowerIcon as Power, PowerIcon as PowerOff, XIcon as X, UploadSimpleIcon as Upload, ImageIcon as ImageIcon } from '@phosphor-icons/react'
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -211,7 +207,7 @@ function CourseFormModal({ mode, initial, churchId, onClose, onSaved }: CourseFo
                 <img src={photoPreview} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-gray-300 gap-1.5">
-                  <ImageIcon size={28} strokeWidth={1.5} />
+                  <ImageIcon size={28} />
                   <span className="text-xs text-gray-400">Clique para fazer upload</span>
                 </div>
               )}
@@ -490,13 +486,13 @@ function CourseCard({ course, onEdit, onToggle, toggling }: CourseCardProps) {
               <span className="text-xs text-gray-500">{formatPrice(course.price)}</span>
               {course.schedule_text && (
                 <span className="flex items-center gap-1 text-xs text-gray-400">
-                  <Clock size={11} strokeWidth={1.75} />
+                  <Clock size={11} />
                   {course.schedule_text}
                 </span>
               )}
               {course.location && (
                 <span className="flex items-center gap-1 text-xs text-gray-400">
-                  <MapPin size={11} strokeWidth={1.75} />
+                  <MapPin size={11} />
                   {course.location}
                 </span>
               )}
@@ -512,7 +508,7 @@ function CourseCard({ course, onEdit, onToggle, toggling }: CourseCardProps) {
           {/* Ações */}
           <div className="shrink-0 flex items-center gap-1.5 mt-0.5">
             <span className="flex items-center gap-1 text-xs font-medium text-gray-400 mr-1">
-              <Users size={13} strokeWidth={1.75} />
+              <Users size={13} />
               {course.enrolled_count}
               {course.max_capacity !== null ? `/${course.max_capacity}` : ''}
             </span>
@@ -522,7 +518,7 @@ function CourseCard({ course, onEdit, onToggle, toggling }: CourseCardProps) {
               title="Editar curso"
               className="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
             >
-              <Pencil size={14} strokeWidth={1.75} />
+              <Pencil size={14} />
             </button>
 
             <button
@@ -538,8 +534,8 @@ function CourseCard({ course, onEdit, onToggle, toggling }: CourseCardProps) {
               {toggling
                 ? <Loader2 size={14} className="animate-spin" />
                 : course.active
-                  ? <PowerOff size={14} strokeWidth={1.75} />
-                  : <Power    size={14} strokeWidth={1.75} />
+                  ? <PowerOff size={14} />
+                  : <Power    size={14} />
               }
             </button>
 
@@ -631,7 +627,7 @@ export default function CursosPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-            <GraduationCap size={20} className="text-amber-700" strokeWidth={1.75} />
+            <GraduationCap size={20} className="text-amber-700" />
           </div>
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Cursos</h1>
@@ -643,7 +639,7 @@ export default function CursosPage() {
           onClick={openCreate}
           className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 transition-colors shadow-sm"
         >
-          <Plus size={15} strokeWidth={2.5} />
+          <Plus size={15} />
           Criar curso
         </button>
       </div>
@@ -666,7 +662,7 @@ export default function CursosPage() {
       {/* Empty */}
       {!isLoading && !error && courses?.length === 0 && (
         <div className="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-10 text-center">
-          <GraduationCap size={32} className="text-gray-300 mx-auto mb-3" strokeWidth={1.5} />
+          <GraduationCap size={32} className="text-gray-300 mx-auto mb-3" />
           <p className="font-medium text-gray-500 text-sm">Nenhum curso cadastrado</p>
           <p className="text-gray-400 text-xs mt-1">Clique em "Criar curso" para começar.</p>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronDown, ClipboardList } from 'lucide-react'
+import { XIcon as X, CaretDownIcon as ChevronDown, ClipboardTextIcon as ClipboardList } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurchUnits } from '@/features/people/hooks/useChurchUnits'
 import type { ChurchUnit } from '@/features/people/hooks/useChurchUnits'
@@ -371,7 +371,7 @@ function AttendanceSheet({ group, churchId, userId, onClose }: AttendanceSheetPr
               <p className="text-sm text-text-secondary">{group.name}</p>
             </div>
             <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-bg-hover transition-all">
-              <X size={18} strokeWidth={1.75} />
+              <X size={18} />
             </button>
           </div>
 
@@ -557,12 +557,12 @@ function CellDetailPanel({ group, churchId, onClose }: CellDetailPanelProps) {
                 onClick={() => setAttendanceOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary text-white hover:opacity-90 transition-opacity"
               >
-                <ClipboardList size={14} strokeWidth={1.75} />
+                <ClipboardList size={14} />
                 Chamada
               </button>
             )}
             <button onClick={onClose} className="p-1 rounded-lg text-text-tertiary hover:text-text-secondary hover:bg-bg-hover transition-all">
-              <X size={18} strokeWidth={1.75} />
+              <X size={18} />
             </button>
           </div>
         </div>

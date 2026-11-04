@@ -250,7 +250,7 @@ export default function VisitorLanding() {
               className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl text-white text-sm font-semibold transition-opacity hover:opacity-90 active:opacity-80"
               style={{ backgroundColor: '#25D366' }}
             >
-              {/* Ícone WhatsApp SVG inline — sem dependência de lucide */}
+              {/* Ícone WhatsApp SVG inline — logo oficial */}
               <svg
                 className="w-5 h-5 shrink-0"
                 viewBox="0 0 24 24"

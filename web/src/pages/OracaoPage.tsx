@@ -6,7 +6,7 @@
 
 import { useState }                from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Heart, CheckCircle2, BookOpen } from 'lucide-react'
+import { HeartIcon as Heart, CheckCircleIcon as CheckCircle2, BookOpenIcon as BookOpen } from '@phosphor-icons/react'
 import { useAuth }                 from '@/hooks/useAuth'
 import { supabase }                from '@/lib/supabase'
 import Spinner                     from '@/components/ui/Spinner'
@@ -90,7 +90,7 @@ function PrayerCard({
             {advancing ? (
               <span className="w-3.5 h-3.5 border-2 border-amber-400/40 border-t-amber-600 rounded-full animate-spin inline-block" />
             ) : (
-              next === 'orado' ? <BookOpen size={13} strokeWidth={2} /> : <CheckCircle2 size={13} strokeWidth={2} />
+              next === 'orado' ? <BookOpen size={13} /> : <CheckCircle2 size={13} />
             )}
             {next === 'orado' ? 'Marcar como orado' : 'Marcar atendido'}
           </button>
@@ -157,7 +157,7 @@ export default function OracaoPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-          <Heart size={18} strokeWidth={1.75} className="text-amber-700" />
+          <Heart size={18} className="text-amber-700" />
         </div>
         <div>
           <h1 className="text-[1.05rem] font-bold text-gray-900">Pedidos de Oração</h1>
@@ -197,7 +197,7 @@ export default function OracaoPage() {
       ) : items.length === 0 ? (
         <div className="text-center py-16 flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
-            <Heart size={22} strokeWidth={1.5} className="text-amber-400" />
+            <Heart size={22} className="text-amber-400" />
           </div>
           <p className="text-gray-400 text-[0.85rem]">
             {filter === 'todos'

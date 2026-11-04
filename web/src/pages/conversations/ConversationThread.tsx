@@ -10,10 +10,7 @@
 // ============================================================
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import {
-  Bot, User, ArrowLeftRight, Phone, Lock, Send,
-  CheckCheck, Clock, AlertCircle, Loader2, UserCheck,
-} from 'lucide-react'
+import { RobotIcon as Bot, UserIcon as User, ArrowsLeftRightIcon as ArrowLeftRight, PhoneIcon as Phone, LockIcon as Lock, PaperPlaneTiltIcon as Send, ChecksIcon as CheckCheck, ClockIcon as Clock, WarningCircleIcon as AlertCircle, CircleNotchIcon as Loader2, UserCheckIcon as UserCheck } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useConversationMessages, type ConversationMessage } from '@/hooks/useConversationMessages'
 import { type Conversation } from '@/hooks/useConversations'

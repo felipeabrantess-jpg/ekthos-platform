@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Network, Building2, Users2, Phone, Mail, MessageSquarePlus, CalendarPlus } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, TreeStructureIcon as Network, BuildingsIcon as Building2, UsersThreeIcon as Users2, PhoneIcon as Phone, EnvelopeIcon as Mail, ChatDotsIcon as MessageSquarePlus, CalendarPlusIcon as CalendarPlus } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'

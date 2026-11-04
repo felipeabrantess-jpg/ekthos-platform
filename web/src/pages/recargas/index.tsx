@@ -10,16 +10,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Zap,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  Loader2,
-  CreditCard,
-  ExternalLink,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, LightningIcon as Zap, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, WarningIcon as AlertTriangle, CircleNotchIcon as Loader2, CreditCardIcon as CreditCard, ArrowSquareOutIcon as ExternalLink } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 

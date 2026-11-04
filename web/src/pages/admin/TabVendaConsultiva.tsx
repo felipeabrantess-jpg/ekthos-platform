@@ -16,10 +16,7 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import {
-  Copy, CheckCircle2, ExternalLink, Loader, Zap, Link2,
-  Package, Bot, ChevronRight, AlertCircle, Gift,
-} from 'lucide-react'
+import { CopyIcon as Copy, CheckCircleIcon as CheckCircle2, ArrowSquareOutIcon as ExternalLink, CircleNotchIcon as Loader, LightningIcon as Zap, LinkSimpleIcon as Link2, PackageIcon as Package, RobotIcon as Bot, CaretRightIcon as ChevronRight, WarningCircleIcon as AlertCircle, GiftIcon as Gift } from '@phosphor-icons/react'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 

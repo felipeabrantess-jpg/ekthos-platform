@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link }                from 'react-router-dom'
-import { ChevronLeft, Home }   from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, HouseIcon as Home } from '@phosphor-icons/react'
 import { IGV }                 from '@/lib/igv-public-data'
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/igv-public-groups`
@@ -157,7 +157,7 @@ export default function IgvCelulas() {
           className="w-8 h-8 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={18} />
         </Link>
         <div>
           <p className="font-semibold text-white text-[1.02rem] leading-tight">Nossas Células</p>
@@ -189,7 +189,7 @@ export default function IgvCelulas() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: `${IGV.primaryColor}15` }}
             >
-              <Home size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
+              <Home size={26} style={{ color: IGV.primaryColor }} />
             </div>
             <p className="font-semibold text-white/70 mb-1">Não foi possível carregar</p>
             <p className="text-[1rem]">Verifique sua conexão e tente novamente.</p>
@@ -201,7 +201,7 @@ export default function IgvCelulas() {
               className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{ backgroundColor: `${IGV.primaryColor}15` }}
             >
-              <Home size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
+              <Home size={26} style={{ color: IGV.primaryColor }} />
             </div>
             <p className="font-semibold text-white/70 mb-1">Nenhuma célula encontrada</p>
             <p className="text-[1rem]">Em breve novas informações!</p>

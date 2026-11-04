@@ -1,10 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  CheckCircle2, AlertCircle, ArrowRight, Circle,
-  Bot, Sparkles, MapPin, Users, GitBranch, Network,
-  Building2,
-} from 'lucide-react'
+import { CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle, ArrowRightIcon as ArrowRight, CircleIcon as Circle, RobotIcon as Bot, SparkleIcon as Sparkles, MapPinIcon as MapPin, UsersIcon as Users, GitBranchIcon as GitBranch, TreeStructureIcon as Network, BuildingsIcon as Building2 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ──────────────────────────────────────────────────
@@ -110,11 +106,11 @@ function StepRow({ step }: { step: Step }) {
       <div className="w-6 h-6 flex items-center justify-center shrink-0">
         {isDone && (
           <span className="check-pop">
-            <CheckCircle2 size={20} strokeWidth={2} style={{ color: 'var(--color-success)' }} />
+            <CheckCircle2 size={20} style={{ color: 'var(--color-success)' }} />
           </span>
         )}
         {isFailed && (
-          <AlertCircle size={20} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+          <AlertCircle size={20} style={{ color: 'var(--color-primary)' }} />
         )}
         {isRunning && (
           <div
@@ -123,7 +119,7 @@ function StepRow({ step }: { step: Step }) {
           />
         )}
         {isPending && (
-          <Circle size={16} strokeWidth={1.5} style={{ color: 'var(--border-default)' }} />
+          <Circle size={16} style={{ color: 'var(--border-default)' }} />
         )}
       </div>
 
@@ -210,7 +206,7 @@ function CompletionScreen({
           className="w-16 h-16 rounded-full flex items-center justify-center mb-4 check-pop"
           style={{ background: 'var(--color-success-bg)' }}
         >
-          <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: 'var(--color-success)' }} />
+          <CheckCircle2 size={30} style={{ color: 'var(--color-success)' }} />
         </div>
         <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>
           Bem-vindo à Ekthos!
@@ -260,7 +256,7 @@ function CompletionScreen({
           <p className="font-semibold text-gray-900 text-sm truncate">{summary.churchName}</p>
           {(summary.city || summary.state) && (
             <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-              <MapPin size={10} strokeWidth={2} />
+              <MapPin size={10} />
               {[summary.city, summary.state].filter(Boolean).join(', ')}
             </p>
           )}
@@ -284,7 +280,7 @@ function CompletionScreen({
         {summary.ministries.length > 0 && (
           <div className="rounded-xl border border-black/[0.06] bg-white p-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <Building2 size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+              <Building2 size={13} style={{ color: 'var(--color-primary)' }} />
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Ministérios</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{summary.ministries.length}</p>
@@ -296,7 +292,7 @@ function CompletionScreen({
         {summary.cells > 0 && (
           <div className="rounded-xl border border-black/[0.06] bg-white p-3">
             <div className="flex items-center gap-1.5 mb-1">
-              <Network size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+              <Network size={13} style={{ color: 'var(--color-primary)' }} />
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Células</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{summary.cells}</p>
@@ -306,7 +302,7 @@ function CompletionScreen({
         {summary.pipeline.length > 0 && (
           <div className={`rounded-xl border border-black/[0.06] bg-white p-3 ${summary.ministries.length === 0 && summary.cells === 0 ? 'col-span-2' : ''}`}>
             <div className="flex items-center gap-1.5 mb-1">
-              <GitBranch size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+              <GitBranch size={13} style={{ color: 'var(--color-primary)' }} />
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Pipeline</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{summary.pipeline.length}</p>
@@ -315,7 +311,7 @@ function CompletionScreen({
         )}
         <div className="rounded-xl border border-black/[0.06] bg-white p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <Users size={13} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+            <Users size={13} style={{ color: 'var(--color-primary)' }} />
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Agentes</p>
           </div>
           <p className="text-2xl font-bold text-gray-900">{activeAgents.length}</p>
@@ -336,12 +332,12 @@ function CompletionScreen({
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100"
               >
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--color-primary)' }}>
-                  <Bot size={13} strokeWidth={1.75} className="text-white" />
+                  <Bot size={13} className="text-white" />
                 </div>
                 <span className="text-sm text-gray-700 flex-1">
                   {AGENT_NAMES[slug] ?? slug}
                 </span>
-                <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
+                <CheckCircle2 size={14} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
               </div>
             ))}
           </div>
@@ -361,7 +357,7 @@ function CompletionScreen({
                 className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-black/[0.07]"
               >
                 <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(225,53,0,0.08)' }}>
-                  <Sparkles size={12} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+                  <Sparkles size={12} style={{ color: 'var(--color-primary)' }} />
                 </div>
                 <span className="text-sm text-gray-600 flex-1">
                   {AGENT_NAMES[slug] ?? slug}
@@ -386,7 +382,7 @@ function CompletionScreen({
           </p>
           {summary.agentsRecommended.map(slug => (
             <div key={slug} className="flex items-center gap-2 text-sm text-gray-600">
-              <Sparkles size={12} strokeWidth={1.75} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              <Sparkles size={12} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
               {AGENT_NAMES[slug] ?? slug}
             </div>
           ))}
@@ -404,7 +400,7 @@ function CompletionScreen({
           style={{ background: 'var(--color-primary)' }}
         >
           Entrar no meu CRM
-          <ArrowRight size={18} strokeWidth={2} />
+          <ArrowRight size={18} />
         </button>
         <a
           href="/settings/billing"
@@ -688,7 +684,7 @@ export default function OnboardingConfiguring() {
                   className="w-16 h-16 rounded-full flex items-center justify-center mb-4 check-pop"
                   style={{ background: 'var(--color-success-bg)' }}
                 >
-                  <CheckCircle2 size={30} strokeWidth={1.75} style={{ color: 'var(--color-success)' }} />
+                  <CheckCircle2 size={30} style={{ color: 'var(--color-success)' }} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>
                   Bem-vindo à Ekthos!
@@ -703,7 +699,7 @@ export default function OnboardingConfiguring() {
                 style={{ background: 'var(--color-primary)' }}
               >
                 Entrar no CRM
-                <ArrowRight size={18} strokeWidth={2} />
+                <ArrowRight size={18} />
               </button>
             </div>
           )}
@@ -715,7 +711,7 @@ export default function OnboardingConfiguring() {
               style={{ background: '#FFF5F2' }}
             >
               <div className="flex items-start gap-2.5">
-                <AlertCircle size={18} strokeWidth={2} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 1 }} />
+                <AlertCircle size={18} style={{ color: 'var(--color-primary)', flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <p className="text-sm font-semibold text-red-700 mb-0.5">Problema parcial detectado</p>
                   <p className="text-xs text-red-600 leading-relaxed">{engineError}</p>

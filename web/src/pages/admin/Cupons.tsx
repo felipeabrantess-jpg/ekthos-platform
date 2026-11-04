@@ -6,10 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import {
-  Tag, Plus, RefreshCw, Copy, ExternalLink, Archive,
-  CheckCircle, AlertCircle, X, ChevronDown, Loader,
-} from 'lucide-react'
+import { TagIcon as Tag, PlusIcon as Plus, ArrowsClockwiseIcon as RefreshCw, CopyIcon as Copy, ArrowSquareOutIcon as ExternalLink, ArchiveIcon as Archive, CheckCircleIcon as CheckCircle, WarningCircleIcon as AlertCircle, XIcon as X, CaretDownIcon as ChevronDown, CircleNotchIcon as Loader } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'

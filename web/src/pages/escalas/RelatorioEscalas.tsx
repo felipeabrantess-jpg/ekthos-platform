@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import { BarChart2, Trophy, TrendingDown, Users } from 'lucide-react'
+import { ChartBarIcon as BarChart2, TrophyIcon as Trophy, TrendDownIcon as TrendingDown, UsersIcon as Users } from '@phosphor-icons/react'
 
 export default function RelatorioEscalas() {
   const { churchId } = useAuth()

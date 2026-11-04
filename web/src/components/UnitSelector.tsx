@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react'
+import { MapPinIcon as MapPin } from '@phosphor-icons/react'
 import { useUnit } from '@/contexts/UnitContext'
 import { UNIT_ALL, UNIT_NONE } from '@/lib/filters/unitScope'
 
@@ -14,7 +14,7 @@ export default function UnitSelector({ compact = false }: Props) {
 
   return (
     <label className="inline-flex items-center gap-1.5" title="Escopo de unidade (vale para toda a aplicação)">
-      <MapPin size={14} strokeWidth={1.75} style={{ color: 'var(--church-primary, var(--color-primary))' }} />
+      <MapPin size={14} style={{ color: 'var(--church-primary, var(--color-primary))' }} />
       {!compact && <span className="text-xs text-text-tertiary">Unidade</span>}
       <select
         value={selectedUnit}

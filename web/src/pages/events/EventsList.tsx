@@ -7,9 +7,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Calendar, Plus, Pencil, Trash2, Repeat, ChevronLeft, MapPin, Globe
-} from 'lucide-react'
+import { CalendarBlankIcon as Calendar, PlusIcon as Plus, PencilIcon as Pencil, TrashIcon as Trash2, RepeatIcon as Repeat, CaretLeftIcon as ChevronLeft, MapPinIcon as MapPin, GlobeIcon as Globe } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'

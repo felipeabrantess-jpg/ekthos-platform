@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  CheckSquare, Plus, RefreshCw, Circle,
-  AlertCircle, Clock, Loader,
-} from 'lucide-react'
+import { CheckSquareIcon as CheckSquare, PlusIcon as Plus, ArrowsClockwiseIcon as RefreshCw, CircleIcon as Circle, WarningCircleIcon as AlertCircle, ClockIcon as Clock, CircleNotchIcon as Loader } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
@@ -136,14 +133,14 @@ export default function AdminTasks() {
             disabled={loading}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-gray-600 bg-white border border-black/5 hover:bg-gray-50 transition-all disabled:opacity-50"
           >
-            <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
           <button
             onClick={() => setShowForm(s => !s)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
             style={{ background: 'var(--color-primary)' }}
           >
-            <Plus size={15} strokeWidth={2} />
+            <Plus size={15} />
             Nova tarefa
           </button>
         </div>
@@ -206,7 +203,7 @@ export default function AdminTasks() {
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
               style={{ background: 'var(--color-primary)' }}
             >
-              {submitting && <Loader size={13} strokeWidth={2} className="animate-spin" />}
+              {submitting && <Loader size={13} className="animate-spin" />}
               Criar tarefa
             </button>
           </div>
@@ -237,7 +234,7 @@ export default function AdminTasks() {
 
       {!loading && tasks.length === 0 && (
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-12 text-center">
-          <CheckSquare size={40} strokeWidth={1.5} className="mx-auto text-gray-300 mb-3" />
+          <CheckSquare size={40} className="mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 font-medium">Nenhuma tarefa encontrada</p>
         </div>
       )}
@@ -281,10 +278,10 @@ function TaskList({ tasks, onUpdateStatus }: {
               title={task.status === 'done' ? 'Reabrir' : 'Concluir'}
             >
               {task.status === 'done'
-                ? <CheckSquare size={18} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
+                ? <CheckSquare size={18} style={{ color: '#2D7A4F' }} />
                 : task.status === 'in_progress'
-                  ? <AlertCircle size={18} strokeWidth={1.75} style={{ color: '#4F6EE1' }} />
-                  : <Circle size={18} strokeWidth={1.75} className="text-gray-300 hover:text-gray-500" />
+                  ? <AlertCircle size={18} style={{ color: '#4F6EE1' }} />
+                  : <Circle size={18} className="text-gray-300 hover:text-gray-500" />
               }
             </button>
 
@@ -311,7 +308,7 @@ function TaskList({ tasks, onUpdateStatus }: {
                     className="flex items-center gap-1 text-[10px]"
                     style={{ color: isOverdue ? 'var(--color-primary)' : '#8A8A8A' }}
                   >
-                    <Clock size={10} strokeWidth={2} />
+                    <Clock size={10} />
                     {relDate(task.due_date)}
                     {isOverdue && ' (atrasada)'}
                   </span>

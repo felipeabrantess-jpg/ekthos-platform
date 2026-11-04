@@ -6,7 +6,7 @@
 
 import { useState }    from 'react'
 import { Link }        from 'react-router-dom'
-import { ChevronLeft, Heart, Send, CheckCircle2, AlertCircle } from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, HeartIcon as Heart, PaperPlaneTiltIcon as Send, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react'
 import { IGV } from '@/lib/igv-public-data'
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/igv-prayer-request`
@@ -52,14 +52,14 @@ export default function IgvOracao() {
       <header className="bg-black border-b border-white/10 px-4 pt-safe-top">
         <div className="flex items-center gap-3 h-14">
           <Link to="/igv" className="p-1.5 -ml-1.5 rounded-lg text-white/70 hover:bg-white/10 transition-colors">
-            <ChevronLeft size={20} strokeWidth={2} />
+            <ChevronLeft size={20} />
           </Link>
           <div className="flex items-center gap-2">
             <div
               className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
             >
-              <Heart size={14} strokeWidth={1.75} />
+              <Heart size={14} />
             </div>
             <span className="font-semibold text-white text-[1.02rem]">Pedidos de Oração</span>
           </div>
@@ -75,7 +75,7 @@ export default function IgvOracao() {
               className="w-16 h-16 rounded-2xl flex items-center justify-center"
               style={{ backgroundColor: `${IGV.primaryColor}18` }}
             >
-              <CheckCircle2 size={32} strokeWidth={1.5} style={{ color: IGV.primaryColor }} />
+              <CheckCircle2 size={32} style={{ color: IGV.primaryColor }} />
             </div>
             <div>
               <h2 className="text-[1.25rem] font-bold text-white mb-1.5">Pedido recebido!</h2>
@@ -154,7 +154,7 @@ export default function IgvOracao() {
             {/* Erro */}
             {state === 'error' && (
               <div className="flex items-start gap-2.5 bg-red-900/20 border border-red-600/30 rounded-xl px-4 py-3">
-                <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" strokeWidth={2} />
+                <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
                 <p className="text-[0.92rem] text-red-300">{errMsg}</p>
               </div>
             )}
@@ -170,7 +170,7 @@ export default function IgvOracao() {
                 <span className="inline-block w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Send size={16} strokeWidth={2} />
+                  <Send size={16} />
                   Enviar pedido
                 </>
               )}

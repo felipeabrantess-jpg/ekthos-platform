@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Sparkles, Save, Loader2, Check, AlertCircle, Clock, RotateCcw } from 'lucide-react'
+import { SparkleIcon as Sparkles, FloppyDiskIcon as Save, CircleNotchIcon as Loader2, CheckIcon as Check, WarningCircleIcon as AlertCircle, ClockIcon as Clock, ArrowCounterClockwiseIcon as RotateCcw } from '@phosphor-icons/react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import {
   useChurchAgentConfig,
@@ -131,7 +131,7 @@ export default function PromptCustomizadoSection({
           {!isLoading && (
             isConfigured
               ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200 shrink-0">
-                  <Check size={9} strokeWidth={3} /> Configurado
+                  <Check size={9} /> Configurado
                 </span>
               : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 shrink-0">
                   Não configurado
@@ -166,21 +166,21 @@ export default function PromptCustomizadoSection({
             {/* Feedback inline */}
             {errMsg && (
               <div className="flex items-center gap-1.5 mt-1.5 text-xs text-red-600">
-                <AlertCircle size={11} strokeWidth={2} />
+                <AlertCircle size={11} />
                 {errMsg}
               </div>
             )}
 
             {saved && (
               <div className="flex items-center gap-1.5 mt-1.5 text-xs text-green-600">
-                <Check size={11} strokeWidth={2.5} />
+                <Check size={11} />
                 Prompt salvo com sucesso
               </div>
             )}
 
             {resetSuccess && (
               <div className="flex items-center gap-1.5 mt-1.5 text-xs text-green-600">
-                <Check size={11} strokeWidth={2.5} />
+                <Check size={11} />
                 Voltou ao padrão. Agente usará prompt global.
               </div>
             )}
@@ -196,7 +196,7 @@ export default function PromptCustomizadoSection({
                 >
                   {reset.isPending
                     ? <><Loader2 size={11} className="animate-spin" /> Resetando…</>
-                    : <><RotateCcw size={11} strokeWidth={2} /> Voltar ao padrão do agente</>}
+                    : <><RotateCcw size={11} /> Voltar ao padrão do agente</>}
                 </button>
               )}
 
@@ -211,7 +211,7 @@ export default function PromptCustomizadoSection({
               >
                 {upsert.isPending
                   ? <><Loader2 size={12} className="animate-spin" /> Salvando…</>
-                  : <><Save size={12} strokeWidth={2.5} /> Salvar prompt</>}
+                  : <><Save size={12} /> Salvar prompt</>}
               </button>
             </div>
           </>

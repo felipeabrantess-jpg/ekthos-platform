@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2 } from 'lucide-react'
+import { CheckIcon as Check, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurch } from '@/hooks/useChurch'

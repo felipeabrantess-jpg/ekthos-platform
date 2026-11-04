@@ -8,7 +8,7 @@
 
 import { useState }   from 'react'
 import { Link }       from 'react-router-dom'
-import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, CheckCircleIcon as CheckCircle } from '@phosphor-icons/react'
 import { IGV }        from '@/lib/igv-public-data'
 
 // ── Constantes ────────────────────────────────────────────────────
@@ -117,7 +117,6 @@ export default function IgvSejaMembroPage() {
         <div className="w-full max-w-[420px] text-center">
           <CheckCircle
             size={56}
-            strokeWidth={1.5}
             style={{ color: IGV.primaryColor }}
             className="mx-auto mb-5"
           />
@@ -175,7 +174,7 @@ export default function IgvSejaMembroPage() {
           className="flex items-center gap-1.5 text-[1rem] font-medium transition-colors"
           style={{ color: IGV.primaryColor }}
         >
-          <ArrowLeft size={18} strokeWidth={1.75} />
+          <ArrowLeft size={18} />
           Voltar
         </Link>
         <div className="w-px h-4 bg-white/20" />

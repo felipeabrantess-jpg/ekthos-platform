@@ -14,8 +14,8 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ArrowLeft, Send, Plus, Loader2, RotateCcw, MessageCircle } from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, PaperPlaneTiltIcon as Send, PlusIcon as Plus, CircleNotchIcon as Loader2, ArrowCounterClockwiseIcon as RotateCcw, ChatCircleIcon as MessageCircle } from '@phosphor-icons/react'
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import { openAgentStream, type ChatMessage } from '@/lib/agent-chat-client'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ type SendStatus = 'idle' | 'sending' | 'streaming' | 'error'
 interface Props {
   agentSlug:        string
   agentName:        string
-  AgentIcon:        LucideIcon
+  AgentIcon:        PhosphorIcon
   initialMessages:  ChatMessage[]
   isNewSession:     boolean
   onBack?:          () => void
@@ -211,7 +211,7 @@ export function AgentChatInterface({
             onClick={onBack}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            <ArrowLeft size={18} strokeWidth={2} />
+            <ArrowLeft size={18} />
           </button>
         )}
 
@@ -235,7 +235,7 @@ export function AgentChatInterface({
           className="flex items-center gap-1.5 text-xs font-medium text-brand-600 hover:text-brand-700 px-2.5 py-1.5 rounded-lg hover:bg-brand-50 transition-colors shrink-0"
           title="Nova conversa"
         >
-          <Plus size={13} strokeWidth={2.5} />
+          <Plus size={13} />
           <span className="hidden sm:inline">Nova conversa</span>
         </button>
       </div>
@@ -285,14 +285,14 @@ export function AgentChatInterface({
             className="flex items-start gap-3 p-3 rounded-2xl"
             style={{ background: '#fff1f0', border: '1px solid #fca5a5' }}
           >
-            <MessageCircle size={15} className="text-red-500 shrink-0 mt-0.5" strokeWidth={2} />
+            <MessageCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
             <p className="text-sm text-red-700 flex-1">{errorMsg}</p>
             <button
               onClick={() => { setStatus('idle'); setErrorMsg(null) }}
               className="text-red-400 hover:text-red-600 transition-colors"
               title="Tentar novamente"
             >
-              <RotateCcw size={14} strokeWidth={2} />
+              <RotateCcw size={14} />
             </button>
           </div>
         )}
@@ -329,8 +329,8 @@ export function AgentChatInterface({
             className="shrink-0 h-8 w-8 rounded-xl bg-brand-600 text-white flex items-center justify-center disabled:opacity-35 disabled:cursor-not-allowed hover:bg-brand-700 active:scale-95 transition-all mb-0.5"
           >
             {isBusy
-              ? <Loader2 size={14} className="animate-spin" strokeWidth={2} />
-              : <Send size={14} strokeWidth={2} />
+              ? <Loader2 size={14} className="animate-spin" />
+              : <Send size={14} />
             }
           </button>
         </div>

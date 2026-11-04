@@ -7,7 +7,7 @@
 
 import { useState, useEffect }      from 'react'
 import { Link }                     from 'react-router-dom'
-import { ChevronLeft, GraduationCap, MapPin, Clock, Users, X } from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, GraduationCapIcon as GraduationCap, MapPinIcon as MapPin, ClockIcon as Clock, UsersIcon as Users, XIcon as X } from '@phosphor-icons/react'
 import { IGV }                      from '@/lib/igv-public-data'
 
 const EF_COURSES_URL    = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/igv-public-courses`
@@ -66,7 +66,7 @@ function EmptyCourses() {
     <div className="rounded-2xl bg-[#111] border border-white/10 p-8 flex flex-col items-center gap-3 text-center">
       <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
            style={{ backgroundColor: `${IGV.primaryColor}15` }}>
-        <GraduationCap size={24} style={{ color: IGV.primaryColor }} strokeWidth={1.75} />
+        <GraduationCap size={24} style={{ color: IGV.primaryColor }} />
       </div>
       <div>
         <p className="font-semibold text-white text-[1.02rem]">Sem cursos no momento</p>
@@ -286,13 +286,13 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
         <div className="flex flex-col gap-1.5 mb-3">
           {course.schedule_text && (
             <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
-              <Clock size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+              <Clock size={13} style={{ color: IGV.primaryColor }} />
               <span>{course.schedule_text}</span>
             </div>
           )}
           {(course.start_date || course.end_date) && (
             <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
-              <GraduationCap size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+              <GraduationCap size={13} style={{ color: IGV.primaryColor }} />
               <span>
                 {course.start_date ? formatDate(course.start_date) : ''}
                 {course.end_date ? ` — ${formatDate(course.end_date)}` : ''}
@@ -301,13 +301,13 @@ function CourseCard({ course, onEnroll }: CourseCardProps) {
           )}
           {course.location && (
             <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
-              <MapPin size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+              <MapPin size={13} style={{ color: IGV.primaryColor }} />
               <span>{course.location}</span>
             </div>
           )}
           {course.max_capacity !== null && (
             <div className="flex items-center gap-2 text-white/50 text-[0.86rem]">
-              <Users size={13} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+              <Users size={13} style={{ color: IGV.primaryColor }} />
               <span>
                 {course.is_full
                   ? `Vagas esgotadas (${course.max_capacity})`
@@ -366,7 +366,7 @@ export default function IgvCursos() {
       {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-black/90 backdrop-blur-sm border-b border-white/10 px-4 py-3 flex items-center gap-3">
         <Link to="/igv" className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors">
-          <ChevronLeft size={20} strokeWidth={2} className="text-white/70" />
+          <ChevronLeft size={20} className="text-white/70" />
         </Link>
         <h1 className="font-semibold text-white text-[1.12rem]">Cursos</h1>
       </header>

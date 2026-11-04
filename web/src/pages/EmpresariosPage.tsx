@@ -2,7 +2,7 @@ import { useState }                    from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase }                    from '@/lib/supabase'
 import { useAuth }                     from '@/hooks/useAuth'
-import { Loader2, Plus, Pencil, Trash2, Globe, GlobeLock, ImageIcon, Briefcase, CheckCircle2, Clock, Archive } from 'lucide-react'
+import { CircleNotchIcon as Loader2, PlusIcon as Plus, PencilIcon as Pencil, TrashIcon as Trash2, GlobeIcon as Globe, GlobeXIcon as GlobeLock, ImageIcon as ImageIcon, BriefcaseIcon as Briefcase, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, ArchiveIcon as Archive } from '@phosphor-icons/react'
 function toast(opts: { title: string; description?: string; variant?: string }) {
   if (opts.variant === 'destructive') {
     window.alert(`${opts.title}${opts.description ? ': ' + opts.description : ''}`)

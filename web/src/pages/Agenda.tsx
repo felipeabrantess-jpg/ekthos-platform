@@ -17,7 +17,7 @@ import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
 import ptBrLocale from '@fullcalendar/core/locales/pt-br'
-import { Calendar, Plus, List, LayoutGrid, Rows3 } from 'lucide-react'
+import { CalendarBlankIcon as Calendar, PlusIcon as Plus, ListBulletsIcon as List, GridFourIcon as LayoutGrid, RowsIcon as Rows3 } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 
 import { useAuth } from '@/hooks/useAuth'

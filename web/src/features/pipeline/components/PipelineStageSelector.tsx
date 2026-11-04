@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { CaretDownIcon as ChevronDown, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import { useUpdatePersonPipelineStage } from '@/features/pipeline/hooks/useUpdatePersonPipelineStage'
 import type { PersonWithStage, PipelineStage } from '@/lib/types/joins'
@@ -86,7 +86,7 @@ export function PipelineStageSelector({ person, churchId }: PipelineStageSelecto
           ? <Loader2 size={10} className="animate-spin" />
           : label
         }
-        <ChevronDown size={10} strokeWidth={2} />
+        <ChevronDown size={10} />
       </button>
 
       {saveError && (

@@ -12,7 +12,7 @@
  */
 
 import { NavLink, Outlet, Navigate } from 'react-router-dom'
-import { Building2, Palette, CreditCard, Users, Package, GitBranch, QrCode, Radio } from 'lucide-react'
+import { BuildingsIcon as Building2, PaletteIcon as Palette, CreditCardIcon as CreditCard, UsersIcon as Users, PackageIcon as Package, GitBranchIcon as GitBranch, QrCodeIcon as QrCode, RadioIcon as Radio } from '@phosphor-icons/react'
 
 const TABS = [
   { path: 'dados',           label: 'Dados',           Icon: Building2,  description: 'Nome, endereço e CNPJ' },

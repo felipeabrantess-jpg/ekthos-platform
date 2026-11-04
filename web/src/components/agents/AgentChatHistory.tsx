@@ -13,7 +13,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { Plus, MessageSquare, X } from 'lucide-react'
+import { PlusIcon as Plus, ChatTextIcon as MessageSquare, XIcon as X } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ export function AgentChatHistory({
             className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 px-2 py-1 rounded-lg hover:bg-brand-50 transition-colors"
             title="Nova conversa"
           >
-            <Plus size={13} strokeWidth={2.5} />
+            <Plus size={13} />
             <span>Nova</span>
           </button>
           {onClose && (
@@ -111,7 +111,7 @@ export function AgentChatHistory({
               onClick={onClose}
               className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors md:hidden"
             >
-              <X size={15} strokeWidth={2} />
+              <X size={15} />
             </button>
           )}
         </div>
@@ -127,7 +127,7 @@ export function AgentChatHistory({
 
         {!loading && sessions.length === 0 && (
           <div className="flex flex-col items-center py-8 text-center select-none">
-            <MessageSquare size={20} className="text-gray-300 mb-2" strokeWidth={1.5} />
+            <MessageSquare size={20} className="text-gray-300 mb-2" />
             <p className="text-xs text-gray-400">Nenhuma conversa ainda</p>
           </div>
         )}

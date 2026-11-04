@@ -1,6 +1,6 @@
 import { useState, useRef }             from 'react'
 import { Link }                          from 'react-router-dom'
-import { ChevronLeft, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, UploadSimpleIcon as Upload, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { supabase }                      from '@/lib/supabase'
 import { IGV }                           from '@/lib/igv-public-data'
 
@@ -192,7 +192,7 @@ export default function IgvEmpresariosCadastro() {
           className="w-8 h-8 rounded-xl flex items-center justify-center"
           style={{ backgroundColor: `${pc}15`, color: pc }}
         >
-          <ChevronLeft size={18} strokeWidth={2} />
+          <ChevronLeft size={18} />
         </Link>
         <div>
           <p className="font-semibold text-white text-[1rem] leading-tight">Cadastre seu negócio</p>
@@ -209,7 +209,7 @@ export default function IgvEmpresariosCadastro() {
               className="w-20 h-20 rounded-full flex items-center justify-center mb-5"
               style={{ backgroundColor: `${pc}20` }}
             >
-              <CheckCircle2 size={42} style={{ color: pc }} strokeWidth={1.5} />
+              <CheckCircle2 size={42} style={{ color: pc }} />
             </div>
             <h2 className="text-xl font-bold text-white mb-3">Cadastro enviado!</h2>
             <p className="text-[1rem] text-white/60 leading-relaxed mb-8 max-w-xs">
@@ -258,7 +258,7 @@ export default function IgvEmpresariosCadastro() {
                     className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
                     style={{ backgroundColor: `${pc}15` }}
                   >
-                    <Upload size={22} style={{ color: pc }} strokeWidth={1.5} />
+                    <Upload size={22} style={{ color: pc }} />
                   </div>
                 )}
                 <div>

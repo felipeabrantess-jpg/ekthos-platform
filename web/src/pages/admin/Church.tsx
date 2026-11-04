@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
-import {
-  ArrowLeft, Building2, CreditCard, Users, Activity,
-  Heart, DollarSign, FileText, Bot, UserCheck,
-  Loader, StickyNote, Save, Trash2, CheckCircle2, XCircle,
-  LayoutGrid, Link2,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, BuildingsIcon as Building2, CreditCardIcon as CreditCard, UsersIcon as Users, PulseIcon as Activity, HeartIcon as Heart, CurrencyDollarIcon as DollarSign, FileTextIcon as FileText, RobotIcon as Bot, UserCheckIcon as UserCheck, CircleNotchIcon as Loader, NoteIcon as StickyNote, FloppyDiskIcon as Save, TrashIcon as Trash2, CheckCircleIcon as CheckCircle2, XCircleIcon as XCircle, GridFourIcon as LayoutGrid, LinkSimpleIcon as Link2 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalHabilitarAgente from '@/components/admin/ModalHabilitarAgente'
@@ -104,19 +99,19 @@ function relDate(iso: string | null): string {
 // ── Tab system ─────────────────────────────────────────────
 
 const TABS = [
-  { id: 'resumo',       label: 'Resumo',          icon: <Building2   size={14} strokeWidth={1.75} /> },
-  { id: 'cadastro',     label: 'Cadastro',         icon: <UserCheck   size={14} strokeWidth={1.75} /> },
-  { id: 'contratante',  label: 'Contratante',      icon: <FileText    size={14} strokeWidth={1.75} /> },
-  { id: 'pastoral',     label: 'Perfil Pastoral',  icon: <Heart       size={14} strokeWidth={1.75} /> },
-  { id: 'assinatura',   label: 'Assinatura',       icon: <CreditCard  size={14} strokeWidth={1.75} /> },
-  { id: 'operacao',     label: 'Operação',         icon: <Activity    size={14} strokeWidth={1.75} /> },
-  { id: 'saude',        label: 'Saúde',            icon: <Heart       size={14} strokeWidth={1.75} /> },
-  { id: 'financeiro',   label: 'Financeiro',       icon: <DollarSign  size={14} strokeWidth={1.75} /> },
-  { id: 'pricing',      label: 'Precificação',     icon: <DollarSign  size={14} strokeWidth={1.75} /> },
-  { id: 'modulos',      label: 'Módulos',          icon: <LayoutGrid  size={14} strokeWidth={1.75} /> },
-  { id: 'venda',        label: 'Venda Consultiva', icon: <Link2       size={14} strokeWidth={1.75} /> },
-  { id: 'notas',        label: 'Notas Internas',   icon: <FileText    size={14} strokeWidth={1.75} /> },
-  { id: 'logs',         label: 'Logs e Ações',     icon: <FileText    size={14} strokeWidth={1.75} /> },
+  { id: 'resumo',       label: 'Resumo',          icon: <Building2   size={14} /> },
+  { id: 'cadastro',     label: 'Cadastro',         icon: <UserCheck   size={14} /> },
+  { id: 'contratante',  label: 'Contratante',      icon: <FileText    size={14} /> },
+  { id: 'pastoral',     label: 'Perfil Pastoral',  icon: <Heart       size={14} /> },
+  { id: 'assinatura',   label: 'Assinatura',       icon: <CreditCard  size={14} /> },
+  { id: 'operacao',     label: 'Operação',         icon: <Activity    size={14} /> },
+  { id: 'saude',        label: 'Saúde',            icon: <Heart       size={14} /> },
+  { id: 'financeiro',   label: 'Financeiro',       icon: <DollarSign  size={14} /> },
+  { id: 'pricing',      label: 'Precificação',     icon: <DollarSign  size={14} /> },
+  { id: 'modulos',      label: 'Módulos',          icon: <LayoutGrid  size={14} /> },
+  { id: 'venda',        label: 'Venda Consultiva', icon: <Link2       size={14} /> },
+  { id: 'notas',        label: 'Notas Internas',   icon: <FileText    size={14} /> },
+  { id: 'logs',         label: 'Logs e Ações',     icon: <FileText    size={14} /> },
 ]
 
 // ── Componentes de sub-seção ───────────────────────────────
@@ -485,8 +480,8 @@ function TabContratante({ churchId }: { churchId: string }) {
               style={{ background: 'var(--color-primary)' }}
             >
               {saving
-                ? <Loader size={14} strokeWidth={2} className="animate-spin" />
-                : <Save   size={14} strokeWidth={2} />}
+                ? <Loader size={14} className="animate-spin" />
+                : <Save   size={14} />}
               {saving ? 'Salvando...' : 'Salvar Contratante'}
             </button>
           </div>
@@ -741,8 +736,8 @@ function TabPastoral({ churchId }: { churchId: string }) {
             style={{ background: 'var(--color-primary)' }}
           >
             {saving
-              ? <Loader size={14} strokeWidth={2} className="animate-spin" />
-              : <Save   size={14} strokeWidth={2} />}
+              ? <Loader size={14} className="animate-spin" />
+              : <Save   size={14} />}
             {saving ? 'Salvando...' : 'Salvar Perfil Pastoral'}
           </button>
         </div>
@@ -933,7 +928,7 @@ function TabOperacao({ data, onAgentChange }: { data: ChurchDetail; onAgentChang
           <div className="space-y-2">
             {data.agents.map(a => (
               <div key={a.id} className="flex items-center gap-3 py-2 border-b border-black/[0.04] last:border-0">
-                <Bot size={16} strokeWidth={1.75} className="text-gray-400 shrink-0" />
+                <Bot size={16} className="text-gray-400 shrink-0" />
                 <span className="flex-1 text-sm text-gray-700">{a.name}</span>
 
                 {/* Badge de source (grants manuais) */}
@@ -1104,7 +1099,7 @@ function TabLogs({ data, onImpersonate, impersonateLoading, impersonateError }: 
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
               style={{ background: '#670000' }}
             >
-              <UserCheck size={15} strokeWidth={1.75} />
+              <UserCheck size={15} />
               {impersonateLoading ? 'Iniciando...' : 'Entrar como pastor'}
             </button>
             {impersonateError && (
@@ -1112,7 +1107,7 @@ function TabLogs({ data, onImpersonate, impersonateLoading, impersonateError }: 
             )}
           </div>
           <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all">
-            <Users size={15} strokeWidth={1.75} />
+            <Users size={15} />
             Convidar usuário
           </button>
         </div>
@@ -1133,7 +1128,7 @@ function TabLogs({ data, onImpersonate, impersonateLoading, impersonateError }: 
             {data.logs.map(log => (
               <div key={log.id} className="px-5 py-3 flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                  <Activity size={12} strokeWidth={1.75} className="text-gray-400" />
+                  <Activity size={12} className="text-gray-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-700">{log.action}</p>
@@ -1274,8 +1269,8 @@ function TabPricing({ data, churchId, onSaved }: { data: ChurchDetail; churchId:
             style={{ background: 'var(--color-primary)' }}
           >
             {saving
-              ? <Loader size={14} strokeWidth={2} className="animate-spin" />
-              : <Save size={14} strokeWidth={2} />
+              ? <Loader size={14} className="animate-spin" />
+              : <Save size={14} />
             }
             {saving ? 'Salvando...' : 'Salvar preços'}
           </button>
@@ -1387,8 +1382,8 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50 transition-all"
             style={{ background: 'var(--color-primary)' }}
           >
-            {submitting && <Loader size={13} strokeWidth={2} className="animate-spin" />}
-            <StickyNote size={13} strokeWidth={2} />
+            {submitting && <Loader size={13} className="animate-spin" />}
+            <StickyNote size={13} />
             Adicionar nota
           </button>
         </div>
@@ -1397,7 +1392,7 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
       {/* Lista de notas */}
       {notes.length === 0 ? (
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-10 text-center">
-          <StickyNote size={36} strokeWidth={1.5} className="mx-auto text-gray-300 mb-2" />
+          <StickyNote size={36} className="mx-auto text-gray-300 mb-2" />
           <p className="text-sm text-gray-400">Nenhuma nota registrada para esta conta</p>
         </div>
       ) : (
@@ -1430,8 +1425,8 @@ function TabNotas({ data, churchId, onSaved }: { data: ChurchDetail; churchId: s
                   className="shrink-0 text-gray-300 hover:text-red-500 transition-colors disabled:opacity-50"
                 >
                   {deleting === note.id
-                    ? <Loader size={14} strokeWidth={2} className="animate-spin" />
-                    : <Trash2 size={14} strokeWidth={1.75} />
+                    ? <Loader size={14} className="animate-spin" />
+                    : <Trash2 size={14} />
                   }
                 </button>
               </div>
@@ -1697,7 +1692,7 @@ export default function AdminChurch() {
           onClick={() => navigate('/admin/churches')}
           className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border border-black/5 text-gray-500 hover:text-gray-800 hover:bg-gray-50 transition-all"
         >
-          <ArrowLeft size={16} strokeWidth={1.75} />
+          <ArrowLeft size={16} />
         </button>
         <div className="flex items-center gap-3 flex-1">
           {data.logo_url ? (
@@ -1725,7 +1720,7 @@ export default function AdminChurch() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 disabled:opacity-50"
             style={{ background: '#670000' }}
           >
-            <UserCheck size={15} strokeWidth={1.75} />
+            <UserCheck size={15} />
             {impersonateLoading ? 'Iniciando...' : 'Entrar como pastor'}
           </button>
           {impersonateError && (

@@ -12,20 +12,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Users,
-  MessageSquare,
-  Headphones,
-  Zap,
-  Clock,
-  CreditCard,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  Loader2,
-  BarChart3,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, UsersIcon as Users, ChatTextIcon as MessageSquare, HeadphonesIcon as Headphones, LightningIcon as Zap, ClockIcon as Clock, CreditCardIcon as CreditCard, ArrowsClockwiseIcon as RefreshCw, WarningIcon as AlertTriangle, CheckCircleIcon as CheckCircle2, CircleNotchIcon as Loader2, ChartBarIcon as BarChart3 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 

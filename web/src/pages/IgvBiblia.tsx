@@ -8,7 +8,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link }     from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Search, BookOpen } from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, CircleNotchIcon as Loader2, ArrowCounterClockwiseIcon as RotateCcw, MagnifyingGlassIcon as Search, BookOpenIcon as BookOpen } from '@phosphor-icons/react'
 import { getAllBooks, fetchChapter, type BibleBook, type BibleVerse } from '@/lib/igv-bible'
 import { IGV } from '@/lib/igv-public-data'
 
@@ -171,7 +171,7 @@ export default function IgvBiblia() {
 
   function BackButton() {
     const base = 'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 active:bg-white/10 transition-colors'
-    const icon = <ChevronLeft size={22} strokeWidth={2} className="text-white/60" />
+    const icon = <ChevronLeft size={22} className="text-white/60" />
 
     if (screen.type === 'books')
       return <Link to="/igv" className={base} aria-label="Voltar para IGV">{icon}</Link>
@@ -218,7 +218,7 @@ export default function IgvBiblia() {
             {/* Busca por referência */}
             <form onSubmit={handleSearch}>
               <div className="flex items-center bg-[#111] rounded-2xl border border-white/10 overflow-hidden">
-                <Search size={15} strokeWidth={2} className="ml-4 shrink-0 text-white/30" />
+                <Search size={15} className="ml-4 shrink-0 text-white/30" />
                 <input
                   type="text"
                   value={searchQ}
@@ -325,7 +325,7 @@ export default function IgvBiblia() {
                 className="flex items-center gap-1 text-[0.94rem] font-medium px-3 py-2 rounded-xl disabled:opacity-25 transition-opacity"
                 style={{ color: IGV.primaryColor }}
               >
-                <ChevronLeft size={16} strokeWidth={2.5} />
+                <ChevronLeft size={16} />
                 Anterior
               </button>
 
@@ -343,7 +343,7 @@ export default function IgvBiblia() {
                 style={{ color: IGV.primaryColor }}
               >
                 Próximo
-                <ChevronRight size={16} strokeWidth={2.5} />
+                <ChevronRight size={16} />
               </button>
             </div>
 
@@ -357,7 +357,7 @@ export default function IgvBiblia() {
                 backgroundColor: `${IGV.primaryColor}08`,
               }}
             >
-              <BookOpen size={15} strokeWidth={1.75} />
+              <BookOpen size={15} />
               Ver capítulo completo
             </button>
           </div>
@@ -446,7 +446,7 @@ function BookSection({
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[0.78rem] text-white/40">{book.chapters} cap.</span>
-              <ChevronRight size={14} strokeWidth={2} className="text-white/20" />
+              <ChevronRight size={14} className="text-white/20" />
             </div>
           </button>
         ))}
@@ -472,7 +472,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
         className="inline-flex items-center gap-2 text-[0.92rem] font-medium px-4 py-2 rounded-xl border"
         style={{ color: IGV.primaryColor, borderColor: `${IGV.primaryColor}40` }}
       >
-        <RotateCcw size={14} strokeWidth={2} />
+        <RotateCcw size={14} />
         Tentar novamente
       </button>
     </div>

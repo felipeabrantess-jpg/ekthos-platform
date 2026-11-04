@@ -13,7 +13,7 @@ import { useState, useMemo, useEffect, useRef, Component, type ReactNode } from 
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { Pencil, Trash2, Gift, QrCode, ChevronLeft, ChevronRight, Upload, Check, Phone, Heart, Download } from 'lucide-react'
+import { PencilIcon as Pencil, TrashIcon as Trash2, GiftIcon as Gift, QrCodeIcon as QrCode, CaretLeftIcon as ChevronLeft, CaretRightIcon as ChevronRight, UploadSimpleIcon as Upload, CheckIcon as Check, PhoneIcon as Phone, HeartIcon as Heart, DownloadSimpleIcon as Download } from '@phosphor-icons/react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useDeletePerson } from '@/features/people/hooks/usePeople'
 import { buildPeopleCsv, type ExportPayload, type ExportRow } from '@/features/people/exportCsv'
@@ -229,21 +229,21 @@ function PersonCardMobile({ person, allTags: _allTags, onView, onEdit, onDelete,
               className="p-2 rounded-lg text-text-tertiary active:text-primary active:bg-bg-hover transition-all"
               title="Atender"
             >
-              <Heart size={15} strokeWidth={1.75} />
+              <Heart size={15} />
             </button>
             <button
               onClick={() => onEdit(person)}
               className="p-2 rounded-lg text-text-tertiary active:text-primary-text active:bg-bg-hover transition-all"
               title="Editar"
             >
-              <Pencil size={15} strokeWidth={1.75} />
+              <Pencil size={15} />
             </button>
             <button
               onClick={() => onDelete(person)}
               className="p-2 rounded-lg text-text-tertiary active:text-red-600 active:bg-red-50 transition-all"
               title="Remover"
             >
-              <Trash2 size={15} strokeWidth={1.75} />
+              <Trash2 size={15} />
             </button>
           </div>
         </div>
@@ -362,21 +362,21 @@ function PersonRow({ person, allTags: _allTags, onView, onEdit, onDelete, onAten
             title="Atender"
             className="p-1.5 rounded-lg text-text-tertiary hover:text-primary hover:bg-bg-hover transition-all"
           >
-            <Heart size={14} strokeWidth={1.75} />
+            <Heart size={14} />
           </button>
           <button
             onClick={() => onEdit(person)}
             title="Editar"
             className="p-1.5 rounded-lg text-text-tertiary hover:text-primary-text hover:bg-bg-hover transition-all"
           >
-            <Pencil size={14} strokeWidth={1.75} />
+            <Pencil size={14} />
           </button>
           <button
             onClick={() => onDelete(person)}
             title="Remover"
             className="p-1.5 rounded-lg text-text-tertiary hover:text-red-600 hover:bg-red-50 transition-all"
           >
-            <Trash2 size={14} strokeWidth={1.75} />
+            <Trash2 size={14} />
           </button>
         </div>
       </td>
@@ -518,9 +518,9 @@ function BirthdayContactCard({ person, contact, churchId, monthRef, onNameClick 
         {toggleContact.isPending ? (
           <span style={{ fontSize: 13 }}>...</span>
         ) : isContacted ? (
-          <><Check size={14} strokeWidth={2.5} />Contatado</>
+          <><Check size={14} />Contatado</>
         ) : (
-          <><Phone size={14} strokeWidth={2} />Marcar contato</>
+          <><Phone size={14} />Marcar contato</>
         )}
       </button>
     </div>
@@ -902,7 +902,7 @@ export default function People() {
             title={isBirthdayTab ? 'Voltar para a lista de pessoas' : 'Aniversariantes do mês, com controle de contato'}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${isBirthdayTab ? 'border-amber-400 bg-amber-100 text-amber-900' : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'}`}
           >
-            <Gift size={15} strokeWidth={1.75} />
+            <Gift size={15} />
             <span>{isBirthdayTab ? 'Voltar para Pessoas' : 'Aniversariantes'}</span>
             {!isBirthdayTab && <span className="tabular-nums font-semibold">{stageCounts?.aniversarios ?? '…'}</span>}
           </button>
@@ -910,14 +910,14 @@ export default function People() {
             onClick={() => setQrModalOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
           >
-            <QrCode size={15} strokeWidth={1.75} />
+            <QrCode size={15} />
             <span className="hidden sm:inline">QR de Entrada</span>
           </button>
           <button
             onClick={() => setImportModalOpen(true)}
             className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-bg-hover text-primary-text text-sm font-medium hover:bg-bg-hover transition-colors"
           >
-            <Upload size={15} strokeWidth={1.75} />
+            <Upload size={15} />
             Importar
           </button>
           <Button onClick={handleNewPerson} className="hidden md:inline-flex">+ Nova Pessoa</Button>
@@ -1008,7 +1008,7 @@ export default function People() {
               title="Exporta exatamente as pessoas da lista atual (todos os filtros), sem limite de linhas"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-default bg-white text-sm text-text-secondary hover:bg-bg-hover transition-colors disabled:opacity-60"
             >
-              <Download size={13} strokeWidth={1.75} />
+              <Download size={13} />
               {exporting ? 'Gerando…' : 'CSV'}
             </button>
           )}

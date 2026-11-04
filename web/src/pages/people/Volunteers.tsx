@@ -11,10 +11,7 @@
 import { useState, useMemo } from 'react'
 import { matchesSearch, ilikePattern } from '@/lib/normalizeSearch'
 import { useQuery } from '@tanstack/react-query'
-import {
-  HandHeart, Search, X, Plus, Trash2, Pencil,
-  ChevronRight, Calendar, MessageSquare, Clock, User,
-} from 'lucide-react'
+import { HandHeartIcon as HandHeart, MagnifyingGlassIcon as Search, XIcon as X, PlusIcon as Plus, TrashIcon as Trash2, PencilIcon as Pencil, CaretRightIcon as ChevronRight, CalendarBlankIcon as Calendar, ChatTextIcon as MessageSquare, ClockIcon as Clock, UserIcon as User } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { useAuth } from '@/hooks/useAuth'

@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  Bell, RefreshCw, CheckCircle, AlertTriangle, Info,
-  Clock, ChevronDown, ChevronUp,
-} from 'lucide-react'
+import { BellIcon as Bell, ArrowsClockwiseIcon as RefreshCw, CheckCircleIcon as CheckCircle, WarningIcon as AlertTriangle, InfoIcon as Info, ClockIcon as Clock, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
@@ -119,7 +116,7 @@ export default function AdminNotifications() {
             disabled={loading}
             className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-gray-600 bg-white border border-black/5 hover:bg-gray-50 transition-all disabled:opacity-50"
           >
-            <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
@@ -160,7 +157,7 @@ export default function AdminNotifications() {
         <div className="flex justify-center py-12"><Spinner /></div>
       ) : notifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-black/5">
-          <Bell size={32} strokeWidth={1.5} className="text-gray-300 mb-3" />
+          <Bell size={32} className="text-gray-300 mb-3" />
           <p className="text-sm text-gray-400">Nenhum alerta no momento</p>
         </div>
       ) : (

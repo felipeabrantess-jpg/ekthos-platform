@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react'
 import { ConversationList }    from './ConversationList'
 import { ConversationThread }  from './ConversationThread'
 import { ConversationContext } from './ConversationContext'

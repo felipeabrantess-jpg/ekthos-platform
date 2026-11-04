@@ -4,7 +4,7 @@
 
 import { useState }                from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Gift }                    from 'lucide-react'
+import { GiftIcon as Gift } from '@phosphor-icons/react'
 import { supabase }                from '@/lib/supabase'
 import { useAuth }                 from '@/hooks/useAuth'
 import Spinner                     from '@/components/ui/Spinner'
@@ -240,7 +240,7 @@ export default function Aniversarios() {
         </div>
         {todayCount > 0 && (
           <span className="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-xl bg-brand-50 text-brand-700 border border-brand-200">
-            <Gift size={14} strokeWidth={1.75} />
+            <Gift size={14} />
             {todayCount} hoje
           </span>
         )}

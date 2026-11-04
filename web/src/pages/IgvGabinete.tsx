@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link }                from 'react-router-dom'
-import { Building2, ChevronLeft, Clock } from 'lucide-react'
+import { BuildingsIcon as Building2, CaretLeftIcon as ChevronLeft, ClockIcon as Clock } from '@phosphor-icons/react'
 import { useIgvTheme } from '@/contexts/IgvThemeContext'
 
 const IGV_COLOR       = '#D97706'
@@ -138,7 +138,7 @@ export default function IgvGabinete() {
           className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
           style={{ backgroundColor: `${IGV_COLOR}18` }}
         >
-          <Building2 size={28} strokeWidth={1.5} style={{ color: IGV_COLOR }} />
+          <Building2 size={28} style={{ color: IGV_COLOR }} />
         </div>
         <h2 className="text-[1.2rem] font-bold text-gray-900 dark:text-white mb-2">
           Pedido registrado!
@@ -166,7 +166,7 @@ export default function IgvGabinete() {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 pt-safe-top pt-5 pb-4">
         <Link to="/igv" className="p-1 -ml-1 rounded-lg text-gray-500 dark:text-white hover:text-gray-700 dark:hover:text-white/80">
-          <ChevronLeft size={22} strokeWidth={2} />
+          <ChevronLeft size={22} />
         </Link>
         <div>
           <h1 className="text-[1rem] font-bold text-gray-900 dark:text-white">Gabinete Pastoral</h1>
@@ -255,7 +255,7 @@ export default function IgvGabinete() {
                       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                     }}
                   >
-                    <Clock size={16} strokeWidth={1.8} style={{ color: selectedSlotId === s.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.4)' : '#9CA3AF') }} className="shrink-0" />
+                    <Clock size={16} style={{ color: selectedSlotId === s.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.4)' : '#9CA3AF') }} className="shrink-0" />
                     <div className="min-w-0">
                       <p className="text-[0.86rem] font-semibold text-gray-900 dark:text-white capitalize">
                         {formatSlotShort(s.slot_datetime)}

@@ -1,6 +1,6 @@
 // web/src/pages/admin/agent-tabs/TabHistorico.tsx
 import { useEffect, useState } from 'react'
-import { Clock, User } from 'lucide-react'
+import { ClockIcon as Clock, UserIcon as User } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 

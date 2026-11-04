@@ -7,7 +7,7 @@
 import { useState }                               from 'react'
 import { Link }                                   from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient }  from '@tanstack/react-query'
-import { Building2, CheckCircle2, UserCheck, XCircle, Users, Clock } from 'lucide-react'
+import { BuildingsIcon as Building2, CheckCircleIcon as CheckCircle2, UserCheckIcon as UserCheck, XCircleIcon as XCircle, UsersIcon as Users, ClockIcon as Clock } from '@phosphor-icons/react'
 import { useAuth }                                from '@/hooks/useAuth'
 import { supabase }                               from '@/lib/supabase'
 import Spinner                                    from '@/components/ui/Spinner'
@@ -107,7 +107,7 @@ function AppointmentCard({
         )}
         {item.cabinet_slot?.slot_datetime ? (
           <div className="flex items-center gap-1.5">
-            <Clock size={12} strokeWidth={2} className="text-amber-600 shrink-0" />
+            <Clock size={12} className="text-amber-600 shrink-0" />
             <span className="font-semibold text-amber-700">
               {new Intl.DateTimeFormat('pt-BR', {
                 weekday: 'short', day: 'numeric', month: 'short',
@@ -137,9 +137,9 @@ function AppointmentCard({
               {advancing ? (
                 <span className="w-3 h-3 border-2 border-amber-400/40 border-t-amber-600 rounded-full animate-spin" />
               ) : next === 'confirmado' ? (
-                <UserCheck size={12} strokeWidth={2} />
+                <UserCheck size={12} />
               ) : (
-                <CheckCircle2 size={12} strokeWidth={2} />
+                <CheckCircle2 size={12} />
               )}
               {next === 'confirmado' ? 'Confirmar' : 'Realizado'}
             </button>
@@ -153,7 +153,7 @@ function AppointmentCard({
               {cancelling ? (
                 <span className="w-3 h-3 border-2 border-red-300/40 border-t-red-500 rounded-full animate-spin" />
               ) : (
-                <XCircle size={12} strokeWidth={2} />
+                <XCircle size={12} />
               )}
               Cancelar
             </button>
@@ -237,7 +237,7 @@ export default function GabinetePedidosPWA() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-          <Building2 size={18} strokeWidth={1.75} className="text-amber-700" />
+          <Building2 size={18} className="text-amber-700" />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-[1.05rem] font-bold text-gray-900">Pedidos — Gabinete</h1>
@@ -249,7 +249,7 @@ export default function GabinetePedidosPWA() {
           to="/gabinete/pastores"
           className="shrink-0 flex items-center gap-1.5 text-[0.78rem] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-2 rounded-xl transition-colors"
         >
-          <Users size={14} strokeWidth={2} />
+          <Users size={14} />
           Pastores
         </Link>
       </div>
@@ -286,7 +286,7 @@ export default function GabinetePedidosPWA() {
       ) : items.length === 0 ? (
         <div className="text-center py-16 flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
-            <Building2 size={22} strokeWidth={1.5} className="text-amber-400" />
+            <Building2 size={22} className="text-amber-400" />
           </div>
           <p className="text-gray-400 text-[0.85rem]">
             {filter === 'todos'

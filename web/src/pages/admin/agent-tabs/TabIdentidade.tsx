@@ -1,6 +1,6 @@
 // web/src/pages/admin/agent-tabs/TabIdentidade.tsx
 import { useNavigate } from 'react-router-dom'
-import { ExternalLink } from 'lucide-react'
+import { ArrowSquareOutIcon as ExternalLink } from '@phosphor-icons/react'
 import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
 type Hook = ReturnType<typeof useChurchAgentFullConfig>

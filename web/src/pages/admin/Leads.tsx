@@ -4,10 +4,7 @@
 // ============================================================
 
 import { useEffect, useState } from 'react'
-import {
-  UserPlus, RefreshCw, Phone, Mail, ChevronRight,
-  X, Check, Building2, Users, MessageCircle,
-} from 'lucide-react'
+import { UserPlusIcon as UserPlus, ArrowsClockwiseIcon as RefreshCw, PhoneIcon as Phone, EnvelopeIcon as Mail, CaretRightIcon as ChevronRight, XIcon as X, CheckIcon as Check, BuildingsIcon as Building2, UsersIcon as Users, ChatCircleIcon as MessageCircle } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'

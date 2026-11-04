@@ -1,9 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Users, TrendingUp, DollarSign, CheckCircle, Clock, XCircle,
-  Plus, ChevronRight, Loader, X, Download, RefreshCw,
-} from 'lucide-react'
+import { UsersIcon as Users, TrendUpIcon as TrendingUp, CurrencyDollarIcon as DollarSign, CheckCircleIcon as CheckCircle, ClockIcon as Clock, XCircleIcon as XCircle, PlusIcon as Plus, CaretRightIcon as ChevronRight, CircleNotchIcon as Loader, XIcon as X, DownloadSimpleIcon as Download, ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -68,10 +65,10 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
         borderColor: type === 'success' ? '#bbf7d0' : '#fecaca',
         color: type === 'success' ? '#166534' : '#991b1b',
       }}>
-      {type === 'success' ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
-        : <XCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />}
+      {type === 'success' ? <CheckCircle size={16} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+        : <XCircle size={16} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />}
       <span className="flex-1">{msg}</span>
-      <button onClick={onClose}><X size={14} strokeWidth={2} /></button>
+      <button onClick={onClose}><X size={14} /></button>
     </div>
   )
 }
@@ -116,7 +113,7 @@ function NewAffiliateModal({ onClose, onCreated }: { onClose: () => void; onCrea
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
         <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">Novo Afiliado</h2>
-          <button onClick={onClose}><X size={18} strokeWidth={2} className="text-gray-400 hover:text-gray-700" /></button>
+          <button onClick={onClose}><X size={18} className="text-gray-400 hover:text-gray-700" /></button>
         </div>
         <div className="px-6 py-5 space-y-3 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
@@ -166,7 +163,7 @@ function NewAffiliateModal({ onClose, onCreated }: { onClose: () => void; onCrea
           <button onClick={() => void save()} disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: 'var(--color-primary)' }}>
-            {saving ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</> : 'Criar afiliado'}
+            {saving ? <><Loader size={14} className="animate-spin" /> Salvando…</> : 'Criar afiliado'}
           </button>
         </div>
       </div>
@@ -210,7 +207,7 @@ function AffiliatesTab({ toast }: { toast: (m: string, t: 'success' | 'error') =
         <button onClick={() => setShowNew(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
           style={{ background: 'var(--color-primary)' }}>
-          <Plus size={14} strokeWidth={2} /> Novo Afiliado
+          <Plus size={14} /> Novo Afiliado
         </button>
       </div>
 
@@ -247,7 +244,7 @@ function AffiliatesTab({ toast }: { toast: (m: string, t: 'success' | 'error') =
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-right">
-                    <ChevronRight size={15} strokeWidth={1.75} className="text-gray-300 ml-auto" />
+                    <ChevronRight size={15} className="text-gray-300 ml-auto" />
                   </td>
                 </tr>
               )
@@ -373,19 +370,19 @@ function CommissionsTab({ toast }: { toast: (m: string, t: 'success' | 'error') 
           <label className="text-xs font-medium text-gray-600">Mês:</label>
           <input type="month" value={month} onChange={e => setMonth(e.target.value)} className={`${fi} text-xs`} />
           <button onClick={() => void load()} className="p-2 rounded-lg hover:bg-gray-100 transition">
-            <RefreshCw size={14} strokeWidth={1.75} className={`text-gray-400 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw size={14} className={`text-gray-400 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button onClick={() => void approveAll()} disabled={approving || pending.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-black/10 hover:bg-gray-50 disabled:opacity-40 transition">
-            {approving ? <Loader size={12} strokeWidth={2} className="animate-spin" /> : <CheckCircle size={12} strokeWidth={2} />}
+            {approving ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
             Aprovar vencidas ({pending.filter(c => new Date(c.approves_at) <= new Date()).length})
           </button>
           <button onClick={() => void exportCSV()} disabled={exporting || approved.length === 0}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-40 transition"
             style={{ background: 'var(--color-primary)' }}>
-            {exporting ? <Loader size={12} strokeWidth={2} className="animate-spin" /> : <Download size={12} strokeWidth={2} />}
+            {exporting ? <Loader size={12} className="animate-spin" /> : <Download size={12} />}
             Exportar CSV ({approved.length})
           </button>
         </div>
@@ -394,9 +391,9 @@ function CommissionsTab({ toast }: { toast: (m: string, t: 'success' | 'error') 
       {/* Métricas */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Pendentes', value: pending.length, icon: <Clock size={16} strokeWidth={1.75} />, color: '#C4841D' },
-          { label: 'Aprovadas', value: `${approved.length} · ${fmt(totalApproved)}`, icon: <CheckCircle size={16} strokeWidth={1.75} />, color: '#2D7A4F' },
-          { label: 'Pagas', value: paid.length, icon: <DollarSign size={16} strokeWidth={1.75} />, color: '#163572' },
+          { label: 'Pendentes', value: pending.length, icon: <Clock size={16} />, color: '#C4841D' },
+          { label: 'Aprovadas', value: `${approved.length} · ${fmt(totalApproved)}`, icon: <CheckCircle size={16} />, color: '#2D7A4F' },
+          { label: 'Pagas', value: paid.length, icon: <DollarSign size={16} />, color: '#163572' },
         ].map(m => (
           <div key={m.label} className="bg-white rounded-2xl border border-black/5 shadow-sm p-4">
             <div className="flex items-center justify-between mb-1">
@@ -416,7 +413,7 @@ function CommissionsTab({ toast }: { toast: (m: string, t: 'success' | 'error') 
           <button onClick={() => void markPaid()} disabled={markingPaid}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: '#163572' }}>
-            {markingPaid ? <Loader size={13} strokeWidth={2} className="animate-spin" /> : <CheckCircle size={13} strokeWidth={2} />}
+            {markingPaid ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
             Marcar como pago
           </button>
         </div>
@@ -524,9 +521,9 @@ function PerformanceTab() {
     <div className="space-y-6">
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Afiliados ativos', value: String(stats?.total_active ?? 0), icon: <Users size={18} strokeWidth={1.75} /> },
-          { label: 'Conversões ativas', value: String(stats?.total_conversions ?? 0), icon: <TrendingUp size={18} strokeWidth={1.75} /> },
-          { label: 'Comissões pagas', value: fmt(stats?.total_paid_cents ?? 0), icon: <DollarSign size={18} strokeWidth={1.75} /> },
+          { label: 'Afiliados ativos', value: String(stats?.total_active ?? 0), icon: <Users size={18} /> },
+          { label: 'Conversões ativas', value: String(stats?.total_conversions ?? 0), icon: <TrendingUp size={18} /> },
+          { label: 'Comissões pagas', value: fmt(stats?.total_paid_cents ?? 0), icon: <DollarSign size={18} /> },
         ].map(m => (
           <div key={m.label} className="bg-white rounded-2xl border border-black/5 shadow-sm p-5">
             <div className="flex items-center justify-between mb-2">
@@ -593,7 +590,7 @@ export default function AdminAffiliates() {
     <div className="space-y-6 pb-8">
       <div>
         <h1 className="font-display text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <Users size={26} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
+          <Users size={26} style={{ color: 'var(--color-primary)' }} />
           Afiliados
         </h1>
         <p className="text-sm text-gray-400 mt-1">

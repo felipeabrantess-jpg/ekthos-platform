@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Loader, Star, Zap, Crown } from 'lucide-react'
+import { CheckIcon as Check, CircleNotchIcon as Loader, StarIcon as Star, LightningIcon as Zap, CrownIcon as Crown } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 
 interface Plan {
@@ -26,7 +26,7 @@ const PLANS: Plan[] = [
     maxUsers:       2,
     includedAgents: 0,
     description:    'Para igrejas que estão começando a digitalizar a operação pastoral.',
-    icon:           <Star size={24} strokeWidth={1.75} />,
+    icon:           <Star size={24} />,
     color:          '#5A5A5A',
     features: [
       'Até 2 usuários',
@@ -46,7 +46,7 @@ const PLANS: Plan[] = [
     maxUsers:       3,
     includedAgents: 3,
     description:    'Para igrejas em crescimento que querem automação inteligente.',
-    icon:           <Zap size={24} strokeWidth={1.75} />,
+    icon:           <Zap size={24} />,
     badge:          'Mais escolhido',
     color:          'var(--color-primary)',
     features: [
@@ -67,7 +67,7 @@ const PLANS: Plan[] = [
     maxUsers:       4,
     includedAgents: 6,
     description:    'Para igrejas grandes com operação pastoral complexa e multi-site.',
-    icon:           <Crown size={24} strokeWidth={1.75} />,
+    icon:           <Crown size={24} />,
     color:          '#670000',
     features: [
       'Até 4 usuários',
@@ -199,7 +199,7 @@ export default function ChoosePlan() {
                 <ul className="space-y-2 mb-8 flex-1">
                   {plan.features.map(f => (
                     <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
-                      <Check size={14} strokeWidth={2} style={{ color: plan.color, flexShrink: 0 }} />
+                      <Check size={14} style={{ color: plan.color, flexShrink: 0 }} />
                       {f}
                     </li>
                   ))}
@@ -212,7 +212,7 @@ export default function ChoosePlan() {
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
                   style={{ background: plan.color }}
                 >
-                  {loading === plan.slug && <Loader size={16} strokeWidth={1.75} className="animate-spin" />}
+                  {loading === plan.slug && <Loader size={16} className="animate-spin" />}
                   {loading === plan.slug ? 'Aguarde...' : 'Começar agora'}
                 </button>
               </div>
@@ -225,11 +225,11 @@ export default function ChoosePlan() {
           <h3 className="text-sm font-semibold text-gray-700 mb-3">Complementos disponíveis em qualquer plano</h3>
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1.5">
-              <Check size={14} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+              <Check size={14} style={{ color: 'var(--color-primary)' }} />
               Usuário extra: <strong>R$69,90/mês</strong>
             </span>
             <span className="flex items-center gap-1.5">
-              <Check size={14} strokeWidth={2} style={{ color: 'var(--color-primary)' }} />
+              <Check size={14} style={{ color: 'var(--color-primary)' }} />
               Agente de IA adicional: <strong>a partir de R$97,89/mês</strong>
             </span>
           </div>

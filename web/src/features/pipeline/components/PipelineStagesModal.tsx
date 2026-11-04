@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react'
-import { X, Plus, Pencil, Trash2, GripVertical, Loader2 } from 'lucide-react'
+import { XIcon as X, PlusIcon as Plus, PencilIcon as Pencil, TrashIcon as Trash2, DotsSixVerticalIcon as GripVertical, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages } from '@/features/pipeline/hooks/usePipeline'
 import {

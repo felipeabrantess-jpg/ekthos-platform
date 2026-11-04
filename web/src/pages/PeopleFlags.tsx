@@ -8,7 +8,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, PlusIcon as Plus, PencilIcon as Pencil, TrashIcon as Trash2, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTags, useDeleteTag, useTagUsageCounts } from '@/features/people/hooks/useTags'
 import { FlagModal } from '@/features/people/components/FlagModal'
@@ -129,7 +129,7 @@ export default function PeopleFlags() {
                       className="p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-bg-hover transition-all"
                       title="Editar"
                     >
-                      <Pencil size={14} strokeWidth={1.75} />
+                      <Pencil size={14} />
                     </button>
                     <button
                       onClick={() => requestDelete(tag)}
@@ -140,7 +140,7 @@ export default function PeopleFlags() {
                       {isDeleting ? (
                         <Loader2 size={14} className="animate-spin" />
                       ) : (
-                        <Trash2 size={14} strokeWidth={1.75} />
+                        <Trash2 size={14} />
                       )}
                     </button>
                   </div>

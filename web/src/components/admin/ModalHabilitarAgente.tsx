@@ -1,7 +1,7 @@
 // web/src/components/admin/ModalHabilitarAgente.tsx
 // Sprint 3A.1 — Modal de habilitação de agente premium
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { CircleNotchIcon as Loader2, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Modal from '@/components/ui/Modal'
 

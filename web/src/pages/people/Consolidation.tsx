@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { matchesSearch } from '@/lib/normalizeSearch'
 import { useQuery } from '@tanstack/react-query'
-import { Heart, AlertTriangle, Clock, Phone, Copy, CheckCircle, X } from 'lucide-react'
+import { HeartIcon as Heart, WarningIcon as AlertTriangle, ClockIcon as Clock, PhoneIcon as Phone, CopyIcon as Copy, CheckCircleIcon as CheckCircle, XIcon as X } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Input from '@/components/ui/Input'
@@ -40,12 +40,12 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
       }}
     >
       {type === 'success'
-        ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
-        : <X           size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
+        ? <CheckCircle size={16} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+        : <X           size={16} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
       }
       <span className="flex-1">{msg}</span>
       <button onClick={onClose} className="opacity-60 hover:opacity-100 shrink-0 mt-0.5">
-        <X size={14} strokeWidth={2} />
+        <X size={14} />
       </button>
     </div>
   )

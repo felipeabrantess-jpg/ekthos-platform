@@ -9,8 +9,8 @@
  * REGRA: WhatsApp/Z-API fora do escopo (não listar aqui).
  */
 
-import type { LucideIcon } from 'lucide-react'
-import { Users, Shield, BookOpen, CalendarRange, Heart, Mail, DollarSign } from 'lucide-react'
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
+import { UsersIcon as Users, ShieldIcon as Shield, BookOpenIcon as BookOpen, CalendarBlankIcon as CalendarRange, HeartIcon as Heart, EnvelopeIcon as Mail, CurrencyDollarIcon as DollarSign } from '@phosphor-icons/react'
 
 export interface ModuleFeature {
   label:       string
@@ -21,7 +21,7 @@ export interface ModuleAgentEntry {
   slug:       string
   name:       string
   included:   boolean   // true = incluso; false = add-on (+R$ 149,90/mês)
-  Icon:       LucideIcon
+  Icon:       PhosphorIcon
 }
 
 export interface ModuleContent {
@@ -30,7 +30,7 @@ export interface ModuleContent {
   tagline:          string          // 1 linha de impacto
   price:            string          // ex: "R$ 289,90/mês"
   priceCents:       number
-  Icon:             LucideIcon
+  Icon:             PhosphorIcon
   forWhom:          string          // parágrafo "Para quem"
   problems:         string[]        // 3-4 problemas que resolve
   features:         ModuleFeature[] // o que inclui (funcionalidades)

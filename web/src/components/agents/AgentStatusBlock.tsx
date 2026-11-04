@@ -9,7 +9,7 @@
 // com active=true). Evita duplicação de informação.
 // ============================================================
 
-import { Clock, Wrench, Pause, XCircle, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { ClockIcon as Clock, WrenchIcon as Wrench, PauseIcon as Pause, XCircleIcon as XCircle, WarningCircleIcon as AlertCircle, CheckCircleIcon as CheckCircle2 } from '@phosphor-icons/react'
 import { Skeleton } from '@/components/ui/Skeleton'
 import Button from '@/components/ui/Button'
 import { useAgentSubscriptionStatus } from '@/hooks/useAgentSubscriptionStatus'
@@ -60,7 +60,7 @@ export function AgentStatusBlock({ slug }: Props) {
       <div className="rounded-2xl p-5 border border-amber-200 bg-amber-50">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-            <Clock size={16} className="text-amber-700" strokeWidth={2} />
+            <Clock size={16} className="text-amber-700" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-amber-900">Aguardando ativação</p>
@@ -82,7 +82,7 @@ export function AgentStatusBlock({ slug }: Props) {
       <div className="rounded-2xl p-5 border border-orange-200 bg-orange-50">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 h-8 w-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-            <Wrench size={16} className="text-orange-700" strokeWidth={2} />
+            <Wrench size={16} className="text-orange-700" />
           </div>
           <div>
             <p className="text-sm font-semibold text-orange-900">Em ativação</p>
@@ -101,7 +101,7 @@ export function AgentStatusBlock({ slug }: Props) {
       <div className="rounded-2xl p-5 border border-orange-200 bg-orange-50">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 h-8 w-8 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
-            <Wrench size={16} className="text-orange-700" strokeWidth={2} />
+            <Wrench size={16} className="text-orange-700" />
           </div>
           <div>
             <p className="text-sm font-semibold text-orange-900">Ativando agente</p>
@@ -119,7 +119,7 @@ export function AgentStatusBlock({ slug }: Props) {
       <div className="rounded-2xl p-5 border border-ekthos-black/10 bg-ekthos-cream">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 h-8 w-8 rounded-xl bg-ekthos-black/5 flex items-center justify-center shrink-0">
-            <Pause size={16} className="text-ekthos-black/50" strokeWidth={2} />
+            <Pause size={16} className="text-ekthos-black/50" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-ekthos-black">Agente pausado</p>
@@ -140,7 +140,7 @@ export function AgentStatusBlock({ slug }: Props) {
       <div className="rounded-2xl p-5 border border-red-200 bg-red-50">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 h-8 w-8 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
-            <XCircle size={16} className="text-red-600" strokeWidth={2} />
+            <XCircle size={16} className="text-red-600" />
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-red-900">Assinatura cancelada</p>
@@ -157,7 +157,7 @@ export function AgentStatusBlock({ slug }: Props) {
   if (status.state === 'error') {
     return (
       <div className="flex items-center gap-2 p-3 rounded-xl border border-red-100 bg-red-50">
-        <AlertCircle size={14} className="text-red-500 shrink-0" strokeWidth={1.75} />
+        <AlertCircle size={14} className="text-red-500 shrink-0" />
         <p className="text-xs text-red-700">Erro ao carregar status do agente.</p>
       </div>
     )

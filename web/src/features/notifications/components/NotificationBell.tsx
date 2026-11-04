@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Bell } from 'lucide-react'
+import { BellIcon as Bell } from '@phosphor-icons/react'
 import { useNotificationsContext } from '../context/NotificationsContext'
 import NotificationPanel from './NotificationPanel'
 
@@ -45,7 +45,7 @@ export default function NotificationBell() {
           }
         }}
       >
-        <Bell size={18} strokeWidth={1.75} className={open ? 'animate-bell-ring' : ''} />
+        <Bell size={18} className={open ? 'animate-bell-ring' : ''} />
 
         {unreadCount > 0 && (
           <span

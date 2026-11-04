@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Check, Mail, ArrowRight, MessageCircle } from 'lucide-react'
+import { CheckIcon as Check, EnvelopeIcon as Mail, ArrowRightIcon as ArrowRight, ChatCircleIcon as MessageCircle } from '@phosphor-icons/react'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string || '5511999999999'
 
@@ -51,17 +51,17 @@ function fireConversionPixels(sessionId: string) {
 // ── Passos do que acontece agora ──────────────────────────
 const NEXT_STEPS = [
   {
-    icon:  <Mail size={20} strokeWidth={1.75} />,
+    icon:  <Mail size={20} />,
     title: 'Verifique seu email',
     body:  'Enviamos um link para você criar sua senha e acessar a plataforma. Pode levar até 5 minutos.',
   },
   {
-    icon:  <Check size={20} strokeWidth={1.75} />,
+    icon:  <Check size={20} />,
     title: 'Configure sua conta',
     body:  'Nosso Consultor de Onboarding com IA guia você em 20 perguntas simples. Leva menos de 30 minutos.',
   },
   {
-    icon:  <ArrowRight size={20} strokeWidth={1.75} />,
+    icon:  <ArrowRight size={20} />,
     title: 'Comece a usar',
     body:  'Sua plataforma estará pronta com os módulos configurados, o caminho de discipulado definido e os agentes IA ativos.',
   },
@@ -90,7 +90,7 @@ export default function CheckoutSucesso() {
           <div className="relative">
             <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-xl"
               style={{ background: 'var(--color-success)' }}>
-              <Check size={36} strokeWidth={2.5} className="text-white" />
+              <Check size={36} className="text-white" />
             </div>
             <div className="absolute inset-0 rounded-full animate-ping opacity-20"
               style={{ background: 'var(--color-success)' }} />
@@ -134,14 +134,14 @@ export default function CheckoutSucesso() {
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold text-white transition-all hover:opacity-90"
             style={{ background: 'var(--color-primary)' }}>
             Acessar a plataforma
-            <ArrowRight size={18} strokeWidth={2} />
+            <ArrowRight size={18} />
           </Link>
 
           <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=Olá! Acabei de contratar o Ekthos e preciso de ajuda para começar.`}
             target="_blank" rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold border-2 transition-all hover:shadow-md"
             style={{ borderColor: '#25D366', color: '#25D366' }}>
-            <MessageCircle size={18} strokeWidth={2} />
+            <MessageCircle size={18} />
             Falar com suporte no WhatsApp
           </a>
         </div>

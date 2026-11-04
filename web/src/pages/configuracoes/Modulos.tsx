@@ -7,7 +7,7 @@
  */
 
 import { Link } from 'react-router-dom'
-import { Lock, ChevronRight } from 'lucide-react'
+import { LockIcon as Lock, CaretRightIcon as ChevronRight } from '@phosphor-icons/react'
 import { MODULES_CONTENT } from '@/lib/modules-content'
 
 export function Modulos() {
@@ -38,7 +38,7 @@ export function Modulos() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-ekthos-black">{module.name}</span>
-                  <Lock size={11} className="text-gray-400" strokeWidth={2} />
+                  <Lock size={11} className="text-gray-400" />
                 </div>
                 <p className="text-xs text-ekthos-black/50 mt-0.5 truncate">{module.tagline}</p>
                 <p className="text-xs font-semibold text-brand-600 mt-1">{module.price}</p>

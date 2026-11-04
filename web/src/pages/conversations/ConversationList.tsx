@@ -4,7 +4,7 @@
 // ============================================================
 
 import { useState, useRef, useCallback } from 'react'
-import { Search, Bot, User, Inbox, MessageCircle, Wifi, WifiOff } from 'lucide-react'
+import { MagnifyingGlassIcon as Search, RobotIcon as Bot, UserIcon as User, TrayIcon as Inbox, ChatCircleIcon as MessageCircle, WifiHighIcon as Wifi, WifiSlashIcon as WifiOff } from '@phosphor-icons/react'
 import { useConversations, type OwnershipFilter, type Conversation } from '@/hooks/useConversations'
 
 // ── Helpers ────────────────────────────────────────────────

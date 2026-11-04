@@ -1,13 +1,13 @@
 /**
  * IgvAboutPage — /igv/sobre  (Redesign v2)
- * Página pública "Sobre Nós" da IGV. DM Sans, lucide thin icons, visual clean.
+ * Página pública "Sobre Nós" da IGV. DM Sans, ícones Phosphor, visual clean.
  * Sem auth. Sem dados de membros. Conteúdo institucional hardcoded.
  * TODO Fase 1: migrar para church_pastoral_profile + colunas semânticas.
  */
 
 import { type ReactNode }                          from 'react'
 import { Link }                                    from 'react-router-dom'
-import { ArrowLeft, MessageCircle }        from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, ChatCircleIcon as MessageCircle } from '@phosphor-icons/react'
 import { IGV }                                     from '@/lib/igv-public-data'
 
 // ── Card auxiliar ──────────────────────────────────────────────────
@@ -42,7 +42,7 @@ export default function IgvAboutPage() {
           className="flex items-center gap-1.5 text-[1rem] font-medium transition-colors"
           style={{ color: IGV.primaryColor }}
         >
-          <ArrowLeft size={18} strokeWidth={1.75} />
+          <ArrowLeft size={18} />
           Voltar
         </Link>
         <div className="w-px h-4 bg-white/20" />
@@ -104,7 +104,7 @@ export default function IgvAboutPage() {
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-white text-[1rem] font-semibold transition-opacity hover:opacity-90 active:opacity-80"
             style={{ backgroundColor: '#25D366' }}
           >
-            <MessageCircle size={16} strokeWidth={1.75} />
+            <MessageCircle size={16} />
             Fale conosco
           </a>
         </Card>

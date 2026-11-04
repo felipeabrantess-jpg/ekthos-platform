@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams }                        from 'react-router-dom'
-import { HeartHandshake, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { HandshakeIcon as HeartHandshake, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp } from '@phosphor-icons/react'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -327,7 +327,7 @@ export default function CuidadoLink() {
       <div className="max-w-lg mx-auto px-4 py-6">
         {people.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <HeartHandshake size={40} className="text-gray-300" strokeWidth={1.25} />
+            <HeartHandshake size={40} className="text-gray-300" />
             <p className="text-sm text-gray-500">
               Nenhuma pessoa atribuída a você ainda.
             </p>

@@ -2,11 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { isPhoneTakenError, PHONE_TAKEN_MESSAGE } from '@/lib/phone'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft, Phone, Calendar, MessageCircle,
-  CheckCircle2, AlertCircle, Clock,
-  Sparkles, Loader2, Bot, User, ChevronRight, Building2,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, PhoneIcon as Phone, CalendarBlankIcon as Calendar, ChatCircleIcon as MessageCircle, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle, ClockIcon as Clock, SparkleIcon as Sparkles, CircleNotchIcon as Loader2, RobotIcon as Bot, UserIcon as User, CaretRightIcon as ChevronRight, BuildingsIcon as Building2 } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -183,7 +179,7 @@ function BlocoQuemE({ person, onToast }: { person: NonNullable<ReturnType<typeof
         <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
           className="ml-auto shrink-0 w-9 h-9 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
           aria-label="WhatsApp">
-          <MessageCircle size={18} strokeWidth={2} />
+          <MessageCircle size={18} />
         </a>
       )}
     </div>
@@ -908,7 +904,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
                   ? 'bg-primary/10 border-primary/30 text-primary'
                   : 'border-border-default text-text-secondary hover:border-primary/30 hover:text-text-primary'
               }`}>
-              <CheckCircle2 size={13} className={val ? 'text-primary' : 'text-transparent'} strokeWidth={2.5} />
+              <CheckCircle2 size={13} className={val ? 'text-primary' : 'text-transparent'} />
               {label}
             </button>
           ))}
@@ -1164,7 +1160,7 @@ export default function AtendimentoPage() {
         {whatsappUrl && (
           <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
             className="shrink-0 w-8 h-8 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg">
-            <MessageCircle size={15} strokeWidth={2} />
+            <MessageCircle size={15} />
           </a>
         )}
       </div>

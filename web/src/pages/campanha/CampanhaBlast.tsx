@@ -12,11 +12,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import {
-  Megaphone, Play, Square, CheckCircle2, XCircle,
-  Clock, Users, AlertTriangle, ChevronRight,
-  Send, RefreshCw, Info, Eye, EyeOff,
-} from 'lucide-react'
+import { MegaphoneIcon as Megaphone, PlayIcon as Play, SquareIcon as Square, CheckCircleIcon as CheckCircle2, XCircleIcon as XCircle, ClockIcon as Clock, UsersIcon as Users, WarningIcon as AlertTriangle, CaretRightIcon as ChevronRight, PaperPlaneTiltIcon as Send, ArrowsClockwiseIcon as RefreshCw, InfoIcon as Info, EyeIcon as Eye, EyeSlashIcon as EyeOff } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 

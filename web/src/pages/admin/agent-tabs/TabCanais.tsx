@@ -1,7 +1,7 @@
 // web/src/pages/admin/agent-tabs/TabCanais.tsx
 import { supabase } from '@/lib/supabase'
 import { useEffect, useState } from 'react'
-import { Phone, Wifi } from 'lucide-react'
+import { PhoneIcon as Phone, WifiHighIcon as Wifi } from '@phosphor-icons/react'
 import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
 type Hook = ReturnType<typeof useChurchAgentFullConfig>

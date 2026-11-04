@@ -1,4 +1,4 @@
-import { Construction } from 'lucide-react'
+import { BarricadeIcon as Construction } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
 

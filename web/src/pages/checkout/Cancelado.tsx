@@ -4,7 +4,7 @@
 // ============================================================
 
 import { Link } from 'react-router-dom'
-import { ArrowLeft, MessageCircle } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, ChatCircleIcon as MessageCircle } from '@phosphor-icons/react'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER as string || '5511999999999'
 
@@ -48,14 +48,14 @@ export default function CheckoutCancelado() {
             target="_blank" rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold text-white transition-all hover:opacity-90"
             style={{ background: '#25D366' }}>
-            <MessageCircle size={18} strokeWidth={2} />
+            <MessageCircle size={18} />
             Falar com consultor no WhatsApp
           </a>
 
           <Link to="/#pricing"
             className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-semibold border-2 transition-all hover:shadow-md"
             style={{ borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}>
-            <ArrowLeft size={18} strokeWidth={2} />
+            <ArrowLeft size={18} />
             Voltar para os planos
           </Link>
         </div>

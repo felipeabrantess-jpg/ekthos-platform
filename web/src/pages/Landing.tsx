@@ -7,12 +7,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Check, ChevronDown, Menu, X, Star, Zap, Crown,
-  Users, BarChart2, Bot, MessageCircle, Bell, Shield,
-  TrendingUp, UserPlus, ShieldCheck, Smartphone, DollarSign,
-  ArrowRight,
-} from 'lucide-react'
+import { CheckIcon as Check, CaretDownIcon as ChevronDown, ListIcon as Menu, XIcon as X, StarIcon as Star, LightningIcon as Zap, CrownIcon as Crown, UsersIcon as Users, ChartBarIcon as BarChart2, RobotIcon as Bot, ChatCircleIcon as MessageCircle, BellIcon as Bell, ShieldIcon as Shield, TrendUpIcon as TrendingUp, UserPlusIcon as UserPlus, ShieldCheckIcon as ShieldCheck, DeviceMobileIcon as Smartphone, CurrencyDollarIcon as DollarSign, ArrowRightIcon as ArrowRight } from '@phosphor-icons/react'
 import EkthosIcon, { type EkthosIconName } from '@/components/EkthosIcon'
 import LogoEkthos from '@/components/LogoEkthos'
 
@@ -213,7 +208,7 @@ function AvatarIASection() {
               ].map(([title, sub]) => (
                 <li key={title} className="flex items-start gap-3">
                   <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)' }}>
-                    <Check size={11} strokeWidth={2.5} style={{ color: '#60a5fa' }}/>
+                    <Check size={11} style={{ color: '#60a5fa' }}/>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{title}</p>
@@ -351,7 +346,7 @@ function CrmComparisonSection() {
                 'Silêncio quando um membro some',
               ].map(item => (
                 <li key={item} className="flex items-start gap-3 text-sm" style={{ color: '#94a3b8' }}>
-                  <X size={14} strokeWidth={2.5} style={{ color: '#cbd5e1', flexShrink: 0, marginTop: 2 }}/>
+                  <X size={14} style={{ color: '#cbd5e1', flexShrink: 0, marginTop: 2 }}/>
                   {item}
                 </li>
               ))}
@@ -384,7 +379,7 @@ function CrmComparisonSection() {
                 'Follow-up D+3, D+7 disparado sem intervenção',
               ].map(item => (
                 <li key={item} className="flex items-start gap-3 text-sm text-white">
-                  <Check size={14} strokeWidth={2.5} style={{ color: '#60a5fa', flexShrink: 0, marginTop: 2 }}/>
+                  <Check size={14} style={{ color: '#60a5fa', flexShrink: 0, marginTop: 2 }}/>
                   {item}
                 </li>
               ))}
@@ -773,7 +768,7 @@ export default function Landing() {
               <div className="p-7 pt-9 flex-1">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.08)', border: `1px solid ${C.border}` }}>
-                    <Star size={16} strokeWidth={1.75} style={{ color: C.accent }}/>
+                    <Star size={16} style={{ color: C.accent }}/>
                   </div>
                   <div>
                     <p className="font-bold text-base" style={{ color: C.txtDark }}>Chamado</p>
@@ -788,7 +783,7 @@ export default function Landing() {
                 <ul className="space-y-2.5 mb-4">
                   {['CRM pastoral completo', 'Caminho de discipulado 11 etapas', 'Células e ministérios', '4 agentes internos inclusos', 'Suporte por email', 'Acesso imediato — sem consultoria'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={14} strokeWidth={2.5} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }}/>
+                      <Check size={14} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }}/>
                       <span style={{ color: C.txtDark }}>{f}</span>
                     </li>
                   ))}
@@ -810,7 +805,7 @@ export default function Landing() {
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.2)', border: `1px solid rgba(59,130,246,0.35)` }}>
-                    <Zap size={16} strokeWidth={1.75} style={{ color: C.accentLight }}/>
+                    <Zap size={16} style={{ color: C.accentLight }}/>
                   </div>
                   <div>
                     <p className="font-bold text-base text-white">Missão</p>
@@ -825,7 +820,7 @@ export default function Landing() {
                 <ul className="space-y-2.5 mb-4">
                   {['Tudo do plano Chamado', 'Financeiro Pro incluso', 'Relatórios automáticos', 'Automações pastorais avançadas', 'Suporte prioritário', 'Onboarding consultivo'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={14} strokeWidth={2.5} style={{ color: '#60a5fa', flexShrink: 0, marginTop: 1 }}/>
+                      <Check size={14} style={{ color: '#60a5fa', flexShrink: 0, marginTop: 1 }}/>
                       <span style={{ color: 'rgba(226,232,240,0.85)' }}>{f}</span>
                     </li>
                   ))}
@@ -847,7 +842,7 @@ export default function Landing() {
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.08)', border: `1px solid ${C.border}` }}>
-                    <Crown size={16} strokeWidth={1.75} style={{ color: C.accent }}/>
+                    <Crown size={16} style={{ color: C.accent }}/>
                   </div>
                   <div>
                     <p className="font-bold text-base" style={{ color: C.txtDark }}>Avivamento</p>
@@ -863,14 +858,14 @@ export default function Landing() {
                   <p className="text-xs font-bold mb-2" style={{ color: C.accent }}>Inclusos:</p>
                   {['Financeiro Pro', 'Volunteer Pro'].map(d => (
                     <div key={d} className="flex items-center gap-2 text-xs font-medium mt-1.5" style={{ color: C.txtDark }}>
-                      <Check size={12} strokeWidth={2.5} style={{ color: '#22c55e' }}/>{d}
+                      <Check size={12} style={{ color: '#22c55e' }}/>{d}
                     </div>
                   ))}
                 </div>
                 <ul className="space-y-2.5 mb-4">
                   {['Tudo do plano Missão', '10 usuários administrativos', '6 agentes IA completos', 'Multi-site básico'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={14} strokeWidth={2.5} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }}/>
+                      <Check size={14} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }}/>
                       <span style={{ color: C.txtDark }}>{f}</span>
                     </li>
                   ))}
@@ -892,7 +887,7 @@ export default function Landing() {
               <div className="p-7 flex-1">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(59,130,246,0.08)', border: `1px solid ${C.border}` }}>
-                    <Smartphone size={16} strokeWidth={1.75} style={{ color: C.accent }}/>
+                    <Smartphone size={16} style={{ color: C.accent }}/>
                   </div>
                   <div>
                     <p className="font-bold text-base" style={{ color: C.txtDark }}>Enterprise</p>
@@ -906,7 +901,7 @@ export default function Landing() {
                 <ul className="space-y-2.5 mb-6">
                   {['Múltiplas sedes em um painel', 'Gestão centralizada de líderes', 'Relatórios por rede e sede', 'Agentes configurados por sede', 'SLA e suporte enterprise', 'Onboarding presencial'].map(f => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <Check size={14} strokeWidth={2.5} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }}/>
+                      <Check size={14} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }}/>
                       <span style={{ color: C.txtDark }}>{f}</span>
                     </li>
                   ))}
@@ -1047,7 +1042,7 @@ export default function Landing() {
                 <ul className="space-y-1.5 flex-1 relative mb-4">
                   {agent.items.map(item => (
                     <li key={item} className="flex items-start gap-2 text-xs" style={{ color: 'rgba(226,232,240,0.6)' }}>
-                      <Check size={11} strokeWidth={2.5} style={{ color: agent.status === 'ativo' ? '#60a5fa' : 'rgba(255,255,255,0.25)', flexShrink: 0, marginTop: 1 }}/>
+                      <Check size={11} style={{ color: agent.status === 'ativo' ? '#60a5fa' : 'rgba(255,255,255,0.25)', flexShrink: 0, marginTop: 1 }}/>
                       {item}
                     </li>
                   ))}
@@ -1116,7 +1111,7 @@ export default function Landing() {
                 <ul className="space-y-1.5 flex-1 mb-4">
                   {mod.items.map(f => (
                     <li key={f} className="flex items-center gap-2 text-xs" style={{ color: 'rgba(226,232,240,0.5)' }}>
-                      <Check size={11} strokeWidth={2.5} style={{ color: '#60a5fa', flexShrink: 0 }}/>{f}
+                      <Check size={11} style={{ color: '#60a5fa', flexShrink: 0 }}/>{f}
                     </li>
                   ))}
                 </ul>
@@ -1149,7 +1144,7 @@ export default function Landing() {
             ].map((t, i) => (
               <div key={i} className="rounded-2xl p-6 border" style={{ background: 'rgba(59,130,246,0.04)', borderColor: 'rgba(59,130,246,0.1)' }}>
                 <div className="flex gap-0.5 mb-4">
-                  {Array(5).fill(0).map((_, j) => <Star key={j} size={13} fill={C.accentLight} style={{ color: C.accentLight }}/>)}
+                  {Array(5).fill(0).map((_, j) => <Star key={j} size={13} weight="fill" style={{ color: C.accentLight }}/>)}
                 </div>
                 <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(226,232,240,0.7)' }}>"{t.text}"</p>
                 <div>
@@ -1175,7 +1170,7 @@ export default function Landing() {
                 <button onClick={() => setFaqOpen(faqOpen === i ? null : i)}
                   className="w-full flex items-center justify-between px-6 py-5 text-left">
                   <span className="font-semibold text-base pr-4" style={{ color: C.txtDark }}>{item.q}</span>
-                  <ChevronDown size={18} strokeWidth={2} style={{ color: C.accent, flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }}/>
+                  <ChevronDown size={18} style={{ color: C.accent, flexShrink: 0, transform: faqOpen === i ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s ease' }}/>
                 </button>
                 {faqOpen === i && (
                   <div className="px-6 pb-5">

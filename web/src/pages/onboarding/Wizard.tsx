@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Church,
-  User,
-  FileText,
-  CheckCircle2,
-  ChevronRight,
-  Loader2,
-  AlertCircle,
-  Heart,
-  MessageSquare,
-} from 'lucide-react'
+import { ChurchIcon as Church, UserIcon as User, FileTextIcon as FileText, CheckCircleIcon as CheckCircle2, CaretRightIcon as ChevronRight, CircleNotchIcon as Loader2, WarningCircleIcon as AlertCircle, HeartIcon as Heart, ChatTextIcon as MessageSquare } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 
 // ─── CSS helpers ────────────────────────────────────────────────────────────

@@ -1,9 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft, Edit2, Plus, Loader, CheckCircle, XCircle,
-  X, ToggleLeft, ToggleRight,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, PencilSimpleIcon as Edit2, PlusIcon as Plus, CircleNotchIcon as Loader, CheckCircleIcon as CheckCircle, XCircleIcon as XCircle, XIcon as X, ToggleLeftIcon as ToggleLeft, ToggleRightIcon as ToggleRight } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -72,10 +69,10 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
         color: type === 'success' ? '#166534' : '#991b1b',
       }}>
       {type === 'success'
-        ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
-        : <XCircle    size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />}
+        ? <CheckCircle size={16} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+        : <XCircle    size={16} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />}
       <span className="flex-1">{msg}</span>
-      <button onClick={onClose}><X size={14} strokeWidth={2} /></button>
+      <button onClick={onClose}><X size={14} /></button>
     </div>
   )
 }
@@ -147,7 +144,7 @@ function NewCouponModal({ affiliateId, affiliateName, onClose, onCreated }: {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
         <div className="px-6 py-4 border-b border-black/5 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">Novo Cupom — {affiliateName}</h2>
-          <button onClick={onClose}><X size={18} strokeWidth={2} className="text-gray-400" /></button>
+          <button onClick={onClose}><X size={18} className="text-gray-400" /></button>
         </div>
 
         <div className="px-6 py-5 space-y-5 max-h-[75vh] overflow-y-auto">
@@ -249,7 +246,7 @@ function NewCouponModal({ affiliateId, affiliateName, onClose, onCreated }: {
           <button onClick={() => void save()} disabled={saving}
             className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
             style={{ background: 'var(--color-primary)' }}>
-            {saving ? <><Loader size={14} strokeWidth={2} className="animate-spin" />Criando…</> : 'Criar cupom'}
+            {saving ? <><Loader size={14} className="animate-spin" />Criando…</> : 'Criar cupom'}
           </button>
         </div>
       </div>
@@ -385,21 +382,21 @@ export default function AffiliateDetail() {
             <button onClick={() => void saveField(field, editValue)} disabled={savingField}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-50"
               style={{ background: 'var(--color-primary)' }}>
-              {savingField ? <Loader size={12} strokeWidth={2} className="animate-spin" /> : 'OK'}
+              {savingField ? <Loader size={12} className="animate-spin" /> : 'OK'}
             </button>
-            <button onClick={() => setEditingField(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X size={12} strokeWidth={2} /></button>
+            <button onClick={() => setEditingField(null)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100"><X size={12} /></button>
           </div>
         ) : (
           <div className="flex items-center gap-2 flex-1">
             <span className="text-sm text-gray-800 flex-1">{value || '—'}</span>
             <button onClick={() => startEdit(field, value)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-gray-100 text-gray-400 transition">
-              <Edit2 size={12} strokeWidth={2} />
+              <Edit2 size={12} />
             </button>
           </div>
         )}
         {!isEditing && (
           <button onClick={() => startEdit(field, value)} className="p-1.5 rounded hover:bg-gray-100 text-gray-300 hover:text-gray-500 transition">
-            <Edit2 size={12} strokeWidth={2} />
+            <Edit2 size={12} />
           </button>
         )}
       </div>
@@ -412,7 +409,7 @@ export default function AffiliateDetail() {
       <div className="flex items-center gap-4">
         <button onClick={() => navigate('/admin/afiliados')}
           className="p-2 rounded-xl hover:bg-black/5 transition text-gray-400 hover:text-gray-700">
-          <ArrowLeft size={18} strokeWidth={1.75} />
+          <ArrowLeft size={18} />
         </button>
         <div>
           <h1 className="font-display text-2xl font-bold text-gray-900">{affiliate.full_name}</h1>
@@ -452,7 +449,7 @@ export default function AffiliateDetail() {
             <button onClick={() => setShowNewCoupon(true)}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
               style={{ background: 'var(--color-primary)' }}>
-              <Plus size={12} strokeWidth={2} /> Novo
+              <Plus size={12} /> Novo
             </button>
           </div>
           <div className="divide-y divide-black/[0.04]">
@@ -478,10 +475,10 @@ export default function AffiliateDetail() {
                 <button onClick={() => void toggleCoupon(c)} disabled={togglingCoupon === c.id}
                   className="shrink-0 text-gray-400 hover:text-gray-700 transition mt-0.5">
                   {togglingCoupon === c.id
-                    ? <Loader size={16} strokeWidth={2} className="animate-spin" />
+                    ? <Loader size={16} className="animate-spin" />
                     : c.active
-                      ? <ToggleRight size={20} strokeWidth={1.75} style={{ color: '#2D7A4F' }} />
-                      : <ToggleLeft  size={20} strokeWidth={1.75} />
+                      ? <ToggleRight size={20} style={{ color: '#2D7A4F' }} />
+                      : <ToggleLeft  size={20} />
                   }
                 </button>
               </div>

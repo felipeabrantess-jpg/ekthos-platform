@@ -9,10 +9,7 @@
 
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  GripVertical, Plus, Trash2, Pencil, Check, X, ChevronDown, ChevronUp,
-  AlertTriangle, CheckCircle2, Loader2,
-} from 'lucide-react'
+import { DotsSixVerticalIcon as GripVertical, PlusIcon as Plus, TrashIcon as Trash2, PencilIcon as Pencil, CheckIcon as Check, XIcon as X, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, WarningIcon as AlertTriangle, CheckCircleIcon as CheckCircle2, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import ModalPortal from '@/components/ui/ModalPortal'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -203,7 +200,7 @@ function StageRow({ stage, onMoveUp, onMoveDown, isFirst, isLast, onEdit, onDele
           className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/40 transition-all ml-1"
           title="Editar"
         >
-          <Pencil size={13} strokeWidth={1.75} />
+          <Pencil size={13} />
         </button>
         <button
           onClick={() => onDelete(stage.id)}
@@ -211,7 +208,7 @@ function StageRow({ stage, onMoveUp, onMoveDown, isFirst, isLast, onEdit, onDele
           className="p-1.5 rounded-lg text-ekthos-black/20 hover:text-red-500 hover:bg-red-50 transition-all"
           title="Remover etapa"
         >
-          {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} strokeWidth={1.75} />}
+          {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
         </button>
       </div>
     </div>
@@ -611,7 +608,7 @@ export function DiscipleshipSettings() {
                   onClick={() => setShowAddForm(true)}
                   className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
                 >
-                  <Plus size={13} strokeWidth={2.5} />
+                  <Plus size={13} />
                   Adicionar etapa
                 </button>
               )}
@@ -703,7 +700,7 @@ export function DiscipleshipSettings() {
           <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full space-y-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+                <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-semibold text-ekthos-black">Substituir etapas atuais?</p>
                   <p className="text-xs text-ekthos-black/60 mt-1 leading-relaxed">

@@ -7,7 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { X, Pencil, Phone, Mail, Link, MapPin, Calendar, Church, HandHeart, Plus, Trash2, ArrowLeftRight } from 'lucide-react'
+import { XIcon as X, PencilIcon as Pencil, PhoneIcon as Phone, EnvelopeIcon as Mail, LinkIcon as Link, MapPinIcon as MapPin, CalendarBlankIcon as Calendar, ChurchIcon as Church, HandHeartIcon as HandHeart, PlusIcon as Plus, TrashIcon as Trash2, ArrowsLeftRightIcon as ArrowLeftRight } from '@phosphor-icons/react'
 import type { PersonWithStage } from '@/lib/types/joins'
 import { useAuth } from '@/hooks/useAuth'
 import { useTags } from '@/features/people/hooks/useTags'
@@ -532,7 +532,7 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
               onClick={onClose}
               className="p-1.5 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-cream-dark/60 transition-all"
             >
-              <X size={16} strokeWidth={1.75} />
+              <X size={16} />
             </button>
           </div>
 
@@ -576,7 +576,7 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
               onClick={() => onEdit(person)}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition-colors"
             >
-              <Pencil size={12} strokeWidth={2} />
+              <Pencil size={12} />
               Editar
             </button>
           </div>
@@ -745,7 +745,7 @@ export default function PersonDetailPanel({ person, onClose, onEdit }: PersonDet
                 onClick={() => { setSelectedNewGroupId(''); resetChangeCell(); setShowCellModal(true) }}
                 className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors"
               >
-                <ArrowLeftRight size={11} strokeWidth={2} />
+                <ArrowLeftRight size={11} />
                 {celulaId ? 'Trocar' : 'Vincular'}
               </button>
             ) : undefined}

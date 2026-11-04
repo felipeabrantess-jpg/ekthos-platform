@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, FileText, Users, UserCheck, Heart, ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react'
+import { PlusIcon as Plus, FileTextIcon as FileText, UsersIcon as Users, UserCheckIcon as UserCheck, HeartIcon as Heart, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, PencilIcon as Pencil, TrashIcon as Trash2 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'

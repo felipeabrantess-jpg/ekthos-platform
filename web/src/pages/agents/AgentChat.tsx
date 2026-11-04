@@ -17,7 +17,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { History, Lock } from 'lucide-react'
+import { ClockCounterClockwiseIcon as History, LockIcon as Lock } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { usePlan } from '@/hooks/usePlan'
 import { useAuth } from '@/hooks/useAuth'
@@ -201,7 +201,7 @@ export default function AgentChat() {
           className="h-14 w-14 rounded-2xl flex items-center justify-center mb-4"
           style={{ background: 'rgba(225,53,0,0.06)', border: '1px solid rgba(225,53,0,0.12)' }}
         >
-          <Lock size={22} className="text-brand-400" strokeWidth={1.75} />
+          <Lock size={22} className="text-brand-400" />
         </div>
         <p className="text-sm font-semibold text-ekthos-black">Acesso restrito</p>
         <p className="text-xs text-ekthos-black/50 mt-1.5 leading-relaxed max-w-[200px]">
@@ -274,7 +274,7 @@ export default function AgentChat() {
           title="Histórico de conversas"
           aria-label="Ver histórico"
         >
-          <History size={18} strokeWidth={1.75} />
+          <History size={18} />
         </button>
 
         <AgentChatInterface

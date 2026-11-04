@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link }                from 'react-router-dom'
-import { ChevronLeft, Clock, MapPin, Calendar } from 'lucide-react'
+import { CaretLeftIcon as ChevronLeft, ClockIcon as Clock, MapPinIcon as MapPin, CalendarBlankIcon as Calendar } from '@phosphor-icons/react'
 import { IGV } from '@/lib/igv-public-data'
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/igv-public-agenda`
@@ -79,7 +79,7 @@ function EmptyEvents() {
         className="w-12 h-12 rounded-2xl flex items-center justify-center"
         style={{ backgroundColor: `${IGV.primaryColor}15` }}
       >
-        <Calendar size={22} strokeWidth={1.5} style={{ color: IGV.primaryColor }} />
+        <Calendar size={22} style={{ color: IGV.primaryColor }} />
       </div>
       <p className="text-[0.9rem] font-medium text-gray-700 dark:text-white">Nenhum evento agendado</p>
       <p className="text-[0.8rem] text-gray-400 dark:text-white leading-snug">
@@ -132,7 +132,7 @@ export default function IgvAgenda() {
             className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 dark:bg-white/10 border border-black/[0.05] dark:border-white/10 shrink-0 active:bg-gray-100 dark:active:bg-white/20 transition-colors"
             aria-label="Voltar para IGV"
           >
-            <ChevronLeft size={18} strokeWidth={2} className="text-gray-600 dark:text-white" />
+            <ChevronLeft size={18} className="text-gray-600 dark:text-white" />
           </Link>
           <h1 className="text-[1.18rem] font-bold text-gray-900 dark:text-white">Agenda</h1>
         </div>
@@ -155,7 +155,7 @@ export default function IgvAgenda() {
                   className="flex items-center gap-1.5 px-4 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]"
                   style={{ backgroundColor: `${IGV.primaryColor}0d` }}
                 >
-                  <MapPin size={14} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+                  <MapPin size={14} style={{ color: IGV.primaryColor }} />
                   <p className="text-[0.95rem] font-semibold text-gray-900 dark:text-white">
                     {local}
                   </p>
@@ -169,7 +169,7 @@ export default function IgvAgenda() {
                         className="flex items-center justify-center w-8 h-8 rounded-xl shrink-0"
                         style={{ backgroundColor: `${IGV.primaryColor}15` }}
                       >
-                        <Clock size={15} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+                        <Clock size={15} style={{ color: IGV.primaryColor }} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[0.95rem] text-gray-700 dark:text-white">{h.dia}</p>
@@ -234,7 +234,7 @@ export default function IgvAgenda() {
                       </p>
                       {ev.startDatetime && (
                         <div className="flex items-center gap-1 mt-1">
-                          <Clock size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
+                          <Clock size={12} className="text-gray-300 dark:text-white/30" />
                           <span className="text-[0.85rem] text-gray-400 dark:text-white">
                             {formatTime(ev.startDatetime)}
                           </span>
@@ -242,7 +242,7 @@ export default function IgvAgenda() {
                       )}
                       {ev.location && (
                         <div className="flex items-center gap-1 mt-0.5">
-                          <MapPin size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
+                          <MapPin size={12} className="text-gray-300 dark:text-white/30" />
                           <span className="text-[0.75rem] text-gray-400 dark:text-white truncate">
                             {ev.location}
                           </span>

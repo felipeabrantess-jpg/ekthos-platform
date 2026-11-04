@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { X } from 'lucide-react'
+import { XIcon as X } from '@phosphor-icons/react'
 import ModalPortal from './ModalPortal'
 
 interface ModalProps {
@@ -47,7 +47,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }: M
               e.currentTarget.style.color = 'var(--text-tertiary)'
             }}
           >
-            <X size={18} strokeWidth={1.75} />
+            <X size={18} />
           </button>
         </div>
         <div className="overflow-y-auto px-6 py-4 flex-1">{children}</div>
