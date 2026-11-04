@@ -158,7 +158,7 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 /** Estado vazio ou de erro, sempre igual. */
-export function IgvNotice({ Icon, title, children, tone = 'default' }: { Icon?: PhosphorIcon; title: string; children?: ReactNode; tone?: 'default' | 'error' }) {
+export function IgvNotice({ Icon, title, children, tone = 'default' }: { Icon?: AnyIcon; title: string; children?: ReactNode; tone?: 'default' | 'error' }) {
   return (
     <GlassCard className="flex flex-col items-center text-center gap-2 py-8">
       {Icon && <IconTile Icon={Icon} />}
