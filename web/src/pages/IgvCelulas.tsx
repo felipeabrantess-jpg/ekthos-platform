@@ -5,8 +5,10 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Link }                from 'react-router-dom'
-import { CaretLeftIcon as ChevronLeft, HouseIcon as Home } from '@phosphor-icons/react'
+import { CircleNotchIcon, MapPinIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_TEXT } from '@/components/igv'
+import { CommunityIcon } from '@/components/igv/icons'
+import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV }                 from '@/lib/igv-public-data'
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/igv-public-groups`
@@ -71,51 +73,27 @@ function GrupoCard({ grupo }: { grupo: Grupo }) {
   const initial = grupo.name.charAt(0).toUpperCase()
 
   return (
-    <div className="bg-[#111] rounded-2xl border border-white/10 p-4">
-      {/* Cabeçalho: avatar inicial + nome + badge dia */}
-      <div className="flex items-start gap-3 mb-3">
-        <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-lg"
-          style={{
-            backgroundColor: `${IGV.primaryColor}18`,
-            color:           IGV.primaryColor,
-            border:          `1.5px solid ${IGV.primaryColor}30`,
-          }}
-        >
+    <GlassCard>
+      <div className="flex items-center gap-4 mb-3">
+        <span className={`igv-glass igv-glass--tile igv-serif w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${IGV_TEXT.heading}`} aria-hidden="true">
           {initial}
-        </div>
-
+        </span>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-white text-[1.02rem] leading-tight">{grupo.name}</p>
-          <span
-            className="inline-block text-[0.82rem] font-medium px-2 py-0.5 rounded-full mt-1"
-            style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
-          >
-            {grupo.meeting_day ?? 'Dia a confirmar'}
-          </span>
+          <p className={IGV_TEXT.item}>{grupo.name}</p>
+          <p className={`mt-0.5 ${IGV_TEXT.muted}`}>{grupo.meeting_day ?? 'Dia a confirmar'}</p>
         </div>
       </div>
 
-      <p className="text-[0.92rem] text-white/70 mb-3 leading-snug flex gap-1.5 items-start">
-        <span className="text-white/40 shrink-0 mt-0.5">📍</span>
+      <p className={`flex items-start gap-2 mb-4 ${IGV_TEXT.muted}`}>
+        <MapPinIcon size={ICON_SIZE.button} className="shrink-0" aria-hidden="true" />
         {bairro ?? 'Bairro a confirmar com a secretaria'}
       </p>
 
-      <a
-        href={buildWhatsAppUrl(grupo.name)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-[0.88rem] font-semibold border"
-        style={{
-          borderColor:     'rgba(34,197,94,0.25)',
-          color:           '#4ade80',
-          backgroundColor: 'rgba(34,197,94,0.1)',
-        }}
-      >
-        <WhatsAppIcon size={15} />
+      <GlassButton href={buildWhatsAppUrl(grupo.name)} fullWidth>
+        <WhatsAppIcon size={ICON_SIZE.button} />
         Falar com a secretaria
-      </a>
-    </div>
+      </GlassButton>
+    </GlassCard>
   )
 }
 
@@ -145,78 +123,40 @@ export default function IgvCelulas() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-black" style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}>
+    <IgvPageShell>
+      <PageHeader title="Nossas Células" subtitle="Igreja Gerando Vencedores" />
 
-      {/* Header fixo */}
-      <div
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3 border-b border-white/[0.06]"
-        style={{ backgroundColor: '#000' }}
-      >
-        <Link
-          to="/igv"
-          className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
-        >
-          <ChevronLeft size={18} />
-        </Link>
-        <div>
-          <p className="font-semibold text-white text-[1.02rem] leading-tight">Nossas Células</p>
-          <p className="text-[0.82rem] text-white/50">Igreja Gerando Vencedores</p>
-        </div>
-      </div>
-
-      <div className="px-4 pt-5 pb-8">
-
-        {/* Intro */}
-        <div className="mb-5">
-          <p className="text-[1rem] text-white/70 leading-relaxed">
+      <IgvContent>
+        <GlassCard className="flex items-center gap-4">
+          <IconTile Icon={CommunityIcon} />
+          <p className={`min-w-0 ${IGV_TEXT.body}`}>
             Encontre a célula mais perto de você e conecte-se com a comunidade IGV na sua região.
           </p>
-        </div>
+        </GlassCard>
 
         {/* Estados: loading / erro / vazio / lista */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div
-              className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: `${IGV.primaryColor}40`, borderTopColor: IGV.primaryColor }}
-            />
-          </div>
+          <GlassCard className="flex justify-center py-10">
+            <CircleNotchIcon size={ICON_SIZE.tile} className="animate-spin text-[var(--igv-accent)]" role="status" aria-label="Carregando" />
+          </GlassCard>
 
         ) : error ? (
-          <div className="text-center py-16 text-white/50">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: `${IGV.primaryColor}15` }}
-            >
-              <Home size={26} style={{ color: IGV.primaryColor }} />
-            </div>
-            <p className="font-semibold text-white/70 mb-1">Não foi possível carregar</p>
-            <p className="text-[1rem]">Verifique sua conexão e tente novamente.</p>
-          </div>
+          <IgvNotice Icon={WarningCircleIcon} title="Não foi possível carregar" tone="error">
+            Verifique sua conexão e tente novamente.
+          </IgvNotice>
 
         ) : grupos.length === 0 ? (
-          <div className="text-center py-16 text-white/50">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: `${IGV.primaryColor}15` }}
-            >
-              <Home size={26} style={{ color: IGV.primaryColor }} />
-            </div>
-            <p className="font-semibold text-white/70 mb-1">Nenhuma célula encontrada</p>
-            <p className="text-[1rem]">Em breve novas informações!</p>
-          </div>
+          <IgvNotice Icon={CommunityIcon} title="Nenhuma célula encontrada">
+            Em breve novas informações!
+          </IgvNotice>
 
         ) : (
           <>
-            <p className="text-[0.82rem] text-white/50 mb-4">{grupos.length} células ativas</p>
-            <div className="flex flex-col gap-2.5">
-              {grupos.map(g => <GrupoCard key={g.id} grupo={g} />)}
-            </div>
+            <p className={`mt-2 px-1 ${IGV_TEXT.muted}`}>{grupos.length} células ativas</p>
+            {grupos.map(g => <GrupoCard key={g.id} grupo={g} />)}
           </>
         )}
-
-      </div>
-    </div>
+      </IgvContent>
+    </IgvPageShell>
   )
 }
