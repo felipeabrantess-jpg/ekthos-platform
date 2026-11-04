@@ -12,6 +12,7 @@ export const IGV = {
   whatsapp:        '5521974646794',
   instagramHandle: 'igvitaipu',
   youtubeUrl:      'https://www.youtube.com/@igrejagerandovencedores',
+  spotifyUrl:      'https://open.spotify.com/show/4bT7Y97ETaW1LP9xYaipdx?si=461249d4fc134cbb',
   primaryColor:    '#D97706',
   secondaryColor:  '#78350F',
   // Foto da fachada (hero background)
