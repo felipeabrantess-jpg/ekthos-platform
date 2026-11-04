@@ -91,3 +91,9 @@ export const OpenHandsIcon = base(<>
   <path d="M26.5 18.500V10c0-1.8-2.5-1.8-2.5 0" />
   <path d="M16 3.500v5M11.5 5l1 2.500M20.5 5l-1 2.5" />
 </>)
+
+export const BusinessCrossIcon = base(<>
+  <rect x="3.5" y="10" width="25" height="18" rx="3" />
+  <path d="M11.5 10V7a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v3" />
+  <path d="M16 14v9M12.5 17.500h7" />
+</>)
