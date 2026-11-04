@@ -25,6 +25,17 @@ interface Grupo {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
+// Bairro → como a igreja identifica a região (definido pelo proprietário)
+const BAIRRO_REGIAO: Record<string, string> = {
+  'recanto':            'Recanto – Itaipuaçu',
+  'argeu / fazendinha': 'Argeu / Fazendinha – Piratininga',
+  'são francisco':      'São Francisco – Niterói',
+  'barroco':            'Barroco – Itaipuaçu',
+  'serra grande':       'Serra Grande – Itaipu',
+  'engenho do mato':    'Engenho do Mato – Itaipu',
+  'camboinhas':         'Camboinhas – Niterói',
+}
+
 // Mostra só o bairro: a rua e o número costumam ser a casa de um membro
 function extractBairro(location: string | null): string | null {
   if (!location) return null
@@ -32,6 +43,8 @@ function extractBairro(location: string | null): string | null {
   const tail = location.match(/\s[-–]\s*([^-–]+)$/)?.[1] ?? location.match(/,\s*([A-ZÀ-Ú ]{3,})$/)?.[1]
   if (!tail) return null
   const bairro = tail.trim()
+  const regiao = BAIRRO_REGIAO[bairro.toLowerCase()]
+  if (regiao) return regiao
   if (bairro !== bairro.toUpperCase()) return bairro
   return bairro.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
