@@ -11,7 +11,7 @@ import { Link }                                  from 'react-router-dom'
 import {
   ChevronRight, Users, BookOpen,
   Share2, Calendar, Book, Building2,
-  CalendarCheck, Heart, Smartphone, Copy, GraduationCap, Briefcase, Home,
+  Heart, Smartphone, Copy, GraduationCap, Briefcase, Home,
 } from 'lucide-react'
 import { IGV } from '@/lib/igv-public-data'
 
@@ -294,7 +294,7 @@ export default function IgvPage() {
               {IGV.name}
             </h1>
             <p className="mt-0.5 text-white/75 text-[1rem] font-medium">{IGV.pastor}</p>
-            <p className="mt-0.5 text-white/50 text-[0.86rem]">{IGV.address}</p>
+            <p className="mt-0.5 text-white/50 text-[0.86rem]"><span className="whitespace-pre-line">{IGV.address}</span></p>
 
             {showInstallButton && (
               <button
@@ -343,7 +343,7 @@ export default function IgvPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Sobre Nós</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Missão, visão e horários</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Missão, visão e valores</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -419,7 +419,7 @@ export default function IgvPage() {
             </div>
             <div>
               <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Nossas Células</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">12 GGVs — encontre a mais perto</p>
+              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Encontre a mais perto de você</p>
             </div>
           </div>
           <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
@@ -486,25 +486,6 @@ export default function IgvPage() {
         </Link>
 
         <Link
-          to="/igv/agenda"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <CalendarCheck size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Eventos</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Próximas atividades da IGV</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
-
-        <Link
           to="/igv/oracao"
           className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
         >
@@ -525,7 +506,7 @@ export default function IgvPage() {
       </main>
 
       <footer className="text-center px-4 py-5 text-[0.82rem] text-gray-400 dark:text-white/50">
-        {IGV.address}
+        <span className="whitespace-pre-line">{IGV.address}</span>
       </footer>
 
       {/* ── Banner iOS fixo ── */}

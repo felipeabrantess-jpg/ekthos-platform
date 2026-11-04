@@ -182,7 +182,7 @@ export default function IgvOracao() {
       </main>
 
       <footer className="text-center px-4 py-5 text-[0.82rem] text-white/50">
-        {IGV.address}
+        <span className="whitespace-pre-line">{IGV.address}</span>
       </footer>
 
     </div>

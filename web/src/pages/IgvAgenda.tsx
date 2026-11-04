@@ -37,13 +37,13 @@ function formatTime(iso: string): string {
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`
 }
 
-// Agrupa horários por dia da semana
-type HorarioItem = { dia: string; hora: string; local: string }
-function groupByDay(horarios: readonly HorarioItem[]): [string, HorarioItem[]][] {
+// Agrupa horários por igreja
+type HorarioItem = { dia: string; hora: string; local: string; nome: string | null }
+function groupByLocal(horarios: readonly HorarioItem[]): [string, HorarioItem[]][] {
   const map = new Map<string, HorarioItem[]>()
   for (const h of horarios) {
-    if (!map.has(h.dia)) map.set(h.dia, [])
-    map.get(h.dia)!.push(h)
+    if (!map.has(h.local)) map.set(h.local, [])
+    map.get(h.local)!.push(h)
   }
   return [...map.entries()]
 }
@@ -117,7 +117,7 @@ export default function IgvAgenda() {
       .finally(() => setLoading(false))
   }, [])
 
-  const horarioGroups = groupByDay(IGV.horarios)
+  const horarioGroups = groupByLocal(IGV.horarios)
 
   return (
     <div
@@ -145,22 +145,23 @@ export default function IgvAgenda() {
         <section>
           <SectionLabel>Cultos</SectionLabel>
           <div className="space-y-2">
-            {horarioGroups.map(([dia, horarios]) => (
+            {horarioGroups.map(([local, horarios]) => (
               <div
-                key={dia}
+                key={local}
                 className="bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm overflow-hidden"
               >
-                {/* Cabeçalho do dia */}
+                {/* Cabeçalho da igreja */}
                 <div
-                  className="px-4 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]"
+                  className="flex items-center gap-1.5 px-4 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]"
                   style={{ backgroundColor: `${IGV.primaryColor}0d` }}
                 >
-                  <p className="text-[0.9rem] font-semibold" style={{ color: IGV.secondaryColor }}>
-                    {dia}
+                  <MapPin size={14} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+                  <p className="text-[0.95rem] font-semibold text-gray-900 dark:text-white">
+                    {local}
                   </p>
                 </div>
 
-                {/* Horários do dia */}
+                {/* Horários da igreja */}
                 <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
                   {horarios.map((h, i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-3">
@@ -170,13 +171,13 @@ export default function IgvAgenda() {
                       >
                         <Clock size={15} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
                       </div>
-                      <span className="text-[1.04rem] font-semibold text-gray-900 dark:text-white flex-1">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[0.95rem] text-gray-700 dark:text-white">{h.dia}</p>
+                        {h.nome && <p className="text-[0.82rem] text-gray-500 dark:text-white/70">{h.nome}</p>}
+                      </div>
+                      <span className="text-[1.04rem] font-semibold text-gray-900 dark:text-white">
                         {h.hora}
                       </span>
-                      <div className="flex items-center gap-1 text-gray-400 dark:text-white">
-                        <MapPin size={12} strokeWidth={1.75} />
-                        <span className="text-[0.85rem]">{h.local}</span>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -257,7 +258,7 @@ export default function IgvAgenda() {
       </main>
 
       <footer className="text-center px-4 py-5 text-[0.82rem] text-gray-400 dark:text-white/50">
-        {IGV.address}
+        <span className="whitespace-pre-line">{IGV.address}</span>
       </footer>
     </div>
   )

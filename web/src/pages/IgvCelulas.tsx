@@ -25,19 +25,20 @@ interface Grupo {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
-// Extrai o primeiro número de telefone brasileiro do campo notes (texto livre)
-// Aceita: (21) 99985-0307 · (21) 96991-3688 · 21 96454-6449
-function extractPhone(notes: string | null): string | null {
-  if (!notes) return null
-  const match = notes.match(/\(\d{2}\)\s*\d{4,5}[-\s]?\d{4}/)
-  if (!match) return null
-  return match[0].replace(/\D/g, '')
+// Mostra só o bairro: a rua e o número costumam ser a casa de um membro
+function extractBairro(location: string | null): string | null {
+  if (!location) return null
+  if (/s[ãa]o f[áa]bio/i.test(location)) return 'Itaipu'
+  const tail = location.match(/\s[-–]\s*([^-–]+)$/)?.[1] ?? location.match(/,\s*([A-ZÀ-Ú ]{3,})$/)?.[1]
+  if (!tail) return null
+  const bairro = tail.trim()
+  if (bairro !== bairro.toUpperCase()) return bairro
+  return bairro.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
 }
 
-function buildWhatsAppUrl(rawPhone: string, groupName: string): string {
-  const digits = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`
+function buildWhatsAppUrl(groupName: string): string {
   const msg = `Olá! Vi a célula ${groupName} no app da IGV e gostaria de saber mais sobre como participar.`
-  return `https://wa.me/${digits}?text=${encodeURIComponent(msg)}`
+  return `https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent(msg)}`
 }
 
 // ── Ícone WhatsApp ───────────────────────────────────────────────────────────────
@@ -53,7 +54,7 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 // ── Card de grupo ────────────────────────────────────────────────────────────────
 
 function GrupoCard({ grupo }: { grupo: Grupo }) {
-  const phone   = extractPhone(grupo.notes)
+  const bairro = extractBairro(grupo.location)
   const initial = grupo.name.charAt(0).toUpperCase()
 
   return (
@@ -77,41 +78,30 @@ function GrupoCard({ grupo }: { grupo: Grupo }) {
             className="inline-block text-[0.82rem] font-medium px-2 py-0.5 rounded-full mt-1"
             style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
           >
-            {grupo.meeting_day ?? 'A confirmar com o líder'}
+            {grupo.meeting_day ?? 'Dia a confirmar'}
           </span>
         </div>
       </div>
 
-      {/* Endereço */}
-      {grupo.location && (
-        <p className="text-[0.92rem] text-white/70 mb-2 leading-snug flex gap-1.5 items-start">
-          <span className="text-white/40 shrink-0 mt-0.5">📍</span>
-          {grupo.location}
-        </p>
-      )}
+      <p className="text-[0.92rem] text-white/70 mb-3 leading-snug flex gap-1.5 items-start">
+        <span className="text-white/40 shrink-0 mt-0.5">📍</span>
+        {bairro ?? 'Bairro a confirmar com a secretaria'}
+      </p>
 
-      {/* Contato em texto livre (notes) */}
-      {grupo.notes && (
-        <p className="text-[0.88rem] text-white/60 mb-3 leading-snug">{grupo.notes}</p>
-      )}
-
-      {/* Botão WhatsApp (só aparece se extração de telefone tiver sucesso) */}
-      {phone && (
-        <a
-          href={buildWhatsAppUrl(phone, grupo.name)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-[0.88rem] font-semibold border"
-          style={{
-            borderColor:     'rgba(34,197,94,0.25)',
-            color:           '#4ade80',
-            backgroundColor: 'rgba(34,197,94,0.1)',
-          }}
-        >
-          <WhatsAppIcon size={15} />
-          Entrar em contato
-        </a>
-      )}
+      <a
+        href={buildWhatsAppUrl(grupo.name)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 h-9 px-3.5 rounded-xl text-[0.88rem] font-semibold border"
+        style={{
+          borderColor:     'rgba(34,197,94,0.25)',
+          color:           '#4ade80',
+          backgroundColor: 'rgba(34,197,94,0.1)',
+        }}
+      >
+        <WhatsAppIcon size={15} />
+        Falar com a secretaria
+      </a>
     </div>
   )
 }
