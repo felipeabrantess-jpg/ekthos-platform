@@ -8,8 +8,9 @@
 
 import { useState, useEffect, useRef }          from 'react'
 import { Link }                                  from 'react-router-dom'
-import { ShareNetworkIcon as Share2, CalendarBlankIcon as Calendar, BuildingsIcon as Building2, HeartIcon as Heart, DeviceMobileIcon as Smartphone, CopyIcon as Copy, GraduationCapIcon as GraduationCap, BriefcaseIcon as Briefcase, HouseIcon as Home } from '@phosphor-icons/react'
+import { ShareNetworkIcon as Share2, DeviceMobileIcon as Smartphone, CopyIcon as Copy } from '@phosphor-icons/react'
 import { IGV } from '@/lib/igv-public-data'
+import { CalendarCrossIcon, CommunityIcon, OpenBookIcon, OpenHandsIcon, PastorIcon, PrayerHandsIcon } from '@/components/igv/icons'
 import { GlassButton, GlassCard, GlassIconButton, GlassLinkCard, IconTile, IgvContent, IgvPageShell, SectionTitle, IGV_FOCUS, IGV_TEXT } from '@/components/igv'
 import { XIcon as X, WarningCircleIcon as AlertCircle, CheckIcon as Check, ArrowDownIcon as ArrowDown } from '@phosphor-icons/react'
 import { ICON_SIZE } from '@/lib/icon-tokens'
@@ -179,12 +180,12 @@ function ActionCard({
 }
 
 const ITENS = [
-  { to: '/igv/agenda',      titulo: 'Agenda',            sub: 'Cultos e próximos eventos',             Icone: Calendar },
-  { to: '/igv/oracao',      titulo: 'Pedidos de Oração', sub: 'Compartilhe com nossa equipe pastoral', Icone: Heart },
-  { to: '/igv/gabinete',    titulo: 'Gabinete Pastoral', sub: 'Contato com os líderes da IGV',         Icone: Building2 },
-  { to: '/igv/celulas',     titulo: 'Nossas Células',    sub: 'Encontre a mais perto de você',         Icone: Home },
-  { to: '/igv/cursos',      titulo: 'Cursos',            sub: 'Formações com inscrição',               Icone: GraduationCap },
-  { to: '/igv/empresarios', titulo: 'Rede de Negócios',  sub: 'Empresários da congregação',            Icone: Briefcase },
+  { to: '/igv/agenda',      titulo: 'Agenda',            sub: 'Cultos e próximos eventos',             Icone: CalendarCrossIcon },
+  { to: '/igv/oracao',      titulo: 'Pedidos de Oração', sub: 'Compartilhe com nossa equipe pastoral', Icone: PrayerHandsIcon },
+  { to: '/igv/gabinete',    titulo: 'Gabinete Pastoral', sub: 'Contato com os líderes da IGV',         Icone: PastorIcon },
+  { to: '/igv/celulas',     titulo: 'Nossas Células',    sub: 'Encontre a mais perto de você',         Icone: CommunityIcon },
+  { to: '/igv/cursos',      titulo: 'Cursos',            sub: 'Formações com inscrição',               Icone: OpenBookIcon },
+  { to: '/igv/empresarios', titulo: 'Rede de Negócios',  sub: 'Empresários da congregação',            Icone: OpenHandsIcon },
 ]
 
 // ── Componente principal ───────────────────────────────────────────
@@ -319,13 +320,13 @@ export default function IgvPage() {
       <IgvContent>
 
         {/* Versículo em destaque */}
-        <Link to="/igv/biblia" className={`${IGV_FOCUS} block rounded-[20px] bg-[var(--igv-dark)] text-white p-5`}>
+        <Link to="/igv/biblia" className={`${IGV_FOCUS} igv-rise block rounded-[20px] bg-[var(--igv-dark)] text-white p-5`}>
           <p className="text-base font-medium text-[var(--igv-line)]">Palavra para hoje</p>
-          <p className="mt-1 text-lg font-semibold">Salmos 23:1</p>
-          <p className="mt-4 igv-serif text-[1.5rem] leading-snug">
+          <p className="igv-rise igv-rise--1 mt-1 text-lg font-semibold">Salmos 23:1</p>
+          <p className="igv-rise igv-rise--2 mt-4 igv-serif text-[1.5rem] leading-snug">
             O Senhor é o meu pastor; nada me faltará.
           </p>
-          <span className="igv-glass mt-5 inline-flex items-center min-h-[48px] px-5 rounded-full text-[var(--igv-ink)] text-base font-medium">
+          <span className="igv-glass igv-glass--on-dark igv-rise igv-rise--3 mt-5 inline-flex items-center min-h-[48px] px-5 rounded-full text-[1rem] font-medium">
             Abrir a Bíblia
           </span>
         </Link>

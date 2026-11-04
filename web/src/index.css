@@ -116,10 +116,51 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 4px 18px rgba(31, 20, 12, 0.1);
 }
 .igv-glass--accent {
-  background: rgba(127, 64, 16, 0.9);
-  border-color: rgba(255, 255, 255, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 10px rgba(31, 20, 12, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0) 60%),
+    rgba(122, 62, 16, 0.88);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(60, 28, 6, 0.35), 0 6px 18px rgba(92, 46, 12, 0.28);
+}
+/* Vidro sobre fundo escuro (cartão da Palavra): deixa o café aparecer */
+.igv-glass--on-dark {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.1) 55%, rgba(255, 255, 255, 0.14) 100%);
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 16px rgba(0, 0, 0, 0.3);
+  color: #fff;
+}
+/* Quadrado de ícone: vidro com tom cobre bem leve e brilho no topo */
+.igv-glass--tile {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.85), rgba(143, 74, 20, 0.1));
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(143, 74, 20, 0.1), 0 3px 10px rgba(31, 20, 12, 0.1);
 }
 .igv-card { background: rgba(255, 255, 255, 0.86); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 12px rgba(31, 20, 12, 0.05); }
 /* Vidro dentro de cartão claro: a borda precisa aparecer */
 .igv-glass--inset { background: rgba(247, 245, 242, 0.7); border-color: var(--igv-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8); }
+
+/* Movimento do app IGV: só transform e opacity; desliga com "reduzir movimento". */
+@keyframes igv-icon-wiggle {
+  0%   { transform: rotate(0) scale(1); }
+  25%  { transform: rotate(-10deg) scale(1.16); }
+  55%  { transform: rotate(8deg) scale(1.12); }
+  80%  { transform: rotate(-3deg) scale(1.04); }
+  100% { transform: rotate(0) scale(1); }
+}
+@keyframes igv-icon-in {
+  from { opacity: 0; transform: scale(0.6) rotate(-12deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes igv-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.igv-glass--tile svg, .igv-app nav svg { animation: igv-icon-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both 120ms; }
+.igv-app svg.igv-wiggle { animation: igv-icon-wiggle 620ms cubic-bezier(0.34, 1.3, 0.64, 1); transform-origin: center; }
+.igv-rise { animation: igv-rise 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.igv-rise--1 { animation-delay: 180ms; }
+.igv-rise--2 { animation-delay: 360ms; }
+.igv-rise--3 { animation-delay: 560ms; }
+@media (prefers-reduced-motion: reduce) {
+  .igv-glass--tile svg, .igv-app nav svg, .igv-app svg.igv-wiggle, .igv-rise { animation: none; }
+}

@@ -6,9 +6,12 @@ import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import {
-  HouseIcon, BookOpenIcon, CalendarBlankIcon, HeartIcon, UsersIcon, CaretLeftIcon, CaretRightIcon, CheckIcon, CheckCircleIcon,
+  CaretLeftIcon, CaretRightIcon, CheckIcon, CheckCircleIcon,
 } from '@phosphor-icons/react'
 import { ICON_SIZE } from '@/lib/icon-tokens'
+import { BibleIcon, CalendarCrossIcon, ChurchIcon, CommunityIcon, PrayerHandsIcon, type IgvIconProps } from './icons'
+
+export type AnyIcon = PhosphorIcon | ((p: IgvIconProps) => JSX.Element)
 
 // ── Tokens de classe ─────────────────────────────────────────────────
 
@@ -102,7 +105,7 @@ export function GlassCard({ children, className = '', ...rest }: HTMLAttributes<
 }
 
 /** Cartão-link da lista: texto à esquerda, imagem ou ícone quadrado à direita. */
-export function GlassLinkCard({ to, title, subtitle, Icon, image }: { to: string; title: string; subtitle?: string; Icon?: PhosphorIcon; image?: string }) {
+export function GlassLinkCard({ to, title, subtitle, Icon, image }: { to: string; title: string; subtitle?: string; Icon?: AnyIcon; image?: string }) {
   return (
     <Link to={to} className={`${CARD_BASE} ${IGV_FOCUS} flex items-center gap-4 min-h-[88px] p-4 pl-5`}>
       <div className="flex-1 min-w-0">
@@ -112,15 +115,15 @@ export function GlassLinkCard({ to, title, subtitle, Icon, image }: { to: string
       {image
         ? <img src={image} alt="" aria-hidden="true" className="w-[72px] h-[72px] rounded-2xl object-cover shrink-0" />
         : Icon
-          ? <span className="w-14 h-14 rounded-2xl bg-[var(--igv-tint)] flex items-center justify-center shrink-0"><Icon size={ICON_SIZE.list} className="text-[var(--igv-ink)]" aria-hidden="true" /></span>
+          ? <IconTile Icon={Icon} />
           : <CaretRightIcon size={ICON_SIZE.button} className="text-[var(--igv-muted)] shrink-0" aria-hidden="true" />}
     </Link>
   )
 }
 
 /** Quadrado de ícone dentro de cartões (data, tipo de item). */
-export function IconTile({ Icon }: { Icon: PhosphorIcon }) {
-  return <span className="w-12 h-12 rounded-2xl bg-[var(--igv-tint)] flex items-center justify-center shrink-0"><Icon size={ICON_SIZE.list} className="text-[var(--igv-ink)]" aria-hidden="true" /></span>
+export function IconTile({ Icon }: { Icon: AnyIcon }) {
+  return <span className="igv-glass igv-glass--tile w-14 h-14 rounded-2xl flex items-center justify-center shrink-0"><Icon size={ICON_SIZE.tile} className="text-[var(--igv-accent)]" aria-hidden="true" /></span>
 }
 
 // ── Estrutura da página ──────────────────────────────────────────────
@@ -168,11 +171,11 @@ export function IgvNotice({ Icon, title, children, tone = 'default' }: { Icon?: 
 // ── Navegação inferior ───────────────────────────────────────────────
 
 const NAV = [
-  { to: '/igv',         label: 'Início',  Icon: HouseIcon },
-  { to: '/igv/biblia',  label: 'Bíblia',  Icon: BookOpenIcon },
-  { to: '/igv/agenda',  label: 'Agenda',  Icon: CalendarBlankIcon },
-  { to: '/igv/oracao',  label: 'Oração',  Icon: HeartIcon },
-  { to: '/igv/celulas', label: 'Células', Icon: UsersIcon },
+  { to: '/igv',         label: 'Início',  Icon: ChurchIcon },
+  { to: '/igv/biblia',  label: 'Bíblia',  Icon: BibleIcon },
+  { to: '/igv/agenda',  label: 'Agenda',  Icon: CalendarCrossIcon },
+  { to: '/igv/oracao',  label: 'Oração',  Icon: PrayerHandsIcon },
+  { to: '/igv/celulas', label: 'Células', Icon: CommunityIcon },
 ]
 
 export function GlassNavBar() {
