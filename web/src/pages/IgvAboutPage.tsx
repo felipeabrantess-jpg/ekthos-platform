@@ -7,21 +7,8 @@
 
 import { type ReactNode }                          from 'react'
 import { Link }                                    from 'react-router-dom'
-import { ArrowLeft, MapPin, MessageCircle }        from 'lucide-react'
+import { ArrowLeft, MessageCircle }        from 'lucide-react'
 import { IGV }                                     from '@/lib/igv-public-data'
-
-// ── Helpers ────────────────────────────────────────────────────────
-
-function groupScheduleByLocal(horarios: typeof IGV.horarios) {
-  const map: Record<string, { dia: string; hora: string }[]> = {}
-  for (const h of horarios) {
-    for (const local of h.local.split(' e ').map(s => s.trim())) {
-      if (!map[local]) map[local] = []
-      map[local].push({ dia: h.dia, hora: h.hora })
-    }
-  }
-  return map
-}
 
 // ── Card auxiliar ──────────────────────────────────────────────────
 
@@ -42,8 +29,6 @@ function Card({ label, children }: { label: string; children: ReactNode }) {
 // ── Componente principal ───────────────────────────────────────────
 
 export default function IgvAboutPage() {
-  const scheduleByLocal = groupScheduleByLocal(IGV.horarios)
-
   return (
     <div
       className="min-h-screen bg-black flex flex-col"
@@ -108,35 +93,9 @@ export default function IgvAboutPage() {
           </p>
         </Card>
 
-        {/* Horários */}
-        <Card label="Horários de Culto">
-          <div className="space-y-5">
-            {Object.entries(scheduleByLocal).map(([local, cultos]) => (
-              <div key={local}>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <MapPin size={13} strokeWidth={1.75} className="text-white/40" />
-                  <p className="text-[0.83rem] font-semibold text-white/60 uppercase tracking-wide">
-                    {local}
-                  </p>
-                </div>
-                <div className="space-y-2 pl-0.5">
-                  {cultos.map((c, i) => (
-                    <div key={i} className="flex items-center gap-3 text-[1rem]">
-                      <span className="w-28 text-white/70 shrink-0">{c.dia}</span>
-                      <span className="font-semibold" style={{ color: IGV.primaryColor }}>
-                        {c.hora}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
         {/* Endereço e Contato */}
         <Card label="Endereço e Contato">
-          <p className="text-[1rem] text-white/90 mb-0.5">{IGV.address}</p>
+          <p className="text-[1rem] text-white/90 mb-0.5"><span className="whitespace-pre-line">{IGV.address}</span></p>
           <p className="text-[1rem] text-white/70 mb-4">{IGV.phone}</p>
           <a
             href={`https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent('Olá! Gostaria de saber mais sobre a Igreja Gerando Vencedores.')}`}
@@ -146,7 +105,7 @@ export default function IgvAboutPage() {
             style={{ backgroundColor: '#25D366' }}
           >
             <MessageCircle size={16} strokeWidth={1.75} />
-            Falar conosco
+            Fale conosco
           </a>
         </Card>
 
