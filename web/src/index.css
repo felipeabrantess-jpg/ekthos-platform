@@ -102,18 +102,24 @@
   --igv-dark: #2A1B11;
   background: var(--igv-bg);
   color: var(--igv-ink);
-  font-family: "DM Sans", system-ui, sans-serif;
+  --igv-nav-space: calc(112px + env(safe-area-inset-bottom));
+  --igv-serif: "Newsreader", Georgia, serif;
+  --igv-sans: "Manrope", system-ui, sans-serif;
+  font-family: var(--igv-sans);
 }
+.igv-app h1, .igv-app h2, .igv-serif { font-family: var(--igv-serif); font-weight: 600; }
 .igv-glass {
-  background: rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 2px 10px rgba(31, 20, 12, 0.08);
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 4px 18px rgba(31, 20, 12, 0.1);
 }
 .igv-glass--accent {
   background: rgba(127, 64, 16, 0.9);
   border-color: rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 10px rgba(31, 20, 12, 0.12);
 }
-.igv-card { background: rgba(255, 255, 255, 0.88); }
+.igv-card { background: rgba(255, 255, 255, 0.86); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 12px rgba(31, 20, 12, 0.05); }
+/* Vidro dentro de cartão claro: a borda precisa aparecer */
+.igv-glass--inset { background: rgba(247, 245, 242, 0.7); border-color: var(--igv-line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8); }
