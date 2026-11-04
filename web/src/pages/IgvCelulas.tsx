@@ -18,8 +18,8 @@ interface Grupo {
   name:         string
   meeting_day:  string | null
   meeting_time: string | null
-  location:     string | null
-  notes:        string | null
+  regiao?:      string | null
+  location?:    string | null
   status:       string
 }
 
@@ -67,7 +67,7 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 // ── Card de grupo ────────────────────────────────────────────────────────────────
 
 function GrupoCard({ grupo }: { grupo: Grupo }) {
-  const bairro = extractBairro(grupo.location)
+  const bairro = grupo.regiao ?? extractBairro(grupo.location ?? null)
   const initial = grupo.name.charAt(0).toUpperCase()
 
   return (
