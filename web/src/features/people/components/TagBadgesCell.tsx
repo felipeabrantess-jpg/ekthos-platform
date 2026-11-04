@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
-import { Pencil, Tag as TagIcon } from 'lucide-react'
+import { PencilIcon as Pencil, TagIcon as TagIcon } from '@phosphor-icons/react'
 import type { PersonWithStage, Tag } from '@/lib/types/joins'
 import { TagEditModal } from './TagEditModal'
 
@@ -40,9 +40,9 @@ export function TagBadgesCell({ person, allTags }: TagBadgesCellProps) {
       >
         {personTags.length === 0 ? (
           <span className="inline-flex items-center gap-1 text-xs text-text-tertiary group-hover:text-text-secondary transition-colors">
-            <TagIcon size={11} strokeWidth={1.75} className="opacity-50" />
+            <TagIcon size={11} className="opacity-50" />
             <span>—</span>
-            <Pencil size={9} strokeWidth={1.75} className="opacity-0 group-hover:opacity-40 transition-opacity" />
+            <Pencil size={9} className="opacity-0 group-hover:opacity-40 transition-opacity" />
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 flex-wrap">
@@ -54,7 +54,6 @@ export function TagBadgesCell({ person, allTags }: TagBadgesCellProps) {
             )}
             <Pencil
               size={9}
-              strokeWidth={1.75}
               className="text-text-tertiary opacity-0 group-hover:opacity-60 transition-opacity ml-0.5"
             />
           </span>

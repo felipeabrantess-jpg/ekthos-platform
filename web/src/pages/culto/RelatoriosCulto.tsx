@@ -11,24 +11,7 @@
 
 import { useState, Fragment } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  ClipboardList,
-  Plus,
-  Copy,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Church,
-  Mic2,
-  BookOpen,
-  Music2,
-  Baby,
-  DoorOpen,
-  ShieldCheck,
-  HandHeart,
-  StickyNote,
-  X,
-} from 'lucide-react'
+import { ClipboardTextIcon as ClipboardList, PlusIcon as Plus, CopyIcon as Copy, CheckIcon as Check, CaretDownIcon as ChevronDown, CaretRightIcon as ChevronRight, ChurchIcon as Church, MicrophoneIcon as Mic2, BookOpenIcon as BookOpen, MusicNoteIcon as Music2, BabyIcon as Baby, DoorOpenIcon as DoorOpen, ShieldCheckIcon as ShieldCheck, HandHeartIcon as HandHeart, NoteIcon as StickyNote, XIcon as X } from '@phosphor-icons/react'
 import { useAuth }   from '@/hooks/useAuth'
 import { supabase }  from '@/lib/supabase'
 import Spinner       from '@/components/ui/Spinner'

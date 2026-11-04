@@ -1,8 +1,8 @@
 import { useState, useRef }             from 'react'
-import { Link }                          from 'react-router-dom'
-import { ChevronLeft, Upload, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { CheckCircleIcon, CircleNotchIcon, UploadSimpleIcon } from '@phosphor-icons/react'
+import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
+import { BusinessCrossIcon } from '@/components/igv/icons'
 import { supabase }                      from '@/lib/supabase'
-import { IGV }                           from '@/lib/igv-public-data'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -35,6 +35,7 @@ function toBase64(file: File): Promise<string> {
   })
 }
 
+
 // ── Campo com label + erro ────────────────────────────────────────────────────
 
 function Field({
@@ -50,28 +51,22 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[0.88rem] font-medium text-white/80 mb-1">
-        {label}
-        {required && <span className="text-red-400 ml-0.5">*</span>}
+      <label className="block">
+        <span className={IGV_TEXT.label}>
+          {label}
+          {required && ' *'}
+        </span>
+        {children}
       </label>
-      {children}
       {error && (
-        <p className="text-xs text-red-400 mt-1 flex items-center gap-1" data-error>
-          <AlertCircle size={11} />
-          {error}
-        </p>
+        <p className={`mt-1.5 ${IGV_TEXT.error}`} data-error>{error}</p>
       )}
     </div>
   )
 }
 
-const baseCls =
-  'w-full border rounded-xl px-3 py-2.5 text-white placeholder-white/30 focus:outline-none transition-shadow bg-white/[0.06]'
-
-const baseStyle: React.CSSProperties = { fontSize: '16px' }
-
-function borderColor(hasError: boolean): React.CSSProperties {
-  return { ...baseStyle, borderColor: hasError ? '#f87171' : 'rgba(255,255,255,0.15)' }
+function inputCls(hasError: boolean): string {
+  return `${IGV_INPUT} ${hasError ? '!border-[var(--igv-danger)]' : ''}`
 }
 
 // ── Página ────────────────────────────────────────────────────────────────────
@@ -178,70 +173,32 @@ export default function IgvEmpresariosCadastro() {
     }
   }
 
-  const pc = IGV.primaryColor
-
   return (
-    <div className="min-h-screen bg-black" style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}>
-      {/* Header sticky */}
-      <div
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 border-b border-white/[0.06]"
-        style={{ backgroundColor: '#000' }}
-      >
-        <Link
-          to="/igv/empresarios"
-          className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: `${pc}15`, color: pc }}
-        >
-          <ChevronLeft size={18} strokeWidth={2} />
-        </Link>
-        <div>
-          <p className="font-semibold text-white text-[1rem] leading-tight">Cadastre seu negócio</p>
-          <p className="text-[0.75rem] text-white/40">Rede de Negócios IGV</p>
-        </div>
-      </div>
+    <IgvPageShell>
+      <PageHeader title="Cadastre seu negócio" subtitle="Rede de Negócios IGV" backTo="/igv/empresarios" />
 
-      <div className="px-4 pt-5 pb-12 max-w-lg mx-auto">
+      {/* ── Tela de confirmação ─────────────────────────────────────────── */}
+      {step === 'success' ? (
+        <IgvContent>
+          <IgvNotice Icon={BusinessCrossIcon} title="Cadastro enviado!">
+            <p>Seu negócio já está na Rede de Negócios da IGV! Acesse agora para confirmar.</p>
+            <GlassButton to="/igv/empresarios" variant="accent" className="mt-4">Ver a Rede de Negócios</GlassButton>
+          </IgvNotice>
+        </IgvContent>
 
-        {/* ── Tela de confirmação ─────────────────────────────────────────── */}
-        {step === 'success' ? (
-          <div className="flex flex-col items-center text-center py-12 px-2">
-            <div
-              className="w-20 h-20 rounded-full flex items-center justify-center mb-5"
-              style={{ backgroundColor: `${pc}20` }}
-            >
-              <CheckCircle2 size={42} style={{ color: pc }} strokeWidth={1.5} />
-            </div>
-            <h2 className="text-xl font-bold text-white mb-3">Cadastro enviado!</h2>
-            <p className="text-[1rem] text-white/60 leading-relaxed mb-8 max-w-xs">
-              Seu negócio já está na Rede de Negócios da IGV! Acesse agora para confirmar. 🙏
-            </p>
-            <Link
-              to="/igv/empresarios"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-[1rem] font-semibold text-white"
-              style={{ backgroundColor: pc }}
-            >
-              Ver a Rede de Negócios
-            </Link>
-          </div>
-
-        ) : (
-        /* ── Formulário ─────────────────────────────────────────────────── */
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            <p className="text-[1rem] text-white/60 leading-relaxed">
+      ) : (
+      /* ── Formulário ─────────────────────────────────────────────────── */
+        <form onSubmit={handleSubmit} noValidate>
+          <IgvContent>
+            <p className={`px-1 ${IGV_TEXT.muted}`}>
               Preencha os dados abaixo e seu negócio aparece na lista imediatamente.
             </p>
 
             {/* Logo */}
-            <div>
-              <label className="block text-[0.88rem] font-medium text-white/80 mb-2">
-                Logo do negócio <span className="text-white/30 font-normal text-xs">(opcional)</span>
-              </label>
+            <GlassCard>
+              <p className={IGV_TEXT.label}>Logo do negócio (opcional)</p>
               <div
-                className="flex items-center gap-4 p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-colors"
-                style={{
-                  borderColor:     errors.logo ? '#f87171' : logoFile ? pc : 'rgba(255,255,255,0.2)',
-                  backgroundColor: logoFile ? `${pc}08` : 'rgba(255,255,255,0.03)',
-                }}
+                className={`igv-glass igv-glass--inset ${IGV_FOCUS} flex items-center gap-4 p-3 rounded-2xl cursor-pointer ${errors.logo ? '!border-[var(--igv-danger)]' : logoFile ? 'outline outline-2 outline-[var(--igv-accent)]' : ''}`}
                 onClick={() => fileRef.current?.click()}
                 role="button"
                 tabIndex={0}
@@ -251,21 +208,16 @@ export default function IgvEmpresariosCadastro() {
                   <img
                     src={logoPreview}
                     alt="preview"
-                    className="w-14 h-14 rounded-xl object-cover shrink-0 border border-white/10"
+                    className="w-14 h-14 rounded-2xl object-cover shrink-0"
                   />
                 ) : (
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: `${pc}15` }}
-                  >
-                    <Upload size={22} style={{ color: pc }} strokeWidth={1.5} />
-                  </div>
+                  <IconTile Icon={UploadSimpleIcon} />
                 )}
-                <div>
-                  <p className="text-[0.88rem] font-medium text-white/80">
+                <div className="min-w-0">
+                  <p className={`break-words ${IGV_TEXT.item}`}>
                     {logoFile ? logoFile.name : 'Toque para selecionar'}
                   </p>
-                  <p className="text-xs text-white/40 mt-0.5">JPEG, PNG ou WebP · máx 5 MB</p>
+                  <p className={`mt-0.5 ${IGV_TEXT.muted}`}>JPEG, PNG ou WebP · máx 5 MB</p>
                 </div>
                 <input
                   ref={fileRef}
@@ -276,21 +228,17 @@ export default function IgvEmpresariosCadastro() {
                 />
               </div>
               {(logoError || errors.logo) && (
-                <p className="text-xs text-red-400 mt-1 flex items-center gap-1" data-error>
-                  <AlertCircle size={11} />
-                  {logoError ?? errors.logo}
-                </p>
+                <p className={`mt-1.5 ${IGV_TEXT.error}`} data-error>{logoError ?? errors.logo}</p>
               )}
-            </div>
+            </GlassCard>
 
             {/* Dados do negócio */}
-            <div className="bg-[#111] rounded-2xl border border-white/10 p-4 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Seu negócio</p>
+            <GlassCard className="flex flex-col gap-4">
+              <h2 className={IGV_TEXT.heading}>Seu negócio</h2>
 
               <Field label="Nome da empresa" required error={errors.nome}>
                 <input
-                  className={baseCls}
-                  style={borderColor(!!errors.nome)}
+                  className={inputCls(!!errors.nome)}
                   value={nome}
                   onChange={e => { setNome(e.target.value); clearError('nome') }}
                   placeholder="Ex: Padaria do João"
@@ -299,36 +247,33 @@ export default function IgvEmpresariosCadastro() {
 
               <Field label="Categoria" required error={errors.categoria}>
                 <select
-                  className={baseCls}
-                  style={borderColor(!!errors.categoria)}
+                  className={inputCls(!!errors.categoria)}
                   value={categoria}
                   onChange={e => { setCategoria(e.target.value); clearError('categoria') }}
                 >
-                  <option value="" style={{ background: '#111' }}>Selecione uma categoria</option>
-                  {CATEGORIAS.map(c => <option key={c} value={c} style={{ background: '#111' }}>{c}</option>)}
+                  <option value="">Selecione uma categoria</option>
+                  {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </Field>
 
               <Field label="Descrição" required error={errors.descricao}>
                 <textarea
-                  className={baseCls}
-                  style={borderColor(!!errors.descricao)}
+                  className={`${inputCls(!!errors.descricao)} resize-none`}
                   rows={3}
                   value={descricao}
                   onChange={e => { setDescricao(e.target.value); clearError('descricao') }}
                   placeholder="O que você oferece? Como pode ajudar a família IGV?"
                 />
               </Field>
-            </div>
+            </GlassCard>
 
             {/* Contato do negócio */}
-            <div className="bg-[#111] rounded-2xl border border-white/10 p-4 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/40">Contato</p>
+            <GlassCard className="flex flex-col gap-4">
+              <h2 className={IGV_TEXT.heading}>Contato</h2>
 
               <Field label="Telefone / WhatsApp" required error={errors.telefone}>
                 <input
-                  className={baseCls}
-                  style={borderColor(!!errors.telefone)}
+                  className={inputCls(!!errors.telefone)}
                   type="tel"
                   value={telefone}
                   onChange={e => { setTelefone(e.target.value); clearError('telefone') }}
@@ -338,8 +283,7 @@ export default function IgvEmpresariosCadastro() {
 
               <Field label="E-mail" required error={errors.email}>
                 <input
-                  className={baseCls}
-                  style={borderColor(!!errors.email)}
+                  className={inputCls(!!errors.email)}
                   type="email"
                   value={email}
                   onChange={e => { setEmail(e.target.value); clearError('email') }}
@@ -349,10 +293,9 @@ export default function IgvEmpresariosCadastro() {
 
               <Field label="Instagram" required error={errors.instagram}>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 text-[1rem] select-none">@</span>
+                  <span className={`absolute left-4 top-1/2 -translate-y-1/2 select-none ${IGV_TEXT.muted}`} aria-hidden="true">@</span>
                   <input
-                    className={`${baseCls} pl-7`}
-                    style={borderColor(!!errors.instagram)}
+                    className={`${inputCls(!!errors.instagram)} !pl-9`}
                     value={instagram}
                     onChange={e => { setInstagram(e.target.value.replace(/^@/, '')); clearError('instagram') }}
                     placeholder="meuNegocio"
@@ -362,82 +305,67 @@ export default function IgvEmpresariosCadastro() {
 
               <Field label="Site (opcional)" error={undefined}>
                 <input
-                  className={baseCls}
-                  style={{ ...baseStyle, borderColor: 'rgba(255,255,255,0.15)' }}
+                  className={IGV_INPUT}
                   type="url"
                   value={site}
                   onChange={e => setSite(e.target.value)}
                   placeholder="https://meunegocio.com.br"
                 />
               </Field>
-            </div>
+            </GlassCard>
 
             {/* Quem está cadastrando */}
-            <div className="bg-[#111] rounded-2xl border border-white/10 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Quem está cadastrando</p>
+            <GlassCard className="flex flex-col gap-4">
+              <h2 className={IGV_TEXT.heading}>Quem está cadastrando</h2>
               <Field label="Seu nome" required error={errors.nomeContato}>
                 <input
-                  className={baseCls}
-                  style={borderColor(!!errors.nomeContato)}
+                  className={inputCls(!!errors.nomeContato)}
                   value={nomeContato}
                   onChange={e => { setNomeContato(e.target.value); clearError('nomeContato') }}
                   placeholder="Seu nome completo"
                 />
               </Field>
-            </div>
+            </GlassCard>
 
             {/* LGPD */}
-            <label
-              className="flex items-start gap-3 bg-[#111] rounded-2xl border p-4 cursor-pointer"
-              style={{ borderColor: errors.lgpd ? '#f87171' : 'rgba(255,255,255,0.10)' }}
-            >
-              <input
-                type="checkbox"
-                checked={lgpd}
-                onChange={e => { setLgpd(e.target.checked); clearError('lgpd') }}
-                className="mt-0.5 shrink-0 w-4 h-4 rounded cursor-pointer"
-                style={{ accentColor: pc }}
-              />
-              <span className="text-[0.88rem] text-white/60 leading-relaxed">
-                Autorizo que meus dados e os do meu negócio apareçam publicamente na{' '}
-                <strong className="text-white/80">Rede de Negócios da IGV</strong>, conforme a LGPD. Posso solicitar remoção a qualquer momento.
-              </span>
-            </label>
-            {errors.lgpd && (
-              <p className="text-xs text-red-400 -mt-3 flex items-center gap-1" data-error>
-                <AlertCircle size={11} />
-                {errors.lgpd}
-              </p>
-            )}
+            <GlassCard className={errors.lgpd ? '!border-[var(--igv-danger)]' : ''}>
+              <label className="flex items-start gap-3 min-h-[44px] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={lgpd}
+                  onChange={e => { setLgpd(e.target.checked); clearError('lgpd') }}
+                  className={`mt-0.5 shrink-0 w-6 h-6 cursor-pointer accent-[var(--igv-accent)] ${IGV_FOCUS}`}
+                />
+                <span className={IGV_TEXT.muted}>
+                  Autorizo que meus dados e os do meu negócio apareçam publicamente na{' '}
+                  <strong className="font-semibold text-[var(--igv-ink)]">Rede de Negócios da IGV</strong>, conforme a LGPD. Posso solicitar remoção a qualquer momento.
+                </span>
+              </label>
+              {errors.lgpd && (
+                <p className={`mt-2 ${IGV_TEXT.error}`} data-error>{errors.lgpd}</p>
+              )}
+            </GlassCard>
 
             {/* Erro de envio */}
-            {submitError && (
-              <div className="flex items-start gap-2 p-3.5 rounded-xl bg-red-900/20 border border-red-500/30 text-[0.88rem] text-red-300">
-                <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                <span>{submitError}</span>
-              </div>
-            )}
+            {submitError && <p role="alert" className={`px-1 ${IGV_TEXT.error}`}>{submitError}</p>}
 
             {/* Botão enviar */}
-            <button
+            <GlassButton
               type="submit"
+              variant="accent"
+              fullWidth
               disabled={submitting}
-              className="w-full py-3.5 rounded-2xl font-semibold text-white text-[1rem] flex items-center justify-center gap-2 transition-opacity active:scale-[0.99]"
-              style={{ backgroundColor: pc, opacity: submitting ? 0.65 : 1 }}
+              Icon={submitting ? CircleNotchIcon : CheckCircleIcon}
             >
-              {submitting ? (
-                <><Loader2 size={16} className="animate-spin" /> Enviando…</>
-              ) : (
-                'Enviar cadastro'
-              )}
-            </button>
+              {submitting ? 'Enviando…' : 'Enviar cadastro'}
+            </GlassButton>
 
-            <p className="text-center text-[0.72rem] text-white/30 pb-2">
+            <p className={`px-1 text-center ${IGV_TEXT.muted}`}>
               Seu negócio aparece na lista imediatamente após o envio.
             </p>
-          </form>
-        )}
-      </div>
-    </div>
+          </IgvContent>
+        </form>
+      )}
+    </IgvPageShell>
   )
 }

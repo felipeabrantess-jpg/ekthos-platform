@@ -1,5 +1,5 @@
 import { useState, forwardRef, type InputHTMLAttributes } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { EyeIcon as Eye, EyeSlashIcon as EyeOff } from '@phosphor-icons/react'
 
 interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string

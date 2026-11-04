@@ -24,10 +24,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
-import {
-  Upload, FileSpreadsheet, X, Check,
-  AlertCircle, Loader2, Info, AlertTriangle, RotateCcw,
-} from 'lucide-react'
+import { UploadSimpleIcon as Upload, FileXlsIcon as FileSpreadsheet, XIcon as X, CheckIcon as Check, WarningCircleIcon as AlertCircle, CircleNotchIcon as Loader2, InfoIcon as Info, WarningIcon as AlertTriangle, ArrowCounterClockwiseIcon as RotateCcw } from '@phosphor-icons/react'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
 import { supabase } from '@/lib/supabase'

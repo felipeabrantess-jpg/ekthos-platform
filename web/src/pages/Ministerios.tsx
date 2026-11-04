@@ -31,7 +31,7 @@ import PersonSelect from '@/components/ui/PersonSelect'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { MinistryWithLeader } from '@/lib/types/joins'
 import ModalPortal from '@/components/ui/ModalPortal'
-import { FileText, ExternalLink } from 'lucide-react'
+import { FileTextIcon as FileText, ArrowSquareOutIcon as ExternalLink } from '@phosphor-icons/react'
 import { getMinistryDocsLink } from '@/features/ministerios/ministryDocs'
 import { useMinistryDocsUrl, useSaveMinistryDocsUrl, docsUrlErrorMessage } from '@/features/ministerios/hooks/useMinistryDocsUrl'
 import {
@@ -784,9 +784,9 @@ export default function Ministerios() {
             data-testid="btn-documentacao"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border-default bg-bg-surface text-sm font-medium text-text-primary hover:bg-bg-hover transition-colors"
           >
-            <FileText size={15} strokeWidth={1.75} />
+            <FileText size={15} />
             Documentação
-            <ExternalLink size={12} strokeWidth={1.75} className="text-text-tertiary" />
+            <ExternalLink size={12} className="text-text-tertiary" />
           </a>
         ) : (
           <button
@@ -796,7 +796,7 @@ export default function Ministerios() {
             title="Link da documentação ainda não configurado"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border-default bg-bg-surface text-sm font-medium text-text-tertiary opacity-60 cursor-not-allowed"
           >
-            <FileText size={15} strokeWidth={1.75} />
+            <FileText size={15} />
             Documentação
           </button>
         )

@@ -9,35 +9,15 @@
  *  - CONTA: configurações + logout
  */
 
-import type { LucideIcon } from 'lucide-react'
-import {
-  LayoutDashboard,
-  Users,
-  Users2,
-  HandHeart,
-  Heart,
-  GitBranch,
-  Network,
-  Building2,
-  Wallet,
-  Calendar,
-  CalendarCheck,
-  CalendarDays,
-  ShieldCheck,
-  MessageSquare,
-  ClipboardList,
-  Megaphone,
-  GraduationCap,
-  Briefcase,
-  Baby,
-} from 'lucide-react'
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
+import { SquaresFourIcon as LayoutDashboard, UsersIcon as Users, UsersThreeIcon as Users2, HandHeartIcon as HandHeart, HeartIcon as Heart, GitBranchIcon as GitBranch, TreeStructureIcon as Network, BuildingsIcon as Building2, WalletIcon as Wallet, CalendarBlankIcon as Calendar, CalendarCheckIcon as CalendarCheck, CalendarDotsIcon as CalendarDays, ShieldCheckIcon as ShieldCheck, ChatTextIcon as MessageSquare, ClipboardTextIcon as ClipboardList, MegaphoneIcon as Megaphone, GraduationCapIcon as GraduationCap, BriefcaseIcon as Briefcase, BabyIcon as Baby } from '@phosphor-icons/react'
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
 export interface NavItem {
   path:      string
   label:     string
-  Icon:      LucideIcon
+  Icon:      PhosphorIcon
   /** null = sempre visível independente de enabled_modules */
   moduleKey: string | null
 }

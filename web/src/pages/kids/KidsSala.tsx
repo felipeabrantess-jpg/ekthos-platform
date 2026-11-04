@@ -15,10 +15,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { matchesSearch } from '@/lib/normalizeSearch'
 import { useParams }                         from 'react-router-dom'
-import {
-  Baby, AlertCircle, Users, CheckCircle2, Loader2,
-  Search, Phone, X, ShieldCheck, RefreshCw,
-} from 'lucide-react'
+import { BabyIcon as Baby, WarningCircleIcon as AlertCircle, UsersIcon as Users, CheckCircleIcon as CheckCircle2, CircleNotchIcon as Loader2, MagnifyingGlassIcon as Search, PhoneIcon as Phone, XIcon as X, ShieldCheckIcon as ShieldCheck, ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react'
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL as string}/functions/v1/kids-checkin-handler`
 

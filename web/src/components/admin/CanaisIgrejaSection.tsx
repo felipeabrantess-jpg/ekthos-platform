@@ -12,10 +12,7 @@
  */
 
 import { useState } from 'react'
-import {
-  Radio, Plus, Loader2, Check, AlertCircle, Zap,
-  Pencil, RefreshCw, Signal, SignalZero,
-} from 'lucide-react'
+import { RadioIcon as Radio, PlusIcon as Plus, CircleNotchIcon as Loader2, CheckIcon as Check, WarningCircleIcon as AlertCircle, LightningIcon as Zap, PencilIcon as Pencil, ArrowsClockwiseIcon as RefreshCw, CellSignalFullIcon as Signal, CellSignalNoneIcon as SignalZero } from '@phosphor-icons/react'
 import {
   useChurchChannels,
   useUpsertChannel,
@@ -122,7 +119,7 @@ function AgentChip({ slug }: { slug: string }) {
   const opt = AGENT_OPTIONS.find(a => a.slug === slug)
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-ekthos-black/5 text-ekthos-black/60 border border-black/8">
-      <Radio size={8} strokeWidth={2.5} />
+      <Radio size={8} />
       {opt?.label ?? slug}
     </span>
   )
@@ -289,7 +286,7 @@ export default function CanaisIgrejaSection({
             onClick={openNew}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition-all duration-150 shrink-0 shadow-sm hover:shadow"
           >
-            <Plus size={11} strokeWidth={2.5} />
+            <Plus size={11} />
             Adicionar
           </button>
         </div>
@@ -314,7 +311,7 @@ export default function CanaisIgrejaSection({
                 backgroundSize: '20px 20px',
               }}
             />
-            <SignalZero size={28} className="mx-auto text-ekthos-black/15 mb-2.5" strokeWidth={1.25} />
+            <SignalZero size={28} className="mx-auto text-ekthos-black/15 mb-2.5" />
             <p className="text-xs font-semibold text-ekthos-black/40">Nenhum canal configurado</p>
             <p className="text-[10px] text-ekthos-black/25 mt-1">
               Adicione Z-API ou Meta Cloud para iniciar o roteamento de mensagens.
@@ -374,7 +371,7 @@ export default function CanaisIgrejaSection({
                       {/* Error message */}
                       {ch.error_message && (
                         <div className="flex items-start gap-1.5 mt-2 p-2 bg-red-50 border border-red-100 rounded-lg">
-                          <AlertCircle size={10} strokeWidth={2} className="text-red-500 shrink-0 mt-0.5" />
+                          <AlertCircle size={10} className="text-red-500 shrink-0 mt-0.5" />
                           <p className="text-[10px] text-red-600 leading-relaxed">{ch.error_message}</p>
                         </div>
                       )}
@@ -391,7 +388,7 @@ export default function CanaisIgrejaSection({
                         >
                           {upsert.isPending
                             ? <Loader2 size={11} className="animate-spin" />
-                            : <Zap size={11} strokeWidth={2} />}
+                            : <Zap size={11} />}
                         </button>
                       )}
                       <button
@@ -399,7 +396,7 @@ export default function CanaisIgrejaSection({
                         title="Editar canal"
                         className="p-1.5 rounded-lg text-ekthos-black/35 hover:text-ekthos-black/70 hover:bg-black/5 transition-colors"
                       >
-                        <Pencil size={11} strokeWidth={2} />
+                        <Pencil size={11} />
                       </button>
                     </div>
                   </div>
@@ -432,7 +429,7 @@ export default function CanaisIgrejaSection({
                   className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0"
                   style={{ backgroundColor: `${activeProvider?.accent ?? '#e13500'}15` }}
                 >
-                  <Signal size={14} style={{ color: activeProvider?.accent ?? '#e13500' }} strokeWidth={2} />
+                  <Signal size={14} style={{ color: activeProvider?.accent ?? '#e13500' }} />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-ekthos-black">
@@ -570,7 +567,7 @@ export default function CanaisIgrejaSection({
                         {opt.label}
                         <span className="ml-auto font-mono text-[9px] opacity-50">{opt.slug}</span>
                         {selected && (
-                          <Check size={10} strokeWidth={3} className="ml-1 text-white shrink-0" />
+                          <Check size={10} className="ml-1 text-white shrink-0" />
                         )}
                       </button>
                     )
@@ -609,13 +606,13 @@ export default function CanaisIgrejaSection({
               {/* Feedback */}
               {errMsg && (
                 <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl">
-                  <AlertCircle size={12} strokeWidth={2} className="text-red-500 shrink-0 mt-0.5" />
+                  <AlertCircle size={12} className="text-red-500 shrink-0 mt-0.5" />
                   <p className="text-xs text-red-700">{errMsg}</p>
                 </div>
               )}
               {savedOk && (
                 <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-100 rounded-xl">
-                  <Check size={12} strokeWidth={2.5} className="text-green-600" />
+                  <Check size={12} className="text-green-600" />
                   <p className="text-xs text-green-700 font-medium">Canal salvo e provisionamento disparado!</p>
                 </div>
               )}
@@ -638,7 +635,7 @@ export default function CanaisIgrejaSection({
                 >
                   {upsert.isPending
                     ? <><Loader2 size={13} className="animate-spin" /> Salvando…</>
-                    : <><Zap size={13} strokeWidth={2.5} /> Salvar e provisionar</>}
+                    : <><Zap size={13} /> Salvar e provisionar</>}
                 </button>
               </div>
             </div>

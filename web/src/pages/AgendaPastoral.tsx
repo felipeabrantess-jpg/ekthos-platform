@@ -18,7 +18,7 @@ import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import type { DatesSetArg, EventClickArg } from '@fullcalendar/core'
 import ptBrLocale from '@fullcalendar/core/locales/pt-br'
-import { CalendarCheck, Plus, List, LayoutGrid, Rows3, Lock, X, User } from 'lucide-react'
+import { CalendarCheckIcon as CalendarCheck, PlusIcon as Plus, ListBulletsIcon as List, GridFourIcon as LayoutGrid, RowsIcon as Rows3, LockIcon as Lock, XIcon as X, UserIcon as User } from '@phosphor-icons/react'
 
 import { useAuth } from '@/hooks/useAuth'
 import Button from '@/components/ui/Button'

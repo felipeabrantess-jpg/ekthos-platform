@@ -7,7 +7,7 @@
 import { useState }          from 'react'
 import { matchesSearch } from '@/lib/normalizeSearch'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Users, HeartHandshake } from 'lucide-react'
+import { UsersIcon as Users, HandshakeIcon as HeartHandshake } from '@phosphor-icons/react'
 import { useAuth }  from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import Spinner      from '@/components/ui/Spinner'
@@ -148,7 +148,7 @@ export default function Distribuir() {
     <div className="p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <HeartHandshake size={22} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+        <HeartHandshake size={22} style={{ color: 'var(--color-primary)' }} />
         <div>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
             Distribuição de Cuidado
@@ -203,7 +203,7 @@ export default function Distribuir() {
           className="flex items-center gap-3 flex-wrap rounded-xl px-4 py-3 mb-4"
           style={{ background: 'var(--color-primary)', color: '#fff' }}
         >
-          <Users size={16} strokeWidth={2} />
+          <Users size={16} />
           <span className="text-sm font-medium">{selected.size} selecionada{selected.size > 1 ? 's' : ''}</span>
           <select
             value={assignTo}

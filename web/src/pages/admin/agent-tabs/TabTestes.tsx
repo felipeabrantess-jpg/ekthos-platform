@@ -1,6 +1,6 @@
 // web/src/pages/admin/agent-tabs/TabTestes.tsx
 import { useState } from 'react'
-import { Send, CheckCircle2, XCircle } from 'lucide-react'
+import { PaperPlaneTiltIcon as Send, CheckCircleIcon as CheckCircle2, XCircleIcon as XCircle } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 

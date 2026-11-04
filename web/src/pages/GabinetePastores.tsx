@@ -8,10 +8,7 @@
 import { useState }                              from 'react'
 import { Link }                                  from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  Building2, Plus, ChevronDown, ChevronRight,
-  ToggleLeft, ToggleRight, Trash2, Clock, UserCheck,
-} from 'lucide-react'
+import { BuildingsIcon as Building2, PlusIcon as Plus, CaretDownIcon as ChevronDown, CaretRightIcon as ChevronRight, ToggleLeftIcon as ToggleLeft, ToggleRightIcon as ToggleRight, TrashIcon as Trash2, ClockIcon as Clock, UserCheckIcon as UserCheck } from '@phosphor-icons/react'
 import { useAuth }    from '@/hooks/useAuth'
 import { supabase }   from '@/lib/supabase'
 import Spinner        from '@/components/ui/Spinner'
@@ -278,7 +275,7 @@ function SlotsSection({ pastor, churchId }: SlotsSectionProps) {
         >
           {adding
             ? <span className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            : <Plus size={13} strokeWidth={2.5} />}
+            : <Plus size={13} />}
           Adicionar
         </button>
       </form>
@@ -298,7 +295,7 @@ function SlotsSection({ pastor, churchId }: SlotsSectionProps) {
               className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-gray-50 border border-black/[0.04]"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <Clock size={13} strokeWidth={1.75} className="text-gray-400 shrink-0" />
+                <Clock size={13} className="text-gray-400 shrink-0" />
                 <span className="text-[0.8rem] text-gray-700 truncate">{formatSlot(slot.slot_datetime)}</span>
                 <span className="text-[0.72rem] text-gray-400">· {slot.duration_minutes} min</span>
               </div>
@@ -318,7 +315,7 @@ function SlotsSection({ pastor, churchId }: SlotsSectionProps) {
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                       title="Remover horário"
                     >
-                      <Trash2 size={13} strokeWidth={1.75} />
+                      <Trash2 size={13} />
                     </button>
                   </>
                 )}
@@ -387,8 +384,8 @@ function PastorCard({ pastor, churchId }: PastorCardProps) {
               title={pastor.is_active ? 'Desativar do PWA' : 'Ativar no PWA'}
             >
               {pastor.is_active
-                ? <ToggleRight size={20} strokeWidth={1.75} />
-                : <ToggleLeft  size={20} strokeWidth={1.75} />}
+                ? <ToggleRight size={20} />
+                : <ToggleLeft  size={20} />}
               {pastor.is_active ? 'Ativo' : 'Inativo'}
             </button>
           </div>
@@ -405,8 +402,8 @@ function PastorCard({ pastor, churchId }: PastorCardProps) {
         className="mt-3 flex items-center gap-1.5 text-[0.78rem] font-semibold text-amber-700 hover:text-amber-800 transition-colors"
       >
         {expanded
-          ? <ChevronDown size={14} strokeWidth={2} />
-          : <ChevronRight size={14} strokeWidth={2} />}
+          ? <ChevronDown size={14} />
+          : <ChevronRight size={14} />}
         Gerenciar horários
       </button>
 
@@ -443,7 +440,7 @@ export default function GabinetePastores() {
       <div className="flex items-center justify-between gap-3 mb-6">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-            <UserCheck size={18} strokeWidth={1.75} className="text-amber-700" />
+            <UserCheck size={18} className="text-amber-700" />
           </div>
           <div>
             <h1 className="text-[1.05rem] font-bold text-gray-900">Pastores do Gabinete</h1>
@@ -456,7 +453,7 @@ export default function GabinetePastores() {
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[0.82rem] font-semibold bg-amber-600 text-white hover:bg-amber-700 transition-colors shrink-0"
         >
-          <Plus size={15} strokeWidth={2.5} />
+          <Plus size={15} />
           Novo Pastor
         </button>
       </div>
@@ -467,7 +464,7 @@ export default function GabinetePastores() {
           to="/gabinete/pedidos"
           className="inline-flex items-center gap-1.5 text-[0.8rem] text-gray-500 hover:text-gray-700 transition-colors"
         >
-          <Building2 size={13} strokeWidth={1.75} />
+          <Building2 size={13} />
           Ver pedidos de agendamento
         </Link>
       </div>
@@ -492,7 +489,7 @@ export default function GabinetePastores() {
       ) : pastors.length === 0 ? (
         <div className="text-center py-16 flex flex-col items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center">
-            <UserCheck size={22} strokeWidth={1.5} className="text-amber-400" />
+            <UserCheck size={22} className="text-amber-400" />
           </div>
           <p className="text-gray-400 text-[0.85rem]">
             Nenhum pastor cadastrado ainda.

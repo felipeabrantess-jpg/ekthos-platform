@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Tag, Edit2, Loader, CheckCircle, XCircle, Gift, ChevronRight, X } from 'lucide-react'
+import { TagIcon as Tag, PencilSimpleIcon as Edit2, CircleNotchIcon as Loader, CheckCircleIcon as CheckCircle, XCircleIcon as XCircle, GiftIcon as Gift, CaretRightIcon as ChevronRight, XIcon as X } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -76,12 +76,12 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
       }}
     >
       {type === 'success'
-        ? <CheckCircle size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
-        : <XCircle    size={16} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
+        ? <CheckCircle size={16} className="shrink-0 mt-0.5" style={{ color: '#16a34a' }} />
+        : <XCircle    size={16} className="shrink-0 mt-0.5" style={{ color: '#dc2626' }} />
       }
       <span className="flex-1">{msg}</span>
       <button onClick={onClose} className="opacity-60 hover:opacity-100 shrink-0 mt-0.5">
-        <X size={14} strokeWidth={2} />
+        <X size={14} />
       </button>
     </div>
   )
@@ -237,7 +237,7 @@ function PlanModal({ plan, onClose, onSaved }: PlanModalProps) {
             Editar plano <span className="font-mono text-sm text-gray-400 ml-1">{plan.slug}</span>
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={18} strokeWidth={2} />
+            <X size={18} />
           </button>
         </div>
 
@@ -311,7 +311,7 @@ function PlanModal({ plan, onClose, onSaved }: PlanModalProps) {
             style={{ background: 'var(--color-primary)' }}
           >
             {saving
-              ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
+              ? <><Loader size={14} className="animate-spin" /> Salvando…</>
               : 'Salvar alterações'
             }
           </button>
@@ -370,7 +370,7 @@ function AddonModal({ addon, onClose, onSaved }: AddonModalProps) {
             Editar add-on <span className="font-mono text-sm text-gray-400 ml-1">{addon.slug}</span>
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={18} strokeWidth={2} />
+            <X size={18} />
           </button>
         </div>
 
@@ -418,7 +418,7 @@ function AddonModal({ addon, onClose, onSaved }: AddonModalProps) {
             style={{ background: 'var(--color-primary)' }}
           >
             {saving
-              ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
+              ? <><Loader size={14} className="animate-spin" /> Salvando…</>
               : 'Salvar alterações'
             }
           </button>
@@ -513,7 +513,7 @@ function PlansTab({ toast }: { toast: (msg: string, type: 'success' | 'error') =
                     onClick={() => setEditing(p)}
                     className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all ml-auto"
                   >
-                    <Edit2 size={13} strokeWidth={2} />
+                    <Edit2 size={13} />
                     Editar
                   </button>
                 </td>
@@ -613,7 +613,7 @@ function AddonsTab({ toast }: { toast: (msg: string, type: 'success' | 'error') 
                     onClick={() => setEditing(a)}
                     className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all ml-auto"
                   >
-                    <Edit2 size={13} strokeWidth={2} />
+                    <Edit2 size={13} />
                     Editar
                   </button>
                 </td>
@@ -697,7 +697,7 @@ function AgentModal({ agent, onClose, onSaved }: AgentModalProps) {
             Editar agente <span className="font-mono text-sm text-gray-400 ml-1">{agent.slug}</span>
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-            <X size={18} strokeWidth={2} />
+            <X size={18} />
           </button>
         </div>
 
@@ -764,7 +764,7 @@ function AgentModal({ agent, onClose, onSaved }: AgentModalProps) {
             style={{ background: 'var(--color-primary)' }}
           >
             {saving
-              ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Salvando…</>
+              ? <><Loader size={14} className="animate-spin" /> Salvando…</>
               : 'Salvar alterações'
             }
           </button>
@@ -858,7 +858,7 @@ function AgentsTab({ toast }: { toast: (msg: string, type: 'success' | 'error') 
                     onClick={() => setEditing(a)}
                     className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all ml-auto"
                   >
-                    <Edit2 size={13} strokeWidth={2} />
+                    <Edit2 size={13} />
                     Editar
                   </button>
                 </td>
@@ -894,7 +894,7 @@ function PromotionsTab() {
           className="w-14 h-14 rounded-2xl flex items-center justify-center"
           style={{ background: 'var(--color-primary)12' }}
         >
-          <Gift size={26} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
+          <Gift size={26} style={{ color: 'var(--color-primary)' }} />
         </div>
         <div>
           <p className="font-semibold text-gray-800 text-base">Promoções e Trials</p>
@@ -914,7 +914,7 @@ function PromotionsTab() {
           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors mt-1"
         >
           Gerenciar cupons no Stripe Dashboard
-          <ChevronRight size={13} strokeWidth={2} />
+          <ChevronRight size={13} />
         </a>
       </div>
     </div>
@@ -948,7 +948,7 @@ export default function AdminPricing() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <Tag size={26} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
+            <Tag size={26} style={{ color: 'var(--color-primary)' }} />
             Pricing
           </h1>
           <p className="text-sm text-gray-400 mt-1">

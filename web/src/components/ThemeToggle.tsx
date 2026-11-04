@@ -1,4 +1,4 @@
-import { Sun, Moon } from 'lucide-react'
+import { SunIcon as Sun, MoonIcon as Moon } from '@phosphor-icons/react'
 import { useTheme } from '@/contexts/ThemeProvider'
 
 export default function ThemeToggle() {

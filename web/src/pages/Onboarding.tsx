@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send, Loader, Upload, Check, User, ArrowLeft } from 'lucide-react'
+import { PaperPlaneTiltIcon as Send, CircleNotchIcon as Loader, UploadSimpleIcon as Upload, CheckIcon as Check, UserIcon as User, ArrowLeftIcon as ArrowLeft } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 
 // ── Tipos ──────────────────────────────────────────────────
@@ -313,7 +313,7 @@ function OnboardingPreview({ preview }: { preview: PreviewState }) {
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2.5">Agentes selecionados</p>
           {preview.agents.map((a, i) => (
             <div key={i} className="flex items-center gap-1.5 text-xs text-gray-600 mt-1.5">
-              <Check size={12} strokeWidth={2.5} style={{ color: '#2D7A4F', flexShrink: 0 }} />
+              <Check size={12} style={{ color: '#2D7A4F', flexShrink: 0 }} />
               <span className="capitalize">{a}</span>
             </div>
           ))}
@@ -359,7 +359,7 @@ function ColorConfirmWidget({
           className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
           style={{ background: 'var(--color-primary)' }}
         >
-          <Check size={14} strokeWidth={2.5} />
+          <Check size={14} />
           Usar estas cores
         </button>
         <button
@@ -437,8 +437,8 @@ function DynamicWidget({ widget, onSelect, onUpload, uploadLabel, uploading }: D
           style={{ borderColor: '#DDD', background: '#FAFAFA' }}
         >
           {uploading
-            ? <Loader size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} className="animate-spin" />
-            : <Upload size={18} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+            ? <Loader size={18} style={{ color: 'var(--color-primary)' }} className="animate-spin" />
+            : <Upload size={18} style={{ color: 'var(--color-primary)' }} />
           }
           <span className="text-sm text-gray-600 flex-1">
             {uploading ? 'Enviando logo...' : (uploadLabel ?? 'Clique para enviar a logo da sua igreja')}
@@ -938,7 +938,7 @@ export default function Onboarding() {
                   className="w-11 h-11 flex items-center justify-center rounded-xl border transition-all hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-30 shrink-0"
                   style={{ borderColor: '#E8E8E8', color: '#5A5A5A', background: '#FAFAFA' }}
                 >
-                  <ArrowLeft size={18} strokeWidth={1.75} />
+                  <ArrowLeft size={18} />
                 </button>
                 <textarea
                   ref={inputRef}
@@ -958,8 +958,8 @@ export default function Onboarding() {
                   style={{ background: 'var(--color-primary)' }}
                 >
                   {loading
-                    ? <Loader size={18} strokeWidth={1.75} className="animate-spin" />
-                    : <Send   size={18} strokeWidth={1.75} />
+                    ? <Loader size={18} className="animate-spin" />
+                    : <Send   size={18} />
                   }
                 </button>
               </div>

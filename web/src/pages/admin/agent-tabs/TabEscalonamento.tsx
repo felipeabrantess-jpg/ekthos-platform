@@ -1,6 +1,6 @@
 // web/src/pages/admin/agent-tabs/TabEscalonamento.tsx
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { PlusIcon as Plus, XIcon as X } from '@phosphor-icons/react'
 import type { useChurchAgentFullConfig } from '@/hooks/useChurchAgentConfig'
 
 type Hook = ReturnType<typeof useChurchAgentFullConfig>

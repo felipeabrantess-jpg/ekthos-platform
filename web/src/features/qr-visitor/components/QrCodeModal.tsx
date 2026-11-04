@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { X, Copy, Check, Download, ExternalLink, MapPin } from 'lucide-react'
+import { XIcon as X, CopyIcon as Copy, CheckIcon as Check, DownloadSimpleIcon as Download, ArrowSquareOutIcon as ExternalLink, MapPinIcon as MapPin } from '@phosphor-icons/react'
 import QRCode from 'qrcode'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
@@ -211,7 +211,7 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
             onClick={() => onOpenChange(false)}
             className="text-gray-400 hover:text-gray-700 transition-colors rounded-lg p-1.5 hover:bg-gray-100"
           >
-            <X size={18} strokeWidth={1.75} />
+            <X size={18} />
           </button>
         </div>
 
@@ -335,7 +335,7 @@ export default function QrCodeModal({ open, onOpenChange, churchId }: QrCodeModa
             className="flex items-center justify-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium transition-colors"
           >
             Configurações avançadas
-            <ExternalLink size={11} strokeWidth={2} />
+            <ExternalLink size={11} />
           </Link>
         </div>
       </div>

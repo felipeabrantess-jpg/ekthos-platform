@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { X, Repeat, Globe } from 'lucide-react'
+import { XIcon as X, RepeatIcon as Repeat, GlobeIcon as Globe } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'

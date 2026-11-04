@@ -3,7 +3,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts'
-import { TrendingUp, RefreshCw, DollarSign, Bot, Building2, Zap, CheckCircle, AlertTriangle, Loader } from 'lucide-react'
+import { TrendUpIcon as TrendingUp, ArrowsClockwiseIcon as RefreshCw, CurrencyDollarIcon as DollarSign, RobotIcon as Bot, BuildingsIcon as Building2, LightningIcon as Zap, CheckCircleIcon as CheckCircle, WarningIcon as AlertTriangle, CircleNotchIcon as Loader } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
@@ -166,7 +166,7 @@ function StripeBootstrapCard() {
       <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-            <Zap size={15} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+            <Zap size={15} style={{ color: 'var(--color-primary)' }} />
             Configuração de Pricing (Stripe Bootstrap)
           </h3>
           <p className="text-xs text-gray-400 mt-0.5">
@@ -177,17 +177,17 @@ function StripeBootstrapCard() {
 
         {/* Badge de status */}
         {loadingPrices ? (
-          <Loader size={16} strokeWidth={1.75} className="animate-spin text-gray-300" />
+          <Loader size={16} className="animate-spin text-gray-300" />
         ) : bootstrapDone ? (
           <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
             style={{ background: '#2D7A4F18', color: '#2D7A4F' }}>
-            <CheckCircle size={13} strokeWidth={2} />
+            <CheckCircle size={13} />
             Bootstrap executado
           </span>
         ) : (
           <span className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full"
             style={{ background: '#C4841D18', color: '#C4841D' }}>
-            <AlertTriangle size={13} strokeWidth={2} />
+            <AlertTriangle size={13} />
             Bootstrap pendente
           </span>
         )}
@@ -255,8 +255,8 @@ function StripeBootstrapCard() {
             style={{ background: 'var(--color-primary)' }}
           >
             {running
-              ? <><Loader size={14} strokeWidth={2} className="animate-spin" /> Executando...</>
-              : <><Zap size={14} strokeWidth={2} /> Executar Bootstrap</>
+              ? <><Loader size={14} className="animate-spin" /> Executando...</>
+              : <><Zap size={14} /> Executar Bootstrap</>
             }
           </button>
 
@@ -322,7 +322,7 @@ export default function AdminRevenue() {
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 bg-white border border-black/5 hover:bg-gray-50 transition-all disabled:opacity-50"
         >
-          <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Atualizar
         </button>
       </div>
@@ -345,25 +345,25 @@ export default function AdminRevenue() {
                 label="MRR Total"
                 value={fmt(data.mrr_total)}
                 sub="Receita recorrente mensal"
-                icon={<DollarSign size={18} strokeWidth={1.75} />}
+                icon={<DollarSign size={18} />}
               />
               <BigMetric
                 label="ARR"
                 value={fmt(data.arr)}
                 sub="Receita recorrente anual"
-                icon={<TrendingUp size={18} strokeWidth={1.75} />}
+                icon={<TrendingUp size={18} />}
               />
               <BigMetric
                 label="Planos ativos"
                 value={String(data.mrr_by_plan.reduce((s, p) => s + p.churches, 0))}
                 sub="Igrejas com assinatura paga"
-                icon={<Building2 size={18} strokeWidth={1.75} />}
+                icon={<Building2 size={18} />}
               />
               <BigMetric
                 label="Receita líquida"
                 value={fmt(data.dre.resultado)}
                 sub="Após tarifas Stripe"
-                icon={<Bot size={18} strokeWidth={1.75} />}
+                icon={<Bot size={18} />}
               />
             </div>
           </section>

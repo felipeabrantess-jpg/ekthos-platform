@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Eye, EyeOff, Loader } from 'lucide-react'
+import { EyeIcon as Eye, EyeSlashIcon as EyeOff, CircleNotchIcon as Loader } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 
 export default function Signup() {
@@ -143,8 +143,8 @@ export default function Signup() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {show.password
-                    ? <EyeOff size={16} strokeWidth={1.75} />
-                    : <Eye     size={16} strokeWidth={1.75} />}
+                    ? <EyeOff size={16} />
+                    : <Eye     size={16} />}
                 </button>
               </div>
             </div>
@@ -168,8 +168,8 @@ export default function Signup() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {show.confirm
-                    ? <EyeOff size={16} strokeWidth={1.75} />
-                    : <Eye     size={16} strokeWidth={1.75} />}
+                    ? <EyeOff size={16} />
+                    : <Eye     size={16} />}
                 </button>
               </div>
             </div>
@@ -219,7 +219,7 @@ export default function Signup() {
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-60"
               style={{ background: 'var(--color-primary)' }}
             >
-              {loading && <Loader size={16} strokeWidth={1.75} className="animate-spin" />}
+              {loading && <Loader size={16} className="animate-spin" />}
               {loading ? 'Criando conta...' : 'Criar conta'}
             </button>
           </form>

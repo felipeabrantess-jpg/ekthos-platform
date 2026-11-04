@@ -20,16 +20,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams }                                 from 'react-router-dom'
-import {
-  Church,
-  CheckCircle2,
-  AlertCircle,
-  Copy,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-} from 'lucide-react'
+import { ChurchIcon as Church, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle, CopyIcon as Copy, CheckIcon as Check, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 

@@ -20,21 +20,8 @@
 
 import { useState, useEffect } from 'react'
 import { useParams }           from 'react-router-dom'
-import {
-  Church,
-  AlertCircle,
-  Calendar,
-  Users,
-  Mic2,
-  BookOpen,
-  ClipboardList,
-  Baby,
-  DoorOpen,
-  ShieldCheck,
-  Music2,
-  HandHeart,
-  StickyNote,
-} from 'lucide-react'
+import { ChurchIcon as Church, WarningCircleIcon as AlertCircle, CalendarBlankIcon as Calendar, UsersIcon as Users, MicrophoneIcon as Mic2, BookOpenIcon as BookOpen, ClipboardTextIcon as ClipboardList, BabyIcon as Baby, DoorOpenIcon as DoorOpen, ShieldCheckIcon as ShieldCheck, MusicNoteIcon as Music2, HandHeartIcon as HandHeart, NoteIcon as StickyNote } from '@phosphor-icons/react'
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -53,7 +40,7 @@ const SEDE_LABELS: Record<string, string> = {
   geral:    'Geral',
 }
 
-const AREA_CONFIG: Record<string, { label: string; icon: React.FC<{ size?: number; className?: string }> }> = {
+const AREA_CONFIG: Record<string, { label: string; icon: PhosphorIcon }> = {
   kids:        { label: 'Kids',        icon: Baby        },
   recepcao:    { label: 'Recepção',    icon: DoorOpen    },
   portaria:    { label: 'Portaria',    icon: ShieldCheck },
@@ -120,7 +107,7 @@ function formatSubmittedAt(ts: string | null) {
 // ── Linha de dado ─────────────────────────────────────────────────────────────
 
 interface DataRowProps {
-  icon:    React.FC<{ size?: number; className?: string }>
+  icon:    PhosphorIcon
   label:   string
   value:   React.ReactNode
 }

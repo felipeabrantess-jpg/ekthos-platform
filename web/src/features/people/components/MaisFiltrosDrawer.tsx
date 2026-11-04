@@ -2,7 +2,7 @@
 // até ser aberta. Os números de cada etapa usam a mesma contagem do resto da tela (useStageFilterCounts).
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
+import { XIcon as X } from '@phosphor-icons/react'
 import type { RoleFilter } from '@/features/people/classification'
 
 export interface MaisFiltros {

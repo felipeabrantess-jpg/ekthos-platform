@@ -8,12 +8,12 @@
 
 import { useState, useEffect, useRef }          from 'react'
 import { Link }                                  from 'react-router-dom'
-import {
-  ChevronRight, Users, BookOpen,
-  Share2, Calendar, Book, Building2,
-  Heart, Smartphone, Copy, GraduationCap, Briefcase, Home,
-} from 'lucide-react'
+import { ShareNetworkIcon as Share2, DeviceMobileIcon as Smartphone, CopyIcon as Copy } from '@phosphor-icons/react'
 import { IGV } from '@/lib/igv-public-data'
+import { CalendarCrossIcon, CommunityIcon, OpenBookIcon, OpenHandsIcon, PastorIcon, PrayerHandsIcon } from '@/components/igv/icons'
+import { GlassButton, GlassCard, GlassIconButton, GlassLinkCard, IconTile, IgvContent, IgvPageShell, SectionTitle, IGV_FOCUS, IGV_TEXT } from '@/components/igv'
+import { XIcon as X, WarningCircleIcon as AlertCircle, CheckIcon as Check, ArrowDownIcon as ArrowDown } from '@phosphor-icons/react'
+import { ICON_SIZE } from '@/lib/icon-tokens'
 
 // ── Tipo PWA (não existe no lib.dom padrão) ────────────────────────
 
@@ -150,7 +150,14 @@ function useIsInAppBrowser() {
   return isInApp
 }
 
-// ── Card de ação compacto (grid 2x2) ──────────────────────────────
+// ── Estilo da tela inicial (cores derivadas da logo IGV) ─────────────
+
+
+function saudacao(): string {
+  const h = new Date().getHours()
+  if (h < 12) return 'Bom dia'
+  return h < 18 ? 'Boa tarde' : 'Boa noite'
+}
 
 function ActionCard({
   label,
@@ -164,14 +171,22 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-3 h-[76px] gap-1.5 active:bg-gray-50/80 dark:active:bg-white/10 transition-colors"
+      className={`igv-glass ${IGV_FOCUS} flex items-center gap-3 w-full min-h-[64px] px-4 rounded-[20px] active:scale-[0.99] transition-transform`}
     >
-      {children}
-      <span className="text-[0.82rem] font-medium text-gray-700 dark:text-white leading-tight">{label}</span>
+      <span className="w-7 h-7 flex items-center justify-center shrink-0">{children}</span>
+      <span className="text-[1rem] font-medium text-[#1F140C] leading-tight text-left min-w-0 break-words">{label}</span>
     </button>
   )
 }
 
+const ITENS = [
+  { to: '/igv/agenda',      titulo: 'Agenda',            sub: 'Cultos e próximos eventos',             Icone: CalendarCrossIcon },
+  { to: '/igv/oracao',      titulo: 'Pedidos de Oração', sub: 'Compartilhe com nossa equipe pastoral', Icone: PrayerHandsIcon },
+  { to: '/igv/gabinete',    titulo: 'Gabinete Pastoral', sub: 'Contato com os líderes da IGV',         Icone: PastorIcon },
+  { to: '/igv/celulas',     titulo: 'Nossas Células',    sub: 'Encontre a mais perto de você',         Icone: CommunityIcon },
+  { to: '/igv/cursos',      titulo: 'Cursos',            sub: 'Formações com inscrição',               Icone: OpenBookIcon },
+  { to: '/igv/empresarios', titulo: 'Rede de Negócios',  sub: 'Empresários da congregação',            Icone: OpenHandsIcon },
+]
 
 // ── Componente principal ───────────────────────────────────────────
 
@@ -264,418 +279,222 @@ export default function IgvPage() {
   const showInstallButton = !isInstalled && (canInstall || isIOS)
 
   return (
-    <div
-      className="min-h-screen bg-[#F9F7F4] dark:bg-black flex flex-col"
-      style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
-    >
+    <IgvPageShell>
 
-      {/* ── Hero: foto da fachada INTEIRA ── */}
-      <section className="bg-[#1C0A04] w-full">
-        <div className="relative max-w-[480px] mx-auto">
-
+      {/* ── Topo: fachada suave, desbotando até o fundo ── */}
+      <header className="relative w-full overflow-hidden">
+        <img
+          src={IGV.coverUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 w-full h-[300px] object-cover object-[center_72%] opacity-40"
+          loading="eager"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 h-[300px] bg-gradient-to-b from-transparent via-[var(--igv-bg)] via-80% to-[var(--igv-bg)]"
+        />
+        <div className="relative px-5 pt-14 pb-6">
           <img
-            src={IGV.coverUrl}
-            alt="Fachada da Igreja Gerando Vencedores"
-            className="w-full h-auto block"
-            loading="eager"
+            src={IGV.logoUrl}
+            alt="Logo Igreja Gerando Vencedores"
+            className="w-[72px] h-[72px] rounded-2xl object-cover shadow-md"
           />
+          <h1 className={`mt-5 ${IGV_TEXT.display}`}>{saudacao()}</h1>
+          <p className={`mt-2 ${IGV_TEXT.item}`}>{IGV.name}</p>
+          <p className={`mt-0.5 ${IGV_TEXT.muted}`}>{IGV.pastor}</p>
 
-          <div
-            aria-hidden="true"
-            className="absolute bottom-0 left-0 right-0"
-            style={{
-              height: '55%',
-              background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 40%, transparent 100%)',
-            }}
-          />
-
-          <div className="absolute bottom-0 left-0 right-0 px-5 pb-7 z-10">
-            <img
-              src={IGV.logoUrl}
-              alt="Logo Igreja Gerando Vencedores"
-              className="w-[76px] h-[76px] rounded-2xl shadow-xl object-cover"
-            />
-            <h1
-              className="mt-3 text-[2rem] font-bold text-white leading-tight tracking-tight"
-              style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
+          {showInstallButton && (
+            <GlassButton
+              onClick={handleInstallClick}
+              Icon={Smartphone}
+              className="mt-4"
+              ariaLabel={canInstall ? 'Instalar app no dispositivo' : 'Ver instruções para instalar no iOS'}
             >
-              {IGV.name}
-            </h1>
-            <p className="mt-0.5 text-white/75 text-[1rem] font-medium">{IGV.pastor}</p>
-            <p className="mt-0.5 text-white/50 text-[0.86rem]"><span className="whitespace-pre-line">{IGV.address}</span></p>
-
-            {showInstallButton && (
-              <button
-                onClick={handleInstallClick}
-                className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-xl bg-white/15 border border-white/30 backdrop-blur-sm text-white text-[0.8rem] font-medium active:bg-white/25 transition-colors"
-                aria-label={canInstall ? 'Instalar app no dispositivo' : 'Ver instruções para instalar no iOS'}
-              >
-                <Smartphone size={15} strokeWidth={1.75} />
-                Instalar App
-              </button>
-            )}
-          </div>
+              Instalar App
+            </GlassButton>
+          )}
         </div>
-      </section>
+      </header>
 
-      {/* ── Body ── */}
-      <main className="flex-1 px-4 py-5 max-w-[480px] mx-auto w-full">
+      <IgvContent>
 
-        <Link
-          to="/igv/seja-membro"
-          className="flex items-center justify-between w-full rounded-2xl p-4 mb-2.5 active:scale-[0.99] transition-all"
-          style={{ background: `linear-gradient(135deg, ${IGV.primaryColor} 0%, ${IGV.secondaryColor} 100%)` }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-              <Users size={18} strokeWidth={1.75} className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-white text-[1.02rem]">Seja Membro</p>
-              <p className="text-white/65 text-[0.86rem] mt-0.5">Faça parte da família IGV</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2.5} className="text-white/50 shrink-0" />
+        {/* Versículo em destaque */}
+        <Link to="/igv/biblia" className={`${IGV_FOCUS} igv-rise block rounded-[20px] bg-[var(--igv-dark)] text-white p-5`}>
+          <p className="text-base font-medium text-[var(--igv-line)]">Palavra para hoje</p>
+          <p className="igv-rise igv-rise--1 mt-1 text-lg font-semibold">Salmos 23:1</p>
+          <p className="igv-rise igv-rise--2 mt-4 igv-serif text-[1.5rem] leading-snug">
+            O Senhor é o meu pastor; nada me faltará.
+          </p>
+          <span className="igv-glass igv-glass--on-dark igv-rise igv-rise--3 mt-5 inline-flex items-center min-h-[48px] px-5 rounded-full text-[1rem] font-medium">
+            Abrir a Bíblia
+          </span>
         </Link>
 
-        <Link
-          to="/igv/sobre"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <BookOpen size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Sobre Nós</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Missão, visão e valores</p>
-            </div>
+        {/* Seja Membro: único botão principal na cor da IGV */}
+        <GlassCard className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <h2 className={IGV_TEXT.heading}>Seja Membro</h2>
+            <p className={`mt-1 ${IGV_TEXT.muted}`}>Faça parte da família IGV</p>
+            <GlassButton to="/igv/seja-membro" variant="accent" className="mt-3">
+              Quero fazer parte
+            </GlassButton>
           </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
+          <img src={IGV.logoUrl} alt="" aria-hidden="true" className="w-[88px] h-[88px] rounded-2xl object-cover shrink-0" />
+        </GlassCard>
 
-        <Link
-          to="/igv/biblia"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <Book size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Bíblia Sagrada</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">66 livros — Almeida</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
+        <GlassLinkCard to="/igv/sobre" title="Sobre Nós" subtitle="Missão, visão e valores" image={IGV.coverUrl} />
 
-        <Link
-          to="/igv/agenda"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <Calendar size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Agenda</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Cultos e próximos eventos</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
+        <SectionTitle>Mais para você</SectionTitle>
 
-        <Link
-          to="/igv/cursos"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <GraduationCap size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Cursos</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Formações com inscrição</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
+        {ITENS.map(({ to, titulo, sub, Icone }) => (
+          <GlassLinkCard key={to} to={to} title={titulo} subtitle={sub} Icon={Icone} />
+        ))}
 
-        <Link
-          to="/igv/celulas"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <Home size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Nossas Células</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Encontre a mais perto de você</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
+        <SectionTitle>Conecte-se com a IGV</SectionTitle>
 
-        <Link
-          to="/igv/empresarios"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-4 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <Briefcase size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Rede de Negócios</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Empresários da congregação</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
-
-        <p
-          className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] mb-2.5"
-          style={{ color: IGV.primaryColor }}
-        >
-          Conecte-se
-        </p>
-
-        <div className="grid grid-cols-2 gap-2.5 mb-4">
+        <div className="grid grid-cols-2 gap-3">
           <ActionCard label="WhatsApp" onClick={() => openLink(`https://wa.me/${IGV.whatsapp}`)}>
-            <WhatsAppLogo size={24} />
+            <WhatsAppLogo size={ICON_SIZE.list} />
           </ActionCard>
-          <ActionCard label={`@${IGV.instagramHandle}`} onClick={() => openLink(`https://instagram.com/${IGV.instagramHandle}`)}>
-            <InstagramLogo size={24} />
+          <ActionCard label="Instagram" onClick={() => openLink(`https://instagram.com/${IGV.instagramHandle}`)}>
+            <InstagramLogo size={ICON_SIZE.list} />
           </ActionCard>
           <ActionCard label="YouTube" onClick={() => openLink(IGV.youtubeUrl)}>
-            <YouTubeLogo size={24} />
+            <YouTubeLogo size={ICON_SIZE.list} />
           </ActionCard>
           <ActionCard label="Spotify" onClick={() => openLink(IGV.spotifyUrl)}>
-            <SpotifyLogo size={24} />
+            <SpotifyLogo size={ICON_SIZE.list} />
           </ActionCard>
           <div className="col-span-2 grid">
             <ActionCard label="Compartilhar" onClick={handleShare}>
-              <Share2 size={22} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
+              <Share2 size={ICON_SIZE.list} className="text-[var(--igv-ink)]" aria-hidden="true" />
             </ActionCard>
           </div>
         </div>
 
-        <Link
-          to="/igv/gabinete"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 mb-2.5 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <Building2 size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Gabinete Pastoral</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Contato com os líderes da IGV</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
+        <footer className={`mt-5 px-1 ${IGV_TEXT.muted}`}>
+          <span className="whitespace-pre-line">{IGV.address}</span>
+        </footer>
+      </IgvContent>
 
-        <Link
-          to="/igv/oracao"
-          className="flex items-center justify-between w-full bg-white dark:bg-black rounded-2xl p-4 border border-black/[0.05] dark:border-white/10 shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <Heart size={18} strokeWidth={1.75} />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-900 dark:text-white text-[1.02rem]">Pedidos de Oração</p>
-              <p className="text-gray-400 dark:text-white text-[0.86rem] mt-0.5">Compartilhe com nossa equipe pastoral</p>
-            </div>
-          </div>
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-300 dark:text-white/30 shrink-0" />
-        </Link>
-      </main>
-
-      <footer className="text-center px-4 py-5 text-[0.82rem] text-gray-400 dark:text-white/50">
-        <span className="whitespace-pre-line">{IGV.address}</span>
-      </footer>
-
-      {/* ── Banner iOS fixo ── */}
+      {/* ── Banner iOS, acima da barra de navegação ── */}
       {showBanner && !bannerDismissed && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-black border-t border-black/[0.07] dark:border-white/10 px-4 pt-3 pb-7 shadow-2xl">
-          <div className="flex items-start gap-3">
-            <div
-              className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
-              style={{ backgroundColor: `${IGV.primaryColor}18`, color: IGV.primaryColor }}
-            >
-              <SafariShareIcon size={18} />
-            </div>
-            <p className="text-[0.8rem] text-gray-700 dark:text-white flex-1 leading-snug">
-              {isInApp
-                ? 'Abra no Safari para instalar: toque em ··· → Abrir no Safari'
-                : <>Instalar app: <strong>Compartilhar</strong> {' '}→{' '} <strong>Adicionar à Tela de Início</strong></>
-              }
-            </p>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className="text-gray-400 dark:text-white/60 text-[0.8rem] shrink-0 px-1"
-              aria-label="Fechar"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+        <GlassCard className="fixed z-50 inset-x-3 max-w-[456px] mx-auto bottom-[calc(92px+env(safe-area-inset-bottom))] flex items-start gap-3">
+          <span className="w-12 h-12 rounded-2xl bg-[var(--igv-tint)] text-[var(--igv-ink)] flex items-center justify-center shrink-0">
+            <SafariShareIcon size={ICON_SIZE.list} />
+          </span>
+          <p className={`flex-1 min-w-0 ${IGV_TEXT.body}`}>
+            {isInApp
+              ? 'Abra no Safari para instalar: toque em ··· → Abrir no Safari'
+              : <>Instalar app: <strong>Compartilhar</strong> {' '}→{' '} <strong>Adicionar à Tela de Início</strong></>
+            }
+          </p>
+          <GlassIconButton Icon={X} label="Fechar" onClick={() => setBannerDismissed(true)} />
+        </GlassCard>
       )}
 
       {/* ── Toast ── */}
       {toast && (
-        <div className="fixed bottom-8 left-4 right-4 z-50 flex justify-center pointer-events-none">
-          <div className="bg-gray-900/95 text-white text-[0.875rem] font-medium px-5 py-3 rounded-2xl shadow-2xl">
+        <div className="fixed bottom-28 left-4 right-4 z-50 flex justify-center pointer-events-none">
+          <GlassCard className={`py-3 font-medium ${IGV_TEXT.body}`}>
             {toast}
-          </div>
+          </GlassCard>
         </div>
       )}
 
-      {/* ── Modal iOS install — visual melhorado ── */}
+      {/* ── Modal de instalação no iOS ── */}
       {showIOSModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-end"
+          className="fixed inset-0 z-50 bg-[color:color-mix(in_srgb,var(--igv-ink)_50%,transparent)] flex items-end"
           onClick={() => setShowIOSModal(false)}
         >
           <div
-            className="bg-white dark:bg-black w-full rounded-t-3xl px-6 pt-5 pb-10"
+            className="bg-[var(--igv-bg)] w-full max-w-[480px] mx-auto rounded-t-3xl px-5 pt-4 pb-[calc(24px+env(safe-area-inset-bottom))]"
             onClick={e => e.stopPropagation()}
           >
             {/* Drag handle */}
-            <div className="w-10 h-1 bg-gray-200 dark:bg-white/20 rounded-full mx-auto mb-4" />
+            <div className="w-10 h-1 bg-[var(--igv-line)] rounded-full mx-auto mb-4" />
 
             {isInApp ? (
               /* ── Versão in-app browser ── */
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl" aria-hidden="true">⚠️</span>
-                  <p className="text-[1.05rem] font-bold text-gray-900 dark:text-white">Navegador embutido</p>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <IconTile Icon={AlertCircle} />
+                  <p className={IGV_TEXT.heading}>Navegador embutido</p>
                 </div>
-                <p className="text-[0.85rem] text-gray-600 dark:text-white leading-relaxed">
+                <p className={IGV_TEXT.body}>
                   Você está no navegador do WhatsApp, Instagram ou similar.
                   Esses apps <strong>não têm</strong> a opção de instalar.
                 </p>
-                <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 space-y-2">
-                  <p className="text-[0.8rem] font-semibold text-amber-800">Para instalar:</p>
-                  <div className="flex items-start gap-2 text-[0.8rem] text-amber-700">
+                <GlassCard className="flex flex-col gap-2">
+                  <p className={`font-semibold ${IGV_TEXT.body}`}>Para instalar:</p>
+                  <div className={`flex items-start gap-2 ${IGV_TEXT.body}`}>
                     <span className="font-bold shrink-0">1.</span>
                     <span>Copie o link abaixo</span>
                   </div>
-                  <div className="flex items-start gap-2 text-[0.8rem] text-amber-700">
+                  <div className={`flex items-start gap-2 ${IGV_TEXT.body}`}>
                     <span className="font-bold shrink-0">2.</span>
                     <span>Abra o <strong>Safari</strong> e cole na barra de endereço</span>
                   </div>
-                  <div className="flex items-start gap-2 text-[0.8rem] text-amber-700">
+                  <div className={`flex items-start gap-2 ${IGV_TEXT.body}`}>
                     <span className="font-bold shrink-0">3.</span>
                     <span>Siga a instrução de instalação</span>
                   </div>
-                </div>
-                <button
-                  onClick={() => void copyCurrentUrl()}
-                  className="w-full h-12 rounded-2xl border-2 border-dashed flex items-center justify-center gap-2 text-[0.875rem] font-semibold transition-colors"
-                  style={{
-                    borderColor: linkCopied ? '#22c55e' : IGV.primaryColor,
-                    color:       linkCopied ? '#22c55e' : IGV.primaryColor,
-                  }}
-                >
-                  <Copy size={16} strokeWidth={2} />
-                  {linkCopied ? 'Link copiado! ✓' : 'Copiar link'}
-                </button>
-                <button
-                  onClick={() => setShowIOSModal(false)}
-                  className="w-full h-11 rounded-2xl text-gray-500 dark:text-white text-[0.875rem] font-medium"
-                >
+                </GlassCard>
+                <GlassButton onClick={() => void copyCurrentUrl()} Icon={linkCopied ? Check : Copy} fullWidth>
+                  {linkCopied ? 'Link copiado!' : 'Copiar link'}
+                </GlassButton>
+                <GlassButton onClick={() => setShowIOSModal(false)} fullWidth>
                   Fechar
-                </button>
+                </GlassButton>
               </div>
             ) : (
               /* ── Versão Safari normal ── */
-              <div className="space-y-4">
-                <p
-                  className="text-[1.1rem] font-bold text-gray-900 dark:text-white"
-                  style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
-                >
+              <div className="flex flex-col gap-4">
+                <p className={IGV_TEXT.heading}>
                   Adicionar à Tela Inicial
                 </p>
 
                 {/* Visual: ícone Compartilhar destacado + seta */}
-                <div className="flex flex-col items-center py-3 gap-2">
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md"
-                    style={{ backgroundColor: IGV.primaryColor, color: '#fff' }}
-                  >
-                    <SafariShareIcon size={30} />
-                  </div>
-                  <p className="text-[0.72rem] text-gray-500 dark:text-white font-medium">
+                <div className="flex flex-col items-center py-3 gap-2 text-center">
+                  <span className="w-14 h-14 rounded-2xl bg-[var(--igv-tint)] text-[var(--igv-ink)] flex items-center justify-center">
+                    <SafariShareIcon size={ICON_SIZE.list} />
+                  </span>
+                  <p className={IGV_TEXT.muted}>
                     Botão <strong>Compartilhar</strong> na barra do Safari
                   </p>
                   {/* Seta bounce apontando para baixo (onde a barra do Safari fica) */}
-                  <div className="text-2xl animate-bounce" style={{ color: IGV.primaryColor }} aria-hidden="true">
-                    ↓
-                  </div>
-                  <p className="text-[0.68rem] text-gray-400 dark:text-white">
+                  <ArrowDown size={ICON_SIZE.list} className="animate-bounce text-[var(--igv-accent)]" aria-hidden="true" />
+                  <p className={IGV_TEXT.muted}>
                     (barra inferior do Safari)
                   </p>
                 </div>
 
                 {/* Passos */}
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                   {[
                     'Toque em Compartilhar na barra inferior do Safari',
                     'Role a lista e toque em "Adicionar à Tela de Início"',
                     'Toque em "Adicionar" no canto superior direito',
                   ].map((txt, i) => (
-                    <div key={i} className="flex items-start gap-3 text-[0.875rem] text-gray-700 dark:text-white">
-                      <span
-                        className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.7rem] font-bold text-white"
-                        style={{ backgroundColor: IGV.primaryColor }}
-                      >
+                    <div key={i} className={`flex items-start gap-3 ${IGV_TEXT.body}`}>
+                      <span className="shrink-0 w-8 h-8 rounded-full bg-[var(--igv-tint)] flex items-center justify-center font-bold">
                         {i + 1}
                       </span>
-                      <span className="leading-snug pt-0.5">{txt}</span>
+                      <span className="pt-0.5">{txt}</span>
                     </div>
                   ))}
                 </div>
 
-                <button
-                  onClick={() => setShowIOSModal(false)}
-                  className="w-full h-12 rounded-2xl text-white font-semibold text-[0.9rem] mt-2"
-                  style={{ background: `linear-gradient(135deg, ${IGV.primaryColor}, ${IGV.secondaryColor})` }}
-                >
+                <GlassButton onClick={() => setShowIOSModal(false)} fullWidth className="mt-2">
                   Entendi!
-                </button>
+                </GlassButton>
               </div>
             )}
           </div>
         </div>
       )}
-    </div>
+    </IgvPageShell>
   )
 }

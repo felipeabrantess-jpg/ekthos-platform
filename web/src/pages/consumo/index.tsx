@@ -14,20 +14,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Zap,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  AlertTriangle,
-  CreditCard,
-  Clock,
-  BarChart3,
-  RefreshCw,
-  Loader2,
-  Info,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, LightningIcon as Zap, TrendUpIcon as TrendingUp, TrendDownIcon as TrendingDown, MinusIcon as Minus, WarningIcon as AlertTriangle, CreditCardIcon as CreditCard, ClockIcon as Clock, ChartBarIcon as BarChart3, ArrowsClockwiseIcon as RefreshCw, CircleNotchIcon as Loader2, InfoIcon as Info } from '@phosphor-icons/react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'

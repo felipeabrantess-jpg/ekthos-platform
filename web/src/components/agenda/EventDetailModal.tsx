@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { X, MapPin, Clock, Globe, Repeat, Tag, AlertTriangle } from 'lucide-react'
+import { XIcon as X, MapPinIcon as MapPin, ClockIcon as Clock, GlobeIcon as Globe, RepeatIcon as Repeat, TagIcon as Tag, WarningIcon as AlertTriangle } from '@phosphor-icons/react'
 import Button from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 import { useCancelOccurrence, type EventOccurrence } from '@/features/agenda/hooks/useEvents'

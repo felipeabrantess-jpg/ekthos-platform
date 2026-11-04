@@ -8,7 +8,7 @@
 
 import { useState }  from 'react'
 import { useQuery }  from '@tanstack/react-query'
-import { AlertTriangle, HeartHandshake } from 'lucide-react'
+import { WarningIcon as AlertTriangle, HandshakeIcon as HeartHandshake } from '@phosphor-icons/react'
 import { useAuth }   from '@/hooks/useAuth'
 import { supabase }  from '@/lib/supabase'
 import Spinner       from '@/components/ui/Spinner'
@@ -106,7 +106,7 @@ export default function Duplicados() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <HeartHandshake size={22} strokeWidth={1.75} style={{ color: 'var(--color-primary)' }} />
+        <HeartHandshake size={22} style={{ color: 'var(--color-primary)' }} />
         <div>
           <h1 className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>
             Duplicatas
@@ -137,7 +137,7 @@ export default function Duplicados() {
           </span>
         </div>
         <div className="ml-auto flex items-center gap-1.5" style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>
-          <AlertTriangle size={12} strokeWidth={2} />
+          <AlertTriangle size={12} />
           Decisão sobre cada duplicata é da Vanessa — nenhuma ação automática.
         </div>
       </div>
@@ -173,7 +173,7 @@ export default function Duplicados() {
         <>
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-16">
-              <AlertTriangle size={40} strokeWidth={1.25} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
+              <AlertTriangle size={40} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 {groups.length === 0
                   ? 'Nenhuma duplicata encontrada.'

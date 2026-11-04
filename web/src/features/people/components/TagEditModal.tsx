@@ -9,7 +9,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react'
-import { X, Loader2, Settings } from 'lucide-react'
+import { XIcon as X, CircleNotchIcon as Loader2, GearIcon as Settings } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useUpdatePersonTags, isPersonTypeTag } from '../hooks/useUpdatePersonTags'

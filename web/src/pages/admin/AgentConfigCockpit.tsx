@@ -1,10 +1,7 @@
 // web/src/pages/admin/AgentConfigCockpit.tsx
 import { useState, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft, Building2, MessageSquare, GitBranch,
-  AlertTriangle, Radio, Zap, History, CheckCircle2, XCircle,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, BuildingsIcon as Building2, ChatTextIcon as MessageSquare, GitBranchIcon as GitBranch, WarningIcon as AlertTriangle, RadioIcon as Radio, LightningIcon as Zap, ClockCounterClockwiseIcon as History, CheckCircleIcon as CheckCircle2, XCircleIcon as XCircle } from '@phosphor-icons/react'
 import { useChurchAgentFullConfig } from "@/hooks/useChurchAgentConfig"
 import Spinner from '@/components/ui/Spinner'
 import { TabIdentidade }     from './agent-tabs/TabIdentidade'

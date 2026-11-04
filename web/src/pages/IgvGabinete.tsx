@@ -6,11 +6,13 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Link }                from 'react-router-dom'
-import { Building2, ChevronLeft, Clock } from 'lucide-react'
-import { useIgvTheme } from '@/contexts/IgvThemeContext'
+import { BuildingsIcon, CheckCircleIcon, ClockIcon, CircleNotchIcon } from '@phosphor-icons/react'
+import {
+  GlassButton, GlassCard, GlassChip, GlassOption, IgvContent, IgvNotice, IgvPageShell, PageHeader,
+  IGV_INPUT, IGV_TEXT,
+} from '@/components/igv'
+import { ICON_SIZE } from '@/lib/icon-tokens'
 
-const IGV_COLOR       = '#D97706'
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
 const EF_URL          = `${SUPABASE_URL}/functions/v1/igv-cabinet-request`
 
@@ -56,8 +58,6 @@ function formatSlotShort(iso: string): string {
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export default function IgvGabinete() {
-  const { isDark } = useIgvTheme()
-
   const [pastors, setPastors]               = useState<Pastor[]>([])
   const [loadingPastors, setLoadingPastors] = useState(true)
   const [slots, setSlots]                   = useState<Slot[]>([])
@@ -130,275 +130,140 @@ export default function IgvGabinete() {
   // ── Tela de sucesso ─────────────────────────────────────────────────────────
   if (state === 'success') {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-5 text-center bg-[#FAFAFA] dark:bg-black"
-        style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}
-      >
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-          style={{ backgroundColor: `${IGV_COLOR}18` }}
-        >
-          <Building2 size={28} strokeWidth={1.5} style={{ color: IGV_COLOR }} />
-        </div>
-        <h2 className="text-[1.2rem] font-bold text-gray-900 dark:text-white mb-2">
-          Pedido registrado!
-        </h2>
-        <p className="text-[0.88rem] text-gray-500 dark:text-white leading-relaxed max-w-xs mb-8">
-          Nossa equipe pastoral entrará em contato para confirmar o dia e horário do seu atendimento.
-        </p>
-        <Link
-          to="/igv"
-          className="text-[0.85rem] font-semibold px-6 py-3 rounded-xl text-white"
-          style={{ backgroundColor: IGV_COLOR }}
-        >
-          Voltar para o início
-        </Link>
-      </div>
+      <IgvPageShell>
+        <PageHeader title="Gabinete Pastoral" />
+        <IgvContent>
+          <IgvNotice Icon={BuildingsIcon} title="Pedido registrado!">
+            <p>Nossa equipe pastoral entrará em contato para confirmar o dia e horário do seu atendimento.</p>
+            <GlassButton to="/igv" variant="accent" className="mt-4">Voltar para o início</GlassButton>
+          </IgvNotice>
+        </IgvContent>
+      </IgvPageShell>
     )
   }
 
   // ── Formulário ──────────────────────────────────────────────────────────────
   return (
-    <div
-      style={{ fontFamily: "'DM Sans', system-ui, sans-serif", minHeight: '100svh' }}
-      className="flex flex-col bg-[#FAFAFA] dark:bg-black"
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-safe-top pt-5 pb-4">
-        <Link to="/igv" className="p-1 -ml-1 rounded-lg text-gray-500 dark:text-white hover:text-gray-700 dark:hover:text-white/80">
-          <ChevronLeft size={22} strokeWidth={2} />
-        </Link>
-        <div>
-          <h1 className="text-[1rem] font-bold text-gray-900 dark:text-white">Gabinete Pastoral</h1>
-          <p className="text-[0.72rem] text-gray-400 dark:text-white">Solicitação de atendimento</p>
-        </div>
-      </div>
+    <IgvPageShell>
+      <PageHeader title="Gabinete Pastoral" subtitle="Solicitação de atendimento" />
 
-      <form onSubmit={(e) => { void handleSubmit(e) }} className="flex-1 px-4 pb-8 space-y-5">
+      <form onSubmit={(e) => { void handleSubmit(e) }}>
+        <IgvContent>
 
-        {/* Escolha do pastor */}
-        {!loadingPastors && pastors.length > 0 && (
-          <section>
-            <p className="text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2.5">
-              Pastor (opcional)
-            </p>
-            <div className="flex flex-col gap-2">
-              {pastors.map(p => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPastorId(prev => prev === p.id ? null : p.id)}
-                  className="flex items-center gap-3 rounded-2xl p-3.5 border text-left transition-all"
-                  style={{
-                    borderColor: pastorId === p.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)'),
-                    backgroundColor: pastorId === p.id ? `${IGV_COLOR}0D` : (isDark ? '#000' : '#fff'),
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  {p.photo_url ? (
-                    <img
-                      src={p.photo_url}
-                      alt={p.name ?? ''}
-                      className="w-10 h-10 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-                      style={{ backgroundColor: IGV_COLOR }}
-                    >
-                      {getInitials(p.name)}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-[0.88rem] font-semibold text-gray-900 dark:text-white truncate">{p.name ?? '—'}</p>
-                    <p className="text-[0.74rem] text-gray-400 dark:text-white truncate">{p.role}</p>
-                  </div>
-                  {pastorId === p.id && (
-                    <div
-                      className="ml-auto w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: IGV_COLOR }}
-                    >
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Slots disponíveis (quando pastor selecionado) */}
-        {pastorId && (
-          <section>
-            <p className="text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2.5">
-              Horários disponíveis
-            </p>
-            {loadingSlots ? (
-              <p className="text-[0.82rem] text-gray-400 dark:text-white">Buscando horários...</p>
-            ) : slots.length === 0 ? (
-              <p className="text-[0.82rem] text-gray-400 dark:text-white">
-                Nenhum horário cadastrado. Informe sua preferência abaixo.
-              </p>
-            ) : (
+          {/* Escolha do pastor */}
+          {!loadingPastors && pastors.length > 0 && (
+            <GlassCard>
+              <p className={IGV_TEXT.label}>Pastor (opcional)</p>
               <div className="flex flex-col gap-2">
-                {slots.map(s => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setSelectedSlotId(prev => prev === s.id ? null : s.id)}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 border text-left transition-all"
-                    style={{
-                      borderColor: selectedSlotId === s.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)'),
-                      backgroundColor: selectedSlotId === s.id ? `${IGV_COLOR}0D` : (isDark ? '#000' : '#fff'),
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                    }}
-                  >
-                    <Clock size={16} strokeWidth={1.8} style={{ color: selectedSlotId === s.id ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.4)' : '#9CA3AF') }} className="shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-[0.86rem] font-semibold text-gray-900 dark:text-white capitalize">
-                        {formatSlotShort(s.slot_datetime)}
-                      </p>
-                      <p className="text-[0.74rem] text-gray-400 dark:text-white">{s.duration_minutes} minutos</p>
-                    </div>
-                    {selectedSlotId === s.id && (
-                      <div
-                        className="ml-auto w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: IGV_COLOR }}
-                      >
-                        <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                          <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
+                {pastors.map(p => (
+                  <GlassOption key={p.id} selected={pastorId === p.id} onClick={() => setPastorId(prev => prev === p.id ? null : p.id)}>
+                    {p.photo_url ? (
+                      <img src={p.photo_url} alt={p.name ?? ''} className="w-11 h-11 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <span className="w-11 h-11 rounded-full flex items-center justify-center bg-[var(--igv-tint)] text-[var(--igv-ink)] text-[1rem] font-bold shrink-0">
+                        {getInitials(p.name)}
+                      </span>
                     )}
-                  </button>
+                    <span className="min-w-0">
+                      <span className={`block truncate ${IGV_TEXT.item}`}>{p.name ?? '—'}</span>
+                      <span className={`block truncate ${IGV_TEXT.muted}`}>{p.role}</span>
+                    </span>
+                  </GlassOption>
                 ))}
               </div>
-            )}
-          </section>
-        )}
-
-        {/* Tema */}
-        <section>
-          <label className="block text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2">
-            Tema *
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {TEMAS.map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTema(t)}
-                className="px-3.5 py-1.5 rounded-full text-[0.82rem] font-medium transition-colors"
-                style={{
-                  backgroundColor: tema === t ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
-                  color: tema === t ? '#fff' : (isDark ? '#fff' : '#374151'),
-                }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Tipo de atendimento */}
-        <section>
-          <label className="block text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2">
-            Tipo de atendimento
-          </label>
-          <div className="flex gap-2">
-            {TIPOS.map(t => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTipo(t)}
-                className="flex-1 py-2 rounded-xl text-[0.82rem] font-medium transition-colors"
-                style={{
-                  backgroundColor: tipo === t ? IGV_COLOR : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
-                  color: tipo === t ? '#fff' : (isDark ? '#fff' : '#374151'),
-                }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Preferência de data/horário */}
-        <section>
-          <label className="block text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide mb-2">
-            Preferência de data/horário
-          </label>
-          <input
-            type="text"
-            value={preferred}
-            onChange={e => setPreferred(e.target.value)}
-            placeholder="Ex: Sábado após as 14h, Segunda às 19h..."
-            maxLength={200}
-            className="w-full rounded-xl border border-black/[0.08] dark:border-white/10 bg-white dark:bg-black px-4 py-3 text-[0.88rem] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-          />
-        </section>
-
-        {/* Dados pessoais */}
-        <section className="space-y-3">
-          <p className="text-[0.78rem] font-semibold text-gray-500 dark:text-white uppercase tracking-wide">
-            Seus dados
-          </p>
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            placeholder="Nome completo *"
-            className="w-full rounded-xl border border-black/[0.08] dark:border-white/10 bg-white dark:bg-black px-4 py-3 text-[0.88rem] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-          />
-          <input
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            required
-            placeholder="WhatsApp / telefone *"
-            className="w-full rounded-xl border border-black/[0.08] dark:border-white/10 bg-white dark:bg-black px-4 py-3 text-[0.88rem] text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/40 focus:outline-none"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-          />
-        </section>
-
-        {/* LGPD */}
-        <p className="text-[0.72rem] text-gray-400 dark:text-white leading-relaxed">
-          Seus dados e o assunto do atendimento são tratados com{' '}
-          <strong className="text-gray-600 dark:text-white">sigilo pastoral absoluto</strong>. Nunca
-          compartilhados com terceiros nem enviados automaticamente por WhatsApp.
-          Nossa equipe entrará em contato para confirmar o horário.
-        </p>
-
-        {/* Erro */}
-        {state === 'error' && (
-          <p className="text-[0.82rem] text-red-300 bg-red-900/20 border border-red-600/20 rounded-xl px-4 py-3">{errMsg}</p>
-        )}
-        {errMsg && state !== 'error' && (
-          <p className="text-[0.82rem] text-red-500">{errMsg}</p>
-        )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={state === 'submitting'}
-          className="w-full py-3.5 rounded-2xl text-[0.95rem] font-bold text-white transition-opacity disabled:opacity-60"
-          style={{ backgroundColor: IGV_COLOR }}
-        >
-          {state === 'submitting' ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              Enviando...
-            </span>
-          ) : (
-            'Solicitar atendimento'
+            </GlassCard>
           )}
-        </button>
+
+          {/* Slots disponíveis (quando pastor selecionado) */}
+          {pastorId && (
+            <GlassCard>
+              <p className={IGV_TEXT.label}>Horários disponíveis</p>
+              {loadingSlots ? (
+                <p className={IGV_TEXT.muted}>Buscando horários...</p>
+              ) : slots.length === 0 ? (
+                <p className={IGV_TEXT.muted}>Nenhum horário cadastrado. Informe sua preferência abaixo.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {slots.map(s => (
+                    <GlassOption key={s.id} selected={selectedSlotId === s.id} onClick={() => setSelectedSlotId(prev => prev === s.id ? null : s.id)}>
+                      <ClockIcon size={ICON_SIZE.list} className="shrink-0" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className={`block capitalize ${IGV_TEXT.item}`}>{formatSlotShort(s.slot_datetime)}</span>
+                        <span className={`block ${IGV_TEXT.muted}`}>{s.duration_minutes} minutos</span>
+                      </span>
+                    </GlassOption>
+                  ))}
+                </div>
+              )}
+            </GlassCard>
+          )}
+
+          {/* O atendimento */}
+          <GlassCard className="flex flex-col gap-5">
+            <fieldset>
+              <legend className={IGV_TEXT.label}>Tema *</legend>
+              <div className="flex flex-wrap gap-2">
+                {TEMAS.map(t => (
+                  <GlassChip key={t} selected={tema === t} onClick={() => setTema(t)}>{t}</GlassChip>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend className={IGV_TEXT.label}>Tipo de atendimento</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {TIPOS.map(t => (
+                  <GlassChip segmented key={t} selected={tipo === t} onClick={() => setTipo(t)}>{t}</GlassChip>
+                ))}
+              </div>
+            </fieldset>
+
+            <div>
+              <label htmlFor="gab-pref" className={IGV_TEXT.label}>Preferência de data/horário</label>
+              <input
+                id="gab-pref"
+                type="text"
+                value={preferred}
+                onChange={e => setPreferred(e.target.value)}
+                placeholder="Ex: Sábado após as 14h"
+                maxLength={200}
+                className={IGV_INPUT}
+              />
+            </div>
+          </GlassCard>
+
+          {/* Dados pessoais */}
+          <GlassCard className="flex flex-col gap-4">
+            <h2 className={IGV_TEXT.heading}>Seus dados</h2>
+            <div>
+              <label htmlFor="gab-nome" className={IGV_TEXT.label}>Nome completo *</label>
+              <input id="gab-nome" type="text" value={name} onChange={e => setName(e.target.value)} required className={IGV_INPUT} />
+            </div>
+            <div>
+              <label htmlFor="gab-fone" className={IGV_TEXT.label}>WhatsApp / telefone *</label>
+              <input id="gab-fone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required className={IGV_INPUT} />
+            </div>
+            <p className={IGV_TEXT.muted}>
+              Seus dados e o assunto do atendimento são tratados com{' '}
+              <strong className="font-semibold text-[var(--igv-ink)]">sigilo pastoral absoluto</strong>. Nunca
+              compartilhados com terceiros nem enviados automaticamente por WhatsApp.
+              Nossa equipe entrará em contato para confirmar o horário.
+            </p>
+          </GlassCard>
+
+          {errMsg && <p role="alert" className={`px-1 ${IGV_TEXT.error}`}>{errMsg}</p>}
+
+          <GlassButton
+            type="submit"
+            variant="accent"
+            fullWidth
+            disabled={state === 'submitting'}
+            Icon={state === 'submitting' ? CircleNotchIcon : CheckCircleIcon}
+          >
+            {state === 'submitting' ? 'Enviando...' : 'Solicitar atendimento'}
+          </GlassButton>
+        </IgvContent>
       </form>
-    </div>
+    </IgvPageShell>
   )
 }

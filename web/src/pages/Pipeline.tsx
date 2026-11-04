@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { X, AlertTriangle, Settings2, ArrowUpDown, ListChecks } from 'lucide-react'
+import { XIcon as X, WarningIcon as AlertTriangle, GearSixIcon as Settings2, ArrowsDownUpIcon as ArrowUpDown, ListChecksIcon as ListChecks } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { usePipelineStages, usePipelineBoard, useMovePersonToStage } from '@/features/pipeline/hooks/usePipeline'
 import { PipelineStagesModal } from '@/features/pipeline/components/PipelineStagesModal'
@@ -120,7 +120,7 @@ function DetailPanel({ person, onClose }: DetailPanelProps) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-display text-base font-semibold text-ekthos-black">{person.name ?? '—'}</h3>
           <button onClick={onClose} className="p-1 rounded-lg text-ekthos-black/30 hover:text-ekthos-black/70 hover:bg-bg-hover transition-all">
-            <X size={16} strokeWidth={1.75} />
+            <X size={16} />
           </button>
         </div>
 
@@ -432,7 +432,7 @@ export default function Pipeline() {
       {/* SLA alert banner */}
       {totalBreaches > 0 && (
         <div className="flex items-center gap-2 bg-bg-hover border border-border-default rounded-xl px-4 py-2.5 text-sm text-primary-text">
-          <AlertTriangle size={16} strokeWidth={1.75} className="shrink-0" />
+          <AlertTriangle size={16} className="shrink-0" />
           <span>
             <strong>{totalBreaches} {totalBreaches === 1 ? 'pessoa' : 'pessoas'}</strong> com prazo de contato estourado
           </span>

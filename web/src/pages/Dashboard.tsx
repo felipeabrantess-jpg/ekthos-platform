@@ -2,10 +2,7 @@ import {
   BarChart, Bar, LineChart, Line,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
 } from 'recharts'
-import {
-  UserCheck, UserPlus, Users, Network, Droplets,
-  GraduationCap, Wallet, AlertTriangle, CheckCircle, BarChart2, TrendingUp, Heart,
-} from 'lucide-react'
+import { UserCheckIcon as UserCheck, UserPlusIcon as UserPlus, UsersIcon as Users, TreeStructureIcon as Network, DropIcon as Droplets, GraduationCapIcon as GraduationCap, WalletIcon as Wallet, WarningIcon as AlertTriangle, CheckCircleIcon as CheckCircle, ChartBarIcon as BarChart2, TrendUpIcon as TrendingUp, HeartIcon as Heart } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -127,7 +124,7 @@ function AlertaCritico({ items }: {
   return (
     <div className="rounded-2xl border-2 border-border-default bg-bg-hover p-5">
       <div className="flex items-center gap-2.5 mb-3">
-        <AlertTriangle size={18} strokeWidth={1.75} className="text-primary-text shrink-0" />
+        <AlertTriangle size={18} className="text-primary-text shrink-0" />
         <div>
           <p className="text-sm font-bold text-primary-text">
             {items.length} visitante{items.length > 1 ? 's' : ''} sem consolidação
@@ -171,7 +168,7 @@ function AlertaTable<T extends Record<string, unknown>>({
       </div>
       {data.length === 0 ? (
         <div className="px-5 py-8 flex items-center justify-center gap-2 text-sm text-text-tertiary">
-          <CheckCircle size={16} strokeWidth={1.75} className="text-success shrink-0" />
+          <CheckCircle size={16} className="text-success shrink-0" />
           {empty ?? 'Nenhum registro'}
         </div>
       ) : (
@@ -215,7 +212,7 @@ function ChartCard({ title, sub, children, height = 220 }: {
 function ChartEmptyState({ message = 'Nenhum dado no período' }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-3">
-      <BarChart2 size={36} strokeWidth={1.25} style={{ color: 'var(--border-default)' }} />
+      <BarChart2 size={36} style={{ color: 'var(--border-default)' }} />
       <p className="text-sm text-gray-400">{message}</p>
     </div>
   )
@@ -305,7 +302,7 @@ export default function Dashboard() {
             value={s.total}
             sub={`${s.sem_etapa} sem etapa no pipeline`}
             color="purple"
-            icon={<Users size={18} strokeWidth={1.75} />}
+            icon={<Users size={18} />}
             href={`/pessoas?${unitQuery}`}
           />
           <MetricCard
@@ -313,7 +310,7 @@ export default function Dashboard() {
             value={s.visitantes_30d}
             sub="na etapa Visitante, cadastrados há até 30 dias"
             color="blue"
-            icon={<UserPlus size={18} strokeWidth={1.75} />}
+            icon={<UserPlus size={18} />}
             href={`/pessoas?tab=visitante&periodo=30&${unitQuery}`}
           />
           <MetricCard
@@ -321,7 +318,7 @@ export default function Dashboard() {
             value={s.membros}
             sub="na etapa Membro do pipeline"
             color="green"
-            icon={<UserCheck size={18} strokeWidth={1.75} />}
+            icon={<UserCheck size={18} />}
             href={`/pessoas?tab=membro&${unitQuery}`}
           />
         </div>
@@ -333,14 +330,14 @@ export default function Dashboard() {
             sub={`de ${s.celulas_total} cadastradas`}
             meta="Meta: 45"
             color={s.celulas_ativas >= 45 ? 'green' : 'default'}
-            icon={<Network size={18} strokeWidth={1.75} />}
+            icon={<Network size={18} />}
           />
           <MetricCard
             label="Batismos no Trimestre"
             value={s.batismos_trimestre}
             meta="Meta: 15/tri"
             color={s.batismos_trimestre >= 15 ? 'green' : 'default'}
-            icon={<Droplets size={18} strokeWidth={1.75} />}
+            icon={<Droplets size={18} />}
           />
         </div>
         {/* Novos Convertidos widget — etapa canônica */}
@@ -350,7 +347,7 @@ export default function Dashboard() {
             value={s.novos_convertidos}
             sub={`na etapa Novo Convertido · ${s.novos_convertidos_30d} entraram nos últimos 30 dias`}
             color={s.novos_convertidos > 0 ? 'green' : 'default'}
-            icon={<Heart size={18} strokeWidth={1.75} />}
+            icon={<Heart size={18} />}
             href={`/pessoas?tab=novo_convertido&${unitQuery}`}
           />
         </div>
@@ -365,7 +362,7 @@ export default function Dashboard() {
             value={s.novos_semana}
             sub="cadastrados nos últimos 7 dias"
             color="blue"
-            icon={<UserPlus size={18} strokeWidth={1.75} />}
+            icon={<UserPlus size={18} />}
           />
           <MetricCard
             label="Parados além do prazo"
@@ -373,7 +370,7 @@ export default function Dashboard() {
             sub="acima do SLA da etapa atual"
             alert={s.parados > 0}
             color={s.parados > 0 ? 'red' : 'green'}
-            icon={<AlertTriangle size={18} strokeWidth={1.75} />}
+            icon={<AlertTriangle size={18} />}
             href={`/pipeline?${unitQuery}`}
           />
           <MetricCard
@@ -382,7 +379,7 @@ export default function Dashboard() {
             sub="cadastrados em 90 dias que avançaram além de Visitante"
             meta="Meta: 60%"
             color={s.consolidacao_90d >= 60 ? 'green' : s.consolidacao_90d >= 40 ? 'yellow' : 'red'}
-            icon={<TrendingUp size={18} strokeWidth={1.75} />}
+            icon={<TrendingUp size={18} />}
           />
         </div>
 
@@ -428,7 +425,7 @@ export default function Dashboard() {
             sub="na etapa Escola da Fé"
             meta="Meta: 30/turma"
             color={s.escola_da_fe >= 30 ? 'green' : 'default'}
-            icon={<GraduationCap size={18} strokeWidth={1.75} />}
+            icon={<GraduationCap size={18} />}
           />
           {showFinancial && (
             <MetricCard
@@ -436,7 +433,7 @@ export default function Dashboard() {
               value={formatCurrency(dizimosOfertasMes)}
               sub="mês atual (confirmados) · toda a igreja"
               color="green"
-              icon={<Wallet size={18} strokeWidth={1.75} />}
+              icon={<Wallet size={18} />}
             />
           )}
         </div>

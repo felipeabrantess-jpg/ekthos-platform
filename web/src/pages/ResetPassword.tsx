@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Check, X } from 'lucide-react'
+import { CheckIcon as Check, XIcon as X } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 import PasswordInput from '@/components/ui/PasswordInput'

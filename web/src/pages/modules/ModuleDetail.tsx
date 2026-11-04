@@ -10,10 +10,7 @@
 
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft, Lock, CheckCircle2, Plus, Loader2,
-  Check, AlertCircle, ListOrdered,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, LockIcon as Lock, CheckCircleIcon as CheckCircle2, PlusIcon as Plus, CircleNotchIcon as Loader2, CheckIcon as Check, WarningCircleIcon as AlertCircle, ListNumbersIcon as ListOrdered } from '@phosphor-icons/react'
 import { getModuleContent, type ModuleContent } from '@/lib/modules-content'
 import { useAddonActions } from '@/hooks/useAddonActions'
 import Button from '@/components/ui/Button'
@@ -28,8 +25,8 @@ function Toast({ ok, message, onClose }: { ok: boolean; message: string; onClose
       }`}
     >
       {ok
-        ? <Check size={16} className="text-green-600 shrink-0 mt-0.5" strokeWidth={2.5} />
-        : <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
+        ? <Check size={16} className="text-green-600 shrink-0 mt-0.5" />
+        : <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
       }
       <p className={`text-sm flex-1 ${ok ? 'text-green-800' : 'text-red-800'}`}>{message}</p>
       <button onClick={onClose} className="text-xs opacity-40 hover:opacity-70 shrink-0">✕</button>
@@ -44,7 +41,7 @@ function FeatureList({ features }: { features: ModuleContent['features'] }) {
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {features.map((f, i) => (
         <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-          <CheckCircle2 size={15} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={2} />
+          <CheckCircle2 size={15} className="text-brand-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-ekthos-black">{f.label}</p>
             <p className="text-xs text-ekthos-black/50 mt-0.5 leading-relaxed">{f.description}</p>
@@ -79,7 +76,7 @@ function AgentsList({ agents }: { agents: ModuleContent['agents'] }) {
               </span>
             ) : (
               <div className="flex items-center gap-1 shrink-0">
-                <Plus size={11} className="text-brand-400" strokeWidth={2.5} />
+                <Plus size={11} className="text-brand-400" />
                 <span className="text-[10px] font-semibold text-brand-600">R$ 149,90/mês</span>
               </div>
             )}
@@ -104,7 +101,7 @@ function ComoFuncionaCard() {
   return (
     <div className="p-5 bg-cream-light border border-cream-dark/50 rounded-2xl space-y-4">
       <div className="flex items-center gap-2.5">
-        <ListOrdered size={16} className="text-ekthos-black/50 shrink-0" strokeWidth={1.75} />
+        <ListOrdered size={16} className="text-ekthos-black/50 shrink-0" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-ekthos-black/50">
           Como funciona a contratação
         </h2>
@@ -141,7 +138,7 @@ function ModuleCTA({ module }: { module: ModuleContent }) {
   return (
     <div className="p-5 bg-brand-50 border border-brand-100 rounded-2xl space-y-3">
       <div className="flex items-start gap-3">
-        <Lock size={18} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+        <Lock size={18} className="text-brand-500 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-brand-900">Implementação acompanhada</p>
           <p className="text-xs text-brand-600 mt-0.5 leading-relaxed">
@@ -198,7 +195,7 @@ export default function ModuleDetail() {
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-xs text-ekthos-black/40 hover:text-ekthos-black/70 transition-colors"
       >
-        <ArrowLeft size={13} strokeWidth={2} />
+        <ArrowLeft size={13} />
         Voltar
       </button>
 
@@ -213,7 +210,7 @@ export default function ModuleDetail() {
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="font-display text-2xl font-bold text-ekthos-black">{module.name}</h1>
-            <Lock size={14} className="text-gray-400" strokeWidth={2} />
+            <Lock size={14} className="text-gray-400" />
           </div>
           <p className="text-sm text-ekthos-black/55 mt-1">{module.tagline}</p>
           <p className="text-sm font-bold text-brand-600 mt-2">{module.price}</p>

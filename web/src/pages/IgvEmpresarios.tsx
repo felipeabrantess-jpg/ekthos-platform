@@ -1,6 +1,8 @@
 import { useState, useEffect }   from 'react'
-import { Link }                   from 'react-router-dom'
-import { ChevronLeft, Briefcase, Plus } from 'lucide-react'
+import { CircleNotchIcon, EnvelopeSimpleIcon, GlobeIcon, PlusIcon } from '@phosphor-icons/react'
+import { GlassButton, GlassCard, GlassChip, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_TEXT } from '@/components/igv'
+import { BusinessCrossIcon } from '@/components/igv/icons'
+import { ICON_SIZE } from '@/lib/icon-tokens'
 import { supabase }               from '@/lib/supabase'
 import { IGV }                    from '@/lib/igv-public-data'
 
@@ -61,21 +63,12 @@ function InstagramIcon({ size = 20 }: { size?: number }) {
 
 // ── Placeholder inicial ───────────────────────────────────────────────────────
 
-function InitialAvatar({ name, size = 56 }: { name: string; size?: number }) {
+function InitialAvatar({ name }: { name: string }) {
   const initial = name.charAt(0).toUpperCase()
   return (
-    <div
-      className="rounded-2xl flex items-center justify-center shrink-0 font-bold text-xl"
-      style={{
-        width:           size,
-        height:          size,
-        backgroundColor: `${IGV.primaryColor}18`,
-        color:           IGV.primaryColor,
-        border:          `1.5px solid ${IGV.primaryColor}30`,
-      }}
-    >
+    <span className={`igv-glass igv-glass--tile igv-serif w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${IGV_TEXT.heading}`} aria-hidden="true">
       {initial}
-    </div>
+    </span>
   )
 }
 
@@ -83,90 +76,57 @@ function InitialAvatar({ name, size = 56 }: { name: string; size?: number }) {
 
 function EmpresarioCard({ item }: { item: Empresario }) {
   return (
-    <div className="bg-[#111] rounded-2xl border border-white/10 p-4">
-      <div className="flex items-start gap-3 mb-3">
+    <GlassCard>
+      <div className="flex items-center gap-4 mb-3">
         {item.foto_url ? (
           <img
             src={item.foto_url}
             alt={item.nome}
-            className="w-14 h-14 rounded-2xl object-cover shrink-0 border border-white/10"
+            className="w-14 h-14 rounded-2xl object-cover shrink-0"
           />
         ) : (
           <InitialAvatar name={item.nome} />
         )}
 
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-white text-[1.02rem] leading-tight">{item.nome}</p>
-          <span
-            className="inline-block text-[0.82rem] font-medium px-2 py-0.5 rounded-full mt-1"
-            style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
-          >
-            {item.categoria}
-          </span>
+          <p className={IGV_TEXT.item}>{item.nome}</p>
+          <p className={`mt-0.5 ${IGV_TEXT.muted}`}>{item.categoria}</p>
         </div>
       </div>
 
       {item.descricao && (
-        <p className="text-[1rem] text-white/70 mb-3 leading-snug">{item.descricao}</p>
+        <p className={`mb-4 ${IGV_TEXT.body}`}>{item.descricao}</p>
       )}
 
       {/* Botões de contato */}
       <div className="flex flex-wrap gap-2">
         {item.telefone && (
-          <a
-            href={buildWhatsAppUrl(item.telefone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
-            style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.25)' }}
-          >
-            <WhatsAppIcon size={15} />
+          <GlassButton href={buildWhatsAppUrl(item.telefone)} className="!px-4">
+            <WhatsAppIcon size={ICON_SIZE.button} />
             WhatsApp
-          </a>
+          </GlassButton>
         )}
 
         {item.instagram && (
-          <a
-            href={`https://instagram.com/${item.instagram}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
-            style={{ backgroundColor: 'rgba(236,72,153,0.12)', color: '#f472b6', borderColor: 'rgba(236,72,153,0.25)' }}
-          >
-            <InstagramIcon size={15} />
+          <GlassButton href={`https://instagram.com/${item.instagram}`} className="!px-4 max-w-full break-all">
+            <InstagramIcon size={ICON_SIZE.button} />
             @{item.instagram}
-          </a>
+          </GlassButton>
         )}
 
         {item.site && (
-          <a
-            href={item.site.startsWith('http') ? item.site : `https://${item.site}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
-            style={{ backgroundColor: 'rgba(59,130,246,0.12)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.25)' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
+          <GlassButton href={item.site.startsWith('http') ? item.site : `https://${item.site}`} Icon={GlobeIcon} className="!px-4">
             Site
-          </a>
+          </GlassButton>
         )}
 
         {item.email && (
-          <a
-            href={`mailto:${item.email}`}
-            className="flex items-center gap-1.5 text-[0.88rem] font-medium px-3 py-1.5 rounded-xl border active:scale-[0.98] transition-all"
-            style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.12)' }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-            </svg>
+          <GlassButton href={`mailto:${item.email}`} Icon={EnvelopeSimpleIcon} className="!px-4">
             E-mail
-          </a>
+          </GlassButton>
         )}
       </div>
-    </div>
+    </GlassCard>
   )
 }
 
@@ -200,100 +160,58 @@ export default function IgvEmpresarios() {
     : empresarios.filter(e => e.categoria === categoria)
 
   return (
-    <div className="min-h-screen bg-black" style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}>
-      {/* Header */}
-      <div
-        className="sticky top-0 z-10 flex items-center gap-3 px-4 pt-safe-top pb-3 pt-3 border-b border-white/[0.06]"
-        style={{ backgroundColor: '#000' }}
-      >
-        <Link
-          to="/igv"
-          className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
-        >
-          <ChevronLeft size={18} strokeWidth={2} />
-        </Link>
-        <div>
-          <p className="font-semibold text-white text-[1.02rem] leading-tight">Rede de Negócios</p>
-          <p className="text-[0.82rem] text-white/50">Igreja Gerando Vencedores</p>
-        </div>
-      </div>
+    <IgvPageShell>
+      <PageHeader title="Rede de Negócios" subtitle="Igreja Gerando Vencedores" />
 
-      <div className="px-4 pt-5 pb-8">
-        {/* Intro */}
-        <div className="mb-5">
-          <p className="text-[1rem] text-white/70 leading-relaxed">
-            Conheça os empreendedores da nossa comunidade e apoie quem faz parte da família IGV.
-          </p>
-        </div>
+      <IgvContent>
+        <GlassCard className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <IconTile Icon={BusinessCrossIcon} />
+            <p className={`min-w-0 ${IGV_TEXT.body}`}>
+              Conheça os empreendedores da nossa comunidade e apoie quem faz parte da família IGV.
+            </p>
+          </div>
 
-        {/* CTA cadastro — sempre visível */}
-        <Link
-          to="/igv/empresarios/cadastrar"
-          className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl font-semibold text-[1.02rem] text-white mb-6 active:opacity-80 transition-opacity"
-          style={{ backgroundColor: IGV.primaryColor }}
-        >
-          <Plus size={18} strokeWidth={2.5} />
-          Cadastrar meu negócio
-        </Link>
+          {/* CTA cadastro — sempre visível */}
+          <GlassButton to="/igv/empresarios/cadastrar" variant="accent" Icon={PlusIcon} fullWidth>
+            Cadastrar meu negócio
+          </GlassButton>
+        </GlassCard>
 
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div
-              className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: `${IGV.primaryColor}40`, borderTopColor: IGV.primaryColor }}
-            />
-          </div>
+          <GlassCard className="flex justify-center py-10">
+            <CircleNotchIcon size={ICON_SIZE.tile} className="animate-spin text-[var(--igv-accent)]" role="status" aria-label="Carregando" />
+          </GlassCard>
         ) : empresarios.length === 0 ? (
-          <div className="text-center py-16 text-white/50">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: `${IGV.primaryColor}15` }}
-            >
-              <Briefcase size={26} style={{ color: IGV.primaryColor }} strokeWidth={1.5} />
-            </div>
-            <p className="font-medium text-white/70">Em breve por aqui!</p>
-            <p className="text-[1rem] mt-1">Os empresários da IGV serão listados aqui.</p>
-          </div>
+          <IgvNotice Icon={BusinessCrossIcon} title="Em breve por aqui!">
+            Os empresários da IGV serão listados aqui.
+          </IgvNotice>
         ) : (
           <>
             {/* Filtro de categoria */}
             {categorias.length > 2 && (
-              <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide -mx-4 px-4">
+              <GlassCard className="flex flex-wrap gap-2">
                 {categorias.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoria(cat)}
-                    className="shrink-0 text-[0.88rem] font-medium px-3 py-1.5 rounded-full border transition-all"
-                    style={
-                      categoria === cat
-                        ? { backgroundColor: IGV.primaryColor, color: '#fff', borderColor: IGV.primaryColor }
-                        : { backgroundColor: '#111', color: '#aaa', borderColor: '#444' }
-                    }
-                  >
+                  <GlassChip key={cat} selected={categoria === cat} onClick={() => setCategoria(cat)}>
                     {cat}
-                  </button>
+                  </GlassChip>
                 ))}
-              </div>
+              </GlassCard>
             )}
 
             {/* Cards */}
-            <div className="space-y-3">
-              {filtered.map(e => <EmpresarioCard key={e.id} item={e} />)}
-            </div>
+            {filtered.map(e => <EmpresarioCard key={e.id} item={e} />)}
 
             {filtered.length === 0 && (
-              <p className="text-center text-[1rem] text-white/50 py-8">
-                Nenhum empresário nesta categoria ainda.
-              </p>
+              <IgvNotice title="Nenhum empresário nesta categoria ainda." />
             )}
 
-            <p className="text-center text-[0.75rem] text-white/40 mt-8">
+            <p className={`mt-3 px-1 text-center ${IGV_TEXT.muted}`}>
               {filtered.length} de {empresarios.length} empresário{empresarios.length !== 1 ? 's' : ''}
             </p>
           </>
         )}
-      </div>
-    </div>
+      </IgvContent>
+    </IgvPageShell>
   )
 }

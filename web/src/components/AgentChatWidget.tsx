@@ -1,25 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import {
-  X, Send, Bot, Trash2, Loader,
-  MessageCircle, GraduationCap, UserPlus, PenTool,
-  DollarSign, MessageSquare, Heart, BarChart3, Calendar,
-} from 'lucide-react'
+import { XIcon as X, PaperPlaneTiltIcon as Send, RobotIcon as Bot, TrashIcon as Trash2, CircleNotchIcon as Loader, ChatCircleIcon as MessageCircle, GraduationCapIcon as GraduationCap, UserPlusIcon as UserPlus, PenNibIcon as PenTool, CurrencyDollarIcon as DollarSign, ChatTextIcon as MessageSquare, HeartIcon as Heart, ChartBarIcon as BarChart3, CalendarBlankIcon as Calendar } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { usePlan } from '@/hooks/usePlan'
 
 // ── Mapeamento slug → ícone ─────────────────────────────────
 const AGENT_ICON_MAP: Record<string, JSX.Element> = {
-  'agent-suporte':        <MessageCircle  size={16} strokeWidth={1.75} />,
-  'agent-onboarding':    <GraduationCap  size={16} strokeWidth={1.75} />,
-  'agent-cadastro':      <UserPlus       size={16} strokeWidth={1.75} />,
-  'agent-conteudo':      <PenTool        size={16} strokeWidth={1.75} />,
-  'agent-financeiro':    <DollarSign     size={16} strokeWidth={1.75} />,
-  'agent-whatsapp':      <MessageSquare  size={16} strokeWidth={1.75} />,
-  'agent-reengajamento': <Heart          size={16} strokeWidth={1.75} />,
-  'agent-metricas':      <BarChart3      size={16} strokeWidth={1.75} />,
-  'agent-agenda':        <Calendar       size={16} strokeWidth={1.75} />,
+  'agent-suporte':        <MessageCircle  size={16} />,
+  'agent-onboarding':    <GraduationCap  size={16} />,
+  'agent-cadastro':      <UserPlus       size={16} />,
+  'agent-conteudo':      <PenTool        size={16} />,
+  'agent-financeiro':    <DollarSign     size={16} />,
+  'agent-whatsapp':      <MessageSquare  size={16} />,
+  'agent-reengajamento': <Heart          size={16} />,
+  'agent-metricas':      <BarChart3      size={16} />,
+  'agent-agenda':        <Calendar       size={16} />,
 }
 
 // ── Tipos ───────────────────────────────────────────────────
@@ -256,7 +252,7 @@ export default function AgentChatWidget({
               className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
               style={{ background: 'var(--color-primary)' }}
             >
-              <Bot size={14} strokeWidth={1.75} className="text-white" />
+              <Bot size={14} className="text-white" />
             </div>
             <div>
               <p className="text-sm font-semibold text-white">{agentName}</p>
@@ -274,7 +270,7 @@ export default function AgentChatWidget({
               onMouseEnter={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.8)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.4)')}
             >
-              <Trash2 size={13} strokeWidth={1.75} />
+              <Trash2 size={13} />
             </button>
             <button
               onClick={onClose}
@@ -283,7 +279,7 @@ export default function AgentChatWidget({
               onMouseEnter={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.8)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'rgba(249,238,220,0.4)')}
             >
-              <X size={14} strokeWidth={1.75} />
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -292,7 +288,7 @@ export default function AgentChatWidget({
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: 'var(--bg-primary)' }}>
           {histLoading && (
             <div className="flex items-center justify-center h-20">
-              <Loader size={18} strokeWidth={1.75} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
+              <Loader size={18} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
             </div>
           )}
 
@@ -306,7 +302,7 @@ export default function AgentChatWidget({
                   className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mr-2 mt-0.5"
                   style={{ background: 'var(--color-primary)' }}
                 >
-                  <Bot size={11} strokeWidth={2} className="text-white" />
+                  <Bot size={11} className="text-white" />
                 </div>
               )}
               <div
@@ -369,8 +365,8 @@ export default function AgentChatWidget({
               style={{ background: 'var(--color-primary)' }}
             >
               {loading
-                ? <Loader size={15} strokeWidth={2} className="text-white animate-spin" />
-                : <Send   size={15} strokeWidth={2} className="text-white" />
+                ? <Loader size={15} className="text-white animate-spin" />
+                : <Send   size={15} className="text-white" />
               }
             </button>
           </div>
@@ -421,7 +417,7 @@ export function AgentChatButton({ agentSlug, agentName }: AgentChatButtonProps) 
           if (!isOpen) e.currentTarget.style.background = 'transparent'
         }}
       >
-        {AGENT_ICON_MAP[agentSlug] ?? <MessageCircle size={16} strokeWidth={1.75} />}
+        {AGENT_ICON_MAP[agentSlug] ?? <MessageCircle size={16} />}
         <span className="flex-1 text-left">{agentName}</span>
         {/* Ponto de status: verde = conectado (ativo no banco), cinza = inativo */}
         <span

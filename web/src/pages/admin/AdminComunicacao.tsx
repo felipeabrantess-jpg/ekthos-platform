@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MessageSquare, ChevronRight, X, ExternalLink, RefreshCw } from 'lucide-react'
+import { ChatTextIcon as MessageSquare, CaretRightIcon as ChevronRight, XIcon as X, ArrowSquareOutIcon as ExternalLink, ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import ModalPortal from '@/components/ui/ModalPortal'

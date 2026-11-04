@@ -6,7 +6,7 @@
  * └──────────────────────────────────────┘
  */
 
-import { Menu } from 'lucide-react'
+import { ListIcon as Menu } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurch } from '@/hooks/useChurch'
 import NotificationBell from '@/features/notifications/components/NotificationBell'
@@ -44,7 +44,7 @@ export default function MobileHeader({ onMenuClick }: MobileHeaderProps) {
         onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
         onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
       >
-        <Menu size={22} strokeWidth={1.75} />
+        <Menu size={22} />
       </button>
 
       {/* Igreja logo + nome (centro) */}

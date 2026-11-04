@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, AlertTriangle } from 'lucide-react'
+import { XIcon as X, PlusIcon as Plus, TrashIcon as Trash2, WarningIcon as AlertTriangle } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'

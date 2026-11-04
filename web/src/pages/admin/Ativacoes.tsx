@@ -7,10 +7,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Clock, Wrench, RefreshCw, AlertCircle, ChevronRight,
-  Bot, Building2, CheckCircle2,
-} from 'lucide-react'
+import { ClockIcon as Clock, WrenchIcon as Wrench, ArrowsClockwiseIcon as RefreshCw, WarningCircleIcon as AlertCircle, CaretRightIcon as ChevronRight, RobotIcon as Bot, BuildingsIcon as Building2, CheckCircleIcon as CheckCircle2 } from '@phosphor-icons/react'
 import { usePendingActivations, type PendingActivation } from '@/hooks/usePendingActivations'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -19,7 +16,7 @@ function StatusBadge({ status }: { status: string }) {
   if (status === 'pending_activation') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-        <Clock size={11} strokeWidth={2.5} />
+        <Clock size={11} />
         Aguardando ativação
       </span>
     )
@@ -27,7 +24,7 @@ function StatusBadge({ status }: { status: string }) {
   if (status === 'in_setup') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200">
-        <Wrench size={11} strokeWidth={2.5} />
+        <Wrench size={11} />
         Em setup
       </span>
     )
@@ -35,7 +32,7 @@ function StatusBadge({ status }: { status: string }) {
   if (status === 'pending_config') {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-        <Wrench size={11} strokeWidth={2.5} />
+        <Wrench size={11} />
         Aguardando config
       </span>
     )
@@ -75,7 +72,7 @@ function ActivationRow({ item }: { item: PendingActivation }) {
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-2.5">
           <div className="h-8 w-8 rounded-lg bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-            <Building2 size={14} className="text-brand-600" strokeWidth={1.75} />
+            <Building2 size={14} className="text-brand-600" />
           </div>
           <div>
             <p className="text-sm font-medium text-ekthos-black">{item.church_name}</p>
@@ -85,7 +82,7 @@ function ActivationRow({ item }: { item: PendingActivation }) {
       </td>
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-2">
-          <Bot size={14} className="text-brand-500 shrink-0" strokeWidth={1.75} />
+          <Bot size={14} className="text-brand-500 shrink-0" />
           <span className="text-sm text-ekthos-black/80">{item.agent_name || AgentLabel(item.agent_slug)}</span>
         </div>
       </td>
@@ -138,7 +135,7 @@ export default function Ativacoes() {
           disabled={isFetching}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ekthos-black/60 hover:text-ekthos-black border border-black/10 rounded-xl hover:bg-black/5 transition-all disabled:opacity-40"
         >
-          <RefreshCw size={13} strokeWidth={2} className={isFetching ? 'animate-spin' : ''} />
+          <RefreshCw size={13} className={isFetching ? 'animate-spin' : ''} />
           Atualizar
         </button>
       </div>
@@ -174,7 +171,7 @@ export default function Ativacoes() {
 
         {isError && (
           <div className="flex items-start gap-2.5 p-5 text-sm text-red-700">
-            <AlertCircle size={16} strokeWidth={1.75} className="shrink-0 mt-0.5" />
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">Erro ao carregar ativações</p>
               <p className="text-xs text-red-500 mt-0.5 font-mono">
@@ -186,7 +183,7 @@ export default function Ativacoes() {
 
         {!isLoading && !isError && total === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <CheckCircle2 size={32} className="text-green-400 mb-3" strokeWidth={1.5} />
+            <CheckCircle2 size={32} className="text-green-400 mb-3" />
             <p className="text-sm font-medium text-ekthos-black/60">Nenhuma ativação pendente</p>
             <p className="text-xs text-ekthos-black/35 mt-1">
               Todas as igrejas estão com agentes ativos.

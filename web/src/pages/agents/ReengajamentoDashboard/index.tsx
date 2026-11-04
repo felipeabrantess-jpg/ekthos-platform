@@ -16,18 +16,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft,
-  Users,
-  TrendingUp,
-  Zap,
-  Clock,
-  CreditCard,
-  RefreshCw,
-  AlertTriangle,
-  Loader2,
-  RotateCcw,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, UsersIcon as Users, TrendUpIcon as TrendingUp, LightningIcon as Zap, ClockIcon as Clock, CreditCardIcon as CreditCard, ArrowsClockwiseIcon as RefreshCw, WarningIcon as AlertTriangle, CircleNotchIcon as Loader2, ArrowCounterClockwiseIcon as RotateCcw } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 

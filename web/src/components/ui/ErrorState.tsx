@@ -1,4 +1,4 @@
-import { AlertCircle } from 'lucide-react'
+import { WarningCircleIcon as AlertCircle } from '@phosphor-icons/react'
 
 interface ErrorStateProps {
   message?: string
@@ -12,7 +12,7 @@ export default function ErrorState({ message = 'Algo deu errado.', onRetry }: Er
         className="h-12 w-12 rounded-full flex items-center justify-center mb-4"
         style={{ background: 'var(--color-danger-bg)' }}
       >
-        <AlertCircle size={24} strokeWidth={1.5} style={{ color: 'var(--color-danger)' }} />
+        <AlertCircle size={24} style={{ color: 'var(--color-danger)' }} />
       </div>
       <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Erro ao carregar</p>
       <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>{message}</p>

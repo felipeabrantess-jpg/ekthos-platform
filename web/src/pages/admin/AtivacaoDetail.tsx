@@ -7,11 +7,7 @@
 
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  ArrowLeft, Clock, Wrench, CheckCircle2, XCircle,
-  Pause, Zap, Bot, Building2, AlertCircle, Loader2,
-  Check, Square, CheckSquare,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, ClockIcon as Clock, WrenchIcon as Wrench, CheckCircleIcon as CheckCircle2, XCircleIcon as XCircle, PauseIcon as Pause, LightningIcon as Zap, RobotIcon as Bot, BuildingsIcon as Building2, WarningCircleIcon as AlertCircle, CircleNotchIcon as Loader2, CheckIcon as Check, SquareIcon as Square, CheckSquareIcon as CheckSquare } from '@phosphor-icons/react'
 import {
   usePendingActivations,
   useStartSetup,
@@ -53,8 +49,8 @@ function Toast({ ok, msg, onClose }: { ok: boolean; msg: string; onClose: () => 
   return (
     <div className={`flex items-start gap-3 p-4 rounded-2xl border ${ok ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
       {ok
-        ? <Check size={15} className="text-green-600 mt-0.5 shrink-0" strokeWidth={2.5} />
-        : <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" strokeWidth={2} />}
+        ? <Check size={15} className="text-green-600 mt-0.5 shrink-0" />
+        : <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" />}
       <p className={`text-sm flex-1 ${ok ? 'text-green-800' : 'text-red-800'}`}>{msg}</p>
       <button onClick={onClose} className="text-xs opacity-40 hover:opacity-70">✕</button>
     </div>
@@ -155,14 +151,14 @@ export default function AtivacaoDetail() {
         onClick={() => navigate('/admin/cockpit/ativacoes')}
         className="flex items-center gap-1.5 text-xs text-ekthos-black/40 hover:text-ekthos-black/70 transition-colors"
       >
-        <ArrowLeft size={13} strokeWidth={2} />
+        <ArrowLeft size={13} />
         Ativações
       </button>
 
       {/* Status header */}
       {isPending && (
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-          <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" strokeWidth={2} />
+          <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-900">Aguardando ativação</p>
             <p className="text-xs text-amber-700 mt-0.5">
@@ -174,7 +170,7 @@ export default function AtivacaoDetail() {
 
       {isInSetup && (
         <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
-          <Wrench size={18} className="text-orange-600 shrink-0 mt-0.5" strokeWidth={2} />
+          <Wrench size={18} className="text-orange-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-orange-900">Em setup</p>
             <p className="text-xs text-orange-700 mt-0.5">
@@ -186,7 +182,7 @@ export default function AtivacaoDetail() {
 
       {isActive && (
         <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded-2xl">
-          <CheckCircle2 size={18} className="text-green-500 shrink-0 mt-0.5" strokeWidth={2} />
+          <CheckCircle2 size={18} className="text-green-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-green-900">Agente ativo</p>
             <p className="text-xs text-green-700 mt-0.5">Ativação concluída com sucesso.</p>
@@ -196,7 +192,7 @@ export default function AtivacaoDetail() {
 
       {isPendingConfig && (
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-2xl">
-          <Wrench size={18} className="text-amber-600 shrink-0 mt-0.5" strokeWidth={2} />
+          <Wrench size={18} className="text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-900">Aguardando configuração</p>
             <p className="text-xs text-amber-700 mt-0.5">
@@ -216,7 +212,7 @@ export default function AtivacaoDetail() {
           <p className="text-[11px] font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Igreja</p>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-              <Building2 size={18} className="text-brand-600" strokeWidth={1.75} />
+              <Building2 size={18} className="text-brand-600" />
             </div>
             <div>
               <p className="text-base font-semibold text-ekthos-black">{item.church_name}</p>
@@ -229,7 +225,7 @@ export default function AtivacaoDetail() {
           <p className="text-[11px] font-semibold text-ekthos-black/40 uppercase tracking-widest mb-3">Agente contratado</p>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
-              <Bot size={18} className="text-brand-600" strokeWidth={1.75} />
+              <Bot size={18} className="text-brand-600" />
             </div>
             <div>
               <p className="text-base font-semibold text-ekthos-black">
@@ -266,8 +262,8 @@ export default function AtivacaoDetail() {
                   onClick={() => toggleCheck(i)}
                 >
                   {isChecked
-                    ? <CheckSquare size={16} className="text-green-500 shrink-0 mt-0.5" strokeWidth={2} />
-                    : <Square size={16} className={`shrink-0 mt-0.5 ${isReadOnly ? 'text-ekthos-black/20' : 'text-ekthos-black/25 group-hover:text-ekthos-black/50'}`} strokeWidth={1.5} />}
+                    ? <CheckSquare size={16} className="text-green-500 shrink-0 mt-0.5" />
+                    : <Square size={16} className={`shrink-0 mt-0.5 ${isReadOnly ? 'text-ekthos-black/20' : 'text-ekthos-black/25 group-hover:text-ekthos-black/50'}`} />}
                   <span className={`text-sm leading-snug ${isChecked ? 'line-through text-ekthos-black/35' : 'text-ekthos-black/70'} ${isReadOnly ? 'italic' : ''}`}>
                     {label}
                     {isReadOnly && (
@@ -326,7 +322,7 @@ export default function AtivacaoDetail() {
           >
             {startSetup.isPending
               ? <><Loader2 size={15} className="animate-spin" /> Salvando…</>
-              : <><Wrench size={15} strokeWidth={2} /> Iniciar setup</>}
+              : <><Wrench size={15} /> Iniciar setup</>}
           </button>
         )}
 
@@ -341,7 +337,7 @@ export default function AtivacaoDetail() {
           >
             {activateAgent.isPending
               ? <><Loader2 size={15} className="animate-spin" /> Ativando…</>
-              : <><Zap size={15} strokeWidth={2} /> Ativar agente</>}
+              : <><Zap size={15} /> Ativar agente</>}
           </button>
         )}
 
@@ -357,7 +353,7 @@ export default function AtivacaoDetail() {
             >
               {pauseAgent.isPending
                 ? <Loader2 size={14} className="animate-spin" />
-                : <><Pause size={14} strokeWidth={2} /> Pausar</>}
+                : <><Pause size={14} /> Pausar</>}
             </button>
             <button
               onClick={() => runAction(
@@ -369,7 +365,7 @@ export default function AtivacaoDetail() {
             >
               {cancelAgent.isPending
                 ? <Loader2 size={14} className="animate-spin" />
-                : <><XCircle size={14} strokeWidth={2} /> Cancelar</>}
+                : <><XCircle size={14} /> Cancelar</>}
             </button>
           </div>
         )}

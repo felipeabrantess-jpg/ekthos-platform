@@ -1,7 +1,7 @@
 import { useState, useEffect }  from 'react'
 import { ilikePattern } from '@/lib/normalizeSearch'
 import { useNavigate }          from 'react-router-dom'
-import { Check, Search, ChevronDown, ChevronUp, MessageSquare, Heart } from 'lucide-react'
+import { CheckIcon as Check, MagnifyingGlassIcon as Search, CaretDownIcon as ChevronDown, CaretUpIcon as ChevronUp, ChatTextIcon as MessageSquare, HeartIcon as Heart } from '@phosphor-icons/react'
 import { useQuery, useQueryClient }  from '@tanstack/react-query'
 import { useAuth }              from '@/hooks/useAuth'
 import { supabase }             from '@/lib/supabase'
@@ -246,7 +246,7 @@ function PersonCareRow({ person, contact, churchId, conversaId, onEditPerson }: 
           style={{ width: 28, height: 28 }}
           title="Atender esta pessoa"
         >
-          <Heart size={15} strokeWidth={1.75} />
+          <Heart size={15} />
         </button>
 
         {/* Expand toggle */}

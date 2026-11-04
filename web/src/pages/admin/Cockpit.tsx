@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import {
-  Building2, TrendingUp, TrendingDown,
-  CreditCard, Users, Bot, Activity, RefreshCw, Zap,
-} from 'lucide-react'
+import { BuildingsIcon as Building2, TrendUpIcon as TrendingUp, TrendDownIcon as TrendingDown, CreditCardIcon as CreditCard, UsersIcon as Users, RobotIcon as Bot, PulseIcon as Activity, ArrowsClockwiseIcon as RefreshCw, LightningIcon as Zap } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
@@ -175,7 +172,7 @@ export default function AdminCockpit() {
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-text-secondary rounded-xl transition-all transition-all disabled:opacity-50"
         >
-          <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Atualizar
         </button>
       </div>
@@ -202,28 +199,28 @@ export default function AdminCockpit() {
                 value={fmt(data.mrr_total)}
                 trend={pct(data.mrr_total, data.mrr_prev)}
                 sub="vs mês anterior"
-                icon={<TrendingUp size={18} strokeWidth={1.75} />}
+                icon={<TrendingUp size={18} />}
               />
               <Metric
                 label="Igrejas Ativas"
                 value={data.churches_configured}
                 sub={`de ${data.churches_total} total`}
                 color="var(--color-success)"
-                icon={<Building2 size={18} strokeWidth={1.75} />}
+                icon={<Building2 size={18} />}
               />
               <Metric
                 label="Churn Rate"
                 value={`${data.churn_rate.toFixed(1)}%`}
                 sub="últimos 30 dias"
                 color={data.churn_rate > 5 ? 'var(--color-danger)' : 'var(--color-success)'}
-                icon={<TrendingDown size={18} strokeWidth={1.75} />}
+                icon={<TrendingDown size={18} />}
               />
               <Metric
                 label="Ticket Médio"
                 value={fmt(data.ticket_medio)}
                 sub={`+${data.new_this_month} novo${data.new_this_month !== 1 ? 's' : ''} este mês`}
                 color="var(--color-primary)"
-                icon={<CreditCard size={18} strokeWidth={1.75} />}
+                icon={<CreditCard size={18} />}
               />
             </div>
           </section>
@@ -293,7 +290,7 @@ export default function AdminCockpit() {
                     className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: '#C4841D20' }}
                   >
-                    <Zap size={22} strokeWidth={1.75} style={{ color: '#C4841D' }} />
+                    <Zap size={22} style={{ color: '#C4841D' }} />
                   </div>
                   <div>
                     <p className="font-semibold text-base" style={{ color: '#C4841D' }}>
@@ -355,19 +352,19 @@ export default function AdminCockpit() {
           {/* Quick links */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <QuickLink
-              icon={<Building2 size={20} strokeWidth={1.75} />}
+              icon={<Building2 size={20} />}
               title="Ver todas as igrejas"
               sub="Filtrar por plano, status e saúde"
               href="/admin/churches"
             />
             <QuickLink
-              icon={<Users size={20} strokeWidth={1.75} />}
+              icon={<Users size={20} />}
               title="Gestão de usuários"
               sub="Permissões e acessos por igreja"
               href="/admin/churches"
             />
             <QuickLink
-              icon={<Bot size={20} strokeWidth={1.75} />}
+              icon={<Bot size={20} />}
               title="Monitorar agentes"
               sub="Status e erros em tempo real"
               href="/admin/churches"
@@ -401,7 +398,7 @@ function QuickLink({ icon, title, sub, href }: {
         <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</p>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{sub}</p>
       </div>
-      <Activity size={14} strokeWidth={1.75} style={{ color: 'var(--text-tertiary)' }} className="ml-auto transition-colors" />
+      <Activity size={14} style={{ color: 'var(--text-tertiary)' }} className="ml-auto transition-colors" />
     </a>
   )
 }

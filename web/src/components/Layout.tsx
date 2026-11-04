@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Eye } from 'lucide-react'
+import { EyeIcon as Eye } from '@phosphor-icons/react'
 import Sidebar from './Sidebar'
 import MobileHeader from './MobileHeader'
 import AppHeader from './AppHeader'
@@ -29,7 +29,7 @@ function ImpersonateBanner({ state, onExit, exitLoading, exitError }: {
       style={{ background: 'var(--color-danger)', color: '#fff' }}
     >
       <div className="flex items-center gap-2 text-xs text-white/80">
-        <Eye size={13} strokeWidth={2} />
+        <Eye size={13} />
         <span>Visualizando como:</span>
         <span className="font-semibold text-white">{state.church_name}</span>
         {exitError && (

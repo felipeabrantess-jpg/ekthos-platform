@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { Check, X } from 'lucide-react'
+import { CheckIcon as Check, XIcon as X } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { defaultRoute, type AppRole } from '@/hooks/useRole'

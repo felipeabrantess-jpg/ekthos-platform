@@ -7,10 +7,10 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Link }     from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Search, BookOpen } from 'lucide-react'
+import { ArrowCounterClockwiseIcon, BookOpenIcon, CaretLeftIcon, CaretRightIcon, CircleNotchIcon, MagnifyingGlassIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import { GlassButton, GlassCard, IGV_FOCUS, IGV_INPUT, IGV_TEXT, IgvContent, IgvNotice, IgvPageShell, PageHeader, SectionTitle } from '@/components/igv'
 import { getAllBooks, fetchChapter, type BibleBook, type BibleVerse } from '@/lib/igv-bible'
-import { IGV } from '@/lib/igv-public-data'
+import { ICON_SIZE } from '@/lib/icon-tokens'
 
 // ── State machine ──────────────────────────────────────────────────
 
@@ -169,21 +169,12 @@ export default function IgvBiblia() {
     screen.type === 'verse'    ? `${screen.book.name} ${screen.chapter}:${screen.verseNum}` :
     /* reading */                `${screen.book.name} ${screen.chapter}`
 
-  function BackButton() {
-    const base = 'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 active:bg-white/10 transition-colors'
-    const icon = <ChevronLeft size={22} strokeWidth={2} className="text-white/60" />
-
-    if (screen.type === 'books')
-      return <Link to="/igv" className={base} aria-label="Voltar para IGV">{icon}</Link>
-
-    const fn =
-      screen.type === 'chapters' ? goBooks :
-      screen.type === 'verses'   ? () => goChapters(screen.book) :
-      screen.type === 'verse'    ? () => goVerses(screen.book, screen.chapter) :
-      /* reading */                () => goVerse(screen.book, screen.chapter, screen.highlightNum ?? 1)
-
-    return <button onClick={fn} className={base} aria-label="Voltar">{icon}</button>
-  }
+  const onBack =
+    screen.type === 'books'    ? undefined :
+    screen.type === 'chapters' ? goBooks :
+    screen.type === 'verses'   ? () => goChapters(screen.book) :
+    screen.type === 'verse'    ? () => goVerses(screen.book, screen.chapter) :
+    /* reading */                () => goVerse(screen.book, screen.chapter, screen.highlightNum ?? 1)
 
   // ── Render ─────────────────────────────────────────────────────────
 
@@ -192,218 +183,179 @@ export default function IgvBiblia() {
     : null
 
   return (
-    <div
-      className="min-h-screen bg-black flex flex-col"
-      style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
-    >
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-black/95 backdrop-blur border-b border-white/10">
-        <div className="flex items-center h-14 px-3 max-w-[480px] mx-auto gap-2">
-          <BackButton />
-          <h1 className="flex-1 min-w-0 font-semibold text-white text-[1.07rem] truncate">
-            {headerTitle}
-          </h1>
-          {screen.type === 'reading' && (
-            <span className="text-[0.75rem] text-white/40 shrink-0 pr-1">Almeida</span>
-          )}
-        </div>
-      </header>
+    <IgvPageShell>
+      <PageHeader
+        title={headerTitle}
+        subtitle={screen.type === 'reading' ? 'Almeida' : undefined}
+        backTo="/igv"
+        onBack={onBack}
+      />
 
-      {/* Content */}
-      <main className="flex-1 max-w-[480px] mx-auto w-full px-4 py-4">
+      <IgvContent>
 
         {/* ── Livros ── */}
         {screen.type === 'books' && (
-          <div className="space-y-5 pb-8">
+          <>
             {/* Busca por referência */}
-            <form onSubmit={handleSearch}>
-              <div className="flex items-center bg-[#111] rounded-2xl border border-white/10 overflow-hidden">
-                <Search size={15} strokeWidth={2} className="ml-4 shrink-0 text-white/30" />
-                <input
-                  type="text"
-                  value={searchQ}
-                  onChange={e => { setSearchQ(e.target.value); setSearchErr(null) }}
-                  placeholder="ex: João 3:16"
-                  className="flex-1 bg-transparent py-3 px-3 text-[1rem] text-white placeholder:text-white/30 outline-none"
-                />
-                {searching ? (
-                  <Loader2 size={16} className="mr-4 animate-spin shrink-0" style={{ color: IGV.primaryColor }} />
-                ) : (
-                  <button
-                    type="submit"
-                    className="mr-2 px-3 py-1.5 rounded-xl text-[0.86rem] font-semibold transition-opacity active:opacity-60"
-                    style={{ backgroundColor: `${IGV.primaryColor}15`, color: IGV.primaryColor }}
-                  >
-                    Ir
-                  </button>
+            <GlassCard>
+              <form onSubmit={handleSearch}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={searchQ}
+                    onChange={e => { setSearchQ(e.target.value); setSearchErr(null) }}
+                    placeholder="ex: João 3:16"
+                    aria-label="Buscar por referência"
+                    className={`min-w-0 flex-1 ${IGV_INPUT}`}
+                  />
+                  {searching ? (
+                    <CircleNotchIcon size={ICON_SIZE.list} className="mx-3 animate-spin shrink-0 text-[var(--igv-accent)]" role="status" aria-label="Buscando" />
+                  ) : (
+                    <GlassButton type="submit" variant="accent" Icon={MagnifyingGlassIcon} className="shrink-0">Ir</GlassButton>
+                  )}
+                </div>
+                {searchErr && (
+                  <p role="alert" className={`mt-2 ${IGV_TEXT.error}`}>{searchErr}</p>
                 )}
-              </div>
-              {searchErr && (
-                <p className="mt-1.5 ml-1 text-[0.75rem] text-red-400">{searchErr}</p>
-              )}
-            </form>
+              </form>
+            </GlassCard>
 
             <BookSection title="Antigo Testamento" subtitle="39 livros" books={OLD_TESTAMENT} onSelect={goChapters} />
             <BookSection title="Novo Testamento"   subtitle="27 livros" books={NEW_TESTAMENT}  onSelect={goChapters} />
-            <p className="text-center text-[0.72rem] text-white/30">
+            <p className={`mt-3 px-1 text-center ${IGV_TEXT.muted}`}>
               Tradução João Ferreira de Almeida — domínio público
             </p>
-          </div>
+          </>
         )}
 
         {/* ── Capítulos ── */}
         {screen.type === 'chapters' && (
-          <div className="pb-8">
-            <p className="text-[0.82rem] text-white/40 mb-3">
+          <GlassCard>
+            <p className={`mb-4 ${IGV_TEXT.muted}`}>
               Selecione um capítulo · {screen.book.chapters} no total
             </p>
             <div className="grid grid-cols-5 gap-2">
               {Array.from({ length: screen.book.chapters }, (_, i) => i + 1).map(ch => (
-                <button
-                  key={ch}
-                  onClick={() => goVerses(screen.book, ch)}
-                  className="h-11 rounded-xl text-[1rem] font-semibold bg-[#111] border border-white/10 active:scale-95 transition-all"
-                  style={{ color: IGV.primaryColor }}
-                >
+                <GlassButton key={ch} onClick={() => goVerses(screen.book, ch)} className="!px-0 !rounded-2xl igv-glass--inset">
                   {ch}
-                </button>
+                </GlassButton>
               ))}
             </div>
-          </div>
+          </GlassCard>
         )}
 
         {/* ── Versículos (lista numerada) ── */}
         {screen.type === 'verses' && (
-          <div className="pb-8">
+          <>
             {loading && <LoadingSpinner />}
             {error && !loading && (
               <ErrorState message={error} onRetry={() => goVerses(screen.book, screen.chapter)} />
             )}
             {!loading && !error && chapterData && (
-              <>
-                <p className="text-[0.82rem] text-white/40 mb-3">
+              <GlassCard>
+                <p className={`mb-4 ${IGV_TEXT.muted}`}>
                   Selecione um versículo · {chapterData.length} versículos
                 </p>
                 <div className="grid grid-cols-5 gap-2">
                   {chapterData.map(v => (
-                    <button
-                      key={v.number}
-                      onClick={() => goVerse(screen.book, screen.chapter, v.number)}
-                      className="h-11 rounded-xl text-[1rem] font-semibold bg-[#111] border border-white/10 active:scale-95 transition-all"
-                      style={{ color: IGV.primaryColor }}
-                    >
+                    <GlassButton key={v.number} onClick={() => goVerse(screen.book, screen.chapter, v.number)} className="!px-0 !rounded-2xl igv-glass--inset">
                       {v.number}
-                    </button>
+                    </GlassButton>
                   ))}
                 </div>
-              </>
+              </GlassCard>
             )}
-          </div>
+          </>
         )}
 
         {/* ── Versículo isolado ── */}
         {screen.type === 'verse' && verse && chapterData && (
-          <div className="pb-8 flex flex-col gap-5">
+          <>
             {/* Texto em destaque */}
-            <div className="bg-[#111] rounded-2xl border border-white/10 px-5 py-6">
-              <p className="text-[1.18rem] text-white/90 leading-[1.78] mb-4">
+            <GlassCard className="py-6">
+              <p className={`igv-serif !font-normal mb-4 ${IGV_TEXT.heading}`}>
                 {verse.text}
               </p>
-              <p
-                className="text-[0.92rem] font-semibold text-right"
-                style={{ color: IGV.primaryColor }}
-              >
+              <p className={`text-right ${IGV_TEXT.muted}`}>
                 {screen.book.name} {screen.chapter}:{screen.verseNum}
               </p>
-            </div>
+            </GlassCard>
 
-            {/* Nav prev / posição / next */}
-            <div className="flex items-center justify-between">
-              <button
+            {/* Nav anterior / próximo */}
+            <div className="grid grid-cols-2 gap-2">
+              <GlassButton
                 onClick={() => goVerse(screen.book, screen.chapter, screen.verseNum - 1)}
                 disabled={screen.verseNum <= 1}
-                className="flex items-center gap-1 text-[0.94rem] font-medium px-3 py-2 rounded-xl disabled:opacity-25 transition-opacity"
-                style={{ color: IGV.primaryColor }}
+                Icon={CaretLeftIcon}
+                className="!px-2"
               >
-                <ChevronLeft size={16} strokeWidth={2.5} />
                 Anterior
-              </button>
-
-              <button
-                onClick={() => goVerses(screen.book, screen.chapter)}
-                className="text-[0.82rem] text-white/40 px-2 py-1 rounded-lg active:bg-white/5"
-              >
-                {screen.verseNum} / {chapterData.length}
-              </button>
-
-              <button
+              </GlassButton>
+              <GlassButton
                 onClick={() => goVerse(screen.book, screen.chapter, screen.verseNum + 1)}
                 disabled={screen.verseNum >= chapterData.length}
-                className="flex items-center gap-1 text-[0.94rem] font-medium px-3 py-2 rounded-xl disabled:opacity-25 transition-opacity"
-                style={{ color: IGV.primaryColor }}
+                className="!px-2"
               >
                 Próximo
-                <ChevronRight size={16} strokeWidth={2.5} />
-              </button>
+                <CaretRightIcon size={ICON_SIZE.button} aria-hidden="true" />
+              </GlassButton>
             </div>
 
+            {/* Posição: volta à lista de versículos */}
+            <GlassButton onClick={() => goVerses(screen.book, screen.chapter)} fullWidth>
+              {screen.verseNum} / {chapterData.length}
+            </GlassButton>
+
             {/* Ver capítulo completo */}
-            <button
+            <GlassButton
               onClick={() => goReading(screen.book, screen.chapter, screen.verseNum)}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border text-[0.92rem] font-medium transition-opacity active:opacity-60"
-              style={{
-                color: IGV.primaryColor,
-                borderColor: `${IGV.primaryColor}28`,
-                backgroundColor: `${IGV.primaryColor}08`,
-              }}
+              variant="accent"
+              Icon={BookOpenIcon}
+              fullWidth
             >
-              <BookOpen size={15} strokeWidth={1.75} />
               Ver capítulo completo
-            </button>
-          </div>
+            </GlassButton>
+          </>
         )}
 
         {/* ── Leitura completa (versículo destacado) ── */}
         {screen.type === 'reading' && (
-          <div className="pb-8">
+          <>
             {loading && <LoadingSpinner />}
             {error && !loading && (
               <ErrorState message={error} onRetry={() => void loadChapter(screen.book, screen.chapter)} />
             )}
             {!loading && !error && chapterData && (
               <>
-                <div className="space-y-2">
+                <GlassCard className="flex flex-col gap-2">
                   {chapterData.map(v => {
                     const hi = v.number === screen.highlightNum
                     return (
                       <div
                         key={v.number}
                         ref={hi ? highlightRef : undefined}
-                        className={`flex gap-3 rounded-xl px-2 py-1 ${hi ? 'bg-amber-950/30 ring-1 ring-amber-600/20' : ''}`}
+                        className={`flex gap-3 rounded-xl p-2 ${hi ? 'bg-[var(--igv-tint)] outline outline-1 outline-[var(--igv-accent)]' : ''}`}
                       >
-                        <span
-                          className="shrink-0 text-[0.78rem] font-bold pt-[0.22rem] w-6 text-right tabular-nums"
-                          style={{ color: hi ? IGV.primaryColor : `${IGV.primaryColor}70` }}
-                        >
+                        <span className={`shrink-0 w-7 text-right tabular-nums ${IGV_TEXT.muted}`}>
                           {v.number}
                         </span>
-                        <p className={`text-[1.05rem] leading-[1.65] ${hi ? 'text-white font-medium' : 'text-white/85'}`}>
+                        <p className={`igv-serif min-w-0 ${hi ? '' : '!font-normal'} ${IGV_TEXT.body}`}>
                           {v.text}
                         </p>
                       </div>
                     )
                   })}
-                </div>
-                <p className="text-center text-[0.72rem] text-white/30 mt-8">
+                </GlassCard>
+                <p className={`mt-3 px-1 text-center ${IGV_TEXT.muted}`}>
                   Tradução João Ferreira de Almeida — domínio público
                 </p>
               </>
             )}
-          </div>
+          </>
         )}
 
-      </main>
-    </div>
+      </IgvContent>
+    </IgvPageShell>
   )
 }
 
@@ -418,63 +370,50 @@ function BookSection({
   onSelect: (b: BibleBook) => void
 }) {
   return (
-    <section>
-      <div className="flex items-baseline gap-2 mb-2">
-        <h2
-          className="text-[0.77rem] font-semibold uppercase tracking-[0.14em]"
-          style={{ color: IGV.primaryColor }}
-        >
-          {title}
-        </h2>
-        <span className="text-[0.72rem] text-white/40">{subtitle}</span>
+    <section className="flex flex-col gap-3">
+      <div>
+        <SectionTitle>{title}</SectionTitle>
+        <p className={`mt-0.5 px-1 ${IGV_TEXT.muted}`}>{subtitle}</p>
       </div>
-      <div className="bg-[#111] rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/[0.04]">
-        {books.map(book => (
-          <button
-            key={book.id}
-            onClick={() => onSelect(book)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/5 active:bg-white/10 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span
-                className="text-[0.72rem] font-bold shrink-0 w-8 text-right tabular-nums"
-                style={{ color: `${IGV.primaryColor}70` }}
-              >
-                {book.abbr}
+      <GlassCard className="!py-2">
+        <div className="divide-y divide-[var(--igv-line)]">
+          {books.map(book => (
+            <button
+              key={book.id}
+              type="button"
+              onClick={() => onSelect(book)}
+              className={`w-full min-h-[52px] flex items-center justify-between gap-3 py-2 text-left rounded-lg ${IGV_FOCUS}`}
+            >
+              <span className="flex items-center gap-3 min-w-0">
+                <span className={`shrink-0 w-10 tabular-nums ${IGV_TEXT.muted}`}>{book.abbr}</span>
+                <span className={IGV_TEXT.item}>{book.name}</span>
               </span>
-              <span className="text-[1rem] font-medium text-white">{book.name}</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[0.78rem] text-white/40">{book.chapters} cap.</span>
-              <ChevronRight size={14} strokeWidth={2} className="text-white/20" />
-            </div>
-          </button>
-        ))}
-      </div>
+              <span className={`flex items-center gap-2 shrink-0 ${IGV_TEXT.muted}`}>
+                {book.chapters} cap.
+                <CaretRightIcon size={ICON_SIZE.button} aria-hidden="true" />
+              </span>
+            </button>
+          ))}
+        </div>
+      </GlassCard>
     </section>
   )
 }
 
 function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center py-20">
-      <Loader2 size={28} className="animate-spin" style={{ color: IGV.primaryColor }} />
-    </div>
+    <GlassCard className="flex justify-center py-10">
+      <CircleNotchIcon size={ICON_SIZE.tile} className="animate-spin text-[var(--igv-accent)]" role="status" aria-label="Carregando" />
+    </GlassCard>
   )
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="flex flex-col items-center py-16 gap-4 text-center">
-      <p className="text-[1rem] text-white/60 leading-relaxed max-w-xs">{message}</p>
-      <button
-        onClick={onRetry}
-        className="inline-flex items-center gap-2 text-[0.92rem] font-medium px-4 py-2 rounded-xl border"
-        style={{ color: IGV.primaryColor, borderColor: `${IGV.primaryColor}40` }}
-      >
-        <RotateCcw size={14} strokeWidth={2} />
+    <IgvNotice Icon={WarningCircleIcon} title={message} tone="error">
+      <GlassButton onClick={onRetry} Icon={ArrowCounterClockwiseIcon} className="mt-3">
         Tentar novamente
-      </button>
-    </div>
+      </GlassButton>
+    </IgvNotice>
   )
 }

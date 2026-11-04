@@ -14,10 +14,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import {
-  ArrowLeft, Phone, CheckCircle2, Clock, PauseCircle,
-  PlayCircle, Send, AlertCircle, Loader2, Zap,
-} from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, PhoneIcon as Phone, CheckCircleIcon as CheckCircle2, ClockIcon as Clock, PauseCircleIcon as PauseCircle, PlayCircleIcon as PlayCircle, PaperPlaneTiltIcon as Send, WarningCircleIcon as AlertCircle, CircleNotchIcon as Loader2, LightningIcon as Zap } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { getAgentContent } from '@/lib/agents-content'
 import { useAuth } from '@/hooks/useAuth'
@@ -47,22 +44,22 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.
   pending_activation: {
     label: 'Aguardando ativação',
     color: '#C4841D',
-    icon: <Clock size={16} strokeWidth={2} />,
+    icon: <Clock size={16} />,
   },
   testing: {
     label: 'Em teste',
     color: '#2B6CB0',
-    icon: <Zap size={16} strokeWidth={2} />,
+    icon: <Zap size={16} />,
   },
   active: {
     label: 'Ativo',
     color: '#2D7A4F',
-    icon: <CheckCircle2 size={16} strokeWidth={2} />,
+    icon: <CheckCircle2 size={16} />,
   },
   paused: {
     label: 'Pausado',
     color: '#8A8A8A',
-    icon: <PauseCircle size={16} strokeWidth={2} />,
+    icon: <PauseCircle size={16} />,
   },
 }
 
@@ -210,7 +207,7 @@ export default function AgentConfig() {
           className="flex items-center gap-1.5 text-sm font-medium transition-colors"
           style={{ color: 'var(--text-secondary)' }}
         >
-          <ArrowLeft size={14} strokeWidth={2} />
+          <ArrowLeft size={14} />
           {name}
         </Link>
         <span style={{ color: 'var(--text-tertiary)' }}>/</span>
@@ -259,7 +256,6 @@ export default function AgentConfig() {
             >
               <Phone
                 size={18}
-                strokeWidth={1.75}
                 style={{ color: channel ? '#2D7A4F' : 'var(--text-tertiary)', shrink: 0 }}
               />
               <div>
@@ -291,7 +287,7 @@ export default function AgentConfig() {
                 className="rounded-xl p-4 flex items-start gap-3"
                 style={{ background: '#FFFBF0', border: '1px solid #C4841D30' }}
               >
-                <Clock size={16} strokeWidth={2} style={{ color: '#C4841D', marginTop: 1 }} />
+                <Clock size={16} style={{ color: '#C4841D', marginTop: 1 }} />
                 <div>
                   <p className="text-sm font-semibold" style={{ color: '#C4841D' }}>Ativação agendada</p>
                   <p className="text-xs mt-0.5" style={{ color: '#8B6914' }}>
@@ -306,7 +302,7 @@ export default function AgentConfig() {
                 className="rounded-xl p-4 flex items-start gap-3"
                 style={{ background: '#EBF4FF', border: '1px solid #2B6CB030' }}
               >
-                <Zap size={16} strokeWidth={2} style={{ color: '#2B6CB0', marginTop: 1 }} />
+                <Zap size={16} style={{ color: '#2B6CB0', marginTop: 1 }} />
                 <div>
                   <p className="text-sm font-semibold" style={{ color: '#2B6CB0' }}>Em fase de teste</p>
                   <p className="text-xs mt-0.5" style={{ color: '#2C5282' }}>
@@ -327,9 +323,9 @@ export default function AgentConfig() {
                 {toggling ? (
                   <Loader2 size={14} className="animate-spin" />
                 ) : activation?.active ? (
-                  <><PauseCircle size={15} strokeWidth={2} /> Pausar agente</>
+                  <><PauseCircle size={15} /> Pausar agente</>
                 ) : (
-                  <><PlayCircle size={15} strokeWidth={2} /> Reativar agente</>
+                  <><PlayCircle size={15} /> Reativar agente</>
                 )}
               </Button>
             )}
@@ -395,7 +391,7 @@ export default function AgentConfig() {
                 {testLoading ? (
                   <Loader2 size={14} className="animate-spin" />
                 ) : (
-                  <><Send size={14} strokeWidth={2} /> Enviar mensagem de teste</>
+                  <><Send size={14} /> Enviar mensagem de teste</>
                 )}
               </Button>
             </div>
@@ -408,7 +404,7 @@ export default function AgentConfig() {
               style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}
             >
               <div className="flex items-center gap-3">
-                <AlertCircle size={18} strokeWidth={1.75} style={{ color: 'var(--text-tertiary)' }} />
+                <AlertCircle size={18} style={{ color: 'var(--text-tertiary)' }} />
                 <div>
                   <p className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>
                     Teste indisponível
@@ -429,8 +425,8 @@ export default function AgentConfig() {
               }`}
             >
               {toast.ok
-                ? <CheckCircle2 size={16} strokeWidth={2.5} className="text-green-600 shrink-0 mt-0.5" />
-                : <AlertCircle  size={16} strokeWidth={2}   className="text-red-600 shrink-0 mt-0.5" />
+                ? <CheckCircle2 size={16} className="text-green-600 shrink-0 mt-0.5" />
+                : <AlertCircle  size={16}   className="text-red-600 shrink-0 mt-0.5" />
               }
               <p className={`text-sm flex-1 ${toast.ok ? 'text-green-800' : 'text-red-800'}`}>
                 {toast.msg}

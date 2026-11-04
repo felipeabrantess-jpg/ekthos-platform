@@ -15,10 +15,7 @@
 
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import {
-  User, Phone, Bot, Calendar, Tag,
-  UserCheck, XCircle, Archive, Loader2,
-} from 'lucide-react'
+import { UserIcon as User, PhoneIcon as Phone, RobotIcon as Bot, CalendarBlankIcon as Calendar, TagIcon as Tag, UserCheckIcon as UserCheck, XCircleIcon as XCircle, ArchiveIcon as Archive, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { type Conversation } from '@/hooks/useConversations'
 

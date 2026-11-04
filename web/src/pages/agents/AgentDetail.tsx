@@ -15,7 +15,7 @@
 
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, Lock, MessageCircle, Loader2, Check, AlertCircle } from 'lucide-react'
+import { ArrowLeftIcon as ArrowLeft, CheckCircleIcon as CheckCircle2, LockIcon as Lock, ChatCircleIcon as MessageCircle, CircleNotchIcon as Loader2, CheckIcon as Check, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react'
 import { usePlan } from '@/hooks/usePlan'
 import { getAgentContent } from '@/lib/agents-content'
 import { useAddonActions } from '@/hooks/useAddonActions'
@@ -52,8 +52,8 @@ function Toast({ ok, message, onClose }: { ok: boolean; message: string; onClose
       }`}
     >
       {ok
-        ? <Check size={16} className="text-green-600 shrink-0 mt-0.5" strokeWidth={2.5} />
-        : <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" strokeWidth={2} />
+        ? <Check size={16} className="text-green-600 shrink-0 mt-0.5" />
+        : <AlertCircle size={16} className="text-red-600 shrink-0 mt-0.5" />
       }
       <p className={`text-sm flex-1 ${ok ? 'text-green-800' : 'text-red-800'}`}>{message}</p>
       <button onClick={onClose} className="text-xs opacity-40 hover:opacity-70 shrink-0">✕</button>
@@ -96,7 +96,7 @@ function AgentCTA({ state, slug, moduleId, agentName, agentPrice, chargeAt }: CT
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl">
-          <CheckCircle2 size={20} className="text-green-500 shrink-0" strokeWidth={2} />
+          <CheckCircle2 size={20} className="text-green-500 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-green-800">Agente ativo</p>
             <p className="text-xs text-green-600 mt-0.5">
@@ -124,7 +124,7 @@ function AgentCTA({ state, slug, moduleId, agentName, agentPrice, chargeAt }: CT
     return (
       <div className="space-y-3">
         <div className="flex items-start gap-3 p-4 bg-brand-50 border border-brand-100 rounded-2xl">
-          <Lock size={18} className="text-brand-400 shrink-0 mt-0.5" strokeWidth={1.75} />
+          <Lock size={18} className="text-brand-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-brand-900">Disponível via módulo</p>
             <p className="text-xs text-brand-600 mt-0.5">
@@ -145,7 +145,7 @@ function AgentCTA({ state, slug, moduleId, agentName, agentPrice, chargeAt }: CT
     return (
       <div className="space-y-3">
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-2xl">
-          <Lock size={18} className="text-amber-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+          <Lock size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-900">Exclusivo do plano Avivamento</p>
             <p className="text-xs text-amber-700 mt-0.5">
@@ -283,7 +283,7 @@ export default function AgentDetail() {
         onClick={() => navigate(-1)}
         className="flex items-center gap-1.5 text-xs text-ekthos-black/40 hover:text-ekthos-black/70 transition-colors"
       >
-        <ArrowLeft size={13} strokeWidth={2} />
+        <ArrowLeft size={13} />
         Agentes IA
       </button>
 
@@ -358,7 +358,7 @@ export default function AgentDetail() {
 
         {content.note && (
           <div className="flex items-start gap-2.5 p-3 bg-brand-50 border border-brand-100 rounded-xl">
-            <MessageCircle size={14} className="text-brand-500 shrink-0 mt-0.5" strokeWidth={1.75} />
+            <MessageCircle size={14} className="text-brand-500 shrink-0 mt-0.5" />
             <p className="text-xs text-brand-700 leading-relaxed">{content.note}</p>
           </div>
         )}

@@ -1,4 +1,4 @@
-import { Inbox } from 'lucide-react'
+import { TrayIcon as Inbox } from '@phosphor-icons/react'
 
 interface EmptyStateProps {
   title: string
@@ -13,7 +13,7 @@ export default function EmptyState({ title, description, action }: EmptyStatePro
         className="h-12 w-12 rounded-full flex items-center justify-center mb-4"
         style={{ background: 'var(--bg-hover)' }}
       >
-        <Inbox size={24} strokeWidth={1.5} style={{ color: 'var(--color-primary)' }} />
+        <Inbox size={24} style={{ color: 'var(--color-primary)' }} />
       </div>
       <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{title}</p>
       {description && (

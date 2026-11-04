@@ -14,10 +14,7 @@
 
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
-import {
-  LayoutGrid, Bot, Package, Settings, LogOut,
-  CheckCircle2, Lock, ChevronRight, MessageSquare,
-} from 'lucide-react'
+import { GridFourIcon as LayoutGrid, RobotIcon as Bot, PackageIcon as Package, GearIcon as Settings, SignOutIcon as LogOut, CheckCircleIcon as CheckCircle2, LockIcon as Lock, CaretRightIcon as ChevronRight, ChatTextIcon as MessageSquare } from '@phosphor-icons/react'
 import { useAuth, useLogout } from '@/hooks/useAuth'
 import { useAgentDrawer } from '@/contexts/AgentDrawerContext'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -179,7 +176,7 @@ function SidebarRail({ active, onSelect, role, churchLogoUrl, churchName, onLogo
               }
             }}
           >
-            <MessageSquare size={18} strokeWidth={1.75} />
+            <MessageSquare size={18} />
           </button>
           <div
             className="absolute left-full ml-2 top-1/2 -translate-y-1/2 z-50 px-2 py-1 rounded-md text-[11px] font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
@@ -209,7 +206,7 @@ function SidebarRail({ active, onSelect, role, churchLogoUrl, churchName, onLogo
           onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-danger)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-tertiary)')}
         >
-          <LogOut size={15} strokeWidth={1.75} />
+          <LogOut size={15} />
         </button>
       </div>
     </div>
@@ -298,7 +295,7 @@ function IgrejaSubPanel({ role, enabledModules }: { role: string | null; enabled
               >
                 <Icon size={15} strokeWidth={1.75} className="shrink-0" />
                 <span className="text-[13px]">{label}</span>
-                <Lock size={10} strokeWidth={2} className="ml-auto shrink-0" />
+                <Lock size={10} className="ml-auto shrink-0" />
               </NavLink>
               {/* CSS tooltip — sem Radix */}
               <div
@@ -415,7 +412,7 @@ function AgentesSubPanel({ allAgents, hasAgent, activeAgentSlugs, planSlug: _pla
         >
           <c.Icon size={14} strokeWidth={1.75} className="shrink-0" />
           <span className="flex-1 truncate">{c.name}</span>
-          <CheckCircle2 size={11} className="shrink-0" strokeWidth={2} style={{ color: 'var(--color-success)' }} />
+          <CheckCircle2 size={11} className="shrink-0" style={{ color: 'var(--color-success)' }} />
         </NavLink>
       ))}
 
@@ -472,7 +469,7 @@ function ModulosSubPanel() {
               {mod.price.replace('/mês', '')}
             </p>
           </div>
-          <Lock size={10} className="shrink-0 opacity-25" strokeWidth={2} />
+          <Lock size={10} className="shrink-0 opacity-25" />
         </NavLink>
       ))}
     </div>
@@ -502,7 +499,7 @@ function ConfigSubPanel() {
       onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-primary)' }}
       onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' }}
     >
-      <ChevronRight size={12} strokeWidth={2} className="shrink-0 opacity-40" />
+      <ChevronRight size={12} className="shrink-0 opacity-40" />
       <span>{label}</span>
     </NavLink>
   )
@@ -510,7 +507,7 @@ function ConfigSubPanel() {
   const InactiveLink = ({ label }: { label: string }) => (
     <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg border-l-2 border-transparent cursor-default select-none"
       style={{ color: 'var(--text-tertiary)', opacity: 0.4 }}>
-      <ChevronRight size={12} strokeWidth={2} className="shrink-0" />
+      <ChevronRight size={12} className="shrink-0" />
       <span className="flex-1 text-[13px]">{label}</span>
       <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
         style={{ background: 'var(--bg-hover)', color: 'var(--text-tertiary)' }}>

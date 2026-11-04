@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Building2, Clock, ExternalLink, RefreshCw } from 'lucide-react'
+import { BuildingsIcon as Building2, ClockIcon as Clock, ArrowSquareOutIcon as ExternalLink, ArrowsClockwiseIcon as RefreshCw } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 
@@ -79,7 +79,7 @@ export default function AdminOnboardings() {
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-600 bg-white border border-black/5 hover:bg-gray-50 transition-all disabled:opacity-50"
         >
-          <RefreshCw size={14} strokeWidth={1.75} className={loading ? 'animate-spin' : ''} />
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           Atualizar
         </button>
       </div>
@@ -92,7 +92,7 @@ export default function AdminOnboardings() {
 
       {!loading && data.length === 0 && (
         <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-12 text-center">
-          <Building2 size={40} strokeWidth={1.5} className="mx-auto text-gray-300 mb-3" />
+          <Building2 size={40} className="mx-auto text-gray-300 mb-3" />
           <p className="text-gray-500 font-medium">Nenhuma igreja em onboarding</p>
           <p className="text-sm text-gray-400 mt-1">Todas as igrejas já foram configuradas.</p>
         </div>
@@ -174,13 +174,13 @@ function OnboardingTable({ rows, onSelect }: {
                       : { background: '#C4841D18', color: '#C4841D' }
                     }
                   >
-                    <Clock size={10} strokeWidth={2} />
+                    <Clock size={10} />
                     {days}d
                   </span>
                 </td>
                 <td className="px-4 py-3 font-mono-ekthos text-xs text-gray-600">{c.user_count}</td>
                 <td className="px-4 py-3">
-                  <ExternalLink size={14} strokeWidth={1.75} className="text-gray-300 hover:text-gray-600 transition-colors" />
+                  <ExternalLink size={14} className="text-gray-300 hover:text-gray-600 transition-colors" />
                 </td>
               </tr>
             )

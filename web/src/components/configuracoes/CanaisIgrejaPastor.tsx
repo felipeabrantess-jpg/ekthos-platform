@@ -6,7 +6,7 @@
  * instance_id mascarado. error_message NÃO renderizado.
  */
 
-import { WifiOff, RefreshCw, AlertCircle } from 'lucide-react'
+import { WifiSlashIcon as WifiOff, ArrowsClockwiseIcon as RefreshCw, WarningCircleIcon as AlertCircle } from '@phosphor-icons/react'
 import type { ChurchChannel } from '@/hooks/useChurchChannels'
 
 // ── Config por provider ───────────────────────────────────────────────────────
@@ -249,7 +249,7 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="h-14 w-14 rounded-2xl bg-ekthos-black/5 flex items-center justify-center mb-4">
-        <WifiOff size={24} className="text-ekthos-black/25" strokeWidth={1.5} />
+        <WifiOff size={24} className="text-ekthos-black/25" />
       </div>
       <p className="text-sm font-semibold text-ekthos-black/55">
         Nenhum canal configurado ainda.
@@ -278,13 +278,13 @@ export default function CanaisIgrejaPastor({
   if (isError) {
     return (
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
-        <AlertCircle size={16} className="text-red-500 shrink-0" strokeWidth={2} />
+        <AlertCircle size={16} className="text-red-500 shrink-0" />
         <p className="text-sm text-red-700 flex-1">Erro ao carregar canais.</p>
         <button
           onClick={refetch}
           className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-800 font-medium transition-colors"
         >
-          <RefreshCw size={12} strokeWidth={2} />
+          <RefreshCw size={12} />
           Tentar novamente
         </button>
       </div>

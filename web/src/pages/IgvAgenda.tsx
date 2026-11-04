@@ -5,8 +5,10 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Link }                from 'react-router-dom'
-import { ChevronLeft, Clock, MapPin, Calendar } from 'lucide-react'
+import { CircleNotchIcon, ClockIcon, MapPinIcon, WarningCircleIcon } from '@phosphor-icons/react'
+import { GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, SectionTitle, IGV_TEXT } from '@/components/igv'
+import { CalendarCrossIcon, ChurchIcon } from '@/components/igv/icons'
+import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV } from '@/lib/igv-public-data'
 
 const EF_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/igv-public-agenda`
@@ -50,51 +52,24 @@ function groupByLocal(horarios: readonly HorarioItem[]): [string, HorarioItem[]]
 
 // ── Sub-componentes ──────────────────────────────────────────────────
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      className="text-[0.75rem] font-semibold uppercase tracking-[0.14em] mb-3"
-      style={{ color: IGV.primaryColor }}
-    >
-      {children}
-    </p>
-  )
-}
-
 function Spinner() {
   return (
-    <div className="flex justify-center py-10">
-      <div
-        className="w-6 h-6 border-2 rounded-full animate-spin"
-        style={{ borderColor: `${IGV.primaryColor}30`, borderTopColor: IGV.primaryColor }}
-      />
-    </div>
+    <GlassCard className="flex justify-center py-10">
+      <CircleNotchIcon size={ICON_SIZE.tile} className="animate-spin text-[var(--igv-accent)]" role="status" aria-label="Carregando" />
+    </GlassCard>
   )
 }
 
 function EmptyEvents() {
   return (
-    <div className="rounded-2xl bg-white dark:bg-black border border-black/[0.05] dark:border-white/10 shadow-sm p-8 flex flex-col items-center gap-3 text-center">
-      <div
-        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-        style={{ backgroundColor: `${IGV.primaryColor}15` }}
-      >
-        <Calendar size={22} strokeWidth={1.5} style={{ color: IGV.primaryColor }} />
-      </div>
-      <p className="text-[0.9rem] font-medium text-gray-700 dark:text-white">Nenhum evento agendado</p>
-      <p className="text-[0.8rem] text-gray-400 dark:text-white leading-snug">
-        Novos eventos serão anunciados em breve.
-      </p>
-    </div>
+    <IgvNotice Icon={CalendarCrossIcon} title="Nenhum evento agendado">
+      Novos eventos serão anunciados em breve.
+    </IgvNotice>
   )
 }
 
 function ErrorBanner({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl bg-amber-900/20 border border-amber-600/30 p-4 text-center">
-      <p className="text-[0.97rem] text-amber-300">{message}</p>
-    </div>
-  )
+  return <IgvNotice Icon={WarningCircleIcon} title={message} tone="error" />
 }
 
 // ── Componente principal ─────────────────────────────────────────────
@@ -120,75 +95,39 @@ export default function IgvAgenda() {
   const horarioGroups = groupByLocal(IGV.horarios)
 
   return (
-    <div
-      className="min-h-screen bg-black flex flex-col"
-      style={{ fontFamily: '"DM Sans", system-ui, sans-serif' }}
-    >
-      {/* ── Header ── */}
-      <header className="bg-white dark:bg-black border-b border-black/[0.05] dark:border-white/10 sticky top-0 z-20">
-        <div className="max-w-[480px] mx-auto flex items-center gap-3 px-4 py-3.5">
-          <Link
-            to="/igv"
-            className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-50 dark:bg-white/10 border border-black/[0.05] dark:border-white/10 shrink-0 active:bg-gray-100 dark:active:bg-white/20 transition-colors"
-            aria-label="Voltar para IGV"
-          >
-            <ChevronLeft size={18} strokeWidth={2} className="text-gray-600 dark:text-white" />
-          </Link>
-          <h1 className="text-[1.18rem] font-bold text-gray-900 dark:text-white">Agenda</h1>
-        </div>
-      </header>
+    <IgvPageShell>
+      <PageHeader title="Agenda" />
 
-      {/* ── Conteúdo ── */}
-      <main className="flex-1 px-4 py-5 max-w-[480px] mx-auto w-full space-y-6">
+      <IgvContent>
 
-        {/* ── Seção Cultos ── */}
-        <section>
-          <SectionLabel>Cultos</SectionLabel>
-          <div className="space-y-2">
-            {horarioGroups.map(([local, horarios]) => (
-              <div
-                key={local}
-                className="bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm overflow-hidden"
-              >
-                {/* Cabeçalho da igreja */}
-                <div
-                  className="flex items-center gap-1.5 px-4 py-2.5 border-b border-black/[0.04] dark:border-white/[0.04]"
-                  style={{ backgroundColor: `${IGV.primaryColor}0d` }}
-                >
-                  <MapPin size={14} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
-                  <p className="text-[0.95rem] font-semibold text-gray-900 dark:text-white">
-                    {local}
-                  </p>
-                </div>
-
-                {/* Horários da igreja */}
-                <div className="divide-y divide-black/[0.04] dark:divide-white/[0.04]">
-                  {horarios.map((h, i) => (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3">
-                      <div
-                        className="flex items-center justify-center w-8 h-8 rounded-xl shrink-0"
-                        style={{ backgroundColor: `${IGV.primaryColor}15` }}
-                      >
-                        <Clock size={15} strokeWidth={1.75} style={{ color: IGV.primaryColor }} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[0.95rem] text-gray-700 dark:text-white">{h.dia}</p>
-                        {h.nome && <p className="text-[0.82rem] text-gray-500 dark:text-white/70">{h.nome}</p>}
-                      </div>
-                      <span className="text-[1.04rem] font-semibold text-gray-900 dark:text-white">
-                        {h.hora}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+        {/* ── Cultos: um bloco por igreja ── */}
+        <section className="flex flex-col gap-3">
+          <SectionTitle>Cultos</SectionTitle>
+          {horarioGroups.map(([local, horarios]) => (
+            <GlassCard key={local}>
+              <div className="flex items-center gap-3 mb-2">
+                <IconTile Icon={ChurchIcon} />
+                <h2 className={IGV_TEXT.heading}>{local}</h2>
               </div>
-            ))}
-          </div>
+              <div className="divide-y divide-[var(--igv-line)]">
+                {horarios.map((h, i) => (
+                  <div key={i} className="flex items-center gap-3 py-3 last:pb-0">
+                    <ClockIcon size={ICON_SIZE.list} className="shrink-0 text-[var(--igv-accent)]" aria-hidden="true" />
+                    <div className="flex-1 min-w-0">
+                      <p className={IGV_TEXT.body}>{h.dia}</p>
+                      {h.nome && <p className={IGV_TEXT.muted}>{h.nome}</p>}
+                    </div>
+                    <span className={IGV_TEXT.item}>{h.hora}</span>
+                  </div>
+                ))}
+              </div>
+            </GlassCard>
+          ))}
         </section>
 
-        {/* ── Seção Próximos Eventos ── */}
-        <section>
-          <SectionLabel>Próximos Eventos</SectionLabel>
+        {/* ── Próximos eventos ── */}
+        <section className="flex flex-col gap-3">
+          <SectionTitle>Próximos eventos</SectionTitle>
 
           {loading ? (
             <Spinner />
@@ -197,7 +136,7 @@ export default function IgvAgenda() {
           ) : events.length === 0 ? (
             <EmptyEvents />
           ) : (
-            <div className="space-y-2">
+            <>
               {events.map(ev => {
                 const [, evMonth, evDay] = ev.date.split('-')
                 const monthLabel = new Date(
@@ -207,59 +146,39 @@ export default function IgvAgenda() {
                 ).toLocaleString('pt-BR', { month: 'short' })
 
                 return (
-                  <div
-                    key={ev.id}
-                    className="bg-white dark:bg-black rounded-2xl border border-black/[0.05] dark:border-white/10 shadow-sm p-4 flex items-start gap-3"
-                  >
-                    {/* Data pill */}
-                    <div className="flex flex-col items-center justify-center w-12 shrink-0 bg-gray-50 dark:bg-white/10 rounded-xl py-2 border border-black/[0.05] dark:border-white/10">
-                      <span className="text-[0.7rem] font-semibold uppercase text-gray-400 dark:text-white/60 leading-none">
-                        {monthLabel}
-                      </span>
-                      <span
-                        className="text-[1.68rem] font-bold leading-tight"
-                        style={{ color: IGV.primaryColor }}
-                      >
-                        {parseInt(evDay, 10)}
-                      </span>
+                  <GlassCard key={ev.id} className="flex items-start gap-4">
+                    {/* Data */}
+                    <div className="igv-glass igv-glass--tile w-14 py-2 rounded-2xl flex flex-col items-center shrink-0">
+                      <span className={IGV_TEXT.muted}>{monthLabel}</span>
+                      <span className={`igv-serif ${IGV_TEXT.heading}`}>{parseInt(evDay, 10)}</span>
                     </div>
 
                     {/* Detalhes */}
-                    <div className="flex-1 min-w-0 pt-0.5">
-                      <p className="text-[1.02rem] font-semibold text-gray-900 dark:text-white leading-tight">
-                        {ev.title}
-                      </p>
-                      <p className="text-[0.88rem] text-gray-400 dark:text-white mt-0.5">
-                        {formatDate(ev.date)}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <p className={IGV_TEXT.item}>{ev.title}</p>
+                      <p className={`mt-0.5 ${IGV_TEXT.muted}`}>{formatDate(ev.date)}</p>
                       {ev.startDatetime && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
-                          <span className="text-[0.85rem] text-gray-400 dark:text-white">
-                            {formatTime(ev.startDatetime)}
-                          </span>
-                        </div>
+                        <p className={`flex items-center gap-1.5 mt-1.5 ${IGV_TEXT.muted}`}>
+                          <ClockIcon size={ICON_SIZE.button} className="shrink-0" aria-hidden="true" />
+                          {formatTime(ev.startDatetime)}
+                        </p>
                       )}
                       {ev.location && (
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <MapPin size={12} strokeWidth={1.75} className="text-gray-300 dark:text-white/30" />
-                          <span className="text-[0.75rem] text-gray-400 dark:text-white truncate">
-                            {ev.location}
-                          </span>
-                        </div>
+                        <p className={`flex items-start gap-1.5 mt-1 ${IGV_TEXT.muted}`}>
+                          <MapPinIcon size={ICON_SIZE.button} className="shrink-0" aria-hidden="true" />
+                          {ev.location}
+                        </p>
                       )}
                     </div>
-                  </div>
+                  </GlassCard>
                 )
               })}
-            </div>
+            </>
           )}
         </section>
-      </main>
 
-      <footer className="text-center px-4 py-5 text-[0.82rem] text-gray-400 dark:text-white/50">
-        <span className="whitespace-pre-line">{IGV.address}</span>
-      </footer>
-    </div>
+        <GlassCard className="mt-3"><p className={`whitespace-pre-line ${IGV_TEXT.muted}`}>{IGV.address}</p></GlassCard>
+      </IgvContent>
+    </IgvPageShell>
   )
 }

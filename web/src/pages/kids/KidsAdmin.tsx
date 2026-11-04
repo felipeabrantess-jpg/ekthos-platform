@@ -9,11 +9,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import {
-  Baby, Link2, Users, Settings2, Copy, Check, AlertCircle,
-  RefreshCw, Trash2, Plus, Loader2, MessageCircle, X,
-  LogIn, LogOut, Edit2, ShieldAlert, ToggleLeft, ToggleRight,
-} from 'lucide-react'
+import { BabyIcon as Baby, LinkSimpleIcon as Link2, UsersIcon as Users, GearSixIcon as Settings2, CopyIcon as Copy, CheckIcon as Check, WarningCircleIcon as AlertCircle, ArrowsClockwiseIcon as RefreshCw, TrashIcon as Trash2, PlusIcon as Plus, CircleNotchIcon as Loader2, ChatCircleIcon as MessageCircle, XIcon as X, SignInIcon as LogIn, SignOutIcon as LogOut, PencilSimpleIcon as Edit2, ShieldWarningIcon as ShieldAlert, ToggleLeftIcon as ToggleLeft, ToggleRightIcon as ToggleRight } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 

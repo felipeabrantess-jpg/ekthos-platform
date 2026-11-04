@@ -19,7 +19,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { CaretDownIcon as ChevronDown, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { useAuth } from '@/hooks/useAuth'
 import { useUpdatePersonStage, type PersonStageValue } from '../hooks/useUpdatePersonStage'
 import type { PersonWithStage } from '@/lib/types/joins'

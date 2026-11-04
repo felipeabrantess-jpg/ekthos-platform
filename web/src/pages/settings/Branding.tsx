@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, X, Check, Loader2 } from 'lucide-react'
+import { UploadSimpleIcon as Upload, XIcon as X, CheckIcon as Check, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useChurch } from '@/hooks/useChurch'

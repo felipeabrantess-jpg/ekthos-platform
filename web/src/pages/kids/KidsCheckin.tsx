@@ -14,10 +14,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams }                        from 'react-router-dom'
-import {
-  Baby, CheckCircle2, AlertCircle, ChevronRight,
-  Plus, Trash2, Loader2,
-} from 'lucide-react'
+import { BabyIcon as Baby, CheckCircleIcon as CheckCircle2, WarningCircleIcon as AlertCircle, CaretRightIcon as ChevronRight, PlusIcon as Plus, TrashIcon as Trash2, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 
 // ── Constante de URL da EF ────────────────────────────────────
 

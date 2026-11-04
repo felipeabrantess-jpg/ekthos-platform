@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react'
-import { X, Loader2 } from 'lucide-react'
+import { XIcon as X, CircleNotchIcon as Loader2 } from '@phosphor-icons/react'
 import { useCreateTag, useUpdateTag } from '../hooks/useTags'
 import type { Tag } from '@/lib/types/joins'
 import ModalPortal from '@/components/ui/ModalPortal'

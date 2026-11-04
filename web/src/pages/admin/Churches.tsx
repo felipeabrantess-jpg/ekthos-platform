@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { matchesSearch } from '@/lib/normalizeSearch'
 import { useNavigate } from 'react-router-dom'
-import { Search, Filter, Eye, MoreVertical, Building2, Plus, Loader, X } from 'lucide-react'
+import { MagnifyingGlassIcon as Search, FunnelIcon as Filter, EyeIcon as Eye, DotsThreeVerticalIcon as MoreVertical, BuildingsIcon as Building2, PlusIcon as Plus, CircleNotchIcon as Loader, XIcon as X } from '@phosphor-icons/react'
 import { supabase } from '@/lib/supabase'
 import Spinner from '@/components/ui/Spinner'
 import ModalPortal from '@/components/ui/ModalPortal'
@@ -282,7 +282,7 @@ export default function AdminChurches() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
           style={{ background: 'var(--color-primary)' }}
         >
-          <Plus size={15} strokeWidth={2} />
+          <Plus size={15} />
           Nova Igreja
         </button>
       </div>
@@ -298,7 +298,7 @@ export default function AdminChurches() {
       <div className="bg-white rounded-2xl border border-black/5 shadow-sm p-4 flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-48">
-          <Search size={15} strokeWidth={1.75} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             value={search}
@@ -311,7 +311,7 @@ export default function AdminChurches() {
 
         {/* Status filter */}
         <div className="flex items-center gap-1">
-          <Filter size={13} strokeWidth={1.75} className="text-gray-400" />
+          <Filter size={13} className="text-gray-400" />
           {(['all', 'configured', 'onboarding', 'suspended'] as const).map(s => (
             <button
               key={s}
@@ -355,7 +355,7 @@ export default function AdminChurches() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-3">
-            <Building2 size={36} strokeWidth={1.25} className="text-gray-200" />
+            <Building2 size={36} className="text-gray-200" />
             <p className="text-sm text-gray-400">Nenhuma igreja encontrada</p>
           </div>
         ) : (
@@ -430,12 +430,12 @@ export default function AdminChurches() {
                           onClick={() => navigate(`/admin/churches/${church.id}`)}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all"
                         >
-                          <Eye size={12} strokeWidth={1.75} />
+                          <Eye size={12} />
                           Ver
                         </button>
                         <div className="relative group">
                           <button className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all">
-                            <MoreVertical size={14} strokeWidth={1.75} />
+                            <MoreVertical size={14} />
                           </button>
                           <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-black/5 py-1 w-40 hidden group-focus-within:block z-10">
                             <button
@@ -486,7 +486,7 @@ export default function AdminChurches() {
                 onClick={() => setShowModal(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all"
               >
-                <X size={16} strokeWidth={1.75} />
+                <X size={16} />
               </button>
             </div>
 
@@ -579,7 +579,7 @@ export default function AdminChurches() {
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all"
                 style={{ background: 'var(--color-primary)' }}
               >
-                {creating && <Loader size={14} strokeWidth={2} className="animate-spin" />}
+                {creating && <Loader size={14} className="animate-spin" />}
                 {creating ? 'Criando...' : 'Criar Igreja'}
               </button>
             </div>

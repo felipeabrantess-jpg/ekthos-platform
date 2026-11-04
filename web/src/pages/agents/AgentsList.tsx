@@ -13,7 +13,7 @@
  */
 
 import { Link } from 'react-router-dom'
-import { ChevronRight, CheckCircle2 } from 'lucide-react'
+import { CaretRightIcon as ChevronRight, CheckCircleIcon as CheckCircle2 } from '@phosphor-icons/react'
 import { INTERNAL_AGENTS, PREMIUM_AGENTS, type AgentContent } from '@/lib/agents-content'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ function InternalAgentCard({ content }: { content: AgentContent }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-semibold text-ekthos-black">{content.name}</span>
-          <CheckCircle2 size={13} className="text-green-500 shrink-0" strokeWidth={2} />
+          <CheckCircle2 size={13} className="text-green-500 shrink-0" />
         </div>
         <p className="text-xs text-ekthos-black/50 mt-0.5 line-clamp-2">{content.shortDesc}</p>
         <p className="text-[10px] font-medium text-green-600 mt-1.5">Incluso no plano</p>
