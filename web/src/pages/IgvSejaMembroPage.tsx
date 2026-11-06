@@ -8,7 +8,7 @@
 
 import { useState }   from 'react'
 import { CaretLeftIcon, CheckCircleIcon, CircleNotchIcon } from '@phosphor-icons/react'
-import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
+import { GlassButton, GlassCard, GlassChip, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
 import { HeartCrossIcon } from '@/components/igv/icons'
 import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV }        from '@/lib/igv-public-data'
@@ -39,6 +39,7 @@ function maskPhone(value: string): string {
 // ── Tipos ─────────────────────────────────────────────────────────
 
 interface FormState {
+  slug:            string
   name:            string
   phone:           string
   email:           string
@@ -50,6 +51,7 @@ interface FormState {
 
 export default function IgvSejaMembroPage() {
   const [form, setForm] = useState<FormState>({
+    slug:            '',
     name:            '',
     phone:           '',
     email:           '',
@@ -69,6 +71,8 @@ export default function IgvSejaMembroPage() {
 
   function validate(): boolean {
     const errs: Partial<Record<keyof FormState, string>> = {}
+    if (!form.slug)
+      errs.slug  = 'Escolha a igreja'
     if (!nomeCompleto(form.name))
       errs.name  = IGV_MSG.nome
     if (!telefoneBR(form.phone))
@@ -90,7 +94,7 @@ export default function IgvSejaMembroPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          slug:            IGV.slug,
+          slug:            form.slug,
           name:            form.name.trim(),
           phone:           form.phone,
           email:           form.email.trim() || undefined,
@@ -158,6 +162,18 @@ export default function IgvSejaMembroPage() {
               <IconTile Icon={HeartCrossIcon} />
               <h2 className={IGV_TEXT.heading}>Faça parte da família</h2>
             </div>
+
+            <fieldset>
+              <legend className={IGV_TEXT.label}>Em qual igreja você quer ser membro? *</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {IGV.unidades.map(u => (
+                  <GlassChip key={u.slug} segmented selected={form.slug === u.slug} onClick={() => handleChange('slug', u.slug)}>
+                    {u.nome}
+                  </GlassChip>
+                ))}
+              </div>
+              {errors.slug && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.slug}</p>}
+            </fieldset>
 
             <div>
               <label htmlFor="sm-nome" className={IGV_TEXT.label}>Nome completo *</label>
