@@ -32,6 +32,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { maskPhone, maskIp } from './log-mask.ts'
+import { nomeCompleto, telefoneBR } from './validacao.ts'
 
 const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -187,6 +188,13 @@ Deno.serve(async (req: Request) => {
 
     if (!slug || !name || name.length < 3 || !phone) {
       return new Response(JSON.stringify({ error: 'Campos obrigatórios inválidos' }), { status: 400, headers: json })
+    }
+    // Nome e sobrenome reais e telefone brasileiro válido: as mesmas regras do app e da página do QR
+    if (!nomeCompleto(name)) {
+      return new Response(JSON.stringify({ error: 'Digite seu nome e sobrenome verdadeiros.', field: 'name' }), { status: 400, headers: json })
+    }
+    if (!telefoneBR(phone)) {
+      return new Response(JSON.stringify({ error: 'Digite um telefone válido com DDD.', field: 'phone' }), { status: 400, headers: json })
     }
     if (email && !EMAIL_REGEX.test(email)) {
       return new Response(JSON.stringify({ error: 'Email inválido' }), { status: 400, headers: json })

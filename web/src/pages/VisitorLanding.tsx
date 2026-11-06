@@ -12,6 +12,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams }           from 'react-router-dom'
+import { IGV_MSG, nomeCompleto, telefoneBR } from '@/lib/igv-validacao'
 
 // ── Tipos ────────────────────────────────────────────────────
 
@@ -46,7 +47,6 @@ const VALID_ENTRY_TYPES = [
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const EF_BASE      = `${SUPABASE_URL}/functions/v1`
 
-const PHONE_REGEX     = /^\(\d{2}\)\s\d{4,5}-\d{4}$/  // (XX) XXXXX-XXXX
 const EMAIL_REGEX     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ── Máscara de telefone BR ───────────────────────────────────
@@ -135,10 +135,10 @@ export default function VisitorLanding() {
 
   function validate(): boolean {
     const errs: Partial<FormState> = {}
-    if (!form.name.trim() || form.name.trim().length < 3)
-      errs.name = 'Informe seu nome completo (mínimo 3 caracteres)'
-    if (!PHONE_REGEX.test(form.phone))
-      errs.phone = 'Telefone inválido. Ex: (11) 98765-4321'
+    if (!nomeCompleto(form.name))
+      errs.name = IGV_MSG.nome
+    if (!telefoneBR(form.phone))
+      errs.phone = IGV_MSG.telefone
     if (form.email && !EMAIL_REGEX.test(form.email))
       errs.email = 'Email inválido'
     if (!(VALID_ENTRY_TYPES as readonly string[]).includes(form.entry_type))
@@ -329,7 +329,7 @@ export default function VisitorLanding() {
               <input
                 type="text"
                 autoComplete="given-name"
-                placeholder="Seu nome"
+                placeholder="Nome e sobrenome"
                 value={form.name}
                 onChange={e => handleChange('name', e.target.value)}
                 className={`w-full h-12 px-4 rounded-xl border text-base bg-white focus:outline-none focus:ring-2 transition-colors ${
@@ -353,7 +353,7 @@ export default function VisitorLanding() {
                 type="tel"
                 inputMode="numeric"
                 autoComplete="tel-national"
-                placeholder="(11) 98765-4321"
+                placeholder="(21) 99999-9999"
                 value={form.phone}
                 onChange={e => handleChange('phone', e.target.value)}
                 className={`w-full h-12 px-4 rounded-xl border text-base bg-white focus:outline-none focus:ring-2 transition-colors ${

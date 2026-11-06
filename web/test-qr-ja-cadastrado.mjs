@@ -25,8 +25,8 @@ await page.setViewportSize({ width: 420, height: 900 })
 
 async function fillVisitorLanding() {
   await page.goto(`${BASE}/visita/igv-teste`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800)
-  await page.locator('input[placeholder="Seu nome"]').fill('Maria Teste')
-  await page.locator('input[placeholder="(11) 98765-4321"]').fill('21977771111')
+  await page.locator('input[placeholder="Nome e sobrenome"]').fill('Maria Souza')
+  await page.locator('input[placeholder="(21) 99999-9999"]').fill('21977771111')
   const sel = page.locator('select').first()
   const opts = await sel.locator('option').evaluateAll(os => os.map(o => o.value).filter(Boolean))
   if (opts.length) await sel.selectOption(opts[0])
@@ -35,7 +35,7 @@ async function fillVisitorLanding() {
 }
 async function fillIgv() {
   await page.goto(`${BASE}/igv/seja-membro`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800)
-  await page.locator('input[placeholder="Nome e sobrenome"]').fill('Maria Teste')
+  await page.locator('input[placeholder="Nome e sobrenome"]').fill('Maria Souza')
   await page.locator('input[placeholder="(21) 99999-9999"]').fill('21977771111')
   const cb = page.locator('input[type="checkbox"]'); if (await cb.count()) await cb.first().check()
   await page.locator('button[type="submit"]').click(); await page.waitForTimeout(1200)

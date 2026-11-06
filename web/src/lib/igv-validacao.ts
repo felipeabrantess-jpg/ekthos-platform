@@ -4,7 +4,7 @@
  */
 
 export const IGV_MSG = {
-  nome:     'Digite nome e sobrenome.',
+  nome:     'Digite seu nome e sobrenome verdadeiros.',
   telefone: 'Digite um telefone válido com DDD, ex.: (21) 99999-9999.',
 } as const
 
@@ -21,10 +21,36 @@ const DDDS = new Set([
   91, 92, 93, 94, 95, 96, 97, 98, 99,
 ])
 
-/** Pelo menos duas palavras com 2+ letras cada. */
+const PARTICULAS = new Set(['da', 'de', 'do', 'das', 'dos', 'e'])
+const PALAVRAS_PROIBIDAS = new Set(['teste', 'test', 'testes', 'asdf', 'qwerty', 'xpto', 'fulano', 'ciclano', 'beltrano', 'nome', 'sobrenome'])
+const TECLADO = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm']
+const VOGAL = /[aeiouáàâãéêíóôõúü]/   // y só conta como vogal no fim (Rosy, Mary)
+
+function palavraValida(p: string): boolean {
+  const w = p.toLowerCase()
+  const letras = w.replace(/['’`´.-]/g, '')
+  if (letras.length < 2 || letras.length > 20) return false
+  if (PALAVRAS_PROIBIDAS.has(letras)) return false
+  if (!VOGAL.test(letras) && !/y$/.test(letras)) return false
+  if (/(.)\1\1/.test(letras)) return false                                // aaa, kkk
+  if (/[^aeiouyáàâãéêíóôõúü]{5,}/.test(letras)) return false              // 5+ consoantes seguidas
+  const vogais = (letras.match(/[aeiouyáàâãéêíóôõúü]/g) ?? []).length
+  if (letras.length >= 4 && vogais / letras.length < 0.14) return false
+  for (const linha of TECLADO) {
+    for (let i = 0; i + 4 <= linha.length; i++) if (letras.includes(linha.slice(i, i + 4))) return false
+  }
+  return true
+}
+
+/** Nome e sobrenome reais: só letras (acentos, hífen e apóstrofo), 2+ palavras com cara de nome. */
 export function nomeCompleto(v: string): boolean {
-  const palavras = (v ?? '').trim().split(/\s+/).filter(p => (p.match(/\p{L}/gu) ?? []).length >= 2)
-  return palavras.length >= 2
+  const nome = (v ?? '').trim().replace(/\s+/g, ' ')
+  if (!nome || !/^[\p{L}'’`´ .-]+$/u.test(nome)) return false
+  // Iniciais (S, S., Q.R.) e partículas (da, de, dos) não contam como palavra do nome
+  const inicial = (p: string) => /^(\p{L}\.*)+$/u.test(p) && p.replace(/\./g, '').length <= 2 && (p.length === 1 || p.includes('.'))
+  const principais = nome.split(' ').filter(p => !PARTICULAS.has(p.toLowerCase()) && !inicial(p))
+  if (principais.length < 2) return false
+  return principais.every(palavraValida)
 }
 
 /** Normaliza para os dígitos nacionais (DDD + número), removendo o 55 do DDI. null se impossível. */

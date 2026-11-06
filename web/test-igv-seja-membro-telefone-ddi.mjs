@@ -30,7 +30,7 @@ async function open() {
   await page.goto(`${BASE}/igv/seja-membro`, { waitUntil: 'networkidle' }); await page.waitForTimeout(700)
 }
 const phoneInput = () => page.locator('input[placeholder="(21) 99999-9999"]')
-async function fillRest(name = 'Maria Teste') {
+async function fillRest(name = 'Maria Souza') {
   await page.locator('input[placeholder="Nome e sobrenome"]').fill(name)
   const cb = page.locator('input[type="checkbox"]'); if (await cb.count()) await cb.first().check()
 }
@@ -65,19 +65,19 @@ ck('digitado tecla a tecla sem +55 → (21) 99000-0002', (await phoneInput().inp
 
 // ── Fluxos: o que é enviado à função ────────────────────────
 efReply = { success: true, message: 'Cadastro realizado!' }; efCalls = []
-await open(); await fillRest('Novo Com DDI'); await phoneInput().fill('+55 21 99000-0002'); await submit()
+await open(); await fillRest('Joana Ribeiro'); await phoneInput().fill('+55 21 99000-0002'); await submit()
 let t = await page.locator('body').innerText()
 ck('cadastro novo com +55: envia (21) 99000-0002 e mostra o sucesso', efCalls.length === 1 && efCalls[0].phone === '(21) 99000-0002' && /Bem-vindo\(a\) à família|Recebemos seu cadastro/i.test(t), JSON.stringify(efCalls[0]))
 efCalls = []
-await open(); await fillRest('Novo Sem DDI'); await phoneInput().fill('21990000003'); await submit()
+await open(); await fillRest('Paula Moreira'); await phoneInput().fill('21990000003'); await submit()
 ck('cadastro novo sem +55: envia (21) 99000-0003', efCalls.length === 1 && efCalls[0].phone === '(21) 99000-0003', JSON.stringify(efCalls[0]))
 // telefone já cadastrado: com e sem +55 chegam como o MESMO número → a função responde "já cadastrado"
 efReply = { success: true, already_registered: true, message: 'USUÁRIO JÁ CADASTRADO' }; efCalls = []
-await open(); await fillRest('Outro Nome'); await phoneInput().fill('+55 21 99000-0002'); await submit()
+await open(); await fillRest('Lucia Ferreira'); await phoneInput().fill('+55 21 99000-0002'); await submit()
 t = await page.locator('body').innerText()
 ck('telefone já cadastrado com +55: mostra "USUÁRIO JÁ CADASTRADO"', /USUÁRIO JÁ CADASTRADO/.test(t) && efCalls[0].phone === '(21) 99000-0002', JSON.stringify(efCalls[0]))
 const c1 = efCalls[0].phone; efCalls = []
-await open(); await fillRest('Outro Nome 2'); await phoneInput().fill('21990000002'); await submit()
+await open(); await fillRest('Carla Mendes'); await phoneInput().fill('21990000002'); await submit()
 ck('proteção contra duplicidade: o mesmo número com e sem +55 gera a MESMA entrada para a função', efCalls.length === 1 && efCalls[0].phone === c1, c1 + ' / ' + efCalls[0]?.phone)
 ck('sem erros de console', errs.length === 0, errs.slice(0, 2).join(' | '))
 await browser.close()
