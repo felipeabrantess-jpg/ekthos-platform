@@ -261,13 +261,13 @@ export default function IgvEmpresariosCadastro() {
               </Field>
 
               {categoria === 'Outros' && (
-                <Field label="Qual categoria?" required error={errors.categoriaOutra}>
+                <Field label="Que tipo de negócio é?" required error={errors.categoriaOutra}>
                   <input
                     className={inputCls(!!errors.categoriaOutra)}
                     value={categoriaOutra}
                     maxLength={60}
                     onChange={e => { setCategoriaOutra(e.target.value); clearError('categoriaOutra') }}
-                    placeholder="Ex.: Pet shop"
+                    placeholder="Ex.: Pet shop, oficina, papelaria"
                   />
                 </Field>
               )}
