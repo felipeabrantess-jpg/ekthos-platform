@@ -101,7 +101,7 @@ await saveBtn().click(); await page.waitForTimeout(1200);
 ck('salvar correção SEM contato → RPC com p_register_contact=false e cidade enviada', lastReg()?.body.p_register_contact === false && lastReg()?.body.p_people_updates?.city === 'Niterói', JSON.stringify(lastReg()?.body?.p_people_updates));
 ck('… e zero contato novo (continua 1 contato; "Próximo: 2º contato")', people.p1.contacts === 1 && (await txt('[data-testid="proximo-contato"]')) === 'Próximo: 2º contato', await txt('[data-testid="proximo-contato"]'));
 ck('mensagem: "Alterações salvas (nenhuma tentativa de contato registrada)"', (await page.locator('text=Alterações salvas (nenhuma tentativa de contato registrada)').count()) === 1);
-ck('após salvar, a intenção volta a vazia (não há regravação sem nova escolha)', await saveBtn().isDisabled() && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 1);
+ck('após salvar, volta a "Não tentei" sem aviso e sem regravação (Salvar desativado até nova mudança)', await saveBtn().isDisabled() && (await page.locator('[data-testid="tentou-falar-nao"][aria-checked="true"]').count()) === 1 && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 0);
 await page.locator('[data-testid="tentou-falar-sim"]').click(); await page.waitForTimeout(200);
 ck('"Sim": aparece "Registrar 2º contato" com canal/resultado e Salvar habilita', /registrar 2º contato/i.test(await txt('[data-testid="titulo-registrar"]')) && !(await saveBtn().isDisabled()), (await txt('[data-testid="titulo-registrar"]')) + ' | disabled=' + (await saveBtn().isDisabled()));
 await page.locator('textarea[placeholder*="Anotações"]').fill('conversa real'); calls.length = 0;

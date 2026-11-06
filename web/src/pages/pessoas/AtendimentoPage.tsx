@@ -738,7 +738,7 @@ function BlocoAcoes({ person, journey, stages, onToast, nextOrdinal }: BlocoAcoe
       })
       const closedMsg = closingOutcome ? ' Jornada encerrada.' : ''
       onToast(hadContact ? `${ordinal(nextOrdinal)} contato registrado (${RESULT_LABELS[result] ?? result}).${closedMsg}` : 'Alterações salvas (nenhuma tentativa de contato registrada).', 'success')
-      setHadContact(null)
+      setHadContact(false)   // volta ao padrão "Não tentei" (ata 24/10), nunca em branco
       setNotes('')
       setNextStep('')
       setNextDue('')
