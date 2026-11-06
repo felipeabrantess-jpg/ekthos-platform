@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef }          from 'react'
 import { Link }                                  from 'react-router-dom'
-import { ShareNetworkIcon as Share2, DeviceMobileIcon as Smartphone, CopyIcon as Copy } from '@phosphor-icons/react'
+import { GlobeIcon, ShareNetworkIcon as Share2, DeviceMobileIcon as Smartphone, CopyIcon as Copy } from '@phosphor-icons/react'
 import { IGV } from '@/lib/igv-public-data'
 import { CalendarCrossIcon, CommunityIcon, OpenBookIcon, OpenHandsIcon, PastorIcon, PrayerHandsIcon } from '@/components/igv/icons'
 import { GlassButton, GlassCard, GlassIconButton, GlassLinkCard, IconTile, IgvContent, IgvPageShell, SectionTitle, IGV_FOCUS, IGV_TEXT } from '@/components/igv'
@@ -174,7 +174,7 @@ function ActionCard({
       className={`igv-glass ${IGV_FOCUS} flex items-center gap-3 w-full min-h-[64px] px-4 rounded-[20px] active:scale-[0.99] transition-transform`}
     >
       <span className="w-7 h-7 flex items-center justify-center shrink-0">{children}</span>
-      <span className="text-[1rem] font-medium text-[#1F140C] leading-tight text-left min-w-0 break-words">{label}</span>
+      <span className={`${IGV_TEXT.item} text-left min-w-0 break-words`}>{label}</span>
     </button>
   )
 }
@@ -246,7 +246,7 @@ export default function IgvPage() {
       if (navigator.share) {
         await navigator.share({
           title: IGV.name,
-          text:  'Conheça a Igreja Gerando Vencedores em Niterói!',
+          text:  'Conheça a Igreja Gerando Vencedores: Itaipu (Niterói) e Trindade (São Gonçalo).',
           url:   window.location.href,
         })
       } else if (navigator.clipboard) {
@@ -321,9 +321,9 @@ export default function IgvPage() {
 
         {/* Versículo em destaque */}
         <Link to="/igv/biblia" className={`${IGV_FOCUS} igv-rise block rounded-[20px] bg-[var(--igv-dark)] text-white p-5`}>
-          <p className="text-base font-medium text-[var(--igv-line)]">Palavra para hoje</p>
-          <p className="igv-rise igv-rise--1 mt-1 text-lg font-semibold">Salmos 23:1</p>
-          <p className="igv-rise igv-rise--2 mt-4 igv-serif text-[1.5rem] leading-snug">
+          <p className={IGV_TEXT.onDarkLabel}>Palavra para hoje</p>
+          <p className={`igv-rise igv-rise--1 mt-1 ${IGV_TEXT.onDarkItem}`}>Salmos 23:1</p>
+          <p className={`igv-rise igv-rise--2 mt-4 igv-serif ${IGV_TEXT.onDarkHeading}`}>
             O Senhor é o meu pastor; nada me faltará.
           </p>
           <span className="igv-glass igv-glass--on-dark igv-rise igv-rise--3 mt-5 inline-flex items-center min-h-[48px] px-5 rounded-full text-[1rem] font-medium">
@@ -366,7 +366,10 @@ export default function IgvPage() {
           <ActionCard label="Spotify" onClick={() => openLink(IGV.spotifyUrl)}>
             <SpotifyLogo size={ICON_SIZE.list} />
           </ActionCard>
-          <div className="col-span-2 grid">
+          <ActionCard label="Site da igreja" onClick={() => openLink('https://gerandovencedores.org/')}>
+            <GlobeIcon size={ICON_SIZE.list} className="text-[var(--igv-ink)]" aria-hidden="true" />
+          </ActionCard>
+          <div className="grid">
             <ActionCard label="Compartilhar" onClick={handleShare}>
               <Share2 size={ICON_SIZE.list} className="text-[var(--igv-ink)]" aria-hidden="true" />
             </ActionCard>

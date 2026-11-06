@@ -29,9 +29,9 @@ page.on('console', m => { if (m.type() === 'error' && !m.text().includes('Failed
 async function open() {
   await page.goto(`${BASE}/igv/seja-membro`, { waitUntil: 'networkidle' }); await page.waitForTimeout(700)
 }
-const phoneInput = () => page.locator('input[placeholder="(21) 98765-4321"]')
+const phoneInput = () => page.locator('input[placeholder="(21) 99999-9999"]')
 async function fillRest(name = 'Maria Teste') {
-  await page.locator('input[placeholder="Seu nome completo"]').fill(name)
+  await page.locator('input[placeholder="Nome e sobrenome"]').fill(name)
   const cb = page.locator('input[type="checkbox"]'); if (await cb.count()) await cb.first().check()
 }
 const submit = async () => { await page.locator('button[type="submit"]').click(); await page.waitForTimeout(900) }

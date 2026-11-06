@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { CircleNotchIcon, ClockIcon, MapPinIcon, WarningCircleIcon } from '@phosphor-icons/react'
-import { GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, SectionTitle, IGV_TEXT } from '@/components/igv'
+import { GlassCard, GlassChip, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, SectionTitle, IGV_TEXT } from '@/components/igv'
 import { CalendarCrossIcon, ChurchIcon } from '@/components/igv/icons'
 import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV } from '@/lib/igv-public-data'
@@ -48,6 +48,13 @@ function groupByLocal(horarios: readonly HorarioItem[]): [string, HorarioItem[]]
     map.get(h.local)!.push(h)
   }
   return [...map.entries()]
+}
+
+/** Evento pertence à unidade se o local cita o nome dela; sem local reconhecível aparece em todas. */
+function eventoDaUnidade(location: string | null, unidade: string, unidades: string[]): boolean {
+  const loc = (location ?? '').toLocaleLowerCase('pt-BR')
+  const citadas = unidades.filter(u => loc.includes(u.toLocaleLowerCase('pt-BR')))
+  return citadas.length === 0 || citadas.includes(unidade)
 }
 
 // ── Sub-componentes ──────────────────────────────────────────────────
@@ -93,6 +100,10 @@ export default function IgvAgenda() {
   }, [])
 
   const horarioGroups = groupByLocal(IGV.horarios)
+  const unidades = horarioGroups.map(([local]) => local)
+  const [unidade, setUnidade] = useState<string>(unidades.includes('Itaipu') ? 'Itaipu' : unidades[0])
+  const gruposVisiveis = horarioGroups.filter(([local]) => local === unidade)
+  const eventosVisiveis = events.filter(ev => eventoDaUnidade(ev.location, unidade, unidades))
 
   return (
     <IgvPageShell>
@@ -100,10 +111,17 @@ export default function IgvAgenda() {
 
       <IgvContent>
 
+        {/* ── Unidade ── */}
+        <div role="group" aria-label="Unidade" className="grid grid-cols-2 gap-2">
+          {unidades.map(u => (
+            <GlassChip segmented key={u} selected={unidade === u} onClick={() => setUnidade(u)}>{u}</GlassChip>
+          ))}
+        </div>
+
         {/* ── Cultos: um bloco por igreja ── */}
         <section className="flex flex-col gap-3">
           <SectionTitle>Cultos</SectionTitle>
-          {horarioGroups.map(([local, horarios]) => (
+          {gruposVisiveis.map(([local, horarios]) => (
             <GlassCard key={local}>
               <div className="flex items-center gap-3 mb-2">
                 <IconTile Icon={ChurchIcon} />
@@ -133,11 +151,11 @@ export default function IgvAgenda() {
             <Spinner />
           ) : error ? (
             <ErrorBanner message={error} />
-          ) : events.length === 0 ? (
+          ) : eventosVisiveis.length === 0 ? (
             <EmptyEvents />
           ) : (
             <>
-              {events.map(ev => {
+              {eventosVisiveis.map(ev => {
                 const [, evMonth, evDay] = ev.date.split('-')
                 const monthLabel = new Date(
                   Number(ev.date.split('-')[0]),

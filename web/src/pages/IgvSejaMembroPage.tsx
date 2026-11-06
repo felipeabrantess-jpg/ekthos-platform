@@ -12,13 +12,13 @@ import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, 
 import { HeartCrossIcon } from '@/components/igv/icons'
 import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV }        from '@/lib/igv-public-data'
+import { IGV_MSG, nomeCompleto, telefoneBR } from '@/lib/igv-validacao'
 
 // ── Constantes ────────────────────────────────────────────────────
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const EF_BASE      = `${SUPABASE_URL}/functions/v1`
 
-const PHONE_REGEX = /^\(\d{2}\)\s\d{4,5}-\d{4}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ── Máscara de telefone BR ─────────────────────────────────────────
@@ -69,10 +69,10 @@ export default function IgvSejaMembroPage() {
 
   function validate(): boolean {
     const errs: Partial<Record<keyof FormState, string>> = {}
-    if (!form.name.trim() || form.name.trim().length < 3)
-      errs.name  = 'Informe seu nome completo (mínimo 3 caracteres)'
-    if (!PHONE_REGEX.test(form.phone))
-      errs.phone = 'Telefone inválido. Ex: (21) 98765-4321'
+    if (!nomeCompleto(form.name))
+      errs.name  = IGV_MSG.nome
+    if (!telefoneBR(form.phone))
+      errs.phone = IGV_MSG.telefone
     if (form.email && !EMAIL_REGEX.test(form.email))
       errs.email = 'Email inválido'
     if (!form.lgpd)
@@ -165,12 +165,12 @@ export default function IgvSejaMembroPage() {
                 id="sm-nome"
                 type="text"
                 autoComplete="name"
-                placeholder="Seu nome completo"
+                placeholder="Nome e sobrenome"
                 value={form.name}
                 onChange={e => handleChange('name', e.target.value)}
                 className={inputCls(errors.name)}
               />
-              {errors.name && <p className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.name}</p>}
+              {errors.name && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.name}</p>}
             </div>
 
             <div>
@@ -180,12 +180,12 @@ export default function IgvSejaMembroPage() {
                 type="tel"
                 inputMode="numeric"
                 autoComplete="tel-national"
-                placeholder="(21) 98765-4321"
+                placeholder="(21) 99999-9999"
                 value={form.phone}
                 onChange={e => handleChange('phone', e.target.value)}
                 className={inputCls(errors.phone)}
               />
-              {errors.phone && <p className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.phone}</p>}
+              {errors.phone && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.phone}</p>}
             </div>
           </GlassCard>
 
@@ -202,7 +202,7 @@ export default function IgvSejaMembroPage() {
                 onChange={e => handleChange('email', e.target.value)}
                 className={inputCls(errors.email)}
               />
-              {errors.email && <p className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.email}</p>}
+              {errors.email && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.email}</p>}
             </div>
 
             <div>
@@ -242,7 +242,7 @@ export default function IgvSejaMembroPage() {
                 . Dados não serão compartilhados com terceiros. (LGPD art. 7º, I)
               </span>
             </label>
-            {errors.lgpd && <p className={`mt-2 ${IGV_TEXT.error}`}>{errors.lgpd}</p>}
+            {errors.lgpd && <p role="alert" className={`mt-2 ${IGV_TEXT.error}`}>{errors.lgpd}</p>}
           </GlassCard>
 
           <GlassButton

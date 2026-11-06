@@ -38,12 +38,13 @@ export const IGV = {
     'Acreditamos que relacionamentos saudáveis sustentam crescimento saudável.',
 
   horarios: [
+    { dia: 'Domingo',      hora: '9h',    local: 'Itaipu',   nome: 'Escola Bíblica Dominical' },
     { dia: 'Domingo',      hora: '10h',   local: 'Itaipu',   nome: null },
     { dia: 'Domingo',      hora: '18h30', local: 'Itaipu',   nome: null },
-    { dia: 'Quarta-feira', hora: '19h30', local: 'Itaipu',   nome: null },
+    { dia: 'Quarta-feira', hora: '19h30', local: 'Itaipu',   nome: 'Quarta da Vitória' },
     { dia: 'Domingo',      hora: '8h',    local: 'Trindade', nome: null },
-    { dia: 'Domingo',      hora: '9h40',  local: 'Trindade', nome: 'EBD' },
+    { dia: 'Domingo',      hora: '9h40',  local: 'Trindade', nome: 'Escola Bíblica Dominical' },
     { dia: 'Domingo',      hora: '18h',   local: 'Trindade', nome: 'Culto de Celebração' },
-    { dia: 'Quinta-feira', hora: '19h30', local: 'Trindade', nome: null },
+    { dia: 'Quinta-feira', hora: '19h30', local: 'Trindade', nome: 'Quinta da Vitória' },
   ],
 } as const

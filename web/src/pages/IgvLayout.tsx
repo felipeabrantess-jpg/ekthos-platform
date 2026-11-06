@@ -33,7 +33,7 @@ export default function IgvLayout() {
 
   return (
     <IgvThemeProvider>
-      <div className="igv-app overflow-x-hidden">
+      <div className="igv-app overflow-x-clip">
         <Outlet />
         <GlassNavBar />
       </div>
