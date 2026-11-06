@@ -68,10 +68,9 @@ export default function IgvAboutPage() {
           </p>
         </Card>
 
-        {/* Endereço e Contato */}
-        <Card label="Endereço e contato" Icon={CommunityIcon}>
-          <p className={`whitespace-pre-line ${IGV_TEXT.body}`}>{IGV.address}</p>
-          <p className={`mt-1 mb-4 ${IGV_TEXT.muted}`}>{IGV.phone}</p>
+        {/* Endereços e contato */}
+        <Card label="Endereços e contato" Icon={CommunityIcon}>
+          <p className={`whitespace-pre-line mb-4 ${IGV_TEXT.body}`}>{IGV.address}</p>
           <GlassButton
             href={`https://wa.me/${IGV.whatsapp}?text=${encodeURIComponent('Olá! Gostaria de saber mais sobre a Igreja Gerando Vencedores.')}`}
             Icon={ChatCircleIcon}
