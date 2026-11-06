@@ -35,8 +35,8 @@ async function fillVisitorLanding() {
 }
 async function fillIgv() {
   await page.goto(`${BASE}/igv/seja-membro`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800)
-  await page.locator('input[placeholder="Seu nome completo"]').fill('Maria Teste')
-  await page.locator('input[placeholder="(21) 98765-4321"]').fill('21977771111')
+  await page.locator('input[placeholder="Nome e sobrenome"]').fill('Maria Teste')
+  await page.locator('input[placeholder="(21) 99999-9999"]').fill('21977771111')
   const cb = page.locator('input[type="checkbox"]'); if (await cb.count()) await cb.first().check()
   await page.locator('button[type="submit"]').click(); await page.waitForTimeout(1200)
 }

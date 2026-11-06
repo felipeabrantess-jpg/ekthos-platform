@@ -39,7 +39,7 @@ function maskPhone(value: string): string {
 // ── Tipos ─────────────────────────────────────────────────────────
 
 interface FormState {
-  slug:            string
+  unidade:         string
   name:            string
   phone:           string
   email:           string
@@ -51,7 +51,7 @@ interface FormState {
 
 export default function IgvSejaMembroPage() {
   const [form, setForm] = useState<FormState>({
-    slug:            '',
+    unidade:         '',
     name:            '',
     phone:           '',
     email:           '',
@@ -71,8 +71,6 @@ export default function IgvSejaMembroPage() {
 
   function validate(): boolean {
     const errs: Partial<Record<keyof FormState, string>> = {}
-    if (!form.slug)
-      errs.slug  = 'Escolha a igreja'
     if (!nomeCompleto(form.name))
       errs.name  = IGV_MSG.nome
     if (!telefoneBR(form.phone))
@@ -94,7 +92,8 @@ export default function IgvSejaMembroPage() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          slug:            form.slug,
+          slug:            IGV.slug,
+          unit_slug:       form.unidade,
           name:            form.name.trim(),
           phone:           form.phone,
           email:           form.email.trim() || undefined,
@@ -164,15 +163,14 @@ export default function IgvSejaMembroPage() {
             </div>
 
             <fieldset>
-              <legend className={IGV_TEXT.label}>Em qual igreja você quer ser membro? *</legend>
+              <legend className={IGV_TEXT.label}>Em qual igreja você quer ser membro? (opcional)</legend>
               <div className="grid grid-cols-2 gap-2">
                 {IGV.unidades.map(u => (
-                  <GlassChip key={u.slug} segmented selected={form.slug === u.slug} onClick={() => handleChange('slug', u.slug)}>
+                  <GlassChip key={u.slug} segmented selected={form.unidade === u.slug} onClick={() => handleChange('unidade', form.unidade === u.slug ? '' : u.slug)}>
                     {u.nome}
                   </GlassChip>
                 ))}
               </div>
-              {errors.slug && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.slug}</p>}
             </fieldset>
 
             <div>
