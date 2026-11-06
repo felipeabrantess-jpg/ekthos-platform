@@ -6,9 +6,9 @@
  * Sem auth. Sem dados de membros. Sem sidebar do CRM.
  */
 
-import { useState }   from 'react'
+import { useState, useEffect } from 'react'
 import { CaretLeftIcon, CheckCircleIcon, CircleNotchIcon } from '@phosphor-icons/react'
-import { GlassButton, GlassCard, GlassChip, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
+import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
 import { HeartCrossIcon } from '@/components/igv/icons'
 import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV }        from '@/lib/igv-public-data'
@@ -62,6 +62,18 @@ export default function IgvSejaMembroPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted,  setSubmitted]  = useState(false)
   const [alreadyRegistered, setAlreadyRegistered] = useState(false)
+
+  // Igrejas (unidades) cadastradas no CRM: uma unidade nova aparece aqui sem mudar o app.
+  // Se a consulta falhar, usa a lista fixa.
+  const [unidades, setUnidades] = useState<readonly { nome: string; slug: string }[]>(IGV.unidades)
+  useEffect(() => {
+    fetch(`${EF_BASE}/church-public?slug=${encodeURIComponent(IGV.slug)}`)
+      .then(r => r.json())
+      .then((d: { units?: { name: string; slug: string }[] }) => {
+        if (d.units?.length) setUnidades(d.units.map(u => ({ nome: u.name, slug: u.slug })))
+      })
+      .catch(() => { /* mantém a lista fixa */ })
+  }, [])
 
   function handleChange(field: keyof FormState, raw: string | boolean) {
     const value = field === 'phone' && typeof raw === 'string' ? maskPhone(raw) : raw
@@ -162,16 +174,18 @@ export default function IgvSejaMembroPage() {
               <h2 className={IGV_TEXT.heading}>Faça parte da família</h2>
             </div>
 
-            <fieldset>
-              <legend className={IGV_TEXT.label}>Em qual igreja você quer ser membro? (opcional)</legend>
-              <div className="grid grid-cols-2 gap-2">
-                {IGV.unidades.map(u => (
-                  <GlassChip key={u.slug} segmented selected={form.unidade === u.slug} onClick={() => handleChange('unidade', form.unidade === u.slug ? '' : u.slug)}>
-                    {u.nome}
-                  </GlassChip>
-                ))}
-              </div>
-            </fieldset>
+            <div>
+              <label htmlFor="sm-igreja" className={IGV_TEXT.label}>Escolha sua igreja (opcional)</label>
+              <select
+                id="sm-igreja"
+                value={form.unidade}
+                onChange={e => handleChange('unidade', e.target.value)}
+                className={IGV_INPUT}
+              >
+                <option value="">Prefiro não informar</option>
+                {unidades.map(u => <option key={u.slug} value={u.slug}>{u.nome}</option>)}
+              </select>
+            </div>
 
             <div>
               <label htmlFor="sm-nome" className={IGV_TEXT.label}>Nome completo *</label>
