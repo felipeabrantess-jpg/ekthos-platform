@@ -143,7 +143,8 @@ export function IgvContent({ children, className = '' }: { children: ReactNode; 
 
 export function PageHeader({ title, subtitle, backTo = '/igv', onBack }: { title: string; subtitle?: string; backTo?: string; onBack?: () => void }) {
   return (
-    <header className="px-5 pb-5 pt-[calc(16px+env(safe-area-inset-top))]">
+    // Fixo no topo ao rolar, com fundo sólido do app (sem desfoque). Fica no fluxo: não cobre o conteúdo inicial.
+    <header className="sticky top-0 z-30 bg-[var(--igv-bg)] px-5 pb-5 pt-[calc(16px+env(safe-area-inset-top))]">
       {onBack
         ? <GlassIconButton Icon={CaretLeftIcon} label="Voltar" onClick={onBack} />
         : <GlassIconButton Icon={CaretLeftIcon} label="Voltar" to={backTo} />}
