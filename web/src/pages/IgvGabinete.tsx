@@ -260,12 +260,12 @@ export default function IgvGabinete() {
             {!selectedSlotId && (
               <fieldset>
                 <legend className={IGV_TEXT.label}>Preferência de dia e período</legend>
-                <div className="grid grid-cols-2 gap-2">
-                  <label htmlFor="gab-dia" className="sr-only">Dia da semana</label>
+                <div className="flex flex-col gap-3">
+                  <label htmlFor="gab-dia" className={IGV_TEXT.label}>Dia da semana</label>
                   <select id="gab-dia" value={dia} onChange={e => setDia(e.target.value)} className={IGV_INPUT}>
                     {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <label htmlFor="gab-periodo" className="sr-only">Período</label>
+                  <label htmlFor="gab-periodo" className={IGV_TEXT.label}>Período</label>
                   <select id="gab-periodo" value={periodo} onChange={e => setPeriodo(e.target.value)} className={IGV_INPUT}>
                     {PERIODOS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
