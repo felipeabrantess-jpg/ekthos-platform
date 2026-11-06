@@ -17,6 +17,48 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// ── Validação: as mesmas regras do app (web/src/lib/igv-validacao.ts) ────────
+// O app já valida; aqui é a garantia para quem tentar enviar por fora do app.
+
+const DDDS = new Set([
+  11, 12, 13, 14, 15, 16, 17, 18, 19,
+  21, 22, 24, 27, 28,
+  31, 32, 33, 34, 35, 37, 38,
+  41, 42, 43, 44, 45, 46, 47, 48, 49,
+  51, 53, 54, 55,
+  61, 62, 63, 64, 65, 66, 67, 68, 69,
+  71, 73, 74, 75, 77, 79,
+  81, 82, 83, 84, 85, 86, 87, 88, 89,
+  91, 92, 93, 94, 95, 96, 97, 98, 99,
+])
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+function nomeCompleto(v: string): boolean {
+  const palavras = v.trim().split(/\s+/).filter(p => (p.match(/\p{L}/gu) ?? []).length >= 2)
+  return palavras.length >= 2
+}
+
+function sequenciaObvia(s: string): boolean {
+  if (/^(\d)\1*$/.test(s)) return true
+  return '0123456789'.includes(s) || '9876543210'.includes(s) ||
+    /12345678|23456789|87654321|98765432/.test(s)
+}
+
+function telefoneBR(v: string): boolean {
+  let d = v.replace(/\D/g, '')
+  if (d.length > 13) return false
+  if ((d.length === 12 || d.length === 13) && d.startsWith('55')) d = d.slice(2)
+  if (d.length !== 10 && d.length !== 11) return false
+  if (/^(\d)\1*$/.test(d)) return false
+  if (!DDDS.has(Number(d.slice(0, 2)))) return false
+  const numero = d.slice(2)
+  if (d.length === 11 && numero[0] !== '9') return false
+  if (d.length === 10 && !/^[2-5]/.test(numero)) return false
+  if (sequenciaObvia(numero)) return false
+  if (d.length === 11 && sequenciaObvia(numero.slice(1))) return false
+  return true
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: CORS })
@@ -50,6 +92,7 @@ serve(async (req) => {
   const missing: string[] = []
   if (!nome || !(nome as string).trim()) missing.push('nome')
   if (!categoria || !(categoria as string).trim()) missing.push('categoria')
+  if (!descricao || !(descricao as string).trim()) missing.push('descricao')
   if (!nome_contato || !(nome_contato as string).trim()) missing.push('nome_contato')
   if (!telefone || !(telefone as string).trim()) missing.push('telefone')
   if (!email || !(email as string).trim()) missing.push('email')
@@ -57,6 +100,20 @@ serve(async (req) => {
 
   if (missing.length > 0) {
     return json({ error: 'Campos obrigatórios ausentes', fields: missing }, 422)
+  }
+
+  const invalid: string[] = []
+  if ((nome as string).trim().length < 2) invalid.push('nome')
+  if (!nomeCompleto(nome_contato as string)) invalid.push('nome_contato')
+  if (!telefoneBR(telefone as string)) invalid.push('telefone')
+  if (!EMAIL_RE.test((email as string).trim())) invalid.push('email')
+  if ((descricao as string).trim().length < 3) invalid.push('descricao')
+  // "Outros" sozinho não vale: o app envia "Outros: <tipo de negócio>"
+  const cat = (categoria as string).trim()
+  if (/^outros?$/i.test(cat) || (/^outros?:/i.test(cat) && cat.replace(/^outros?:/i, '').trim().length < 2)) invalid.push('categoria')
+
+  if (invalid.length > 0) {
+    return json({ error: 'Dados inválidos', fields: invalid }, 422)
   }
 
   const supabase = createClient(
@@ -101,8 +158,8 @@ serve(async (req) => {
   const { error: insertErr } = await supabase.from('church_empresarios').insert({
     church_id: IGV_CHURCH_ID,
     nome: (nome as string).trim(),
-    categoria: (categoria as string).trim(),
-    descricao: (descricao as string)?.trim() || null,
+    categoria: cat,
+    descricao: (descricao as string).trim(),
     telefone: (telefone as string).trim(),
     email: (email as string).trim(),
     instagram: (instagram as string)?.replace(/^@/, '').trim() || null,
