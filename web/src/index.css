@@ -164,3 +164,6 @@
 @media (prefers-reduced-motion: reduce) {
   .igv-glass--tile svg, .igv-app nav svg, .igv-app svg.igv-wiggle, .igv-rise { animation: none; }
 }
+
+/* Fundo do app IGV até o fim da tela (sem faixa do fundo do CRM abaixo do conteúdo) */
+html:has(.igv-app), body:has(.igv-app) { background: #F7F5F2; }
