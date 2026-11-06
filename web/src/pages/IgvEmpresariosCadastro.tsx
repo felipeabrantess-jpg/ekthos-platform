@@ -3,6 +3,7 @@ import { CheckCircleIcon, CircleNotchIcon, UploadSimpleIcon } from '@phosphor-ic
 import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
 import { BusinessCrossIcon } from '@/components/igv/icons'
 import { supabase }                      from '@/lib/supabase'
+import { IGV_MSG, mascaraTelefoneBR, nomeCompleto, telefoneBR } from '@/lib/igv-validacao'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -59,7 +60,7 @@ function Field({
         {children}
       </label>
       {error && (
-        <p className={`mt-1.5 ${IGV_TEXT.error}`} data-error>{error}</p>
+        <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`} data-error>{error}</p>
       )}
     </div>
   )
@@ -78,6 +79,7 @@ export default function IgvEmpresariosCadastro() {
 
   const [nome,        setNome]        = useState('')
   const [categoria,   setCategoria]   = useState('')
+  const [categoriaOutra, setCategoriaOutra] = useState('')
   const [descricao,   setDescricao]   = useState('')
   const [telefone,    setTelefone]    = useState('')
   const [email,       setEmail]       = useState('')
@@ -120,11 +122,12 @@ export default function IgvEmpresariosCadastro() {
     const errs: Record<string, string> = {}
     if (!nome.trim())        errs.nome        = 'Nome da empresa é obrigatório'
     if (!categoria)          errs.categoria   = 'Escolha uma categoria'
+    else if (categoria === 'Outros' && !categoriaOutra.trim()) errs.categoriaOutra = 'Informe a categoria do seu negócio'
     if (!descricao.trim())   errs.descricao   = 'Descrição é obrigatória'
-    if (!telefone.trim())    errs.telefone    = 'Telefone é obrigatório'
+    if (!telefoneBR(telefone)) errs.telefone  = IGV_MSG.telefone
     if (!email.trim())       errs.email       = 'E-mail é obrigatório'
     if (!instagram.trim())   errs.instagram   = 'Instagram é obrigatório'
-    if (!nomeContato.trim()) errs.nomeContato = 'Seu nome é obrigatório'
+    if (!nomeCompleto(nomeContato)) errs.nomeContato = IGV_MSG.nome
     // logo é opcional — sem validação
     if (!lgpd)               errs.lgpd        = 'Aceite o termo para enviar'
     setErrors(errs)
@@ -146,7 +149,8 @@ export default function IgvEmpresariosCadastro() {
       const { data, error } = await supabase.functions.invoke('igv-public-empresarios-create', {
         body: {
           nome:         nome.trim(),
-          categoria,
+          // A EF aceita categoria em texto livre (só exige não vazia)
+          categoria:    categoria === 'Outros' ? `Outros: ${categoriaOutra.trim()}` : categoria,
           descricao:    descricao.trim(),
           telefone:     telefone.trim(),
           email:        email.trim(),
@@ -256,6 +260,18 @@ export default function IgvEmpresariosCadastro() {
                 </select>
               </Field>
 
+              {categoria === 'Outros' && (
+                <Field label="Qual categoria?" required error={errors.categoriaOutra}>
+                  <input
+                    className={inputCls(!!errors.categoriaOutra)}
+                    value={categoriaOutra}
+                    maxLength={60}
+                    onChange={e => { setCategoriaOutra(e.target.value); clearError('categoriaOutra') }}
+                    placeholder="Ex.: Pet shop"
+                  />
+                </Field>
+              )}
+
               <Field label="Descrição" required error={errors.descricao}>
                 <textarea
                   className={`${inputCls(!!errors.descricao)} resize-none`}
@@ -275,8 +291,10 @@ export default function IgvEmpresariosCadastro() {
                 <input
                   className={inputCls(!!errors.telefone)}
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
                   value={telefone}
-                  onChange={e => { setTelefone(e.target.value); clearError('telefone') }}
+                  onChange={e => { setTelefone(mascaraTelefoneBR(e.target.value)); clearError('telefone') }}
                   placeholder="(21) 99999-9999"
                 />
               </Field>
@@ -322,7 +340,8 @@ export default function IgvEmpresariosCadastro() {
                   className={inputCls(!!errors.nomeContato)}
                   value={nomeContato}
                   onChange={e => { setNomeContato(e.target.value); clearError('nomeContato') }}
-                  placeholder="Seu nome completo"
+                  autoComplete="name"
+                  placeholder="Nome e sobrenome"
                 />
               </Field>
             </GlassCard>
