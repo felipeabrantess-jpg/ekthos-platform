@@ -97,3 +97,14 @@ export const BusinessCrossIcon = base(<>
   <path d="M11.5 10V7a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v3" />
   <path d="M16 14v9M12.5 17.500h7" />
 </>)
+
+/** Célula GGV (Grupo Gerando Vencedores): três pessoas com cruz ao centro. */
+export const CellGgvIcon = base(<>
+  <path d="M16 2.500v5M13.8 4.400h4.4" />
+  <circle cx="16" cy="12.500" r="3" />
+  <path d="M10.500 28v-3a5.5 5.5 0 0 1 11 0v3" />
+  <circle cx="7" cy="15.500" r="2.500" />
+  <path d="M2.500 28v-2a4.5 4.5 0 0 1 6-4.200" />
+  <circle cx="25" cy="15.500" r="2.500" />
+  <path d="M29.500 28v-2a4.5 4.5 0 0 0-6-4.200" />
+</>)

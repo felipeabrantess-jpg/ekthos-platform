@@ -32,17 +32,21 @@ const corsHeaders = {
 // Bairro → como a igreja identifica a região (definido pelo proprietário)
 const BAIRRO_REGIAO: Record<string, string> = {
   'recanto':            'Recanto – Itaipuaçu',
-  'argeu / fazendinha': 'Argeu / Fazendinha – Piratininga',
+  'argeu / fazendinha': 'Argeu / Fazendinha – Niterói',
+  'argeu':              'Argeu / Fazendinha – Niterói',
+  'fazendinha':         'Argeu / Fazendinha – Niterói',
   'são francisco':      'São Francisco – Niterói',
   'barroco':            'Barroco – Itaipuaçu',
-  'serra grande':       'Serra Grande – Itaipu',
-  'engenho do mato':    'Engenho do Mato – Itaipu',
+  'serra grande':       'Serra Grande – Niterói',
+  'engenho do mato':    'Engenho do Mato – Niterói',
   'camboinhas':         'Camboinhas – Niterói',
+  'boa vista itaipu':   'Boa Vista – Niterói',
+  'itaipu':             'Itaipu – Niterói',
 }
 
 function extractRegiao(location: string | null): string | null {
   if (!location) return null
-  if (/s[ãa]o f[áa]bio/i.test(location)) return 'Itaipu'
+  if (/s[ãa]o f[áa]bio/i.test(location)) return BAIRRO_REGIAO['itaipu']
   const tail = location.match(/\s[-–]\s*([^-–]+)$/)?.[1] ?? location.match(/,\s*([A-ZÀ-Ú ]{3,})$/)?.[1]
   if (!tail) return null
   const bairro = tail.trim()
