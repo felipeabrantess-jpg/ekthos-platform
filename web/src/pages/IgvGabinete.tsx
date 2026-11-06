@@ -12,6 +12,7 @@ import {
   IGV_INPUT, IGV_TEXT,
 } from '@/components/igv'
 import { ICON_SIZE } from '@/lib/icon-tokens'
+import { IGV_MSG, mascaraTelefoneBR, nomeCompleto, telefoneBR } from '@/lib/igv-validacao'
 
 const SUPABASE_URL    = import.meta.env.VITE_SUPABASE_URL as string
 const EF_URL          = `${SUPABASE_URL}/functions/v1/igv-cabinet-request`
@@ -25,6 +26,19 @@ const TEMAS = [
 ] as const
 
 const TIPOS = ['Individual', 'Casal', 'Família'] as const
+
+const SEM_PREFERENCIA = 'Sem preferência'
+const DIAS     = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo', SEM_PREFERENCIA] as const
+const PERIODOS = ['Manhã', 'Tarde', 'Noite', SEM_PREFERENCIA] as const
+
+/** "<Dia>, <período>" sem os "Sem preferência"; com assunto (tema Outro) na frente. Vazio → undefined. */
+function montarPreferencia(dia: string, periodo: string, assunto: string, comSlot: boolean): string | undefined {
+  const pref = comSlot ? '' : [dia, periodo].filter(v => v && v !== SEM_PREFERENCIA).join(', ')
+  const txt = `${assunto ? `Assunto: ${assunto}. ` : ''}${pref}`.trim()
+  return txt || undefined
+}
+
+type Campo = 'name' | 'phone' | 'assunto'
 
 interface Pastor {
   id:        string
@@ -68,7 +82,10 @@ export default function IgvGabinete() {
   const [phone, setPhone]       = useState('')
   const [tema, setTema]         = useState('')
   const [tipo, setTipo]         = useState('Individual')
-  const [preferred, setPreferred] = useState('')
+  const [dia, setDia]           = useState<string>(SEM_PREFERENCIA)
+  const [periodo, setPeriodo]   = useState<string>(SEM_PREFERENCIA)
+  const [assunto, setAssunto]   = useState('')
+  const [errors, setErrors]     = useState<Partial<Record<Campo, string>>>({})
   const [pastorId, setPastorId]   = useState<string | null>(null)
 
   const [state, setState]   = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
@@ -97,7 +114,13 @@ export default function IgvGabinete() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const errs: Partial<Record<Campo, string>> = {}
+    if (!nomeCompleto(name)) errs.name  = IGV_MSG.nome
+    if (!telefoneBR(phone))  errs.phone = IGV_MSG.telefone
+    if (tema === 'Outro' && !assunto.trim()) errs.assunto = 'Informe qual é o assunto.'
+    setErrors(errs)
     if (!tema) { setErrMsg('Selecione o tema pastoral.'); return }
+    if (Object.keys(errs).length > 0) { setErrMsg(''); return }
     setState('submitting')
     setErrMsg('')
     try {
@@ -109,7 +132,7 @@ export default function IgvGabinete() {
           phone:                   phone.trim(),
           theme:                   tema,
           appointment_type:        tipo,
-          preferred_datetime_text: !selectedSlotId && preferred.trim() ? preferred.trim() : undefined,
+          preferred_datetime_text: montarPreferencia(dia, periodo, tema === 'Outro' ? assunto.trim() : '', !!selectedSlotId),
           cabinet_pastor_id:       pastorId ?? undefined,
           slot_id:                 selectedSlotId ?? undefined,
         }),
@@ -143,11 +166,13 @@ export default function IgvGabinete() {
   }
 
   // ── Formulário ──────────────────────────────────────────────────────────────
+  const inputCls = (hasError?: string) => `${IGV_INPUT} ${hasError ? '!border-[var(--igv-danger)]' : ''}`
+
   return (
     <IgvPageShell>
       <PageHeader title="Gabinete Pastoral" subtitle="Solicitação de atendimento" />
 
-      <form onSubmit={(e) => { void handleSubmit(e) }}>
+      <form onSubmit={(e) => { void handleSubmit(e) }} noValidate>
         <IgvContent>
 
           {/* Escolha do pastor */}
@@ -207,6 +232,20 @@ export default function IgvGabinete() {
                   <GlassChip key={t} selected={tema === t} onClick={() => setTema(t)}>{t}</GlassChip>
                 ))}
               </div>
+              {tema === 'Outro' && (
+                <div className="mt-4">
+                  <label htmlFor="gab-assunto" className={IGV_TEXT.label}>Qual assunto? *</label>
+                  <input
+                    id="gab-assunto"
+                    type="text"
+                    value={assunto}
+                    onChange={e => { setAssunto(e.target.value); if (errors.assunto) setErrors(p => ({ ...p, assunto: undefined })) }}
+                    maxLength={140}
+                    className={inputCls(errors.assunto)}
+                  />
+                  {errors.assunto && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.assunto}</p>}
+                </div>
+              )}
             </fieldset>
 
             <fieldset>
@@ -218,18 +257,21 @@ export default function IgvGabinete() {
               </div>
             </fieldset>
 
-            <div>
-              <label htmlFor="gab-pref" className={IGV_TEXT.label}>Preferência de data/horário</label>
-              <input
-                id="gab-pref"
-                type="text"
-                value={preferred}
-                onChange={e => setPreferred(e.target.value)}
-                placeholder="Ex: Sábado após as 14h"
-                maxLength={200}
-                className={IGV_INPUT}
-              />
-            </div>
+            {!selectedSlotId && (
+              <fieldset>
+                <legend className={IGV_TEXT.label}>Preferência de dia e período</legend>
+                <div className="grid grid-cols-2 gap-2">
+                  <label htmlFor="gab-dia" className="sr-only">Dia da semana</label>
+                  <select id="gab-dia" value={dia} onChange={e => setDia(e.target.value)} className={IGV_INPUT}>
+                    {DIAS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <label htmlFor="gab-periodo" className="sr-only">Período</label>
+                  <select id="gab-periodo" value={periodo} onChange={e => setPeriodo(e.target.value)} className={IGV_INPUT}>
+                    {PERIODOS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+              </fieldset>
+            )}
           </GlassCard>
 
           {/* Dados pessoais */}
@@ -237,17 +279,18 @@ export default function IgvGabinete() {
             <h2 className={IGV_TEXT.heading}>Seus dados</h2>
             <div>
               <label htmlFor="gab-nome" className={IGV_TEXT.label}>Nome completo *</label>
-              <input id="gab-nome" type="text" value={name} onChange={e => setName(e.target.value)} required className={IGV_INPUT} />
+              <input id="gab-nome" type="text" autoComplete="name" placeholder="Nome e sobrenome" value={name}
+                onChange={e => { setName(e.target.value); if (errors.name) setErrors(p => ({ ...p, name: undefined })) }} className={inputCls(errors.name)} />
+              {errors.name && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.name}</p>}
             </div>
             <div>
               <label htmlFor="gab-fone" className={IGV_TEXT.label}>WhatsApp / telefone *</label>
-              <input id="gab-fone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required className={IGV_INPUT} />
+              <input id="gab-fone" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="(21) 99999-9999" value={phone}
+                onChange={e => { setPhone(mascaraTelefoneBR(e.target.value)); if (errors.phone) setErrors(p => ({ ...p, phone: undefined })) }} className={inputCls(errors.phone)} />
+              {errors.phone && <p role="alert" className={`mt-1.5 ${IGV_TEXT.error}`}>{errors.phone}</p>}
             </div>
             <p className={IGV_TEXT.muted}>
-              Seus dados e o assunto do atendimento são tratados com{' '}
-              <strong className="font-semibold text-[var(--igv-ink)]">sigilo pastoral absoluto</strong>. Nunca
-              compartilhados com terceiros nem enviados automaticamente por WhatsApp.
-              Nossa equipe entrará em contato para confirmar o horário.
+              Seus dados e assunto do atendimento são tratados com sigilo pastoral absoluto. A igreja fará contato para agendar uma data.
             </p>
           </GlassCard>
 
