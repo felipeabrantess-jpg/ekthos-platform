@@ -211,10 +211,26 @@ Deno.serve(async (req: Request) => {
 
     const churchId   = qrRow.church_id as string
     const qrId       = qrRow.id        as string
-    const unitId     = (qrRow.unit_id ?? null) as string | null
+    let unitId       = (qrRow.unit_id ?? null) as string | null
     const phoneClean = sanitizePhone(phone)
 
-    if (!unitId) {
+    // Igreja escolhida no formulário (opcional). Quando o campo vem no payload, ele manda sobre a unidade do QR:
+    // slug de uma unidade ativa desta igreja → essa unidade; vazio ou desconhecido → sem unidade.
+    // Formulários que não enviam o campo seguem com a unidade do QR, como antes.
+    if (Object.prototype.hasOwnProperty.call(payload, 'unit_slug')) {
+      const unitSlug = typeof payload.unit_slug === 'string' ? payload.unit_slug.trim() : ''
+      unitId = null
+      if (unitSlug) {
+        const { data: unitRow } = await supabase
+          .from('church_units')
+          .select('id')
+          .eq('church_id', churchId)
+          .eq('slug', unitSlug)
+          .eq('is_active', true)
+          .maybeSingle()
+        unitId = (unitRow?.id ?? null) as string | null
+      }
+    } else if (!unitId) {
       console.warn('[visitor-capture] QR sem unit_id configurado — people.unit_id ficará NULL:', slug)
     }
 

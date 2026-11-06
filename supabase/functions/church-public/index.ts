@@ -99,9 +99,19 @@ Deno.serve(async (req: Request) => {
     whatsappDisplay = digits.length >= 10 ? digits : null
   }
 
+  // Unidades ativas (nome e slug): a página do QR só oferece a escolha quando a igreja tem mais de uma
+  const { data: unitRows } = await supabase
+    .from('church_units')
+    .select('name, slug')
+    .eq('church_id', church.id)
+    .eq('is_active', true)
+    .order('name', { ascending: true })
+  const units = (unitRows ?? []).filter(u => u.slug)
+
   return new Response(
     JSON.stringify({
       found:                    true,
+      units:                    units.length > 1 ? units : [],
       name:                     church.name,
       logo_url:                 church.logo_url,
       primary_color:            church.primary_color,

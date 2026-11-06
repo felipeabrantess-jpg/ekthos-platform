@@ -5,6 +5,11 @@
 export const IGV = {
   churchId:        '6c127559-874a-4748-8fce-55d4079613a5',
   slug:            'igv-itaipu',
+  // Seja Membro: igreja escolhida (opcional) → slug da unidade em church_units
+  unidades: [
+    { nome: 'Itaipu',   slug: 'itaipu' },
+    { nome: 'Trindade', slug: 'trindade' },
+  ],
   name:            'Igreja Gerando Vencedores',
   pastor:          'Pr. Valdir Brasil',
   address:         'Itaipu: Rua São Fábio 55, Niterói/RJ\nTrindade: Waldemar Zarro 28, São Gonçalo/RJ',

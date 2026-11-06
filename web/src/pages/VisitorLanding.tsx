@@ -20,6 +20,7 @@ interface ChurchPublicData {
   logo_url:               string | null
   primary_color:          string | null
   whatsapp_number_display: string | null
+  units:                  { name: string; slug: string }[]
 }
 
 interface FormState {
@@ -28,6 +29,7 @@ interface FormState {
   email:           string
   invited_by_name: string
   entry_type:      string   // R7 — ver VALID_ENTRY_TYPES
+  unidade:         string   // igreja escolhida (opcional); só existe quando a igreja tem mais de uma unidade
 }
 
 // R7: opções em ordem conforme spec. Vazio = obrigatório sem pré-seleção.
@@ -82,6 +84,7 @@ export default function VisitorLanding() {
     email:           '',
     invited_by_name: '',
     entry_type:      '',   // R7: campo obrigatório, não pré-selecionado
+    unidade:         '',
   })
 
   // ── Buscar dados públicos da church ──────────────────────
@@ -99,6 +102,7 @@ export default function VisitorLanding() {
           logo_url?: string | null
           primary_color?: string | null
           whatsapp_number_display?: string | null
+          units?: { name: string; slug: string }[]
         }
 
         if (!data.found) {
@@ -109,6 +113,7 @@ export default function VisitorLanding() {
             logo_url:                data.logo_url ?? null,
             primary_color:           data.primary_color ?? null,
             whatsapp_number_display: data.whatsapp_number_display ?? null,
+            units:                   data.units ?? [],
           })
         }
       } catch {
@@ -159,6 +164,7 @@ export default function VisitorLanding() {
           email:           form.email.trim() || undefined,
           invited_by_name: form.invited_by_name.trim() || undefined,
           entry_type:      form.entry_type,
+          ...((church?.units.length ?? 0) > 1 ? { unit_slug: form.unidade } : {}),
         }),
       })
       // Telefone já cadastrado: a EF avisa (sem criar nem alterar ninguém). Qualquer outra resposta = sucesso.
@@ -388,6 +394,24 @@ export default function VisitorLanding() {
                 <p className="text-xs text-red-500 mt-1">{errors.entry_type}</p>
               )}
             </div>
+
+            {/* Igreja (opcional) — só para igrejas com mais de uma unidade */}
+            {(church?.units.length ?? 0) > 1 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Em qual igreja? <span className="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <select
+                  value={form.unidade}
+                  onChange={e => handleChange('unidade', e.target.value)}
+                  className="w-full h-12 px-4 rounded-xl border border-gray-200 text-base bg-white focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition-colors"
+                  style={{ fontSize: '16px' }}
+                >
+                  <option value="">Prefiro não informar</option>
+                  {church!.units.map(u => <option key={u.slug} value={u.slug}>{u.name}</option>)}
+                </select>
+              </div>
+            )}
 
             {/* Email (opcional) */}
             <div>

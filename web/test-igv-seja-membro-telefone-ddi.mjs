@@ -31,6 +31,7 @@ async function open() {
 }
 const phoneInput = () => page.locator('input[placeholder="(21) 99999-9999"]')
 async function fillRest(name = 'Maria Teste') {
+  await page.getByRole('button', { name: 'Itaipu', exact: true }).click()
   await page.locator('input[placeholder="Nome e sobrenome"]').fill(name)
   const cb = page.locator('input[type="checkbox"]'); if (await cb.count()) await cb.first().check()
 }

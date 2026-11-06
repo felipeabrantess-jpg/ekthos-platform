@@ -8,7 +8,7 @@
 
 import { useState }   from 'react'
 import { CaretLeftIcon, CheckCircleIcon, CircleNotchIcon } from '@phosphor-icons/react'
-import { GlassButton, GlassCard, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
+import { GlassButton, GlassCard, GlassChip, IconTile, IgvContent, IgvNotice, IgvPageShell, PageHeader, IGV_FOCUS, IGV_INPUT, IGV_TEXT } from '@/components/igv'
 import { HeartCrossIcon } from '@/components/igv/icons'
 import { ICON_SIZE } from '@/lib/icon-tokens'
 import { IGV }        from '@/lib/igv-public-data'
@@ -39,6 +39,7 @@ function maskPhone(value: string): string {
 // ── Tipos ─────────────────────────────────────────────────────────
 
 interface FormState {
+  unidade:         string
   name:            string
   phone:           string
   email:           string
@@ -50,6 +51,7 @@ interface FormState {
 
 export default function IgvSejaMembroPage() {
   const [form, setForm] = useState<FormState>({
+    unidade:         '',
     name:            '',
     phone:           '',
     email:           '',
@@ -91,6 +93,7 @@ export default function IgvSejaMembroPage() {
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
           slug:            IGV.slug,
+          unit_slug:       form.unidade,
           name:            form.name.trim(),
           phone:           form.phone,
           email:           form.email.trim() || undefined,
@@ -158,6 +161,17 @@ export default function IgvSejaMembroPage() {
               <IconTile Icon={HeartCrossIcon} />
               <h2 className={IGV_TEXT.heading}>Faça parte da família</h2>
             </div>
+
+            <fieldset>
+              <legend className={IGV_TEXT.label}>Em qual igreja você quer ser membro? (opcional)</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {IGV.unidades.map(u => (
+                  <GlassChip key={u.slug} segmented selected={form.unidade === u.slug} onClick={() => handleChange('unidade', form.unidade === u.slug ? '' : u.slug)}>
+                    {u.nome}
+                  </GlassChip>
+                ))}
+              </div>
+            </fieldset>
 
             <div>
               <label htmlFor="sm-nome" className={IGV_TEXT.label}>Nome completo *</label>
