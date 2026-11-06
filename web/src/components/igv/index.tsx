@@ -25,6 +25,10 @@ export const IGV_TEXT = {
   muted:   'text-[1rem] leading-snug text-[var(--igv-muted)]',
   label:   'block text-[1rem] font-medium mb-2 text-[var(--igv-muted)]',
   error:   'text-[1rem] leading-snug text-[var(--igv-danger)]',
+  // Sobre fundo escuro (cartão do versículo)
+  onDarkLabel:   'text-[1rem] font-medium leading-snug text-[var(--igv-line)]',
+  onDarkItem:    'text-[1.0625rem] font-semibold leading-snug text-white',
+  onDarkHeading: 'text-[1.5rem] leading-snug text-white',
 } as const
 export const IGV_INPUT = `w-full min-h-[52px] px-4 py-3 rounded-2xl bg-white border border-[var(--igv-line)] text-[1rem] text-[var(--igv-ink)] placeholder:text-[var(--igv-muted)] disabled:opacity-60 ${IGV_FOCUS}`
 
@@ -109,7 +113,7 @@ export function GlassLinkCard({ to, title, subtitle, Icon, image }: { to: string
   return (
     <Link to={to} className={`${CARD_BASE} ${IGV_FOCUS} flex items-center gap-4 min-h-[88px] p-4 pl-5`}>
       <div className="flex-1 min-w-0">
-        <p className={IGV_TEXT.item}>{title}</p>
+        <p className={`igv-serif font-semibold ${IGV_TEXT.heading}`}>{title}</p>
         {subtitle && <p className={`mt-0.5 ${IGV_TEXT.muted}`}>{subtitle}</p>}
       </div>
       {image
