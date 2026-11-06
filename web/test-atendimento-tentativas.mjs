@@ -292,6 +292,7 @@ await saveBtn().click(); await page.waitForTimeout(1500);
 const c1 = registerCalls[0];
 ck('4. salva: RPC com p_register_contact=true e p_contact_result=nao_atendeu (tentativa não atendida É contato)', registerCalls.length === 1 && c1.p_register_contact === true && c1.p_contact_result === 'nao_atendeu', JSON.stringify({ reg: c1?.p_register_contact, res: c1?.p_contact_result }));
 ck('   toast confirma "1º contato registrado (Não atendeu)"', (await page.locator('text=1º contato registrado (Não atendeu)').count()) === 1);
+ck('   depois de salvar, "Não tentei" volta marcado e não aparece "Informe se você tentou falar"', (await page.locator('[data-testid="tentou-falar-nao"][aria-checked="true"]').count()) === 1 && (await page.locator('[data-testid="aviso-escolha-contato"]').count()) === 0);
 // 5. Fechar e abrir novamente
 await page.goto(`${BASE}/pessoas`, { waitUntil: 'networkidle', timeout: 20000 }); await page.waitForTimeout(500);
 await open('p0');
