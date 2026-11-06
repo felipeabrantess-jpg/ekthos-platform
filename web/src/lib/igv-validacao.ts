@@ -55,3 +55,15 @@ export function telefoneBR(v: string): boolean {
   if (d.length === 11 && sequenciaObvia(numero.slice(1))) return false
   return true
 }
+
+/** Máscara de digitação: (21) 99999-9999 / (21) 3234-5678. Remove o 55 do DDI colado. */
+export function mascaraTelefoneBR(value: string): string {
+  let all = (value ?? '').replace(/\D/g, '')
+  if ((all.length === 12 || all.length === 13) && all.startsWith('55')) all = all.slice(2)
+  const d = all.slice(0, 11)
+  if (d.length === 0) return ''
+  if (d.length <= 2)  return `(${d}`
+  if (d.length <= 6)  return `(${d.slice(0, 2)}) ${d.slice(2)}`
+  if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+}
