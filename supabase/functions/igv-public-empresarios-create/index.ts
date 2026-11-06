@@ -17,47 +17,10 @@ function json(body: unknown, status = 200) {
   })
 }
 
-// ── Validação: as mesmas regras do app (web/src/lib/igv-validacao.ts) ────────
-// O app já valida; aqui é a garantia para quem tentar enviar por fora do app.
+// Validação: as mesmas regras do app (cópia em ./validacao.ts)
+import { nomeCompleto, telefoneBR } from './validacao.ts'
 
-const DDDS = new Set([
-  11, 12, 13, 14, 15, 16, 17, 18, 19,
-  21, 22, 24, 27, 28,
-  31, 32, 33, 34, 35, 37, 38,
-  41, 42, 43, 44, 45, 46, 47, 48, 49,
-  51, 53, 54, 55,
-  61, 62, 63, 64, 65, 66, 67, 68, 69,
-  71, 73, 74, 75, 77, 79,
-  81, 82, 83, 84, 85, 86, 87, 88, 89,
-  91, 92, 93, 94, 95, 96, 97, 98, 99,
-])
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
-
-function nomeCompleto(v: string): boolean {
-  const palavras = v.trim().split(/\s+/).filter(p => (p.match(/\p{L}/gu) ?? []).length >= 2)
-  return palavras.length >= 2
-}
-
-function sequenciaObvia(s: string): boolean {
-  if (/^(\d)\1*$/.test(s)) return true
-  return '0123456789'.includes(s) || '9876543210'.includes(s) ||
-    /12345678|23456789|87654321|98765432/.test(s)
-}
-
-function telefoneBR(v: string): boolean {
-  let d = v.replace(/\D/g, '')
-  if (d.length > 13) return false
-  if ((d.length === 12 || d.length === 13) && d.startsWith('55')) d = d.slice(2)
-  if (d.length !== 10 && d.length !== 11) return false
-  if (/^(\d)\1*$/.test(d)) return false
-  if (!DDDS.has(Number(d.slice(0, 2)))) return false
-  const numero = d.slice(2)
-  if (d.length === 11 && numero[0] !== '9') return false
-  if (d.length === 10 && !/^[2-5]/.test(numero)) return false
-  if (sequenciaObvia(numero)) return false
-  if (d.length === 11 && sequenciaObvia(numero.slice(1))) return false
-  return true
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
