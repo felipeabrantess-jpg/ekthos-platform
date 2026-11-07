@@ -1112,7 +1112,10 @@ export default function People() {
             </div>
           ) : (
             <>
-              <div className="md:hidden space-y-2">
+              {pageStale && (
+                <p role="status" className="mb-2 text-xs font-medium text-text-secondary">Atualizando a lista…</p>
+              )}
+              <div className={`md:hidden space-y-2 transition-opacity ${pageStale ? 'opacity-40 pointer-events-none' : ''}`} aria-busy={pageStale}>
                 {items.map((person) => (
                   <PersonCardMobile
                     key={person.id}
@@ -1130,7 +1133,7 @@ export default function People() {
 
               {/* Tabela larga: a barra horizontal fica fixa na base da área visível e sincronizada com a tabela (uma barra só) */}
               <StickyHorizontalScroll className="hidden md:block" contentClassName="bg-bg-primary rounded-2xl border border-border-default shadow-sm">
-                  <table className="w-full text-left">
+                  <table className={`w-full text-left transition-opacity ${pageStale ? 'opacity-40' : ''}`} aria-busy={pageStale}>
                     <thead>
                       <tr className="bg-bg-hover border-b border-border-default">
                         {sortableTh('nome', 'Nome')}
