@@ -66,7 +66,7 @@ function maskPhone(value: string): string {
 
 // ── Componente principal ────────────────────────────────────
 
-export default function VisitorLanding() {
+function VisitorLandingPage() {
   const { slug } = useParams<{ slug: string }>()
 
   const [church,    setChurch]    = useState<ChurchPublicData | null>(null)
@@ -489,4 +489,11 @@ export default function VisitorLanding() {
       </div>
     </div>
   )
+}
+
+// IGV fora do ar a pedido do Felipe (09/11/2026): o QR da IGV mostra só tela preta.
+export default function VisitorLanding() {
+  const { slug } = useParams<{ slug: string }>()
+  if (slug === 'igv-itaipu') return <div style={{ position: 'fixed', inset: 0, background: '#000' }} aria-hidden="true" />
+  return <VisitorLandingPage />
 }
