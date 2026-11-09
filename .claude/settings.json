@@ -1,4 +1,15 @@
 {
+  "extraKnownMarketplaces": {
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true
+  },
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
@@ -24,12 +35,14 @@
       "Bash(mkdir:*)",
       "Bash(cp:*)",
       "Bash(mv:*)",
-      "mcp__supabase__execute_sql",
-      "mcp__supabase__apply_migration",
-      "mcp__supabase__deploy_edge_function",
       "mcp__supabase__get_edge_function",
       "mcp__supabase__list_edge_functions",
       "mcp__supabase__get_logs"
+    ],
+    "ask": [
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__deploy_edge_function"
     ],
     "deny": [
       "Bash(rm -rf *)",
