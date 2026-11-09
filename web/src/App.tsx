@@ -8,7 +8,7 @@ import { useChurch } from '@/hooks/useChurch'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import Layout from '@/components/Layout'
 import AdminLayout from '@/components/AdminLayout'
-import IgvLayout from '@/pages/IgvLayout'
+// import IgvLayout from '@/pages/IgvLayout'  // IGV fora do ar
 import Spinner from '@/components/ui/Spinner'
 
 // ── Lazy page imports ───────────────────────────────────────
@@ -19,6 +19,8 @@ const CheckoutCancelado = lazy(() => import('@/pages/checkout/Cancelado'))
 
 // Frente B — landing pública de visitantes via QR Code
 const VisitorLanding = lazy(() => import('@/pages/VisitorLanding'))
+// IGV fora do ar a pedido do Felipe (09/11/2026): páginas públicas da IGV mostram só tela preta.
+function IgvForaDoAr() { return <div style={{ position: 'fixed', inset: 0, background: '#000' }} aria-hidden="true" /> }
 
 // PWA Público IGV — Fase 0 (path-based, sem auth, sem Layout CRM)
 const IgvPage           = lazy(() => import('@/pages/IgvPage'))
@@ -344,18 +346,19 @@ export default function App() {
 
           {/* ── PWA Público IGV — Fase 0 (path-based, sem auth, sem Layout CRM) ── */}
           {/* IgvLayout: contexto de tema isolado + botão sol/lua flutuante. NÃO afeta o CRM. */}
-          <Route element={<IgvLayout />}>
-            <Route path="/igv"                    element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvPage /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/sobre"              element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAboutPage /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/seja-membro"        element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvSejaMembroPage /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/biblia"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvBiblia /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/agenda"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvAgenda /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/cursos"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCursos /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/empresarios"         element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresarios /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/empresarios/cadastrar" element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvEmpresariosCadastro /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/celulas"            element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvCelulas /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/oracao"             element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvOracao /></Suspense></ErrorBoundary>} />
-            <Route path="/igv/gabinete"           element={<ErrorBoundary><Suspense fallback={<FullScreenSpinner />}><IgvGabinete /></Suspense></ErrorBoundary>} />
+          <Route>{/* IgvLayout removido enquanto a IGV está fora do ar */}
+            <Route path="/igv"                    element={<IgvForaDoAr />} />
+            <Route path="/igv/sobre"              element={<IgvForaDoAr />} />
+            <Route path="/igv/seja-membro"        element={<IgvForaDoAr />} />
+            <Route path="/igv/biblia"             element={<IgvForaDoAr />} />
+            <Route path="/igv/agenda"             element={<IgvForaDoAr />} />
+            <Route path="/igv/cursos"             element={<IgvForaDoAr />} />
+            <Route path="/igv/empresarios"         element={<IgvForaDoAr />} />
+            <Route path="/igv/empresarios/cadastrar" element={<IgvForaDoAr />} />
+            <Route path="/igv/celulas"            element={<IgvForaDoAr />} />
+            <Route path="/igv/oracao"             element={<IgvForaDoAr />} />
+            <Route path="/igv/gabinete"           element={<IgvForaDoAr />} />
+            <Route path="/igv/*"                  element={<IgvForaDoAr />} />
           </Route>
 
           {/* ── LGPD — Políticas públicas ── */}
