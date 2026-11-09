@@ -224,6 +224,64 @@ function parseMeta(raw: unknown): NormalizedInbound[] {
   return results
 }
 
+// ── Recibos de entrega Meta (value.statuses[]) ─────────────
+// Grava 1 linha por (wamid, status) em whatsapp_message_statuses. Diferencia aceito pela API (fila: sent)
+// de enviado/entregue/lido/falhou no aparelho. Duplicatas da Meta são ignoradas pela chave única.
+interface MetaStatusRow {
+  wamid:        string
+  status:       string
+  status_at:    string
+  recipient_id: string | null
+  errors:       unknown
+  channel_id:   string | null
+  raw:          unknown
+}
+
+function parseMetaStatuses(raw: unknown, channelId: string | null): MetaStatusRow[] {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return []
+  const p = raw as Record<string, unknown>
+  if (p.object !== 'whatsapp_business_account') return []
+  const rows: MetaStatusRow[] = []
+  for (const entry of (p.entry as Array<Record<string, unknown>> | undefined) ?? []) {
+    for (const change of (entry.changes as Array<Record<string, unknown>> | undefined) ?? []) {
+      const value = change.value as Record<string, unknown> | undefined
+      for (const st of (value?.statuses as Array<Record<string, unknown>> | undefined) ?? []) {
+        const wamid  = typeof st.id === 'string' ? st.id : ''
+        const status = typeof st.status === 'string' ? st.status : ''
+        if (!wamid || !status) continue
+        const ts = typeof st.timestamp === 'string' ? parseInt(st.timestamp, 10) * 1000 : Date.now()
+        rows.push({
+          wamid,
+          status,
+          status_at:    new Date(Number.isFinite(ts) ? ts : Date.now()).toISOString(),
+          recipient_id: typeof st.recipient_id === 'string' ? st.recipient_id : null,
+          errors:       st.errors ?? null,
+          channel_id:   channelId,
+          raw:          st,
+        })
+      }
+    }
+  }
+  return rows
+}
+
+// deno-lint-ignore no-explicit-any
+async function recordMetaStatuses(sb: any, raw: unknown, channelId: string | null): Promise<void> {
+  try {
+    const rows = parseMetaStatuses(raw, channelId)
+    if (rows.length === 0) return
+    const { error } = await sb.from('whatsapp_message_statuses')
+      .upsert(rows, { onConflict: 'wamid,status', ignoreDuplicates: true })
+    if (error) console.error('[webhook-receiver] gravar status Meta falhou:', error.message)
+    for (const r of rows) {
+      const level = r.status === 'failed' ? 'error' : 'log'
+      console[level](`[webhook-receiver] status Meta ${r.status} wamid=${r.wamid}${r.errors ? ' errors=' + JSON.stringify(r.errors) : ''}`)
+    }
+  } catch (err) {
+    console.error('[webhook-receiver] recordMetaStatuses error:', err)
+  }
+}
+
 // ── Main ───────────────────────────────────────────────────
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return ok()
@@ -299,6 +357,10 @@ async function processInbound(
       console.warn('[webhook-receiver] body não é JSON válido — ignorado')
       return
     }
+
+    // Recibos de entrega da Meta (sent/delivered/read/failed). Isolado: qualquer falha aqui só é logada
+    // e nunca interfere no processamento das mensagens recebidas abaixo.
+    await recordMetaStatuses(sb, raw, channelId)
 
     // ── 1. Parse payload ──────────────────────────────────
     let normalized: NormalizedInbound | null = null
